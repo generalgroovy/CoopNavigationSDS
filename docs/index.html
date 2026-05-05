@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Speech Dialog Systems Literature Atlas</title>
+    <meta name="description" content="Interactive literature atlas for speech dialog systems and their human and automatic evaluation.">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav>
+        <a class="brand" href="#top">Speech Dialog Systems Atlas</a>
+        <div>
+          <a href="#literature">Literature</a>
+          <a href="#evaluation">Evaluation</a>
+          <a href="#extend">Extend</a>
+        </div>
+      </nav>
+      <section class="hero" id="top">
+        <div>
+          <p class="eyebrow">Curated from early frame dialogs to spoken LLMs</p>
+          <h1>Speech Dialog Systems and Their Evaluation</h1>
+          <p class="lead">
+            A GitHub Pages-ready knowledge base organized by fundamental system components, then by release year.
+            It emphasizes human evaluation, automatic evaluation, shared tasks, and the shift from cascaded SDS pipelines
+            to speech-native multimodal models.
+          </p>
+          <div id="stats" class="stats" aria-live="polite"></div>
+        </div>
+        <aside class="architecture-panel" aria-label="Speech dialog system architecture">
+          <div class="arch-node input">Speech input</div>
+          <div class="arch-node asr">ASR</div>
+          <div class="arch-node nlu">NLU and state</div>
+          <div class="arch-node dm">Dialog policy</div>
+          <div class="arch-node nlg">Response</div>
+          <div class="arch-node tts">Speech output</div>
+          <div class="arch-node eval">Human + automatic evaluation</div>
+        </aside>
+      </section>
+    </header>
+
+    <main>
+      <section class="controls" id="literature" aria-label="Literature filters">
+        <label>
+          Search
+          <input id="search" type="search" placeholder="PARADISE, MultiWOZ, user simulation, WER...">
+        </label>
+        <label>
+          Component
+          <select id="componentFilter">
+            <option>All</option>
+          </select>
+        </label>
+        <label>
+          Evaluation
+          <select id="evalFilter">
+            <option>All</option>
+            <option value="human">human</option>
+            <option value="automatic">automatic</option>
+          </select>
+        </label>
+        <label>
+          Type
+          <select id="typeFilter">
+            <option>All</option>
+          </select>
+        </label>
+        <a id="downloadCsv" class="download" href="#">Export CSV</a>
+      </section>
+
+      <section class="tabs" aria-label="Views">
+        <button class="tab active" data-target="recordsView">Component Bibliography</button>
+        <button class="tab" data-target="timelineView">Timeline Graphic</button>
+        <button class="tab" data-target="evaluationView">Evaluation Map</button>
+      </section>
+
+      <section id="recordsView" class="view active">
+        <div id="records"></div>
+      </section>
+
+      <section id="timelineView" class="view">
+        <div class="graphic-card">
+          <header>
+            <h2>Component-by-Year Literature Timeline</h2>
+            <p>Filtered papers are emphasized. Each point links to the corresponding source.</p>
+          </header>
+          <div id="timeline" class="timeline"></div>
+        </div>
+      </section>
+
+      <span id="evaluation" class="anchor" aria-hidden="true"></span>
+      <section id="evaluationView" class="view" aria-label="Evaluation map">
+        <div class="eval-layout">
+          <article class="graphic-card">
+            <h2>Evaluation Dimensions</h2>
+            <p>
+              SDS evaluation is best treated as a layered construct: component scores reveal local defects,
+              interaction scores reveal dialog behavior, and user studies reveal whether the system actually works for people.
+            </p>
+            <div id="matrix" class="matrix"></div>
+          </article>
+          <article class="graphic-card">
+            <h2>Visible Evaluation Evidence</h2>
+            <p>Counts change with the active filters.</p>
+            <div id="evalBars" class="bars"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="field-guide">
+        <h2>Research Map</h2>
+        <div class="guide-grid">
+          <article>
+            <h3>1. System Components</h3>
+            <p>
+              Classic SDS work decomposes interaction into ASR, language understanding, dialog state, policy,
+              generation, and speech output. Modern spoken LLM systems compress that pipeline, but the old component
+              boundaries remain useful diagnostic axes.
+            </p>
+          </article>
+          <article>
+            <h3>2. Human Evaluation</h3>
+            <p>
+              Human studies measure perceived quality: task success, satisfaction, cognitive load, naturalness,
+              trust, and recovery from errors. SASSI, ITU-T P.851, Wizard-of-Oz studies, pairwise preference tests,
+              and fine-grained rubrics cover different reliability and cost tradeoffs.
+            </p>
+          </article>
+          <article>
+            <h3>3. Automatic Evaluation</h3>
+            <p>
+              Automatic metrics include WER, semantic error rate, dialog-state accuracy, slot F1, inform/success,
+              policy reward, turn count, latency, BLEU-like response scores, reference-free learned metrics, and
+              LLM-as-judge protocols. Their validity depends on correlation with human outcomes.
+            </p>
+          </article>
+          <article>
+            <h3>4. Benchmark Risk</h3>
+            <p>
+              Shared datasets made progress measurable, but they can overfit the field to annotation artifacts,
+              text-only assumptions, or narrow domains. MultiWOZ correction papers and spoken-model surveys show why
+              benchmark governance is part of evaluation.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="extend" id="extend">
+        <h2>Extend This Site</h2>
+        <p>
+          Add new entries in <code>docs/data/literature.js</code>. Each record has <code>year</code>,
+          <code>component</code>, <code>type</code>, <code>evaluation</code>, <code>title</code>,
+          <code>authors</code>, <code>venue</code>, <code>url</code>, and <code>note</code>.
+          The interface updates automatically without a build step.
+          A readable sorted companion bibliography is available at <a href="literature.md">literature.md</a>.
+        </p>
+        <p>
+          For GitHub Pages, publish the repository from the <code>/docs</code> folder in repository settings.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Source-backed starting points include ACL Anthology, ITU-T P.851, W3C VoiceXML, NIST Communicator analysis,
+        Springer/PMC evaluation surveys, TACL, arXiv, and publisher DOI landing pages. This is a curated atlas rather
+        than an exhaustive systematic-review database.
+      </p>
+    </footer>
+
+    <script src="data/literature.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
