@@ -1,19 +1,24 @@
+"""Batch experiment entry point for deterministic route-dialog conditions."""
 import argparse
 import re
 
-from config import NUM_TURNS
-from experiments import build_condition_grid, write_metrics_csv, ExperimentRunner
-from route_planner import optimal_time_route, route_duration_breakdown, route_station_sequence
+from minillama.config import NUM_TURNS
+from minillama.runner import ExperimentRunner, build_condition_grid, write_metrics_csv
+from minillama.route_planner import optimal_time_route, route_duration_breakdown, route_station_sequence
 
 
 class DeterministicOracleRouteAdapter:
+    """Deterministic model adapter used as a batch baseline that returns optimal route text."""
+
     name = "deterministic-oracle-route-baseline"
     device = "none"
 
     def with_model_params(self, model_param_key: str):
+        """Return a parameterized adapter; deterministic baseline ignores params."""
         return self
 
     def generate(self, prompt: str) -> str:
+        """Generate an oracle route response from parsed scenario details."""
         scenario = self._extract_scenario(prompt)
         if scenario:
             start, destination, start_time_min, transfer_time_min = scenario
@@ -40,6 +45,7 @@ class DeterministicOracleRouteAdapter:
         )
 
     def _extract_scenario(self, prompt: str):
+        """Extract start, destination, time, and transfer settings from prompt."""
         match = re.search(
             r"Current time is (\d+) minutes after midnight\. "
             r"The traveler starts at ([A-Za-z]+) and wants to reach ([A-Za-z]+)\. "
@@ -54,12 +60,14 @@ class DeterministicOracleRouteAdapter:
 
 
 def parse_csv_arg(value):
+    """Parse a comma-separated CLI argument into a list."""
     if not value:
         return None
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
 def main():
+    """Run the configured experiment grid and write metrics output."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--test-cases", default="default")
     parser.add_argument("--personas", default="focused_commuter")

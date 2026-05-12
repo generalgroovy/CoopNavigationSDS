@@ -1,4 +1,4 @@
-"""Compatibility entry point for legacy `python main.py` launches."""
+"""Run the interactive app with `python -m minillama`."""
 
 from minillama.main import main
 

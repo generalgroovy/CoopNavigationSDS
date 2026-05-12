@@ -1,6 +1,11 @@
+"""Experiment metric model. It converts dialog results into route quality, duration, focus, and runtime metrics.
+"""
 from dataclasses import asdict, dataclass
+import re
 
-from route_planner import optimal_time_route, route_duration_breakdown
+from minillama.config import METRIC_QUALITY_BASE_WEIGHT, METRIC_QUALITY_DURATION_WEIGHT
+from minillama.metro_data import STATION_POS
+from minillama.route_planner import optimal_time_route, route_duration_breakdown
 
 
 TASK_TERMS = {
@@ -19,8 +24,33 @@ TASK_TERMS = {
 }
 
 
+COMPARISON_TERMS = {
+    "alternative",
+    "better",
+    "best",
+    "compare",
+    "faster",
+    "improve",
+    "option",
+    "slower",
+}
+
+COOPERATION_TERMS = {
+    "check",
+    "confirm",
+    "current",
+    "candidate",
+    "build",
+    "revise",
+    "together",
+    "step",
+}
+
+
 @dataclass
 class MetricRecord:
+    """Data model for one row of experiment metrics.
+    """
     condition_id: str
     test_case_key: str
     persona_key: str
@@ -42,15 +72,38 @@ class MetricRecord:
     word_count: int
     station_mentions: int
     task_focus_score: float
+    comparison_terms: int
+    cooperation_terms: int
+    agent_a_question_count: int
+    question_count: int
+    avg_words_per_message: float
+    candidate_route_count: int
+    route_revision_count: int
     duration_score: float
     quality_score: float
 
     def as_dict(self):
+        """As dict method for this module's MVC responsibility.
+        
+        Returns:
+            The computed value or side effect documented by the implementation.
+        """
         return asdict(self)
 
 
 class MetricComputer:
+    """Metric model service that computes quality and dialog metrics from a completed dialog result.
+    """
     def compute(self, result, scenario) -> MetricRecord:
+        """Compute method for this module's MVC responsibility.
+        
+        Args:
+            result: Input value used by `compute`; see the function signature and caller context for the expected type.
+            scenario: Input value used by `compute`; see the function signature and caller context for the expected type.
+        
+        Returns:
+            The computed value or side effect documented by the implementation.
+        """
         reference_arrival, _ = optimal_time_route(
             scenario["start_station"],
             scenario["destination_station"],
@@ -77,7 +130,19 @@ class MetricComputer:
         words = [word.strip(".,!?;:()").lower() for word in conversation_text.split()]
         words = [word for word in words if word]
         task_terms = sum(1 for word in words if word in TASK_TERMS)
-        station_mentions = len(result.route)
+        comparison_terms = sum(1 for word in words if word in COMPARISON_TERMS)
+        cooperation_terms = sum(1 for word in words if word in COOPERATION_TERMS)
+        station_mentions = 0
+        for station in STATION_POS:
+            station_mentions += len(
+                re.findall(rf"\b{re.escape(station)}\b", conversation_text, flags=re.IGNORECASE)
+            )
+        question_count = sum(text.count("?") for _, text in result.conversation)
+        agent_a_question_count = sum(
+            text.count("?") for speaker, text in result.conversation if speaker == "Agent A"
+        )
+        message_count = result.extra.get("messages", len(result.conversation))
+        avg_words_per_message = len(words) / message_count if message_count else 0.0
 
         task_focus_score = task_terms / len(words) if words else 0.0
 
@@ -88,7 +153,7 @@ class MetricComputer:
 
         quality_score = 0.0
         if result.route_correct:
-            quality_score = 0.70 + 0.30 * duration_score
+            quality_score = METRIC_QUALITY_BASE_WEIGHT + METRIC_QUALITY_DURATION_WEIGHT * duration_score
 
         return MetricRecord(
             condition_id=result.condition_id,
@@ -108,10 +173,17 @@ class MetricComputer:
             wait_min=breakdown["wait"],
             transfer_min=breakdown["transfer"],
             runtime_sec=result.runtime_sec,
-            message_count=result.extra.get("messages", len(result.conversation)),
+            message_count=message_count,
             word_count=len(words),
             station_mentions=station_mentions,
             task_focus_score=round(task_focus_score, 4),
+            comparison_terms=comparison_terms,
+            cooperation_terms=cooperation_terms,
+            agent_a_question_count=agent_a_question_count,
+            question_count=question_count,
+            avg_words_per_message=round(avg_words_per_message, 2),
+            candidate_route_count=result.extra.get("candidate_routes", 0),
+            route_revision_count=result.extra.get("route_revisions", 0),
             duration_score=round(duration_score, 4),
             quality_score=round(quality_score, 4),
         )
