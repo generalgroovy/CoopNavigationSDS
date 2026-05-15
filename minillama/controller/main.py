@@ -1,0 +1,154 @@
+"""Interactive GUI entry point and startup controller."""
+import logging
+import queue
+import threading
+
+from huggingface_hub.utils import logging as hf_logging
+
+from minillama.agent_a.agent_a_responder import LLMAgentAResponder, TemplateAgentAResponder
+from minillama.agent_a.config import LLM_AGENT_A
+from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
+from minillama.agent_b.config import (
+    AGENT_B_PLUGIN,
+    DEFAULT_SPEECH_PATTERN,
+    SPEECH_INCOMING_ENABLED,
+    SPEECH_OUTGOING_ENABLED,
+    SPEECH_SCOPE,
+)
+from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
+from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR, SESSION_LOG_PROFILE, SESSION_NAME
+from minillama.controller.dialog_manager import DialogManager
+from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
+from minillama.model.config import MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
+from minillama.model.model_runtime import create_model_adapter
+from minillama.test_cases.config import DEFAULT_TEST_CASE
+from minillama.test_cases.test_cases import TEST_CASES, get_test_case
+from minillama.view.gui import DialogWindow, StartupConfigDialog
+
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
+hf_logging.set_verbosity_warning()
+
+
+def build_agent_a_responder(model_adapter):
+    """Create the configured Agent A responder implementation."""
+    if LLM_AGENT_A and model_adapter is not None:
+        return LLMAgentAResponder(model_adapter)
+    return TemplateAgentAResponder()
+
+
+def conversation_worker(event_queue, model_adapter, run_config):
+    """Run one dialog in a background worker and stream UI events."""
+    test_case = get_test_case(run_config["test_case_key"])
+    agent_b_plugin = create_agent_b_plugin(run_config["agent_b_plugin"], model_adapter)
+    speech_transport = SpeechTransport(
+        config=SpeechPipelineConfig(
+            incoming_enabled=run_config["speech_incoming_enabled"],
+            outgoing_enabled=run_config["speech_outgoing_enabled"],
+            scope=run_config["speech_scope"],
+            pattern_key=run_config["speech_pattern_key"],
+        )
+    )
+    manager = DialogManager(
+        test_case,
+        agent_b_plugin,
+        NUM_TURNS,
+        speech_transport=speech_transport,
+        agent_a_responder=build_agent_a_responder(model_adapter),
+        monitor=event_queue,
+    )
+    model_name = getattr(model_adapter, "name", "no-model")
+    model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
+    device = getattr(model_adapter, "device", "n/a")
+
+    try:
+        with event_queue.segment(
+            "dialog.run",
+            model=model_name,
+            provider=model_provider,
+            device=device,
+            turns=NUM_TURNS,
+            max_new_tokens=MAX_NEW_TOKENS,
+            max_input_tokens=MAX_INPUT_TOKENS,
+            agent_a=manager.agent_a_responder.name,
+            agent_b=getattr(agent_b_plugin, "name", type(agent_b_plugin).__name__),
+            speech_pipeline=speech_transport.description,
+        ):
+            event_queue.put(("system", f"Model: {model_name}"))
+            event_queue.put(("system", f"Provider: {model_provider}"))
+            event_queue.put(("system", f"Device: {device}"))
+            event_queue.put(("system", f"Turns={NUM_TURNS}, max_new_tokens={MAX_NEW_TOKENS}, max_length={MAX_INPUT_TOKENS}"))
+            event_queue.put(("system", f"Agent A: {manager.agent_a_responder.name}"))
+            event_queue.put(("system", f"Agent B: {getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)}"))
+            manager.run(event_queue)
+    except Exception as exc:
+        logging.exception("Conversation worker failed")
+        event_queue.put(("warning", f"Conversation stopped: {exc}"))
+        event_queue.put(("done",))
+    finally:
+        event_queue.close()
+
+
+def default_run_config():
+    """Return the default interactive run configuration."""
+    return {
+        "test_case_key": DEFAULT_TEST_CASE,
+        "agent_b_plugin": AGENT_B_PLUGIN,
+        "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
+        "speech_incoming_enabled": SPEECH_INCOMING_ENABLED,
+        "speech_outgoing_enabled": SPEECH_OUTGOING_ENABLED,
+        "speech_scope": SPEECH_SCOPE,
+    }
+
+
+def select_run_config():
+    """Show the startup configuration form, falling back to defaults when unavailable."""
+    defaults = default_run_config()
+    choices = {
+        "test_case_keys": list(TEST_CASES),
+        "agent_b_plugins": ["simple", "llm"],
+        "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
+        "speech_scopes": ["both", "agent_a", "agent_b", "none"],
+    }
+    try:
+        selected = StartupConfigDialog(choices, defaults).show()
+    except Exception as exc:
+        logging.warning("Startup configuration UI unavailable; using defaults: %s", exc)
+        selected = defaults
+    return selected
+
+
+def main():
+    """Start one interactive dialog run."""
+    run_config = select_run_config()
+    if run_config is None:
+        return
+
+    scenario = get_test_case(run_config["test_case_key"]).scenario
+    ui_queue = queue.Queue()
+    session_logger = None if SESSION_LOG_PROFILE == "off" else SessionLogger(
+        SESSION_NAME,
+        SESSION_LOG_DIR,
+        profile=SESSION_LOG_PROFILE,
+    )
+    event_queue = MonitoringEventQueue(ui_queue, session_logger)
+
+    if run_config["agent_b_plugin"] == "simple" and not LLM_AGENT_A:
+        model_adapter = None
+    else:
+        with event_queue.segment("model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):
+            model_adapter = create_model_adapter()
+
+    worker = threading.Thread(
+        target=conversation_worker,
+        args=(event_queue, model_adapter, run_config),
+        daemon=True,
+    )
+    worker.start()
+
+    dialog = DialogWindow(ui_queue, scenario)
+    dialog.run()
+
+
+if __name__ == "__main__":
+    main()

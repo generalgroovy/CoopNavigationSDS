@@ -1,0 +1,70 @@
+"""Batch experiment entry point for automatic evaluation of speech-dialog conditions."""
+import argparse
+
+from minillama.agent_b.config import AGENT_B_PLUGIN
+from minillama.controller.config import NUM_TURNS
+from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_csv
+from minillama.model.model_runtime import create_model_adapter
+
+
+def parse_csv_arg(value):
+    """Parse a comma-separated CLI argument into a list."""
+    if not value:
+        return None
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def parse_bool_flag(value):
+    """Parse CLI booleans for speech-stage toggles."""
+    normalized = value.lower()
+    if normalized in {"1", "true", "on", "yes"}:
+        return True
+    if normalized in {"0", "false", "off", "no"}:
+        return False
+    raise argparse.ArgumentTypeError("expected true or false")
+
+
+def main():
+    """Run the configured experiment grid and write metrics output."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--agent-b-plugin", default=AGENT_B_PLUGIN)
+    parser.add_argument("--model-provider", choices=("transformers", "openai"))
+    parser.add_argument("--test-cases", default="morning_peak_cross_city,midday_transfer,evening_outbound,late_event")
+    parser.add_argument("--personas", default="focused_commuter")
+    parser.add_argument("--speech-patterns", default="clean,hesitant,compressed,noisy_station")
+    parser.add_argument("--speech-incoming", type=parse_bool_flag, default=True, help="Enable incoming ASR/transcript processing.")
+    parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=True, help="Enable outgoing TTS/verbalization processing.")
+    parser.add_argument("--speech-scope", default="both", choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
+    parser.add_argument("--model-params", default="greedy")
+    parser.add_argument("--iterations", type=int, default=1)
+    parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
+    parser.add_argument("--output", default="automatic_eval_metrics.csv")
+    args = parser.parse_args()
+
+    conditions = build_condition_grid(
+        test_case_keys=parse_csv_arg(args.test_cases),
+        persona_keys=parse_csv_arg(args.personas),
+        speech_pattern_keys=parse_csv_arg(args.speech_patterns),
+        model_param_keys=parse_csv_arg(args.model_params),
+        iterations=args.iterations,
+    )
+
+    model_adapter = None if args.agent_b_plugin == "simple" else (
+        create_model_adapter(args.model_provider) if args.model_provider else create_model_adapter()
+    )
+    runner = ExperimentRunner(
+        model_adapter,
+        args.num_turns,
+        agent_b_plugin_key=args.agent_b_plugin,
+        speech_incoming_enabled=args.speech_incoming,
+        speech_outgoing_enabled=args.speech_outgoing,
+        speech_scope=args.speech_scope,
+    )
+    _, metrics = runner.run_grid(conditions, collect_results=False)
+    write_metrics_csv(metrics, args.output)
+
+    print(f"wrote {len(metrics)} metric rows to {args.output}")
+
+
+if __name__ == "__main__":
+    main()

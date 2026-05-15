@@ -1,7 +1,0 @@
-"""Compatibility entry point for legacy `python main.py` launches."""
-
-from minillama.main import main
-
-
-if __name__ == "__main__":
-    main()
