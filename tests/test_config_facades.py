@@ -1,6 +1,13 @@
 import unittest
 
-from minillama.agent_b.config import AGENT_B_PLUGIN, SPEECH_PATTERNS
+from minillama.agent_b.config import (
+    AGENT_B_PLUGIN,
+    SPEECH_INCOMING_ENABLED,
+    SPEECH_OUTGOING_ENABLED,
+    SPEECH_PATTERNS,
+    SPEECH_SCOPE,
+)
+from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
 from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR
 from minillama.model.config import DEVICE, MODEL
@@ -23,6 +30,19 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertTrue(NUM_TURNS)
         self.assertTrue(AGENT_B_PLUGIN)
         self.assertTrue(SESSION_LOG_DIR)
+
+    def test_default_speech_pipeline_is_text_only(self):
+        self.assertFalse(SPEECH_INCOMING_ENABLED)
+        self.assertFalse(SPEECH_OUTGOING_ENABLED)
+        self.assertEqual(SPEECH_SCOPE, "none")
+
+        transport = SpeechTransport(config=SpeechPipelineConfig())
+        trace = transport.transmit_trace("Agent A", "Need Alpha to Echo.")
+        self.assertEqual(trace.incoming_transcript, "Need Alpha to Echo.")
+        self.assertEqual(trace.outgoing_text, "Need Alpha to Echo.")
+        self.assertFalse(trace.incoming_enabled)
+        self.assertFalse(trace.outgoing_enabled)
+        self.assertIn("text-only:clean:none", transport.description)
 
     def test_agent_b_plugin_config_exposes_registry(self):
         self.assertIn("minillama", available_agent_b_plugin_keys())

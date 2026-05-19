@@ -1,11 +1,9 @@
 """Model-layer configuration."""
 import os
 
-import torch
-
 MODEL = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 TOKEN = os.environ.get("HF_TOKEN")
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = os.environ.get("MINILLAMA_DEVICE", "cpu").lower()
 
 # MODEL_PROVIDER:
 # - "transformers": local Hugging Face causal model

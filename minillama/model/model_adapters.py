@@ -7,8 +7,6 @@ from dataclasses import dataclass
 from typing import Protocol
 from urllib import request
 
-import torch
-
 from minillama.model.config import (
     CHAT_API_KEY,
     CHAT_BASE_URL,
@@ -198,6 +196,8 @@ class TransformersModelAdapter:
             generation_config.temperature = self.model_parameters.temperature
         if self.model_parameters.top_p is not None:
             generation_config.top_p = self.model_parameters.top_p
+
+        import torch
 
         with torch.inference_mode():
             outputs = self.model.generate(

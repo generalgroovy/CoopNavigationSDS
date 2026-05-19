@@ -94,7 +94,7 @@ Interactive GUI:
 .venv\Scripts\python.exe -m minillama
 ```
 
-The GUI opens with a compact run-configuration form. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. It also chooses a test case, selects the speech pattern, and enables or disables incoming ASR and outgoing TTS processing for Agent A, Agent B, both agents, or neither agent.
+The GUI opens with a compact run-configuration form. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default run is text-only: incoming ASR and outgoing TTS stages are off and the speech scope is `none`. The form can still enable speech simulation for Agent A, Agent B, both agents, or neither agent.
 
 Batch metrics:
 
@@ -102,7 +102,7 @@ Batch metrics:
 .venv\Scripts\python.exe -m minillama.controller.run_experiments
 ```
 
-Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for GUI and batch runs.
+Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for GUI and batch runs. Batch speech defaults are also text-only: `--speech-patterns clean --speech-incoming false --speech-outgoing false --speech-scope none`.
 
 Useful speech-pipeline batch controls:
 

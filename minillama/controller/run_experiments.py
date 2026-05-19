@@ -2,6 +2,8 @@
 import argparse
 
 from minillama.agent_b.config import AGENT_B_PLUGIN
+from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
+from minillama.agent_b.config import SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_SCOPE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.controller.config import NUM_TURNS
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_csv
@@ -32,10 +34,10 @@ def main():
     parser.add_argument("--model-provider", choices=("transformers", "openai"))
     parser.add_argument("--test-cases", default="morning_peak_cross_city,midday_transfer,evening_outbound,late_event")
     parser.add_argument("--personas", default="focused_commuter")
-    parser.add_argument("--speech-patterns", default="clean,hesitant,compressed,noisy_station")
-    parser.add_argument("--speech-incoming", type=parse_bool_flag, default=True, help="Enable incoming ASR/transcript processing.")
-    parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=True, help="Enable outgoing TTS/verbalization processing.")
-    parser.add_argument("--speech-scope", default="both", choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
+    parser.add_argument("--speech-patterns", default=DEFAULT_SPEECH_PATTERN)
+    parser.add_argument("--speech-incoming", type=parse_bool_flag, default=SPEECH_INCOMING_ENABLED, help="Enable incoming ASR/transcript processing.")
+    parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=SPEECH_OUTGOING_ENABLED, help="Enable outgoing TTS/verbalization processing.")
+    parser.add_argument("--speech-scope", default=SPEECH_SCOPE, choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
     parser.add_argument("--model-params", default="greedy")
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
