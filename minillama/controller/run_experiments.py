@@ -2,6 +2,7 @@
 import argparse
 
 from minillama.agent_b.config import AGENT_B_PLUGIN
+from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.controller.config import NUM_TURNS
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_csv
 from minillama.model.model_runtime import create_model_adapter
@@ -27,7 +28,7 @@ def parse_bool_flag(value):
 def main():
     """Run the configured experiment grid and write metrics output."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--agent-b-plugin", default=AGENT_B_PLUGIN)
+    parser.add_argument("--agent-b-plugin", default=AGENT_B_PLUGIN, help="Agent B plugin: minillama, simple, llm alias, or package.module:factory.")
     parser.add_argument("--model-provider", choices=("transformers", "openai"))
     parser.add_argument("--test-cases", default="morning_peak_cross_city,midday_transfer,evening_outbound,late_event")
     parser.add_argument("--personas", default="focused_commuter")
@@ -49,7 +50,8 @@ def main():
         iterations=args.iterations,
     )
 
-    model_adapter = None if args.agent_b_plugin == "simple" else (
+    agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
+    model_adapter = None if not agent_b_config.needs_model else (
         create_model_adapter(args.model_provider) if args.model_provider else create_model_adapter()
     )
     runner = ExperimentRunner(

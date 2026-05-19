@@ -87,6 +87,13 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.extra["model_parameters"]["do_sample"], True)
         self.assertEqual(result.extra["model_parameters"]["temperature"], 0.7)
 
+    def test_plugin_config_identifies_model_need(self):
+        from minillama.agent_b.plugin_registry import AgentBPluginConfig
+
+        self.assertTrue(AgentBPluginConfig("minillama").needs_model)
+        self.assertTrue(AgentBPluginConfig("llm").needs_model)
+        self.assertFalse(AgentBPluginConfig("simple").needs_model)
+
     @patch("minillama.controller.runner.get_test_case")
     def test_build_condition_grid_caches_test_case_lookups(self, get_test_case):
         get_test_case.side_effect = lambda key: SimpleNamespace(scenario_key=f"scenario:{key}")

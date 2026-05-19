@@ -39,9 +39,12 @@ from minillama.view.config import (
     GUI_LINE_TABLE_COLUMNS,
     GUI_STATION_LINE_TABLE_COLUMNS,
     GUI_STATION_TIME_TABLE_COLUMNS,
+    GUI_NETWORK_LINE_COLUMNS,
+    GUI_NETWORK_STATION_COLUMNS,
     GUI_ROUTE_TABLE_HEIGHT,
     GUI_LINE_TABLE_HEIGHT,
     GUI_STATION_TABLE_HEIGHT,
+    GUI_NETWORK_TABLE_HEIGHT,
     MAP_MIN_WIDTH,
     MAP_MIN_HEIGHT,
     MAP_PADDING_X,
@@ -83,6 +86,7 @@ from minillama.model.metro_data import (
     line_stop_pairs,
     station_fullness_percent,
 )
+from minillama.model.network_overview import build_network_overview
 from minillama.model.route_planner import (
     estimate_route_time,
     fmt_time,
@@ -175,7 +179,7 @@ class StartupConfigDialog:
                 frame,
                 textvariable=self.vars[key],
                 values=values,
-                state="readonly",
+                state="normal" if key == "agent_b_plugin" else "readonly",
                 width=36,
             )
             combo.grid(row=row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
@@ -434,11 +438,9 @@ class DialogWindow:
         self.main.grid_rowconfigure(0, weight=1)
 
         self.workspace_tabs = self.make_tabs(self.main, height=GUI_HEIGHT - (GUI_MAIN_PAD * 2))
-        self.workspace_tabs.add("Conversation Data")
         self.workspace_tabs.add("Metric Data")
         self.workspace_tabs.add("Network Data")
 
-        self.build_conversation_data_tab(self.workspace_tabs.tab("Conversation Data"))
         self.build_metric_data_tab(self.workspace_tabs.tab("Metric Data"))
         self.build_network_data_tab(self.workspace_tabs.tab("Network Data"))
 
@@ -450,13 +452,7 @@ class DialogWindow:
         scroller.grid_columnconfigure(0, weight=1)
         return scroller
 
-    def build_conversation_data_tab(self, parent):
-        """Build the conversation-data page."""
-        page = self.build_page_scroller(parent)
-        self.build_conversation_card(page, row=0)
-        self.build_route_candidates_card(page, row=1)
-
-    def build_conversation_card(self, parent, row=0):
+    def build_conversation_card(self, parent, row=0, text_height=None):
         """Build the conversation transcript card."""
         self.transcript_frame = self.make_section(
             parent,
@@ -467,12 +463,13 @@ class DialogWindow:
         )
         self.transcript_frame.grid_rowconfigure(0, weight=1)
         self.transcript_frame.grid_columnconfigure(0, weight=1)
+        self.transcript_frame.grid_columnconfigure(1, weight=0)
 
         self.textbox = tk.Text(
             self.transcript_frame,
             wrap=tk.WORD,
             font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE),
-            height=GUI_TEXTBOX_HEIGHT,
+            height=text_height or GUI_TEXTBOX_HEIGHT,
             bd=0,
             highlightthickness=1,
             highlightbackground=GUI_COLORS["table_border"],
@@ -480,7 +477,10 @@ class DialogWindow:
             fg=GUI_COLORS["text"],
             insertbackground=GUI_COLORS["text"],
         )
+        transcript_scrollbar = ttk.Scrollbar(self.transcript_frame, orient="vertical", command=self.textbox.yview)
+        self.textbox.configure(yscrollcommand=transcript_scrollbar.set)
         self.textbox.grid(row=0, column=0, sticky="nsew")
+        transcript_scrollbar.grid(row=0, column=1, sticky="ns")
         self.textbox.tag_config("Agent A", foreground=GUI_COLORS["agent_a"], spacing1=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], spacing1=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent A body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
@@ -504,7 +504,7 @@ class DialogWindow:
 
         self.candidate_table = ttk.Treeview(
             self.route_frame,
-            columns=("turn", "duration", "delta", "decision", "route", "lines"),
+            columns=("turn", "duration", "delta", "gap", "decision", "route", "lines"),
             show="headings",
             height=4,
             style="Data.Treeview",
@@ -513,8 +513,9 @@ class DialogWindow:
             ("turn", "Turn", 42, "center", False),
             ("duration", "Time", 54, "center", False),
             ("delta", "Delta", 54, "center", False),
+            ("gap", "Target Gap", 78, "center", False),
             ("decision", "Result", 72, "center", False),
-            ("route", "Candidate route", 220, "w", True),
+            ("route", "Candidate route", 190, "w", True),
             ("lines", "Lines", 128, "w", True),
         ]
         for col, label, width, anchor, stretch in candidate_columns:
@@ -536,24 +537,56 @@ class DialogWindow:
         self.route_table.grid(row=1, column=0, sticky="nsew")
 
     def build_metric_data_tab(self, parent):
-        """Build the metric-data page."""
-        page = self.build_page_scroller(parent)
-        self.build_snapshot_card(page, row=0)
-        self.build_run_context_card(page, row=1)
-        self.build_outcome_metrics_card(page, row=2)
-        self.build_conversation_metrics_card(page, row=3)
-        self.build_metric_stack_card(page, row=4)
+        """Build metric data as a left transcript and right metric workspace."""
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
 
-    def build_metric_stack_card(self, parent, row=0):
+        split = ttk.PanedWindow(parent, orient=tk.HORIZONTAL)
+        split.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+
+        conversation_shell = tk.Frame(split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        conversation_shell.grid_rowconfigure(0, weight=1)
+        conversation_shell.grid_columnconfigure(0, weight=1)
+        conversation_page = make_scrollable_frame(conversation_shell, GUI_COLORS["app_bg"], padx=0, pady=0)
+        conversation_page.grid_columnconfigure(0, weight=1)
+        self.build_conversation_card(conversation_page, row=0, text_height=32)
+        split.add(conversation_shell, weight=1)
+
+        metric_shell = tk.Frame(split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        metric_shell.grid_rowconfigure(0, weight=1)
+        metric_shell.grid_columnconfigure(0, weight=1)
+        split.add(metric_shell, weight=1)
+
+        metric_split = ttk.PanedWindow(metric_shell, orient=tk.VERTICAL)
+        metric_split.grid(row=0, column=0, sticky="nsew")
+
+        summary_zone = tk.Frame(metric_split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        summary_zone.grid_columnconfigure(0, weight=1, uniform="metric_summary")
+        summary_zone.grid_columnconfigure(1, weight=1, uniform="metric_summary")
+        summary_zone.grid_rowconfigure(0, weight=1, uniform="metric_summary")
+        summary_zone.grid_rowconfigure(1, weight=1, uniform="metric_summary")
+        self.build_snapshot_card(summary_zone, row=0, column=0)
+        self.build_run_context_card(summary_zone, row=0, column=1)
+        self.build_outcome_metrics_card(summary_zone, row=1, column=0)
+        self.build_conversation_metrics_card(summary_zone, row=1, column=1)
+        metric_split.add(summary_zone, weight=1)
+
+        phase_zone = tk.Frame(metric_split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        phase_zone.grid_columnconfigure(0, weight=1)
+        phase_zone.grid_rowconfigure(0, weight=1)
+        self.build_metric_stack_card(phase_zone, row=0, columns=4)
+        metric_split.add(phase_zone, weight=2)
+
+    def build_metric_stack_card(self, parent, row=0, column=0, columns=3):
         """Build one card that shows every speech-dialog metric family together."""
         self.metric_stack_frame = self.make_section(
             parent,
-            "Speech Dialog Metric Stack",
+            "Metric Phases",
             row=row,
+            column=column,
             sticky="nsew",
             key="metric_stack",
         )
-        columns = 3
         for column in range(columns):
             self.metric_stack_frame.grid_columnconfigure(column, weight=1, uniform="metric_stack")
 
@@ -567,12 +600,13 @@ class DialogWindow:
                 column=group_column,
             )
 
-    def build_outcome_metrics_card(self, parent, row=0):
+    def build_outcome_metrics_card(self, parent, row=0, column=0):
         """Build the outcome metrics card."""
         self.metrics_frame = self.make_section(
             parent,
             "Outcome Metrics",
             row=row,
+            column=column,
             sticky="nsew",
             key="evaluation",
         )
@@ -585,6 +619,9 @@ class DialogWindow:
             (("line_sequence", "Line Seq"), ("line_changes", "Line Chg")),
             (("reference_line_sequence", "Ref Seq"), ("reference_line_changes", "Ref Chg")),
             (("reference_route", "Reference Route"), ("best_turn", "Best Turn")),
+            (("constraint_route", "Target Route"), ("constraint_duration", "Target Time")),
+            (("constraint_line_sequence", "Target Seq"), ("constraint_line_changes", "Target Chg")),
+            (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Full")),
             (("candidate_routes", "Candidates"), ("route_revisions", "Revisions")),
             (("valid", "Valid"), ("goal", "Goal")),
             (("correct", "Correct"), ("runtime", "Runtime")),
@@ -598,12 +635,13 @@ class DialogWindow:
             wraplength=METRIC_WRAP,
         )
 
-    def build_conversation_metrics_card(self, parent, row=0):
+    def build_conversation_metrics_card(self, parent, row=0, column=0):
         """Build the conversation metrics card."""
         self.live_metrics_frame = self.make_section(
             parent,
             "Conversation Metrics",
             row=row,
+            column=column,
             sticky="nsew",
             key="dialog_metrics",
         )
@@ -632,7 +670,7 @@ class DialogWindow:
     def build_stage_metric_family_group(self, parent, family, row=0, column=0):
         """Build an unframed family group inside the complete metric stack card."""
         group = tk.Frame(parent, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
-        group.grid(row=row, column=column, sticky="nsew", padx=(0, 14), pady=(0, 10))
+        group.grid(row=row, column=column, sticky="nsew", padx=(0, 8), pady=(0, 6))
         group.grid_columnconfigure(1, weight=1)
 
         tk.Label(
@@ -667,8 +705,67 @@ class DialogWindow:
     def build_network_data_tab(self, parent):
         """Build the network-data page."""
         page = self.build_page_scroller(parent)
-        self.build_network_map_card(page, row=0)
-        self.build_reference_browser_card(page, row=1)
+        self.build_network_overview_card(page, row=0)
+        self.build_route_candidates_card(page, row=1)
+        self.build_network_map_card(page, row=2)
+        self.build_reference_browser_card(page, row=3)
+
+    def build_network_overview_card(self, parent, row=0):
+        """Build complete line and station data tables in one network card."""
+        overview = build_network_overview(self.scenario["start_time_min"])
+        frame = self.make_section(
+            parent,
+            f"Network Data: {overview.line_count} lines, {overview.station_count} stations, {overview.segment_count} segments",
+            row=row,
+            sticky="nsew",
+            key="network_overview",
+        )
+        frame.grid_columnconfigure(0, weight=1)
+        frame.grid_columnconfigure(1, weight=1)
+
+        line_panel = tk.Frame(frame, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
+        line_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 4), pady=0)
+        line_panel.grid_columnconfigure(0, weight=1)
+        self.network_line_table = self.build_scroll_table(
+            line_panel,
+            GUI_NETWORK_LINE_COLUMNS,
+            height=GUI_NETWORK_TABLE_HEIGHT,
+        )
+        for item in overview.lines:
+            self.network_line_table.insert(
+                "",
+                tk.END,
+                values=(
+                    item.name,
+                    item.kind,
+                    f"{item.headway_min}m",
+                    f"{item.fullness_percent}%",
+                    item.stop_count,
+                    item.route,
+                    item.segments,
+                ),
+            )
+
+        station_panel = tk.Frame(frame, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
+        station_panel.grid(row=0, column=1, sticky="nsew", padx=(4, 0), pady=0)
+        station_panel.grid_columnconfigure(0, weight=1)
+        self.network_station_table = self.build_scroll_table(
+            station_panel,
+            GUI_NETWORK_STATION_COLUMNS,
+            height=GUI_NETWORK_TABLE_HEIGHT,
+        )
+        for item in overview.stations:
+            self.network_station_table.insert(
+                "",
+                tk.END,
+                values=(
+                    item.name,
+                    f"{item.fullness_percent}%",
+                    item.lines,
+                    item.neighbors,
+                    item.coordinates,
+                ),
+            )
 
     def build_network_map_card(self, parent, row=0):
         """Build the network map card."""
@@ -691,6 +788,23 @@ class DialogWindow:
         )
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
+    def build_scroll_table(self, parent, columns, height):
+        table = ttk.Treeview(
+            parent,
+            columns=tuple(column[0] for column in columns),
+            show="headings",
+            height=height,
+            style="Data.Treeview",
+        )
+        for col, label, width, anchor, stretch in columns:
+            table.heading(col, text=label)
+            table.column(col, width=width, minwidth=width, anchor=anchor, stretch=stretch)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=table.yview)
+        table.configure(yscrollcommand=scrollbar.set)
+        table.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        return table
+
     def build_reference_browser_card(self, parent, row=0):
         """Build the transit reference card."""
         self.reference_frame = self.make_section(
@@ -702,23 +816,25 @@ class DialogWindow:
         )
         self.build_reference_browser(self.reference_frame)
 
-    def build_snapshot_card(self, parent, row=0):
+    def build_snapshot_card(self, parent, row=0, column=0):
         """Build the live snapshot card."""
         self.snapshot_frame = self.make_section(
             parent,
             "Live Snapshot",
             row=row,
+            column=column,
             sticky="nsew",
             key="snapshot",
         )
         self.build_snapshot_grid(self.snapshot_frame)
 
-    def build_run_context_card(self, parent, row=0):
+    def build_run_context_card(self, parent, row=0, column=0):
         """Build the run context card."""
         self.summary_frame = self.make_section(
             parent,
             "Run Context",
             row=row,
+            column=column,
             sticky="nsew",
             key="run",
         )
@@ -2191,6 +2307,12 @@ class DialogWindow:
             "Reference duration": "reference_duration",
             "Reference line sequence": "reference_line_sequence",
             "Reference line changes": "reference_line_changes",
+            "Constraint route": "constraint_route",
+            "Constraint line sequence": "constraint_line_sequence",
+            "Constraint line changes": "constraint_line_changes",
+            "Constraint duration": "constraint_duration",
+            "Constraint crowding": "constraint_fullness",
+            "Constraint gap": "constraint_gap",
             "Candidate routes": "candidate_routes",
             "Route revisions": "route_revisions",
             "Best candidate turn": "best_turn",
@@ -2210,6 +2332,12 @@ class DialogWindow:
         if "Displayed line sequence" in parsed and parsed["Displayed line sequence"] != "None":
             line_sequence = [segment.strip() for segment in parsed["Displayed line sequence"].split("->")]
             self.metric_values["line_sequence"].configure(text=" -> ".join(line_sequence))
+        if "Constraint route" in parsed and parsed["Constraint route"] != "None":
+            route = [station.strip() for station in parsed["Constraint route"].split("->")]
+            self.metric_values["constraint_route"].configure(text=self.route_label(route))
+        if "Constraint line sequence" in parsed and parsed["Constraint line sequence"] != "None":
+            line_sequence = [segment.strip() for segment in parsed["Constraint line sequence"].split("->")]
+            self.metric_values["constraint_line_sequence"].configure(text=" -> ".join(line_sequence))
 
     def update_route_metric(self):
         """Update route metric method for this module's MVC responsibility.
@@ -2572,6 +2700,7 @@ class DialogWindow:
         else:
             diff = duration - previous_best
             delta = f"{diff:+d}m"
+        target_gap = self.candidate_target_gap_label(candidate)
 
         if candidate["decision"] == "repeat":
             self.candidate_table.insert(
@@ -2581,6 +2710,7 @@ class DialogWindow:
                     candidate["turn"],
                     f"{duration}m",
                     delta,
+                    target_gap,
                     "repeat",
                     self.compact_route_label(candidate["route"]),
                     self.compact_line_sequence_label(candidate["route"]),
@@ -2604,12 +2734,31 @@ class DialogWindow:
                 candidate["turn"],
                 f"{duration}m",
                 delta,
+                target_gap,
                 candidate["decision"],
                 self.compact_route_label(candidate["route"]),
                 self.compact_line_sequence_label(candidate["route"]),
             ),
         )
         self.update_live_dialog_metrics()
+
+    @staticmethod
+    def candidate_target_gap_label(candidate):
+        """Return a compact candidate gap from the constraint-aware startup baseline."""
+        duration_gap = candidate.get("duration_gap_min")
+        change_gap = candidate.get("line_change_gap")
+        fullness_gap = candidate.get("fullness_gap")
+        if duration_gap is None and change_gap is None and fullness_gap is None:
+            return "-"
+
+        parts = []
+        if duration_gap is not None:
+            parts.append(f"{duration_gap:+d}m")
+        if change_gap is not None:
+            parts.append(f"{change_gap:+d}ch")
+        if fullness_gap is not None:
+            parts.append(f"{fullness_gap:+.1f}%")
+        return " ".join(parts)
 
     def live_route_status(self):
         """Live route status method for this module's MVC responsibility.

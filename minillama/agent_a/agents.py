@@ -150,9 +150,9 @@ def fallback_reply(active_agent_name, scenario, route_index=0):
             snippet = route_text_from_steps(steps) if steps else f"take a line from {start} to {destination}"
             duration = f"{arrival - scenario['start_time_min']} minutes" if arrival is not None else "an unknown duration"
         return (
-            f"One connected option is to {snippet}. "
-            f"With {transfer} minute(s) for each line change, plus waiting, that comes to {duration} overall. "
-            "I can compare it with another connected option, note the crowding tradeoff, and keep the better-scoring one."
+            f"One connected option: {snippet} "
+            f"That includes waiting and {transfer} minute(s) only when changing lines, so it is {duration} overall. "
+            "I can compare that with another connected option if you want the tradeoff."
         )
 
     return (

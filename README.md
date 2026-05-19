@@ -25,7 +25,8 @@ Agent B prompting, plugins, and simulated speech transport.
 
 - `__init__.py`: package marker.
 - `config.py`: Agent B defaults and speech-pattern settings.
-- `agent_b_plugins.py`: built-in and dynamic Agent B plugins.
+- `plugin_registry.py`: built-in Agent B plugins, custom plugin loading, and plugin config.
+- `agent_b_plugins.py`: compatibility imports for plugin code.
 - `pipeline.py`: Agent B verbal transformation pipeline.
 - `speech_io.py`: loopback and patterned speech transport.
 
@@ -59,6 +60,7 @@ Transit network model and model-runtime helpers.
 - `metro_data.py`: generated network, crowding, and prompt text helpers.
 - `model_adapters.py`: Hugging Face and OpenAI-compatible adapters.
 - `model_runtime.py`: model/tokenizer loading and adapter creation.
+- `network_overview.py`: complete line and station data rows for the GUI.
 - `route_planner.py`: route validation, timing, and schedule helpers.
 - `station_names.py`: station name generation.
 
@@ -92,7 +94,7 @@ Interactive GUI:
 .venv\Scripts\python.exe -m minillama
 ```
 
-The GUI opens with a compact run-configuration form. It can switch Agent B between the built-in deterministic planner and the LLM-backed assistant, choose a test case, select the speech pattern, and enable or disable incoming ASR and outgoing TTS processing for Agent A, Agent B, both agents, or neither agent.
+The GUI opens with a compact run-configuration form. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. It also chooses a test case, selects the speech pattern, and enables or disables incoming ASR and outgoing TTS processing for Agent A, Agent B, both agents, or neither agent.
 
 Batch metrics:
 
@@ -100,7 +102,7 @@ Batch metrics:
 .venv\Scripts\python.exe -m minillama.controller.run_experiments
 ```
 
-Batch runs use the configured Agent B model adapter and the `--model-params` sweep now maps to real generation presets. Use `--agent-b-plugin` to switch the Agent B implementation when needed.
+Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for GUI and batch runs.
 
 Useful speech-pipeline batch controls:
 
@@ -116,5 +118,7 @@ Useful speech-pipeline batch controls:
 The evaluation report now exports a staged metric stack aligned with speech-dialog analysis. Audio ingress, VAD, and diarization fields are present but `None` in this text-only setup; ASR, SLU/DST proxies, policy/tool metrics, NLG, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
 
 Speech turns now keep separate generated, outgoing, and incoming text traces. The GUI and CSV metrics report ASR WER, TTS text-change rate, station precision/recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
+
+Network data is displayed in its own GUI card with complete line rows, station rows, headways, current fullness, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
 
 Logging defaults to `off`. Set `MINILLAMA_SESSION_LOG_PROFILE` to `startup`, `runtime`, or `full` to compare overhead.

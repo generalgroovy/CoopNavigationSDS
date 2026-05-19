@@ -277,11 +277,17 @@ class MetricRecord:
     route_reaches_goal: bool
     route_duration_min: int | None
     reference_duration_min: int | None
+    constraint_duration_min: int | None
     route_line_sequence: str
     reference_line_sequence: str
+    constraint_line_sequence: str
     route_line_change_count: int
     reference_line_change_count: int
+    constraint_line_change_count: int | None
     duration_excess_min: int | None
+    constraint_duration_gap_min: int | None
+    constraint_line_change_gap: int | None
+    constraint_fullness_gap: float | None
     travel_min: int
     wait_min: int
     transfer_min: int
@@ -521,6 +527,10 @@ class MetricComputer:
         duration_excess = None
         if result.route_duration_min is not None and reference_duration is not None:
             duration_excess = result.route_duration_min - reference_duration
+        constraint_duration = result.extra.get("constraint_duration_min")
+        constraint_duration_gap = result.extra.get("constraint_duration_gap_min")
+        constraint_line_change_gap = result.extra.get("constraint_line_change_gap")
+        constraint_fullness_gap = result.extra.get("constraint_fullness_gap")
 
         conversation_text = " ".join(text for _, text in result.conversation)
         words = tokenize_words(conversation_text)
@@ -668,8 +678,10 @@ class MetricComputer:
         reference_route_text = route_text_from_steps(reference_steps)
         route_lines = route_line_sequence(result.route_steps)
         reference_lines = route_line_sequence(reference_steps)
+        constraint_lines = result.extra.get("constraint_line_sequence", [])
         route_line_changes = route_line_change_count(result.route_steps)
         reference_line_changes = route_line_change_count(reference_steps)
+        constraint_line_changes = result.extra.get("constraint_line_changes")
         agent_b_messages = [text for speaker, text in result.conversation if speaker == "Agent B"]
         final_agent_b_text = agent_b_messages[-1] if agent_b_messages else ""
 
@@ -945,11 +957,17 @@ class MetricComputer:
             route_reaches_goal=result.route_reaches_goal,
             route_duration_min=result.route_duration_min,
             reference_duration_min=reference_duration,
+            constraint_duration_min=constraint_duration,
             route_line_sequence=" -> ".join(route_lines) if route_lines else "None",
             reference_line_sequence=" -> ".join(reference_lines) if reference_lines else "None",
+            constraint_line_sequence=" -> ".join(constraint_lines) if constraint_lines else "None",
             route_line_change_count=route_line_changes,
             reference_line_change_count=reference_line_changes,
+            constraint_line_change_count=constraint_line_changes,
             duration_excess_min=duration_excess,
+            constraint_duration_gap_min=constraint_duration_gap,
+            constraint_line_change_gap=constraint_line_change_gap,
+            constraint_fullness_gap=constraint_fullness_gap,
             travel_min=breakdown["travel"],
             wait_min=breakdown["wait"],
             transfer_min=breakdown["transfer"],

@@ -89,9 +89,26 @@ GUI_STATION_TIME_TABLE_COLUMNS = [
     ("movement", "Movement", 140, "w", False),
     ("times", "Arrival = departure", 250, "w", True),
 ]
+GUI_NETWORK_LINE_COLUMNS = [
+    ("name", "Line", 130, "w", False),
+    ("kind", "Kind", 74, "w", False),
+    ("headway", "Headway", 72, "center", False),
+    ("fullness", "Full", 54, "center", False),
+    ("stops", "Stops", 54, "center", False),
+    ("route", "Route", 250, "w", True),
+    ("segments", "Segments", 260, "w", True),
+]
+GUI_NETWORK_STATION_COLUMNS = [
+    ("name", "Station", 110, "w", False),
+    ("fullness", "Full", 54, "center", False),
+    ("lines", "Lines", 190, "w", False),
+    ("neighbors", "Neighbors", 300, "w", True),
+    ("coordinates", "Map", 70, "center", False),
+]
 GUI_ROUTE_TABLE_HEIGHT = 3
 GUI_LINE_TABLE_HEIGHT = 5
 GUI_STATION_TABLE_HEIGHT = 3
+GUI_NETWORK_TABLE_HEIGHT = 8
 
 MAP_MIN_WIDTH = 420
 MAP_MIN_HEIGHT = 300

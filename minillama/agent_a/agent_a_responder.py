@@ -27,7 +27,7 @@ class TemplateAgentAResponder:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        return generate_agent_a_template(turn, persona, scenario)
+        return generate_agent_a_template(turn, persona, scenario, conversation)
 
 
 class LLMAgentAResponder:

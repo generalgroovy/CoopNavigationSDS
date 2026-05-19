@@ -18,6 +18,7 @@ from minillama.model.route_planner import (
     route_is_valid,
     route_station_sequence,
 )
+from minillama.model.route_constraints import optimal_constraint_route, route_constraint_gap
 from minillama.agent_b.speech_io import SpeechTransport
 
 
@@ -221,6 +222,7 @@ class DialogManager:
 
         scenario = self.test_case.scenario
         persona = self.test_case.persona
+        constraint_route = optimal_constraint_route(scenario, persona)
         start_wall = time.time()
         route_memory = RouteProposalMemory()
         best_route = []
@@ -242,6 +244,20 @@ class DialogManager:
         event_queue.put(("system", f"Persona: {persona['name']}"))
         event_queue.put(("system", f"Scenario: {scenario['name']}"))
         event_queue.put(("system", f"Speech transport: {self.speech_transport.description}"))
+        if constraint_route:
+            event_queue.put(
+                (
+                    "system",
+                    (
+                        "Constraint baseline: "
+                        f"{' -> '.join(constraint_route.route)} "
+                        f"({constraint_route.duration_min} min, "
+                        f"{constraint_route.line_change_count} changes, "
+                        f"{constraint_route.average_fullness}% full, "
+                        f"{constraint_route.label})"
+                    ),
+                )
+            )
         event_queue.put(("message", conversation[0][0], conversation[0][1]))
         log_conversation_step(
             "Agent A",
@@ -282,9 +298,15 @@ class DialogManager:
             if route_is_valid(parsed_route):
                 duration = route_duration_min(parsed_route, scenario)
                 if duration is not None:
+                    _, candidate_steps = estimate_route_time(
+                        parsed_route,
+                        scenario["start_time_min"],
+                        scenario["transfer_time_min"],
+                    )
                     candidate_reaches_goal = route_reaches_goal(parsed_route, scenario)
                     if route_memory.already_seen(parsed_route):
                         warning_count += 1
+                        gap = route_constraint_gap(candidate_steps, duration, constraint_route)
                         event_queue.put(("warning", "Repeated route proposal ignored; compare a different route."))
                         event_queue.put(
                             (
@@ -296,6 +318,8 @@ class DialogManager:
                                     "decision": "repeat",
                                     "best_duration": best_duration,
                                     "previous_best": best_duration,
+                                    "constraint_duration": constraint_route.duration_min if constraint_route else None,
+                                    **gap,
                                 },
                             )
                         )
@@ -303,11 +327,19 @@ class DialogManager:
 
                     is_new_route = parsed_route != best_route
                     candidate = route_memory.record(turn + 1, parsed_route, duration, best_duration)
+                    gap = route_constraint_gap(candidate_steps, duration, constraint_route)
+                    candidate.update(
+                        {
+                            "constraint_duration": constraint_route.duration_min if constraint_route else None,
+                            "constraint_route": constraint_route.route if constraint_route else [],
+                            **gap,
+                        }
+                    )
                     candidate_rank = (1 if candidate_reaches_goal else 0, -duration)
+                    if best_route and is_new_route:
+                        route_revision_count += 1
 
                     if candidate_rank > best_rank:
-                        if best_route and is_new_route:
-                            route_revision_count += 1
                         best_route = parsed_route
                         best_duration = duration
                         best_turn = turn + 1
@@ -378,6 +410,11 @@ class DialogManager:
         reference_route = route_station_sequence(reference_steps)
         reference_line_sequence = route_line_sequence(reference_steps)
         reference_line_change_count = route_line_change_count(reference_steps)
+        constraint_duration = constraint_route.duration_min if constraint_route else None
+        constraint_line_sequence = constraint_route.line_sequence if constraint_route else []
+        constraint_line_change_count = constraint_route.line_change_count if constraint_route else None
+        constraint_average_fullness = constraint_route.average_fullness if constraint_route else None
+        constraint_gap = route_constraint_gap(displayed_steps, displayed_duration, constraint_route)
         displayed_line_sequence = route_line_sequence(displayed_steps)
         displayed_line_change_count = route_line_change_count(displayed_steps)
 
@@ -400,6 +437,13 @@ class DialogManager:
             f"Reference line sequence: {' -> '.join(reference_line_sequence) if reference_line_sequence else 'None'}\n"
             f"Reference line changes: {reference_line_change_count if reference_line_sequence else 'None'}\n"
             f"Reference duration:    {str(reference_duration) + ' min' if reference_duration is not None else 'None'}\n"
+            f"Constraint target:     {constraint_route.label if constraint_route else 'None'}\n"
+            f"Constraint route:      {' -> '.join(constraint_route.route) if constraint_route else 'None'}\n"
+            f"Constraint line sequence: {' -> '.join(constraint_line_sequence) if constraint_line_sequence else 'None'}\n"
+            f"Constraint line changes: {constraint_line_change_count if constraint_line_change_count is not None else 'None'}\n"
+            f"Constraint duration:   {str(constraint_duration) + ' min' if constraint_duration is not None else 'None'}\n"
+            f"Constraint crowding:   {str(constraint_average_fullness) + '%' if constraint_average_fullness is not None else 'None'}\n"
+            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} min, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('fullness_gap', 'None')} fullness\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
@@ -446,6 +490,15 @@ class DialogManager:
                 "displayed_line_changes": displayed_line_change_count,
                 "reference_line_sequence": reference_line_sequence,
                 "reference_line_changes": reference_line_change_count,
+                "constraint_target": constraint_route.label if constraint_route else None,
+                "constraint_route": constraint_route.route if constraint_route else [],
+                "constraint_duration_min": constraint_duration,
+                "constraint_line_sequence": constraint_line_sequence,
+                "constraint_line_changes": constraint_line_change_count,
+                "constraint_average_fullness": constraint_average_fullness,
+                "constraint_duration_gap_min": constraint_gap.get("duration_gap_min"),
+                "constraint_line_change_gap": constraint_gap.get("line_change_gap"),
+                "constraint_fullness_gap": constraint_gap.get("fullness_gap"),
                 "warning_count": warning_count,
                 "average_route_fullness": average_route_fullness,
                 "speech_turns": speech_turns,

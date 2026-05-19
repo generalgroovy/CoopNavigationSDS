@@ -15,6 +15,7 @@ from minillama.agent_b.config import (
     SPEECH_OUTGOING_ENABLED,
     SPEECH_SCOPE,
 )
+from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR, SESSION_LOG_PROFILE, SESSION_NAME
 from minillama.controller.dialog_manager import DialogManager
@@ -106,7 +107,7 @@ def select_run_config():
     defaults = default_run_config()
     choices = {
         "test_case_keys": list(TEST_CASES),
-        "agent_b_plugins": ["simple", "llm"],
+        "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
         "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
     }
@@ -133,7 +134,8 @@ def main():
     )
     event_queue = MonitoringEventQueue(ui_queue, session_logger)
 
-    if run_config["agent_b_plugin"] == "simple" and not LLM_AGENT_A:
+    agent_b_config = AgentBPluginConfig(run_config["agent_b_plugin"])
+    if not agent_b_config.needs_model and not LLM_AGENT_A:
         model_adapter = None
     else:
         with event_queue.segment("model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):

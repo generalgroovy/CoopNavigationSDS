@@ -71,20 +71,16 @@ PERSONAS = {
 }
 
 AGENT_RULES = (
-    "Speak like a live phone call. "
-    "React to the latest message in 1-3 short sentences. "
-    "Be specific. "
-    "No code, JSON, tables, or bullets. "
-    "Do not answer empty."
+    "Speak like a live phone call in 1-3 short sentences. "
+    "React to the latest message. "
+    "No code, JSON, tables, bullets, or empty replies."
 )
 
 ROUTE_TASK = (
-    "This is an evaluated speech dialog task. "
-    "Build one connected route and do not repeat the same station sequence. "
-    "Revise only for a faster connected alternative. "
-    "Best means riding + waiting + transfer time, with transfer time only when the line changes. "
-    "Reason in terms of the lines to take, the transfers between them, and the order to board them. "
-    "Consider Agent A's preferences plus current station and line crowding. "
+    "Primary goal: a valid connected route from start to destination using listed segments, lines, waits, and transfer times. "
+    "Secondary goal: satisfy preferences such as fullness and fewer changes. "
+    "Best time means riding + waiting + transfer time, with transfer time only when the line changes. "
+    "Compare alternatives only when they are valid and meaningfully affect time or constraints. "
     "All listed segments work both ways. "
-    "Mention stations in travel order when needed, but keep the line sequence and line changes explicit enough for scoring."
+    "Say stations in travel order and keep line changes explicit."
 )

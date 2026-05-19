@@ -1,7 +1,7 @@
 """Agent B configuration and speech simulation constants."""
 import os
 
-AGENT_B_PLUGIN = "llm"
+AGENT_B_PLUGIN = os.environ.get("MINILLAMA_AGENT_B_PLUGIN", "minillama").strip() or "minillama"
 DEFAULT_SPEECH_PATTERN = "clean"
 SPEECH_INCOMING_ENABLED = os.environ.get("MINILLAMA_SPEECH_INCOMING", "1").lower() not in {"0", "false", "off", "no"}
 SPEECH_OUTGOING_ENABLED = os.environ.get("MINILLAMA_SPEECH_OUTGOING", "1").lower() not in {"0", "false", "off", "no"}

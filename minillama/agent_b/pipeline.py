@@ -6,6 +6,7 @@ import re
 from minillama.agent_a.agents import STATION_PATTERN, build_messages, clean_reply, fallback_reply
 from minillama.agent_a.prompting import build_agent_b_phase_instruction, build_agent_b_system
 from minillama.agent_b.config import MAX_REPAIR_ATTEMPTS, REPAIR_SIMILARITY_THRESHOLD
+from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
 
 
 @dataclass
@@ -51,6 +52,7 @@ class VerbalTransformationPipeline:
         self.prompt_builder = AgentBPromptStage()
         self.generator = ModelGenerationStage(model_adapter)
         self.cleaner = VerbalCleanupStage()
+        self.route_interpreter = NaturalRouteInterpreter()
 
     def run_agent_b(self, state: DialogState) -> str:
         """Run agent b method for this module's MVC responsibility.
@@ -68,6 +70,8 @@ class VerbalTransformationPipeline:
             reply = self.cleaner.run(raw_reply)
             if reply and not STATION_PATTERN.search(reply):
                 reply = ""
+            if reply and not self.reply_reaches_goal(reply, state.scenario):
+                reply = ""
             if reply and not self.cleaner.repeats_prior_agent_b(reply, state.conversation):
                 return reply
 
@@ -82,6 +86,14 @@ class VerbalTransformationPipeline:
             return phase_fallback
 
         return reply if reply else fallback_reply("Agent B", state.scenario, route_index=state.turn)
+
+    def reply_reaches_goal(self, reply, scenario):
+        route = self.route_interpreter.interpret_reply(reply, scenario)
+        return (
+            bool(route)
+            and route[0] == scenario["start_station"]
+            and route[-1] == scenario["destination_station"]
+        )
 
 
 class AgentBPromptStage:
@@ -99,7 +111,7 @@ class AgentBPromptStage:
             build_agent_b_system(state.scenario, state.persona)
             + " "
             + build_agent_b_phase_instruction(state.turn, state.scenario["destination_station"])
-            + " The previous draft sounded repetitive. Continue with a fresh, useful route-building reply."
+            + " The previous draft was repetitive or did not give a complete connected route. Give a fresh valid route reply."
         )
         repair_history = list(state.conversation)
         if repeated_reply:

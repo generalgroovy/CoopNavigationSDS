@@ -163,7 +163,8 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
             service = line_direction_key(line, station, nxt) or line
             transfer = transfer_time_min if current_line and current_line != line else 0
             ready = current_time + transfer
-            depart = next_train_departure(ready, line, station, nxt)
+            continuing_same_train = current_line == line and current_service == service
+            depart = current_time if continuing_same_train else next_train_departure(ready, line, station, nxt)
             arrive = depart + travel
             state = (nxt, service)
 
@@ -177,7 +178,7 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
                     "previous_line": current_line,
                     "depart": depart,
                     "arrive": arrive,
-                    "wait": depart - ready,
+                    "wait": 0 if continuing_same_train else depart - ready,
                     "travel": travel,
                     "transfer": transfer,
                 }
@@ -254,20 +255,46 @@ def route_station_sequence(steps):
 
 
 def route_text_from_steps(steps):
-    """Route text from steps function for this module's MVC responsibility.
-
-    Args:
-        steps: Input value used by `route_text_from_steps`; see the function signature and caller context for the expected type.
-
-    Returns:
-        The computed value or side effect documented by the implementation.
-    """
+    """Return a simple spoken route proposal grouped by continuous line rides."""
     if not steps:
         return "No route found."
 
-    return " then ".join(
-        f"take {s['line']} from {s['from']} to {s['to']} at {fmt_time(s['depart'])}, arrive {fmt_time(s['arrive'])}"
-        for s in steps
+    rides = []
+    current = {
+        "line": steps[0]["line"],
+        "from": steps[0]["from"],
+        "to": steps[0]["to"],
+        "depart": steps[0]["depart"],
+        "arrive": steps[0]["arrive"],
+    }
+    for step in steps[1:]:
+        if step["line"] == current["line"]:
+            current["to"] = step["to"]
+            current["arrive"] = step["arrive"]
+            continue
+        rides.append(current)
+        current = {
+            "line": step["line"],
+            "from": step["from"],
+            "to": step["to"],
+            "depart": step["depart"],
+            "arrive": step["arrive"],
+        }
+    rides.append(current)
+
+    parts = []
+    for index, ride in enumerate(rides):
+        prefix = "Take" if index == 0 else "Change there, then take"
+        parts.append(
+            f"{prefix} {ride['line']} from {ride['from']} at {fmt_time(ride['depart'])} to {ride['to']}"
+        )
+
+    station_order = " -> ".join(route_station_sequence(steps))
+    total = steps[-1]["arrive"] - steps[0]["depart"]
+    return (
+        f"{'. '.join(parts)}. "
+        f"Station order: {station_order}. "
+        f"Total time on this proposal is {total} minutes."
     )
 
 
@@ -368,6 +395,7 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
 
     current_time = start_time_min
     current_line = None
+    current_service = None
     steps = []
 
     for a, b in zip(stations, stations[1:]):
@@ -378,7 +406,8 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
             service = line_direction_key(line, a, b) or line
             transfer = transfer_time_min if current_line and current_line != line else 0
             ready = current_time + transfer
-            depart = next_train_departure(ready, line, a, b)
+            continuing_same_train = current_line == line and current_service == service
+            depart = current_time if continuing_same_train else next_train_departure(ready, line, a, b)
             arrive = depart + travel
 
             candidate = {
@@ -389,7 +418,7 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
                 "previous_line": current_line,
                 "depart": depart,
                 "arrive": arrive,
-                "wait": depart - ready,
+                "wait": 0 if continuing_same_train else depart - ready,
                 "travel": travel,
                 "transfer": transfer,
             }
@@ -401,5 +430,6 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
         steps.append(best_step)
         current_time = best_step["arrive"]
         current_line = best_step["line"]
+        current_service = best_step["service"]
 
     return current_time, steps
