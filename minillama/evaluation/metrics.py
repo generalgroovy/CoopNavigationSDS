@@ -208,6 +208,9 @@ METRIC_FAMILY_SPECS = [
             ("runtime_barge_in_false_positive_rate", "Barge FP"),
             ("runtime_barge_in_suppression_latency_sec", "Barge Suppress"),
             ("runtime_response_latency_sec", "Response Latency"),
+            ("runtime_max_turn_latency_sec", "Max Turn"),
+            ("runtime_speech_duration_total_sec", "Speech Total"),
+            ("runtime_condition_runtime_sec", "Batch Runtime"),
             ("runtime_time_to_first_token_sec", "First Token"),
             ("runtime_time_to_first_audio_sec", "First Audio"),
             ("runtime_interruption_recovery_rate", "Recovery"),
@@ -295,6 +298,9 @@ class MetricRecord:
     average_route_fullness: float
     peak_route_fullness: int
     runtime_sec: float
+    condition_runtime_sec: float | None
+    speech_duration_total_sec: float
+    max_turn_latency_sec: float
     message_count: int
     word_count: int
     station_mentions: int
@@ -646,6 +652,8 @@ class MetricComputer:
             sum(turn.get("turn_latency_sec", 0.0) for turn in timing_turns),
             len(timing_turns),
         )
+        speech_duration_total_sec = sum(turn.get("speech_sec", 0.0) for turn in timing_turns)
+        max_turn_latency_sec = max((turn.get("turn_latency_sec", 0.0) for turn in timing_turns), default=0.0)
 
         if result.route_duration_min is None or reference_duration is None:
             duration_score = 0.0
@@ -910,6 +918,9 @@ class MetricComputer:
                 "barge_in_false_positive_rate": barge_in_false_positive_rate,
                 "barge_in_suppression_latency_sec": barge_in_suppression_latency_sec,
                 "response_latency_sec": round(response_latency_sec, 4),
+                "max_turn_latency_sec": round(max_turn_latency_sec, 4),
+                "speech_duration_total_sec": round(speech_duration_total_sec, 4),
+                "condition_runtime_sec": result.extra.get("condition_runtime_sec"),
                 "time_to_first_token_sec": None if time_to_first_token_sec is None else round(time_to_first_token_sec, 4),
                 "time_to_first_audio_sec": None if time_to_first_audio_sec is None else round(time_to_first_audio_sec, 4),
                 "interruption_recovery_rate": None,
@@ -978,6 +989,9 @@ class MetricComputer:
             average_route_fullness=average_route_fullness,
             peak_route_fullness=peak_route_fullness,
             runtime_sec=result.runtime_sec,
+            condition_runtime_sec=result.extra.get("condition_runtime_sec"),
+            speech_duration_total_sec=round(speech_duration_total_sec, 4),
+            max_turn_latency_sec=round(max_turn_latency_sec, 4),
             message_count=message_count,
             word_count=len(words),
             station_mentions=station_mentions,

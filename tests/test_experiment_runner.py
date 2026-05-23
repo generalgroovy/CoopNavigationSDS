@@ -84,8 +84,58 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.speech_pattern_key, "clean")
         self.assertEqual(result.extra["model_param_key"], "temp0.7")
         self.assertEqual(result.extra["iteration"], 0)
+        self.assertIn("condition_runtime_sec", result.extra)
         self.assertEqual(result.extra["model_parameters"]["do_sample"], True)
         self.assertEqual(result.extra["model_parameters"]["temperature"], 0.7)
+
+    @patch("minillama.controller.runner.create_agent_b_plugin")
+    @patch("minillama.controller.runner.DialogManager")
+    @patch("minillama.controller.runner.get_test_case")
+    def test_run_condition_can_write_runtime_batch_logs(
+        self,
+        get_test_case,
+        dialog_manager_cls,
+        create_agent_b_plugin,
+    ):
+        base_case = SimpleNamespace(
+            key="case",
+            name="Case",
+            persona_key="focused_commuter",
+            scenario_key="scenario",
+            scenario={
+                "name": "Scenario",
+                "start_station": "A",
+                "destination_station": "B",
+                "start_time_min": 0,
+                "transfer_time_min": 2,
+            },
+        )
+        base_case.with_persona = lambda persona_key: base_case
+        get_test_case.return_value = base_case
+        create_agent_b_plugin.return_value = SimpleNamespace(name="plugin")
+        runner = ExperimentRunner(
+            FakeModelAdapter(),
+            num_turns=1,
+            agent_b_plugin_key="simple",
+            log_profile="runtime",
+            log_dir=tempfile.mkdtemp(),
+        )
+        runner.metric_computer.compute = MagicMock(return_value="metric")
+        dialog_manager_cls.return_value.run.return_value = SimpleNamespace(extra={})
+
+        condition = ExperimentCondition(
+            condition_id="case__focused_commuter__clean__greedy__0",
+            test_case_key="case",
+            persona_key="focused_commuter",
+            scenario_key="scenario",
+            speech_pattern_key="clean",
+            model_param_key="greedy",
+            iteration=0,
+        )
+
+        runner.run_condition(condition)
+
+        self.assertTrue(list(Path(runner.log_dir).glob("batch-*.jsonl")))
 
     def test_plugin_config_identifies_model_need(self):
         from minillama.agent_b.plugin_registry import AgentBPluginConfig

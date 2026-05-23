@@ -1,6 +1,8 @@
 """Batch experiment controller that executes condition grids and serializes metric records.
 """
 import csv
+import time
+from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from itertools import product
 
@@ -12,9 +14,17 @@ from minillama.agent_b.config import SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_EN
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
-from minillama.controller.config import DEFAULT_MODEL_PARAM_KEY
+from minillama.controller.config import DEFAULT_MODEL_PARAM_KEY, SESSION_LOG_DIR
 from minillama.evaluation.metrics import MetricComputer
+from minillama.controller.session_logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
+
+
+class DropQueue:
+    """Queue adapter for batch logging when no GUI consumes tuple events."""
+
+    def put(self, _event):
+        return None
 
 
 @dataclass(frozen=True)
@@ -41,6 +51,8 @@ class ExperimentRunner:
         speech_incoming_enabled=SPEECH_INCOMING_ENABLED,
         speech_outgoing_enabled=SPEECH_OUTGOING_ENABLED,
         speech_scope=SPEECH_SCOPE,
+        log_profile=LOG_PROFILE_OFF,
+        log_dir=SESSION_LOG_DIR,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -57,6 +69,8 @@ class ExperimentRunner:
         self.speech_incoming_enabled = speech_incoming_enabled
         self.speech_outgoing_enabled = speech_outgoing_enabled
         self.speech_scope = speech_scope
+        self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
+        self.log_dir = log_dir
         self.metric_computer = MetricComputer()
 
     def run_condition(self, condition: ExperimentCondition):
@@ -87,15 +101,43 @@ class ExperimentRunner:
             speech_transport=speech_transport,
         )
 
-        result = manager.run(NullEventQueue())
+        started_perf = time.perf_counter()
+        event_queue = self._event_queue_for(condition)
+        try:
+            segment = event_queue.segment if hasattr(event_queue, "segment") else lambda *_args, **_kwargs: nullcontext()
+            with segment(
+                "batch.condition",
+                condition_id=condition.condition_id,
+                test_case=condition.test_case_key,
+                persona=condition.persona_key,
+                speech_pattern=condition.speech_pattern_key,
+                model_param=condition.model_param_key,
+            ):
+                result = manager.run(event_queue)
+        finally:
+            if hasattr(event_queue, "close"):
+                event_queue.close()
+        condition_runtime_sec = time.perf_counter() - started_perf
         result.condition_id = condition.condition_id
         result.speech_pattern_key = condition.speech_pattern_key
         result.extra["model_param_key"] = condition.model_param_key
         result.extra["iteration"] = condition.iteration
+        result.extra["condition_runtime_sec"] = round(condition_runtime_sec, 6)
         model_parameters = getattr(model_adapter, "model_parameters", None)
         if model_parameters is not None:
             result.extra["model_parameters"] = asdict(model_parameters)
         return result, self.metric_computer.compute(result, test_case.scenario)
+
+    def _event_queue_for(self, condition: ExperimentCondition):
+        """Return a no-op queue by default, or a structured logger for batch audits."""
+        if self.log_profile == LOG_PROFILE_OFF:
+            return NullEventQueue()
+        logger = SessionLogger(
+            f"batch-{condition.condition_id}",
+            self.log_dir,
+            profile=self.log_profile,
+        )
+        return MonitoringEventQueue(DropQueue(), logger)
 
     def _model_adapter_for(self, condition: ExperimentCondition):
         """ model adapter for method for this module's MVC responsibility.

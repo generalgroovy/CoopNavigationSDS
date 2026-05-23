@@ -5,7 +5,7 @@ from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_SCOPE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
-from minillama.controller.config import NUM_TURNS
+from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_csv
 from minillama.model.model_runtime import create_model_adapter
 
@@ -42,6 +42,9 @@ def main():
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
     parser.add_argument("--output", default="automatic_eval_metrics.csv")
+    parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
+    parser.add_argument("--log-dir", default=SESSION_LOG_DIR, help="Directory for optional batch JSONL/session logs.")
+    parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
     args = parser.parse_args()
 
     conditions = build_condition_grid(
@@ -63,8 +66,15 @@ def main():
         speech_incoming_enabled=args.speech_incoming,
         speech_outgoing_enabled=args.speech_outgoing,
         speech_scope=args.speech_scope,
+        log_profile=args.log_profile,
+        log_dir=args.log_dir,
     )
-    _, metrics = runner.run_grid(conditions, collect_results=False)
+    metrics = []
+    for condition in conditions:
+        _, metric = runner.run_condition(condition)
+        metrics.append(metric)
+        if args.progress:
+            print(f"completed {condition.condition_id}", flush=True)
     write_metrics_csv(metrics, args.output)
 
     print(f"wrote {len(metrics)} metric rows to {args.output}")

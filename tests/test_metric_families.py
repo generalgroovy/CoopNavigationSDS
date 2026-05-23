@@ -80,6 +80,7 @@ class MetricFamilyTests(unittest.TestCase):
                         "route_reaches_goal": True,
                     }
                 ],
+                "condition_runtime_sec": 0.25,
             },
         )
 
@@ -109,6 +110,9 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["speech_incoming_enabled_rate"], 1.0)
         self.assertEqual(row["speech_outgoing_enabled_rate"], 1.0)
         self.assertIn("runtime_time_to_first_token_sec", row)
+        self.assertEqual(row["condition_runtime_sec"], 0.25)
+        self.assertEqual(row["runtime_condition_runtime_sec"], 0.25)
+        self.assertEqual(row["speech_duration_total_sec"], 0.05)
         self.assertIn("end_to_end_abandonment_rate", row)
         self.assertEqual(row["end_to_end_task_success"], 1.0)
         self.assertIn("posthoc_safety_refusal_precision", row)

@@ -257,7 +257,7 @@ class SessionLogger:
         if self.profile == LOG_PROFILE_STARTUP:
             return name.startswith("model.load")
         if self.profile == LOG_PROFILE_RUNTIME:
-            return name.startswith("dialog.run")
+            return name.startswith("dialog.run") or name.startswith("batch.condition")
         return False
 
     def _should_log_runtime(self) -> bool:

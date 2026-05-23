@@ -114,6 +114,9 @@ Useful speech-pipeline batch controls:
 - `--speech-outgoing true|false`: include the outgoing TTS/verbalization stage.
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
 - `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for GUI and batch runs.
+- `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.
+- `--log-dir PATH`: destination for optional batch logs.
+- `--progress`: print each completed condition id during long batch runs.
 
 The evaluation report now exports a staged metric stack aligned with speech-dialog analysis. Audio ingress, VAD, and diarization fields are present but `None` in this text-only setup; ASR, SLU/DST proxies, policy/tool metrics, NLG, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
 

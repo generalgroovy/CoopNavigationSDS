@@ -1,6 +1,7 @@
 """Route-planning model for schedules, travel time, transfer handling, route validation, and optimal path search.
 """
 from collections import deque
+from functools import lru_cache
 from heapq import heappush, heappop
 
 from minillama.model.metro_data import (
@@ -140,6 +141,7 @@ def next_train_departure(current_time_min: int, line_name: str, station: str, nx
     return current_time_min + wait
 
 
+@lru_cache(maxsize=1024)
 def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time_min: int):
     """Optimal time route function for this module's MVC responsibility.
 
@@ -193,6 +195,7 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
     return None, []
 
 
+@lru_cache(maxsize=512)
 def candidate_time_routes(
     start: str,
     goal: str,
