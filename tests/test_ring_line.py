@@ -16,9 +16,10 @@ class RingLineTests(unittest.TestCase):
         self.assertIsNotNone(ring_name)
 
         sequences = line_direction_sequences(ring_name)
-        self.assertEqual(len(sequences), 1)
+        self.assertEqual(len(sequences), 2)
         self.assertGreaterEqual(len(sequences[0]), 3)
         self.assertEqual(sequences[0][0], sequences[0][-1])
+        self.assertEqual(sequences[1][0], sequences[1][-1])
 
     def test_same_line_through_station_has_no_intermediate_wait_or_transfer(self):
         estimate = estimate_route_time(["Alpha", "Bravo", "Charlie"], 480, 4)
@@ -35,7 +36,7 @@ class RingLineTests(unittest.TestCase):
         self.assertEqual(proposal.count("Take Ring"), 1)
         self.assertIn("Take Ring from Alpha", proposal)
         self.assertIn("to Charlie", proposal)
-        self.assertIn("Station order: Alpha -> Bravo -> Charlie", proposal)
+        self.assertIn("Boarding: Alpha -> Charlie", proposal)
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):
         scenario = {

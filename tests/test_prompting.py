@@ -9,6 +9,7 @@ from minillama.agent_a.prompting import (
     generate_agent_a_template,
 )
 from minillama.agent_b.pipeline import DialogState, VerbalTransformationPipeline
+from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
 from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
 
 
@@ -48,7 +49,8 @@ class PromptingTests(unittest.TestCase):
     def test_agent_a_template_selects_persona_specific_text(self):
         text = generate_agent_a_template(0, self.persona, self.scenario)
         self.assertIn("Museum", text)
-        self.assertIn("first set of lines", text)
+        self.assertIn("Central", text)
+        self.assertIn("08:00", text)
 
     def test_agent_b_system_prompt_includes_route_context(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
@@ -58,7 +60,7 @@ class PromptingTests(unittest.TestCase):
     def test_agent_b_system_prioritizes_validity_over_constraints(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
         self.assertIn("Validity comes first", prompt)
-        self.assertIn("Constraints are second", prompt)
+        self.assertIn("boarding stations", prompt)
 
     def test_agent_a_reacts_to_missing_route(self):
         text = agent_a_route_reaction(
@@ -77,8 +79,8 @@ class PromptingTests(unittest.TestCase):
             self.real_scenario,
             [("Agent B", "Take Ring from Bravo to Alpha to Golf, then Diagonal-SE-6 to November to Uniform to Birch to Ivy, then Ring to Harbor.")],
         )
-        self.assertIn("gets me there", text)
-        self.assertIn("another valid route", text)
+        self.assertIn("Valid:", text)
+        self.assertIn("one faster valid route", text)
         self.assertIn("faster", text)
 
     def test_agent_a_requests_persona_specific_alternative_constraints(self):
@@ -105,6 +107,21 @@ class PromptingTests(unittest.TestCase):
         self.assertIn("confirm", text.lower())
         self.assertIn("total time", text)
 
+    def test_agent_a_critiques_slower_alternative(self):
+        text = agent_a_route_reaction(
+            2,
+            self.persona,
+            self.real_scenario,
+            [
+                ("Agent B", "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo -> Golf -> Ivy -> Harbor. Total 28 min."),
+                ("Agent A", "Now compare one faster valid route."),
+                ("Agent B", "Take Ring from Bravo to Mike. Change at Mike to East-West-3 to November. Change at November to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo -> Mike -> November -> Ivy -> Harbor. Total 38 min."),
+            ],
+        )
+
+        self.assertIn("slower", text)
+        self.assertIn("earlier 28-minute route", text)
+
     def test_agent_b_pipeline_rejects_partial_route_and_uses_valid_fallback(self):
         class PartialRouteModel:
             name = "partial-route-model"
@@ -117,5 +134,15 @@ class PromptingTests(unittest.TestCase):
         reply = VerbalTransformationPipeline(PartialRouteModel()).run_agent_b(state)
 
         self.assertIn("Harbor", reply)
-        self.assertIn("connected option", reply)
-        self.assertIn("Station order:", reply)
+        self.assertIn("Boarding:", reply)
+        self.assertLessEqual(len(reply.split()), 45)
+
+    def test_interpreter_expands_boarding_route_mentions(self):
+        interpreter = NaturalRouteInterpreter()
+        text = "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 from Golf to Ivy. Boarding: Bravo -> Golf -> Ivy -> Harbor. Total 31 minutes."
+
+        route = interpreter.interpret_reply(text, self.real_scenario)
+
+        self.assertEqual(route[0], self.real_scenario["start_station"])
+        self.assertEqual(route[-1], self.real_scenario["destination_station"])
+        self.assertGreater(len(route), 4)

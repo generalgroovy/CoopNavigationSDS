@@ -1,5 +1,6 @@
 """Route-planning model for schedules, travel time, transfer handling, route validation, and optimal path search.
 """
+from collections import deque
 from heapq import heappush, heappop
 
 from minillama.model.metro_data import (
@@ -50,8 +51,10 @@ def line_direction_sequences(line_name: str):
     """
     stops = LINES[line_name]["stops"]
     if LINES[line_name].get("kind") == "Ring":
+        reversed_stops = list(reversed(stops))
         return [
             stops + [stops[0]],
+            reversed_stops + [reversed_stops[0]],
         ]
 
     return [
@@ -160,7 +163,9 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
             return current_time, path
 
         for nxt, line, travel in ADJACENCY[station]:
-            service = line_direction_key(line, station, nxt) or line
+            service = line_direction_key(line, station, nxt)
+            if service is None:
+                continue
             transfer = transfer_time_min if current_line and current_line != line else 0
             ready = current_time + transfer
             continuing_same_train = current_line == line and current_service == service
@@ -197,14 +202,14 @@ def candidate_time_routes(
     max_extra_stops: int = 4,
     max_paths: int = 4000,
 ):
-    """Return distinct valid route candidates sorted by scheduled duration."""
+    """Return distinct valid route candidates, searching shorter station paths first."""
     max_stops = len(ADJACENCY) + max_extra_stops
-    stack = [(start, [start])]
+    queue = deque([(start, [start])])
     candidates = []
     checked_paths = 0
 
-    while stack and checked_paths < max_paths:
-        station, path = stack.pop()
+    while queue and checked_paths < max_paths:
+        station, path = queue.popleft()
         checked_paths += 1
         if len(path) > max_stops:
             continue
@@ -219,9 +224,9 @@ def candidate_time_routes(
         for nxt, _, _ in ADJACENCY[station]:
             if nxt in path:
                 continue
-            stack.append((nxt, path + [nxt]))
+            queue.append((nxt, path + [nxt]))
 
-    candidates.sort(key=lambda item: (item[0], len(item[1]), item[1]))
+    candidates.sort(key=lambda item: (len(item[1]), item[0], item[1]))
     distinct = []
     seen = set()
     for duration, route, steps in candidates:
@@ -255,9 +260,31 @@ def route_station_sequence(steps):
 
 
 def route_text_from_steps(steps):
-    """Return a simple spoken route proposal grouped by continuous line rides."""
+    """Return a concise spoken route proposal grouped by boarding/change points."""
     if not steps:
         return "No route found."
+
+    rides = route_rides(steps)
+    parts = []
+    for index, ride in enumerate(rides):
+        if index == 0:
+            parts.append(f"Take {ride['line']} from {ride['from']} to {ride['to']}")
+        else:
+            parts.append(f"Change at {ride['from']} to {ride['line']} to {ride['to']}")
+
+    boarding_route = " -> ".join(route_boarding_route(steps))
+    total = steps[-1]["arrive"] - (steps[0]["depart"] - steps[0]["wait"])
+    return (
+        f"{'. '.join(parts)}. "
+        f"Boarding: {boarding_route}. "
+        f"Total {total} min."
+    )
+
+
+def route_rides(steps):
+    """Group adjacent steps that stay on the same line into spoken ride legs."""
+    if not steps:
+        return []
 
     rides = []
     current = {
@@ -281,21 +308,18 @@ def route_text_from_steps(steps):
             "arrive": step["arrive"],
         }
     rides.append(current)
+    return rides
 
-    parts = []
-    for index, ride in enumerate(rides):
-        prefix = "Take" if index == 0 else "Change there, then take"
-        parts.append(
-            f"{prefix} {ride['line']} from {ride['from']} at {fmt_time(ride['depart'])} to {ride['to']}"
-        )
 
-    station_order = " -> ".join(route_station_sequence(steps))
-    total = steps[-1]["arrive"] - steps[0]["depart"]
-    return (
-        f"{'. '.join(parts)}. "
-        f"Station order: {station_order}. "
-        f"Total time on this proposal is {total} minutes."
-    )
+def route_boarding_route(steps):
+    """Return start, transfer boarding points, and destination for compact speech."""
+    rides = route_rides(steps)
+    if not rides:
+        return []
+    stations = [rides[0]["from"]]
+    stations.extend(ride["from"] for ride in rides[1:])
+    stations.append(rides[-1]["to"])
+    return stations
 
 
 def route_duration_breakdown(steps):
@@ -373,7 +397,7 @@ def route_is_valid(stations):
         return False
 
     for a, b in zip(stations, stations[1:]):
-        if not any(nxt == b for nxt, _, _ in ADJACENCY[a]):
+        if not any(nxt == b and line_direction_key(line, a, b) is not None for nxt, line, _ in ADJACENCY[a]):
             return False
 
     return True
@@ -403,7 +427,9 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
         best_step = None
 
         for line, travel in options:
-            service = line_direction_key(line, a, b) or line
+            service = line_direction_key(line, a, b)
+            if service is None:
+                continue
             transfer = transfer_time_min if current_line and current_line != line else 0
             ready = current_time + transfer
             continuing_same_train = current_line == line and current_service == service
@@ -427,6 +453,8 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
             if best_step is None or arrive < best_step["arrive"]:
                 best_step = candidate
 
+        if best_step is None:
+            return None
         steps.append(best_step)
         current_time = best_step["arrive"]
         current_line = best_step["line"]

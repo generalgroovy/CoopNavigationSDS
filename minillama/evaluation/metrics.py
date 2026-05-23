@@ -728,7 +728,10 @@ class MetricComputer:
         asr_entity_wer = safe_ratio(entity_substitutions + entity_deletions + entity_insertions, entity_source_total)
         asr_keyword_recall = safe_ratio(keyword_preserved_total, keyword_source_total)
 
-        final_route_entities = ordered_station_mentions(final_agent_b_text)
+        from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+
+        interpreted_final_route = NaturalRouteInterpreter().interpret_reply(final_agent_b_text, scenario)
+        final_route_entities = interpreted_final_route or ordered_station_mentions(final_agent_b_text)
         reference_entities = list(reference_route)
         entity_overlap = set(final_route_entities) & set(reference_entities)
         slot_precision = safe_ratio(len(entity_overlap), len(set(final_route_entities)))

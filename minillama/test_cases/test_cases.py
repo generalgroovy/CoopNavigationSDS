@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from dataclasses import replace
 
-from minillama.agent_a.personas import get_persona, preference_text
+from minillama.agent_a.personas import get_persona
 from minillama.model.route_planner import fmt_time
 from minillama.test_cases.config import DEFAULT_TEST_CASE, TEST_CASE_SPECS
 from minillama.test_cases.scenarios import get_scenario
@@ -48,8 +48,7 @@ class StandardizedTestCase:
         return (
             f"I'm at {scenario['start_station']} at {fmt_time(scenario['start_time_min'])}, "
             f"and I need to get to {scenario['destination_station']}. "
-            f"{preference_text(self.persona)} "
-            "Can you compare the connected options and help me choose the best one?"
+            "What route should I take?"
         )
 
     def with_persona(self, persona_key: str):

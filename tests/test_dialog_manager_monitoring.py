@@ -68,5 +68,5 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertGreaterEqual(result.extra["route_revisions"], 1)
         self.assertIsNotNone(result.extra["constraint_duration_min"])
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
-        self.assertTrue(any("another valid route" in text for text in agent_a_replies))
+        self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
         self.assertTrue(any("less full" in text or "fewer line changes" in text for text in agent_a_replies))

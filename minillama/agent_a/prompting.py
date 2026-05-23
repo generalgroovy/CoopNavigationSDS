@@ -13,12 +13,11 @@ from minillama.agent_a.prompt_data import compact_prompt_context
 AGENT_A_ROUTE_TEMPLATES = {
     "focused_commuter": [
         (
-            "What's the first set of lines to take to {destination}? "
-            "If there's a faster or less crowded option, compare it."
+            "I'm at {start} at {time}, going to {destination}. "
+            "What route should I take?"
         ),
         (
-            "That may work, but is it really the quickest line sequence? "
-            "Compare it with another connected option and include riding, waiting, transfer time, and crowding."
+            "Can you compare that with a shorter or faster valid route?"
         ),
         (
             "Okay, confirm the best line sequence. "
@@ -118,7 +117,9 @@ def build_agent_a_system(persona, scenario):
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
-        "First make sure the route reaches the destination; then ask about time, changes, or crowding. "
+        "First say start time, start station, and destination. "
+        "Ask only for a valid route first; ask about fullness, transfers, or other secondary constraints only after Agent B gives a valid route. "
+        "Do not ask Agent B to repeat information unless something is missing. "
         f"{compact_prompt_context(scenario)}"
     )
 
@@ -126,13 +127,13 @@ def build_agent_a_system(persona, scenario):
 def build_agent_b_system(scenario, persona=None):
     return (
         "You are Agent B, the transit assistant. "
-        "Be natural and concise. "
-        "Answer the caller's latest concern, then advance the route. "
+        "Be natural, short, and non-repetitive. "
+        "Give route propositions first. React to secondary constraints only after a valid route has been established. "
         "Validity comes first: connected start-to-destination route, correct lines, waits, and transfer time. "
-        "Constraints are second: fullness and number of changes. "
+        "After that, compare shorter or faster paths, fullness, and number of changes. "
         f"{preference_text(persona or {})} "
-        "Use a simple spoken form: take LINE from STATION at TIME to STATION. "
-        "Mention a change only when the line changes; keep station order and total time clear. "
+        "Talk about the route as boarding stations: start station, each station where a new train is boarded, and destination. "
+        "Mention a change only when the line changes; state total time once. "
         f"{AGENT_RULES} "
         f"{compact_prompt_context(scenario)}"
     )
@@ -142,13 +143,13 @@ def build_agent_b_phase_instruction(turn, destination):
     if turn == 0:
         return (
             f"Give one valid candidate route to {destination}. "
-            "Use: take LINE from STATION at TIME to STATION; then mention station order and total time."
+            "Use boarding stations only: start, change points, destination. State total time once."
         )
 
     if turn == 1:
         return (
             "If there is a valid alternative, compare it against the current route. "
-            "Only prefer it if validity and total time or constraints improve."
+            "Prefer shorter station paths first, then total time and constraints."
         )
 
     if turn == 2:
@@ -182,7 +183,13 @@ def generate_agent_a_template(turn, persona, scenario, conversation=None):
     destination = scenario["destination_station"]
     persona_key = persona.get("key", "focused_commuter")
     templates = AGENT_A_ROUTE_TEMPLATES.get(persona_key, AGENT_A_ROUTE_TEMPLATES["focused_commuter"])
-    return templates[turn % len(templates)].format(destination=destination)
+    from minillama.model.route_planner import fmt_time
+
+    return templates[turn % len(templates)].format(
+        destination=destination,
+        start=scenario["start_station"],
+        time=fmt_time(scenario["start_time_min"]),
+    )
 
 
 def agent_a_route_reaction(turn, persona, scenario, conversation):
@@ -233,12 +240,20 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         changes = route_line_change_count(steps)
         fullness_values = [step.get("fullness", 0) for step in steps]
         average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
-        route_summary = f"That gets me there in {duration} minutes with {changes} line change(s)"
+        route_summary = f"Valid: {duration} minutes, {changes} change(s)"
         if average_fullness:
-            route_summary += f" and about {average_fullness}% fullness"
+            route_summary += f", about {average_fullness}% full"
     else:
         steps = []
+        duration = None
         route_summary = "That sounds connected"
+
+    prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
+    if duration is not None and prior_best_duration is not None and duration > prior_best_duration:
+        return (
+            f"That is slower than the earlier {prior_best_duration}-minute route. "
+            "Keep the better route unless you find a faster valid one."
+        )
 
     if turn >= 2:
         station_order = " -> ".join(route_station_sequence(steps)) if steps else " -> ".join(route)
@@ -250,7 +265,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
     request = agent_a_alternative_request(persona)
     return (
         f"{route_summary}. "
-        f"Before we settle, can you compare another valid route that is {request}?"
+        f"Now compare one {request} valid route."
     )
 
 
@@ -279,3 +294,27 @@ def agent_a_alternative_request(persona):
     if len(constraints) == 1:
         return constraints[0]
     return ", ".join(constraints[:-1]) + f", or {constraints[-1]}"
+
+
+def best_prior_route_duration(conversation, scenario):
+    """Return the best earlier Agent B route duration, if any."""
+    from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+    from minillama.model.route_planner import estimate_route_time
+
+    interpreter = NaturalRouteInterpreter()
+    durations = []
+    for speaker, text in conversation:
+        if speaker != "Agent B":
+            continue
+        route = interpreter.interpret_reply(text, scenario)
+        if not route:
+            continue
+        estimate = estimate_route_time(
+            route,
+            scenario["start_time_min"],
+            scenario["transfer_time_min"],
+        )
+        if estimate:
+            arrival, _ = estimate
+            durations.append(arrival - scenario["start_time_min"])
+    return min(durations) if durations else None

@@ -29,6 +29,10 @@ class SpeechPipelineConfig:
     outgoing_enabled: bool = SPEECH_OUTGOING_ENABLED
     scope: str = SPEECH_SCOPE
     pattern_key: str = DEFAULT_SPEECH_PATTERN
+    agent_a_words_per_minute: int = 165
+    agent_b_words_per_minute: int = 175
+    min_utterance_sec: float = 0.8
+    max_utterance_sec: float = 8.0
 
     def applies_to(self, speaker: str) -> bool:
         if self.scope in {"both", "all", "*"}:
@@ -62,6 +66,7 @@ class SpeechPipelineTrace:
     tts_engine: str
     asr_engine: str
     pattern_key: str
+    simulated_duration_sec: float
 
     @property
     def signal(self):
@@ -208,6 +213,7 @@ class SpeechTransport:
             if incoming_enabled
             else signal.text
         )
+        simulated_duration_sec = self.estimate_duration_sec(speaker, signal.text)
         return SpeechPipelineTrace(
             speaker=speaker,
             generated_text=text,
@@ -218,7 +224,19 @@ class SpeechTransport:
             tts_engine=self.tts_engine.name if outgoing_enabled else "disabled",
             asr_engine=self.asr_engine.name if incoming_enabled else "disabled",
             pattern_key=self.config.pattern_key,
+            simulated_duration_sec=simulated_duration_sec,
         )
+
+    def estimate_duration_sec(self, speaker: str, text: str) -> float:
+        """Estimate natural speech duration from utterance length and speaker rate."""
+        words = re.findall(r"[A-Za-z0-9]+", text)
+        rate = (
+            self.config.agent_b_words_per_minute
+            if speaker.lower().replace(" ", "_") == "agent_b"
+            else self.config.agent_a_words_per_minute
+        )
+        seconds = len(words) * 60 / max(rate, 1)
+        return round(min(max(seconds, self.config.min_utterance_sec), self.config.max_utterance_sec), 3)
 
 
 class PatternedSpeechToText:

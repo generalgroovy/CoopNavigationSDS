@@ -4,7 +4,8 @@ import re
 
 from minillama.agent_a.agents import STATION_LOOKUP, STATION_PATTERN
 from minillama.evaluation.config import ROUTE_INTERPRETER_SCORING
-from minillama.model.route_planner import estimate_route_time, route_is_valid
+from minillama.model.metro_data import ADJACENCY, LINES
+from minillama.model.route_planner import estimate_route_time, line_direction_sequences, route_is_valid, segment_travel
 
 
 NATURAL_ROUTE_MARKERS = (
@@ -52,6 +53,34 @@ class NaturalRouteInterpreter:
             The computed value or side effect documented by the implementation.
         """
         candidates = []
+        line_route = self._route_from_named_line_legs(text)
+        if line_route and route_is_valid(line_route):
+            if line_route[0] == scenario["start_station"] and line_route[-1] == scenario["destination_station"]:
+                return line_route
+            lower = text.lower()
+            marker_bonus = (
+                ROUTE_INTERPRETER_SCORING["marker_bonus"]
+                if any(marker in lower for marker in NATURAL_ROUTE_MARKERS)
+                else 0
+            )
+            estimate = estimate_route_time(
+                line_route,
+                scenario["start_time_min"],
+                scenario["transfer_time_min"],
+            )
+            arrival = estimate[0] if estimate else 10**9
+            candidates.append(
+                {
+                    "route": line_route,
+                    "score": (
+                        marker_bonus
+                        + len(line_route) * ROUTE_INTERPRETER_SCORING["route_length_weight"]
+                        + (ROUTE_INTERPRETER_SCORING["starts_correctly_bonus"] if line_route[0] == scenario["start_station"] else 0)
+                        + (ROUTE_INTERPRETER_SCORING["reaches_goal_bonus"] if line_route[-1] == scenario["destination_station"] else 0)
+                        - arrival / ROUTE_INTERPRETER_SCORING["arrival_penalty_divisor"]
+                    ),
+                }
+            )
 
         fragments = self._candidate_fragments(text)
         for fragment_index, fragment in enumerate(fragments):
@@ -126,6 +155,7 @@ class NaturalRouteInterpreter:
         for start in range(len(mentions)):
             for end in range(start + 2, len(mentions) + 1):
                 route = mentions[start:end]
+                route = self._expand_spoken_route(route)
                 if not route_is_valid(route):
                     continue
 
@@ -150,3 +180,100 @@ class NaturalRouteInterpreter:
                 candidates.append({"route": route, "score": score})
 
         return candidates
+
+    def _route_from_named_line_legs(self, text):
+        """Parse compact spoken line legs such as 'Take Ring from A to B'."""
+        legs = []
+        station_group = r"\b(?:" + "|".join(re.escape(station) for station in STATION_LOOKUP.values()) + r")\b"
+        for line_name in sorted(LINES, key=len, reverse=True):
+            pattern = re.compile(
+                rf"\b{re.escape(line_name)}\b\s+(?:from\s+)?({station_group})\s+to\s+({station_group})",
+                flags=re.IGNORECASE,
+            )
+            for match in pattern.finditer(text):
+                origin = STATION_LOOKUP[match.group(1).lower()]
+                target = STATION_LOOKUP[match.group(2).lower()]
+                segment = self._line_segment_path(line_name, origin, target)
+                if segment:
+                    legs.append((match.start(), segment))
+
+        if not legs:
+            return []
+
+        route = []
+        for _, segment in sorted(legs, key=lambda item: item[0]):
+            if not route:
+                route.extend(segment)
+            elif route[-1] == segment[0]:
+                route.extend(segment[1:])
+            else:
+                bridge = self._shortest_station_path(route[-1], segment[0])
+                if not bridge:
+                    return []
+                route.extend(bridge[1:])
+                route.extend(segment[1:])
+        return route
+
+    @staticmethod
+    def _line_segment_path(line_name, origin, target):
+        """Return the station path between two stops on the named line."""
+        options = []
+        for sequence in line_direction_sequences(line_name):
+            if sequence and sequence[0] == sequence[-1]:
+                base = sequence[:-1]
+                if origin in base and target in base:
+                    start_index = base.index(origin)
+                    path = [origin]
+                    for offset in range(1, len(base) + 1):
+                        station = base[(start_index + offset) % len(base)]
+                        path.append(station)
+                        if station == target:
+                            travel = sum(segment_travel(a, b) for a, b in zip(path, path[1:]))
+                            options.append((travel, len(path), path))
+                            break
+                continue
+            for start_index, station in enumerate(sequence):
+                if station != origin:
+                    continue
+                for end_index in range(start_index + 1, len(sequence)):
+                    if sequence[end_index] == target:
+                        path = sequence[start_index:end_index + 1]
+                        travel = sum(segment_travel(a, b) for a, b in zip(path, path[1:]))
+                        options.append((travel, len(path), path))
+        if not options:
+            return []
+        return min(options, key=lambda item: (item[0], item[1]))[2]
+
+    def _expand_spoken_route(self, mentions):
+        """Expand compact boarding/change mentions into adjacent station paths."""
+        if route_is_valid(mentions):
+            return mentions
+        if len(mentions) < 2:
+            return mentions
+
+        expanded = [mentions[0]]
+        for origin, target in zip(mentions, mentions[1:]):
+            segment = self._shortest_station_path(origin, target)
+            if not segment:
+                return mentions
+            expanded.extend(segment[1:])
+        return expanded
+
+    @staticmethod
+    def _shortest_station_path(origin, target):
+        """Find the shortest station-count path between two named stops."""
+        if origin == target:
+            return [origin]
+
+        queue = [(origin, [origin])]
+        seen = {origin}
+        for station, path in queue:
+            for nxt, _, _ in ADJACENCY[station]:
+                if nxt in seen:
+                    continue
+                next_path = path + [nxt]
+                if nxt == target:
+                    return next_path
+                seen.add(nxt)
+                queue.append((nxt, next_path))
+        return []

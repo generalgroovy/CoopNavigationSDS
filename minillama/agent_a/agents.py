@@ -11,8 +11,8 @@ from minillama.model.metro_data import STATION_POS
 from minillama.model.model_adapters import ChatMessage, messages_to_prompt
 from minillama.model.route_planner import (
     candidate_time_routes,
-    fmt_time,
     optimal_time_route,
+    route_line_change_count,
     route_text_from_steps,
 )
 
@@ -126,7 +126,6 @@ def clean_reply(text):
 def fallback_reply(active_agent_name, scenario, route_index=0):
     start = scenario["start_station"]
     destination = scenario["destination_station"]
-    transfer = scenario["transfer_time_min"]
 
     if active_agent_name == "Agent B":
         alternatives = candidate_time_routes(
@@ -137,9 +136,8 @@ def fallback_reply(active_agent_name, scenario, route_index=0):
             limit=3,
         )
         if alternatives:
-            duration_min, _, steps = alternatives[route_index % len(alternatives)]
+            _, _, steps = alternatives[route_index % len(alternatives)]
             snippet = route_text_from_steps(steps)
-            duration = f"{duration_min} minutes"
         else:
             arrival, steps = optimal_time_route(
                 start,
@@ -148,13 +146,16 @@ def fallback_reply(active_agent_name, scenario, route_index=0):
                 scenario["transfer_time_min"],
             )
             snippet = route_text_from_steps(steps) if steps else f"take a line from {start} to {destination}"
-            duration = f"{arrival - scenario['start_time_min']} minutes" if arrival is not None else "an unknown duration"
+        if steps:
+            changes = route_line_change_count(steps)
+            return (
+                f"{snippet} {changes} change(s)."
+            )
         return (
             f"One connected option: {snippet} "
-            f"That includes waiting and {transfer} minute(s) only when changing lines, so it is {duration} overall. "
-            "I can compare that with another connected option if you want the tradeoff."
+            f"Transfer time applies only when changing lines."
         )
 
     return (
-        "Could you compare the options in terms of lines to take, include crowding, and keep the stronger one once riding, waiting, and transfer time are all counted?"
+        "Valid route. Now compare one shorter or faster option; mention transfers or fullness only if they change the choice."
     )

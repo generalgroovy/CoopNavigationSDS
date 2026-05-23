@@ -21,6 +21,8 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertEqual(trace.incoming_transcript, trace.generated_text)
         self.assertFalse(trace.outgoing_enabled)
         self.assertFalse(trace.incoming_enabled)
+        self.assertGreaterEqual(trace.simulated_duration_sec, 0.8)
+        self.assertLessEqual(trace.simulated_duration_sec, 8.0)
         self.assertIn("text-only:hesitant:none", transport.description)
 
     def test_speech_scope_applies_only_to_selected_agent(self):
@@ -49,6 +51,7 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertEqual(agent_b_trace.incoming_transcript, agent_b_trace.outgoing_text)
         self.assertTrue(agent_b_trace.outgoing_enabled)
         self.assertTrue(agent_b_trace.incoming_enabled)
+        self.assertGreater(agent_b_trace.simulated_duration_sec, 1.0)
 
         self.assertEqual(agent_a_trace.outgoing_text, agent_a_trace.generated_text)
         self.assertEqual(agent_a_trace.incoming_transcript, agent_a_trace.generated_text)

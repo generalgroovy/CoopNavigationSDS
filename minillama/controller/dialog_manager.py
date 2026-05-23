@@ -168,6 +168,7 @@ class DialogManager:
                 "source_text": trace.outgoing_text,
                 "transcript": trace.incoming_transcript,
                 "latency_sec": latency_sec,
+                "simulated_duration_sec": trace.simulated_duration_sec,
                 "outgoing_enabled": trace.outgoing_enabled,
                 "incoming_enabled": trace.incoming_enabled,
                 "tts_engine": trace.tts_engine,
@@ -236,7 +237,8 @@ class DialogManager:
             self.test_case.opening_utterance(),
         )
         opening_transcript = opening_trace.incoming_transcript
-        emit_speech_telemetry(opening_trace, time.time() - speech_started_at)
+        opening_speech_sec = max(time.time() - speech_started_at, opening_trace.simulated_duration_sec)
+        emit_speech_telemetry(opening_trace, opening_speech_sec)
         conversation = [("Agent A", opening_transcript)]
         ingest_conversation_text(opening_transcript)
 
@@ -264,7 +266,7 @@ class DialogManager:
             conversation[0][1],
             len(conversation),
             0.0,
-            time.time() - speech_started_at,
+            opening_speech_sec,
         )
 
         for turn in range(self.num_turns):
@@ -275,7 +277,7 @@ class DialogManager:
             speech_started_at = time.time()
             reply_trace = self.speech_transport.transmit_trace("Agent B", reply_b)
             reply_transcript = reply_trace.incoming_transcript
-            speech_sec = time.time() - speech_started_at
+            speech_sec = max(time.time() - speech_started_at, reply_trace.simulated_duration_sec)
             emit_speech_telemetry(reply_trace, speech_sec)
             emit_timing_telemetry("Agent B", generation_sec, speech_sec)
             conversation.append(("Agent B", reply_transcript))
@@ -359,7 +361,7 @@ class DialogManager:
                 speech_started_at = time.time()
                 reply_trace = self.speech_transport.transmit_trace("Agent A", reply_a)
                 reply_transcript = reply_trace.incoming_transcript
-                speech_sec = time.time() - speech_started_at
+                speech_sec = max(time.time() - speech_started_at, reply_trace.simulated_duration_sec)
                 emit_speech_telemetry(reply_trace, speech_sec)
                 emit_timing_telemetry("Agent A", generation_sec, speech_sec)
                 conversation.append(("Agent A", reply_transcript))

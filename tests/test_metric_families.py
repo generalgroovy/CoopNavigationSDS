@@ -33,7 +33,7 @@ class MetricFamilyTests(unittest.TestCase):
             speech_pattern_key="clean",
             model_name="fake-model",
             conversation=[
-                ("Agent A", "Can you help me figure out which lines to take?"),
+                ("Agent A", f"I'm at {scenario['start_station']} at 08:07, going to {scenario['destination_station']}. What route should I take?"),
                 ("Agent B", route_text),
             ],
             route=reference_route,
