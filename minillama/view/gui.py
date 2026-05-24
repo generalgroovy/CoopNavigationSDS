@@ -1,5 +1,4 @@
-"""View layer for the interactive experiment. It renders the dialog transcript, live metrics, route tables, station/line data, and transit graph.
-"""
+"""View layer for the interactive experiment conversation transcript."""
 import queue
 import re
 import tkinter as tk
@@ -153,6 +152,7 @@ class StartupConfigDialog:
             "speech_scope": tk.StringVar(value=defaults["speech_scope"]),
             "speech_incoming_enabled": tk.BooleanVar(value=defaults["speech_incoming_enabled"]),
             "speech_outgoing_enabled": tk.BooleanVar(value=defaults["speech_outgoing_enabled"]),
+            "gui_enabled": tk.BooleanVar(value=defaults.get("gui_enabled", True)),
         }
         self.build()
         self.root.protocol("WM_DELETE_WINDOW", self.cancel)
@@ -224,7 +224,19 @@ class StartupConfigDialog:
             activeforeground=GUI_COLORS["text"],
         ).grid(row=toggle_row, column=1, sticky="w", padx=(0, 10), pady=(10, 0))
 
-        button_row = toggle_row + 1
+        gui_row = toggle_row + 1
+        tk.Checkbutton(
+            frame,
+            text="Conversation GUI",
+            variable=self.vars["gui_enabled"],
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            selectcolor=GUI_COLORS["tab_bg"],
+            activebackground=GUI_COLORS["panel_bg"],
+            activeforeground=GUI_COLORS["text"],
+        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
+
+        button_row = gui_row + 1
         buttons = tk.Frame(frame, bg=GUI_COLORS["panel_bg"])
         buttons.grid(row=button_row, column=0, columnspan=2, sticky="e", padx=10, pady=12)
         tk.Button(
@@ -298,9 +310,9 @@ def make_scrollable_frame(parent, bg, padx=0, pady=0, sticky="nsew"):
 
 
 class DialogWindow:
-    """GUI view for one live dialog experiment. It receives controller events and renders transcript, metrics, tables, and graph state.
-    """
-    def __init__(self, event_queue, scenario):
+    """GUI view for one live dialog experiment conversation."""
+
+    def __init__(self, event_queue, scenario, minimal=True):
         """  init   method for this module's MVC responsibility.
 
         Args:
@@ -312,6 +324,7 @@ class DialogWindow:
         """
         self.event_queue = event_queue
         self.scenario = scenario
+        self.minimal = minimal
         self.current_route = []
         self.snapshot_values = {}
         self.summary_values = {}
@@ -387,18 +400,20 @@ class DialogWindow:
         }
 
         self.root = tk.Tk()
-        self.root.title("Automatic Evaluation of Speech Dialog Systems")
-        self.root.geometry(f"{GUI_WIDTH}x{GUI_HEIGHT}")
-        self.root.minsize(GUI_MIN_WIDTH, GUI_MIN_HEIGHT)
+        self.root.title("MiniLlama Conversation")
+        self.root.geometry("960x720" if self.minimal else f"{GUI_WIDTH}x{GUI_HEIGHT}")
+        self.root.minsize(620, 420)
         self.root.configure(bg=GUI_COLORS["app_bg"])
-        self.maximize_startup_window()
+        if not self.minimal:
+            self.maximize_startup_window()
 
         self.configure_style()
         self.build_layout()
         self.update_live_dialog_metrics()
         self.draw_network()
 
-        self.canvas.bind("<Configure>", lambda _: self.draw_network())
+        if hasattr(self, "canvas"):
+            self.canvas.bind("<Configure>", lambda _: self.draw_network())
         self.root.after(GUI_REFRESH_MS, self.process_events)
 
     def maximize_startup_window(self):
@@ -449,11 +464,15 @@ class DialogWindow:
         style.map("Data.Treeview", background=[("selected", GUI_COLORS["table_selected"])])
 
     def build_layout(self):
-        """Build the tabbed workspace layout."""
+        """Build the conversation-only workspace layout."""
         self.main = tk.Frame(self.root, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
         self.main.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
         self.main.grid_columnconfigure(0, weight=1)
         self.main.grid_rowconfigure(0, weight=1)
+
+        if self.minimal:
+            self.build_plain_conversation(self.main)
+            return
 
         self.workspace_tabs = self.make_tabs(self.main, height=GUI_HEIGHT - (GUI_MAIN_PAD * 2))
         self.workspace_tabs.add("Metric Data")
@@ -505,6 +524,31 @@ class DialogWindow:
         self.textbox.tag_config("Agent B body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("system", foreground=GUI_COLORS["subtle_text"])
         self.textbox.tag_config("warning", foreground=GUI_COLORS["warning"])
+
+    def build_plain_conversation(self, parent):
+        """Build the minimal conversation-only transcript surface."""
+        parent.grid_columnconfigure(0, weight=1)
+        parent.grid_columnconfigure(1, weight=0)
+        parent.grid_rowconfigure(0, weight=1)
+        self.textbox = tk.Text(
+            parent,
+            wrap=tk.WORD,
+            font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE),
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=GUI_COLORS["table_border"],
+            bg=GUI_COLORS["tab_bg"],
+            fg=GUI_COLORS["text"],
+            insertbackground=GUI_COLORS["text"],
+        )
+        transcript_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.textbox.yview)
+        self.textbox.configure(yscrollcommand=transcript_scrollbar.set)
+        self.textbox.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
+        transcript_scrollbar.grid(row=0, column=1, sticky="ns", pady=6)
+        self.textbox.tag_config("Agent A", foreground=GUI_COLORS["agent_a"], spacing1=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], spacing1=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent A body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent B body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
 
     def build_route_candidates_card(self, parent, row=0):
         """Build the route comparison card."""
@@ -2154,7 +2198,6 @@ class DialogWindow:
                 elif kind == "done":
                     self.live_stats["finished"] = True
                     self.update_live_dialog_metrics()
-                    self.add_system("Finished")
 
         except queue.Empty:
             pass
@@ -2187,7 +2230,7 @@ class DialogWindow:
             The computed value or side effect documented by the implementation.
         """
         key, value = self.parse_system_message(message)
-        if key:
+        if key and not self.minimal:
             self.set_summary(key, value)
 
     def add_warning(self, message):
@@ -2314,6 +2357,8 @@ class DialogWindow:
         Returns:
             The computed value or side effect documented by the implementation.
         """
+        if not self.metric_values:
+            return
         parsed = self.parse_metrics(metrics)
         mapping = {
             "Displayed route": "route",

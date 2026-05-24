@@ -1,6 +1,5 @@
 """Batch experiment controller that executes condition grids and serializes metric records.
 """
-import csv
 import time
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass
@@ -16,6 +15,7 @@ from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
 from minillama.controller.config import DEFAULT_MODEL_PARAM_KEY, SESSION_LOG_DIR
 from minillama.evaluation.metrics import MetricComputer
+from minillama.evaluation.research_artifacts import write_metrics_csv, write_metrics_file
 from minillama.controller.session_logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 
@@ -225,28 +225,3 @@ def build_condition_grid(
             model_param_key=model_param_key,
             iteration=iteration,
         )
-
-
-def write_metrics_csv(metrics, path):
-    """Write metrics csv function for this module's MVC responsibility.
-    
-    Args:
-        metrics: Input value used by `write_metrics_csv`; see the function signature and caller context for the expected type.
-        path: Input value used by `write_metrics_csv`; see the function signature and caller context for the expected type.
-    
-    Returns:
-        The computed value or side effect documented by the implementation.
-    """
-    iterator = iter(metrics)
-    try:
-        first_metric = next(iterator)
-    except StopIteration:
-        return
-
-    first_row = first_metric.as_dict()
-    with open(path, "w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(first_row))
-        writer.writeheader()
-        writer.writerow(first_row)
-        for metric in iterator:
-            writer.writerow(metric.as_dict())

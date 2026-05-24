@@ -5,9 +5,11 @@ from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_SCOPE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
-from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR, SESSION_LOG_PROFILE
-from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_csv
-from minillama.model.model_runtime import create_model_adapter
+from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
+from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
+from minillama.evaluation.research_artifacts import write_metric_phase_logs, write_network_research_artifacts
+from minillama.test_cases.config import DEFAULT_TEST_CASE
+from minillama.test_cases.test_cases import get_test_case
 
 
 def parse_csv_arg(value):
@@ -43,14 +45,18 @@ def main():
     parser.add_argument("--model-params", default="greedy")
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
-    parser.add_argument("--output", default="automatic_eval_metrics.csv")
+    parser.add_argument("--output", default="automatic_eval_metrics.xlsx")
+    parser.add_argument("--metrics-log-dir", default=None, help="Directory for per-phase metric JSONL files.")
+    parser.add_argument("--research-log-dir", default=RESEARCH_LOG_DIR, help="Directory for network/model research logs.")
+    parser.add_argument("--network-picture-dir", default=NETWORK_PICTURE_DIR, help="Directory for generated network graph SVG.")
     parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
     parser.add_argument("--log-dir", default=SESSION_LOG_DIR, help="Directory for optional batch JSONL/session logs.")
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
     args = parser.parse_args()
 
+    test_case_keys = parse_csv_arg(args.test_cases)
     conditions = build_condition_grid(
-        test_case_keys=parse_csv_arg(args.test_cases),
+        test_case_keys=test_case_keys,
         persona_keys=parse_csv_arg(args.personas),
         speech_pattern_keys=parse_csv_arg(args.speech_patterns),
         model_param_keys=parse_csv_arg(args.model_params),
@@ -58,9 +64,12 @@ def main():
     )
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
-    model_adapter = None if not agent_b_config.needs_model else (
-        create_model_adapter(args.model_provider) if args.model_provider else create_model_adapter()
-    )
+    if agent_b_config.needs_model:
+        from minillama.model.model_runtime import create_model_adapter
+
+        model_adapter = create_model_adapter(args.model_provider) if args.model_provider else create_model_adapter()
+    else:
+        model_adapter = None
     runner = ExperimentRunner(
         model_adapter,
         args.num_turns,
@@ -79,9 +88,22 @@ def main():
         metrics.append(metric)
         if args.progress:
             print(f"completed {condition.condition_id}", flush=True)
-    write_metrics_csv(metrics, args.output)
+    write_metrics_file(metrics, args.output)
+
+    first_case_key = (test_case_keys or [DEFAULT_TEST_CASE])[0]
+    first_case = get_test_case(first_case_key)
+    artifacts = write_network_research_artifacts(
+        first_case.scenario["start_time_min"],
+        args.research_log_dir,
+        picture_dir=args.network_picture_dir,
+    )
+    phase_log_dir = args.metrics_log_dir or f"{args.research_log_dir}/metrics_by_phase"
+    write_metric_phase_logs(metrics, phase_log_dir)
 
     print(f"wrote {len(metrics)} metric rows to {args.output}")
+    print(f"wrote metric phase logs to {phase_log_dir}")
+    print(f"wrote network data to {artifacts['network_json']}")
+    print(f"wrote network graph to {artifacts['network_graph']}")
 
 
 if __name__ == "__main__":

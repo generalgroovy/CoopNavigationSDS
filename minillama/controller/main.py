@@ -19,11 +19,20 @@ from minillama.agent_b.config import (
 )
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
-from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR, SESSION_LOG_PROFILE, SESSION_NAME
+from minillama.controller.config import (
+    GUI_ENABLED,
+    GUI_MODE,
+    NETWORK_PICTURE_DIR,
+    NUM_TURNS,
+    RESEARCH_LOG_DIR,
+    SESSION_LOG_DIR,
+    SESSION_LOG_PROFILE,
+    SESSION_NAME,
+)
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
+from minillama.evaluation.research_artifacts import write_network_research_artifacts
 from minillama.model.config import MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
-from minillama.model.model_runtime import create_model_adapter
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 from minillama.view.gui import DialogWindow, StartupConfigDialog
@@ -105,12 +114,15 @@ def default_run_config():
         "speech_incoming_enabled": SPEECH_INCOMING_ENABLED,
         "speech_outgoing_enabled": SPEECH_OUTGOING_ENABLED,
         "speech_scope": SPEECH_SCOPE,
+        "gui_enabled": GUI_ENABLED,
     }
 
 
 def select_run_config():
     """Show the startup configuration form, falling back to defaults when unavailable."""
     defaults = default_run_config()
+    if not GUI_ENABLED:
+        return defaults
     choices = {
         "test_case_keys": list(TEST_CASES),
         "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
@@ -133,6 +145,11 @@ def main():
         return
 
     scenario = get_test_case(run_config["test_case_key"]).scenario
+    write_network_research_artifacts(
+        scenario["start_time_min"],
+        RESEARCH_LOG_DIR,
+        picture_dir=NETWORK_PICTURE_DIR,
+    )
     ui_queue = queue.Queue()
     session_logger = None if SESSION_LOG_PROFILE == "off" else SessionLogger(
         SESSION_NAME,
@@ -145,18 +162,23 @@ def main():
     if not agent_b_config.needs_model and not LLM_AGENT_A:
         model_adapter = None
     else:
+        from minillama.model.model_runtime import create_model_adapter
+
         with event_queue.segment("model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):
             model_adapter = create_model_adapter()
 
-    worker = threading.Thread(
-        target=conversation_worker,
-        args=(event_queue, model_adapter, run_config),
-        daemon=True,
-    )
-    worker.start()
+    if run_config.get("gui_enabled", True):
+        worker = threading.Thread(
+            target=conversation_worker,
+            args=(event_queue, model_adapter, run_config),
+            daemon=True,
+        )
+        worker.start()
 
-    dialog = DialogWindow(ui_queue, scenario)
-    dialog.run()
+        dialog = DialogWindow(ui_queue, scenario, minimal=GUI_MODE == "conversation")
+        dialog.run()
+    else:
+        conversation_worker(event_queue, model_adapter, run_config)
 
 
 if __name__ == "__main__":
