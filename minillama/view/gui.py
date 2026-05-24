@@ -331,6 +331,8 @@ class DialogWindow:
         self.metric_values = {}
         self.live_metric_values = {}
         self.stage_metric_values = {}
+        self.metric_windows = {}
+        self.latest_metrics_text = ""
         self.section_widgets = {}
         self.section_visibility = {}
         self.section_toggle_buttons = {}
@@ -408,6 +410,8 @@ class DialogWindow:
             self.maximize_startup_window()
 
         self.configure_style()
+        if self.minimal:
+            self.build_minimal_metric_menu()
         self.build_layout()
         self.update_live_dialog_metrics()
         self.draw_network()
@@ -518,8 +522,8 @@ class DialogWindow:
         self.textbox.configure(yscrollcommand=transcript_scrollbar.set)
         self.textbox.grid(row=0, column=0, sticky="nsew")
         transcript_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.textbox.tag_config("Agent A", foreground=GUI_COLORS["agent_a"], spacing1=TRANSCRIPT_SPACING)
-        self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], spacing1=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent A", foreground=GUI_COLORS["agent_a"], font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing1=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing1=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent A body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent B body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("system", foreground=GUI_COLORS["subtle_text"])
@@ -545,10 +549,79 @@ class DialogWindow:
         self.textbox.configure(yscrollcommand=transcript_scrollbar.set)
         self.textbox.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
         transcript_scrollbar.grid(row=0, column=1, sticky="ns", pady=6)
-        self.textbox.tag_config("Agent A", foreground=GUI_COLORS["agent_a"], spacing1=TRANSCRIPT_SPACING)
-        self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], spacing1=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent A", foreground=GUI_COLORS["agent_a"], font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing1=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing1=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent A body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent B body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
+
+    def build_minimal_metric_menu(self):
+        """Create lazy metric windows ordered by the dialog-system pipeline."""
+        menubar = tk.Menu(self.root)
+        metric_menu = tk.Menu(menubar, tearoff=False)
+        metric_menu.add_command(
+            label="Conversation Metrics",
+            command=lambda: self.toggle_metric_window("conversation_metrics", "Conversation Metrics", self.build_conversation_metrics_card),
+        )
+        metric_menu.add_command(
+            label="Route Outcome Metrics",
+            command=lambda: self.toggle_outcome_metric_window(),
+        )
+        metric_menu.add_separator()
+        for index, family in enumerate(METRIC_FAMILY_SPECS, start=1):
+            metric_menu.add_command(
+                label=f"{index}. {family['title']}",
+                command=lambda selected=family: self.toggle_pipeline_metric_window(selected),
+            )
+        menubar.add_cascade(label="Metrics", menu=metric_menu)
+        self.root.configure(menu=menubar)
+
+    def toggle_metric_window(self, key, title, builder):
+        """Open or close a lazy metric window."""
+        existing = self.metric_windows.get(key)
+        if existing is not None and existing.winfo_exists():
+            existing.destroy()
+            self.metric_windows.pop(key, None)
+            return
+
+        window = tk.Toplevel(self.root)
+        window.title(title)
+        window.configure(bg=GUI_COLORS["app_bg"])
+        window.geometry("520x360")
+        window.grid_columnconfigure(0, weight=1)
+        window.grid_rowconfigure(0, weight=1)
+        window.protocol("WM_DELETE_WINDOW", lambda window_key=key: self.close_metric_window(window_key))
+        builder(window, row=0)
+        self.metric_windows[key] = window
+        self.update_live_dialog_metrics()
+
+    def toggle_outcome_metric_window(self):
+        self.toggle_metric_window("route_outcome_metrics", "Route Outcome Metrics", self.build_outcome_metrics_card)
+        if self.latest_metrics_text:
+            self.apply_metrics(self.latest_metrics_text)
+
+    def toggle_pipeline_metric_window(self, family):
+        key = f"pipeline_{self.section_slug(family['title'])}"
+        existing = self.metric_windows.get(key)
+        if existing is not None and existing.winfo_exists():
+            existing.destroy()
+            self.metric_windows.pop(key, None)
+            return
+
+        window = tk.Toplevel(self.root)
+        window.title(family["title"])
+        window.configure(bg=GUI_COLORS["panel_bg"])
+        window.geometry("420x320")
+        window.grid_columnconfigure(0, weight=1)
+        window.grid_rowconfigure(0, weight=1)
+        window.protocol("WM_DELETE_WINDOW", lambda window_key=key: self.close_metric_window(window_key))
+        self.build_stage_metric_family_group(window, family, row=0, column=0)
+        self.metric_windows[key] = window
+        self.update_live_dialog_metrics()
+
+    def close_metric_window(self, key):
+        window = self.metric_windows.pop(key, None)
+        if window is not None and window.winfo_exists():
+            window.destroy()
 
     def build_route_candidates_card(self, parent, row=0):
         """Build the route comparison card."""
@@ -2357,6 +2430,7 @@ class DialogWindow:
         Returns:
             The computed value or side effect documented by the implementation.
         """
+        self.latest_metrics_text = metrics
         if not self.metric_values:
             return
         parsed = self.parse_metrics(metrics)

@@ -68,17 +68,58 @@ PERSONAS = {
             "priority": "fast answer with obvious tradeoffs",
         },
     },
+    "crowd_averse_rider": {
+        "name": "Crowd-averse rider",
+        "description": "Calm, direct, and willing to spend a few extra minutes to avoid packed trains.",
+        "preferences": {
+            "switching": "accepts one extra change if it avoids a packed train",
+            "fullness": "strongly prefers less crowded trains",
+            "priority": "balance travel time and lower fullness",
+            "reliability": "avoid very full trains that increase delay risk",
+        },
+    },
+    "delay_sensitive_traveler": {
+        "name": "Delay-sensitive traveler",
+        "description": "Needs a reliable route and asks for risk tradeoffs.",
+        "preferences": {
+            "switching": "accepts transfers when they reduce delay risk",
+            "fullness": "fullness matters if it increases delay probability",
+            "priority": "low delay risk and on-time arrival",
+            "reliability": "prefer lower delay probability",
+        },
+    },
+    "accessibility_rider": {
+        "name": "Accessibility-focused rider",
+        "description": "Prefers a route that is easy to follow and avoids unnecessary changes.",
+        "preferences": {
+            "switching": "avoid unnecessary line changes",
+            "fullness": "prefers enough space to board comfortably",
+            "priority": "simple route with low transfer burden",
+            "reliability": "prefer predictable services",
+        },
+    },
+    "multi_stop_errand_runner": {
+        "name": "Multi-stop errand runner",
+        "description": "May need to visit more than one destination and asks for an extensible route.",
+        "preferences": {
+            "switching": "accepts changes if the route extends cleanly to later stops",
+            "fullness": "prefers moderate fullness",
+            "priority": "clear route that can expand to multiple destinations",
+            "reliability": "avoid high delay risk when connecting between stops",
+        },
+    },
 }
 
 AGENT_RULES = (
-    "Speak like a live phone call in 1-3 short sentences. "
+    "Speak like a live phone call in 1-2 short sentences. "
     "React to the latest message. "
-    "No code, JSON, tables, bullets, or empty replies."
+    "No hidden reasoning, code, JSON, tables, bullets, or empty replies."
 )
 
 ROUTE_TASK = (
     "Primary goal: a valid connected route from start to destination using listed segments, lines, waits, and transfer times. "
     "Secondary goal: satisfy preferences such as fullness and fewer changes. "
+    "Delay probability is a secondary reliability constraint. "
     "Best time means riding + waiting + transfer time, with transfer time only when the line changes. "
     "Compare alternatives only when they are valid and meaningfully affect time or constraints. "
     "All listed segments work both ways. "

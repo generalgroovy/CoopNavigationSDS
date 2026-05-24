@@ -8,9 +8,13 @@ from minillama.agent_a.prompting import (
     build_agent_b_system,
     generate_agent_a_template,
 )
+from minillama.agent_a.agents import fallback_reply
+from minillama.agent_a.config import PERSONAS
 from minillama.agent_b.pipeline import DialogState, VerbalTransformationPipeline
 from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+from minillama.model.route_constraints import optimal_constraint_route
 from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
+from minillama.test_cases.scenarios import SCENARIOS
 
 
 class PromptingTests(unittest.TestCase):
@@ -96,6 +100,26 @@ class PromptingTests(unittest.TestCase):
 
         self.assertIn("less full", request)
         self.assertIn("fewer line changes", request)
+
+    def test_research_personas_and_scenarios_cover_delay_fullness_and_multi_destination(self):
+        self.assertIn("delay_sensitive_traveler", PERSONAS)
+        self.assertIn("crowd_averse_rider", PERSONAS)
+        self.assertIn("multi_destination_errands", SCENARIOS)
+        self.assertGreater(len(SCENARIOS["multi_destination_errands"]["destination_stations"]), 1)
+
+        request = agent_a_alternative_request(PERSONAS["delay_sensitive_traveler"])
+
+        self.assertIn("lower delay risk", request)
+
+    def test_constraint_route_and_fallback_surface_delay_risk(self):
+        test_case = get_test_case("airport_connection")
+        constraint_route = optimal_constraint_route(test_case.scenario, test_case.persona)
+        reply = fallback_reply("Agent B", test_case.scenario, route_index=0, persona=test_case.persona)
+
+        self.assertIsNotNone(constraint_route)
+        self.assertGreater(constraint_route.delay_probability, 0.0)
+        self.assertIn("delay risk", reply)
+        self.assertIn("full", reply)
 
     def test_agent_a_final_reaction_asks_for_confirmation(self):
         text = agent_a_route_reaction(

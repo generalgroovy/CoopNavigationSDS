@@ -45,6 +45,14 @@ class StandardizedTestCase:
             The computed value or side effect documented by the implementation.
         """
         scenario = self.scenario
+        destinations = scenario.get("destination_stations") or [scenario["destination_station"]]
+        if len(destinations) > 1:
+            later_destination_text = ", then ".join(destinations[1:])
+            return (
+                f"I'm at {scenario['start_station']} at {fmt_time(scenario['start_time_min'])}. "
+                f"I first need to get to {scenario['destination_station']}, then continue to {later_destination_text}. "
+                "What route should I take first?"
+            )
         return (
             f"I'm at {scenario['start_station']} at {fmt_time(scenario['start_time_min'])}, "
             f"and I need to get to {scenario['destination_station']}. "

@@ -7,6 +7,7 @@ from pathlib import Path
 from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
 from minillama.agent_b.agent_b_plugins import SimplePlannerAgentBPlugin
 from minillama.agent_b.speech_io import SpeechTransport
+from minillama.agent_b.speech_io import SpeechPipelineConfig
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
@@ -70,3 +71,36 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
         self.assertTrue(any("less full" in text or "fewer line changes" in text for text in agent_a_replies))
+
+    def test_dialog_manager_runs_file_backed_speech_for_both_agents(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = DialogManager(
+                get_test_case("airport_connection"),
+                SimplePlannerAgentBPlugin(),
+                num_turns=2,
+                speech_transport=SpeechTransport(
+                    config=SpeechPipelineConfig(
+                        incoming_enabled=True,
+                        outgoing_enabled=True,
+                        scope="both",
+                        engine="file",
+                        audio_dir=tmpdir,
+                    )
+                ),
+                agent_a_responder=TemplateAgentAResponder(),
+            )
+
+            result = manager.run(NullEventQueue())
+
+            speakers = {turn["speaker"] for turn in result.extra["speech_turns"]}
+            audio_paths = [
+                Path(turn["audio"]["path"])
+                for turn in result.extra["speech_turns"]
+                if isinstance(turn.get("audio"), dict)
+            ]
+
+            self.assertIn("Agent A", speakers)
+            self.assertIn("Agent B", speakers)
+            self.assertTrue(audio_paths)
+            self.assertTrue(all(path.exists() for path in audio_paths))
+            self.assertGreater(result.extra["constraint_delay_probability"], 0.0)

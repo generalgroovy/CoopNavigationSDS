@@ -5,18 +5,22 @@ from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_SCOPE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
+from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
-from minillama.evaluation.research_artifacts import write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.test_cases.config import DEFAULT_TEST_CASE
-from minillama.test_cases.test_cases import get_test_case
+from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 
 
-def parse_csv_arg(value):
+def parse_csv_arg(value, all_values=None):
     """Parse a comma-separated CLI argument into a list."""
     if not value:
         return None
-    return [item.strip() for item in value.split(",") if item.strip()]
+    items = [item.strip() for item in value.split(",") if item.strip()]
+    if any(item.lower() == "all" for item in items):
+        return list(all_values or [])
+    return items
 
 
 def parse_bool_flag(value):
@@ -42,6 +46,7 @@ def main():
     parser.add_argument("--speech-incoming", type=parse_bool_flag, default=SPEECH_INCOMING_ENABLED, help="Enable incoming ASR/transcript processing.")
     parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=SPEECH_OUTGOING_ENABLED, help="Enable outgoing TTS/verbalization processing.")
     parser.add_argument("--speech-scope", default=SPEECH_SCOPE, choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
+    parser.add_argument("--speech-enabled", action="store_true", help="Shortcut: enable incoming and outgoing speech for both agents.")
     parser.add_argument("--model-params", default="greedy")
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
@@ -54,14 +59,19 @@ def main():
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
     args = parser.parse_args()
 
-    test_case_keys = parse_csv_arg(args.test_cases)
-    conditions = build_condition_grid(
+    if args.speech_enabled:
+        args.speech_incoming = True
+        args.speech_outgoing = True
+        args.speech_scope = "both"
+
+    test_case_keys = parse_csv_arg(args.test_cases, TEST_CASES)
+    conditions = list(build_condition_grid(
         test_case_keys=test_case_keys,
-        persona_keys=parse_csv_arg(args.personas),
-        speech_pattern_keys=parse_csv_arg(args.speech_patterns),
+        persona_keys=parse_csv_arg(args.personas, PERSONAS),
+        speech_pattern_keys=parse_csv_arg(args.speech_patterns, ["clean", "hesitant", "compressed", "noisy_station"]),
         model_param_keys=parse_csv_arg(args.model_params),
         iterations=args.iterations,
-    )
+    ))
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     if agent_b_config.needs_model:
@@ -97,11 +107,20 @@ def main():
         args.research_log_dir,
         picture_dir=args.network_picture_dir,
     )
+    manifest_path = write_experiment_manifest(
+        conditions,
+        args.research_log_dir,
+        num_turns=args.num_turns,
+        speech_engine=args.speech_engine,
+        speech_scope=args.speech_scope,
+        agent_b_plugin=args.agent_b_plugin,
+    )
     phase_log_dir = args.metrics_log_dir or f"{args.research_log_dir}/metrics_by_phase"
     write_metric_phase_logs(metrics, phase_log_dir)
 
     print(f"wrote {len(metrics)} metric rows to {args.output}")
     print(f"wrote metric phase logs to {phase_log_dir}")
+    print(f"wrote experiment manifest to {manifest_path}")
     print(f"wrote network data to {artifacts['network_json']}")
     print(f"wrote network graph to {artifacts['network_graph']}")
 

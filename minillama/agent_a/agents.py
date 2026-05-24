@@ -10,11 +10,11 @@ from minillama.agent_a.prompting import (
 from minillama.model.metro_data import STATION_POS
 from minillama.model.model_adapters import ChatMessage, messages_to_prompt
 from minillama.model.route_planner import (
-    candidate_time_routes,
     optimal_time_route,
     route_line_change_count,
     route_text_from_steps,
 )
+from minillama.model.route_constraints import ranked_constraint_routes
 
 
 STATION_NAMES = list(STATION_POS)
@@ -123,20 +123,15 @@ def clean_reply(text):
     return text
 
 
-def fallback_reply(active_agent_name, scenario, route_index=0):
+def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
     start = scenario["start_station"]
     destination = scenario["destination_station"]
 
     if active_agent_name == "Agent B":
-        alternatives = candidate_time_routes(
-            start,
-            destination,
-            scenario["start_time_min"],
-            scenario["transfer_time_min"],
-            limit=3,
-        )
-        if alternatives:
-            _, _, steps = alternatives[route_index % len(alternatives)]
+        ranked_routes = ranked_constraint_routes(scenario, persona or {}, limit=5)
+        if ranked_routes:
+            selected = ranked_routes[route_index % len(ranked_routes)]
+            steps = selected.steps
             snippet = route_text_from_steps(steps)
         else:
             arrival, steps = optimal_time_route(
@@ -148,8 +143,11 @@ def fallback_reply(active_agent_name, scenario, route_index=0):
             snippet = route_text_from_steps(steps) if steps else f"take a line from {start} to {destination}"
         if steps:
             changes = route_line_change_count(steps)
+            fullness_values = [step.get("fullness", 0) for step in steps]
+            average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
+            delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
             return (
-                f"{snippet} {changes} change(s)."
+                f"{snippet} {changes} change(s), about {average_fullness}% full, {delay_probability}% delay risk."
             )
         return (
             f"One connected option: {snippet} "

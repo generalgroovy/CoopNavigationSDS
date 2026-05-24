@@ -141,6 +141,15 @@ def next_train_departure(current_time_min: int, line_name: str, station: str, nx
     return current_time_min + wait
 
 
+def segment_delay_probability(line_name: str, station_a: str, station_b: str, depart_min: int) -> float:
+    """Estimate operational delay risk for one traversed segment."""
+    headway = LINES[line_name]["headway"]
+    fullness = segment_fullness_percent(line_name, station_a, station_b, depart_min)
+    travel = segment_travel(station_a, station_b)
+    risk = 0.03 + (headway / 100.0) + (fullness / 300.0) + (travel / 250.0)
+    return round(min(0.75, max(0.01, risk)), 4)
+
+
 @lru_cache(maxsize=1024)
 def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time_min: int):
     """Optimal time route function for this module's MVC responsibility.
@@ -190,6 +199,7 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
                     "transfer": transfer,
                 }
                 step["fullness"] = segment_fullness_percent(line, station, nxt, depart)
+                step["delay_probability"] = segment_delay_probability(line, station, nxt, depart)
                 heappush(heap, (arrive, nxt, line, service, path + [step]))
 
     return None, []
@@ -452,6 +462,7 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
                 "transfer": transfer,
             }
             candidate["fullness"] = segment_fullness_percent(line, a, b, depart)
+            candidate["delay_probability"] = segment_delay_probability(line, a, b, depart)
 
             if best_step is None or arrive < best_step["arrive"]:
                 best_step = candidate

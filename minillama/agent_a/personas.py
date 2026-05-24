@@ -20,9 +20,12 @@ def preference_text(persona: dict):
     preferences = persona.get("preferences", {})
     if not preferences:
         return "Prefs: fastest connected route."
-    return (
+    text = (
         "Prefs: "
         f"{preferences.get('priority', 'fastest route')}; "
         f"{preferences.get('switching', 'neutral on line changes')}; "
-        f"{preferences.get('fullness', 'neutral on train fullness')}."
+        f"{preferences.get('fullness', 'neutral on train fullness')}"
     )
+    if preferences.get("reliability"):
+        text += f"; {preferences['reliability']}"
+    return text + "."

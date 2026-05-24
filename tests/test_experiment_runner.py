@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 from zipfile import ZipFile
 
 from minillama.controller.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from minillama.evaluation.research_artifacts import write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.model.model_adapters import ModelParameterSet
 
 
@@ -229,6 +229,33 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertGreater(network_data["line_count"], 0)
         self.assertGreater(network_data["station_count"], 0)
         self.assertIn("<svg", graph_text)
+
+    def test_write_experiment_manifest_documents_scientific_design(self):
+        condition = ExperimentCondition(
+            condition_id="case__persona__clean__greedy__0",
+            test_case_key="case",
+            persona_key="persona",
+            scenario_key="scenario",
+            speech_pattern_key="clean",
+            model_param_key="greedy",
+            iteration=0,
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = write_experiment_manifest(
+                [condition],
+                tmpdir,
+                num_turns=4,
+                speech_engine="file",
+                speech_scope="both",
+                agent_b_plugin="simple",
+            )
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertIn("hypotheses", manifest)
+        self.assertIn("independent_variables", manifest)
+        self.assertEqual(manifest["conditions"][0]["condition_id"], condition.condition_id)
+        self.assertEqual(manifest["controls"]["speech_engine"], "file")
 
 
 if __name__ == "__main__":

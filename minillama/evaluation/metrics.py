@@ -291,6 +291,9 @@ class MetricRecord:
     constraint_duration_gap_min: int | None
     constraint_line_change_gap: int | None
     constraint_fullness_gap: float | None
+    route_delay_probability: float | None
+    constraint_delay_probability: float | None
+    constraint_delay_probability_gap: float | None
     travel_min: int
     wait_min: int
     transfer_min: int
@@ -537,6 +540,10 @@ class MetricComputer:
         constraint_duration_gap = result.extra.get("constraint_duration_gap_min")
         constraint_line_change_gap = result.extra.get("constraint_line_change_gap")
         constraint_fullness_gap = result.extra.get("constraint_fullness_gap")
+        constraint_delay_probability = result.extra.get("constraint_delay_probability")
+        constraint_delay_probability_gap = result.extra.get("constraint_delay_probability_gap")
+        route_delay_values = [step.get("delay_probability", 0.0) for step in result.route_steps]
+        route_delay_probability = round(max(route_delay_values), 4) if route_delay_values else None
 
         conversation_text = " ".join(text for _, text in result.conversation)
         words = tokenize_words(conversation_text)
@@ -982,6 +989,9 @@ class MetricComputer:
             constraint_duration_gap_min=constraint_duration_gap,
             constraint_line_change_gap=constraint_line_change_gap,
             constraint_fullness_gap=constraint_fullness_gap,
+            route_delay_probability=route_delay_probability,
+            constraint_delay_probability=constraint_delay_probability,
+            constraint_delay_probability_gap=constraint_delay_probability_gap,
             travel_min=breakdown["travel"],
             wait_min=breakdown["wait"],
             transfer_min=breakdown["transfer"],

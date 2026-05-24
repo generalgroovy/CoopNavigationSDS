@@ -14,6 +14,7 @@ class RouteConstraintProfile:
     prefer_fast: bool = True
     prefer_fewer_changes: bool = False
     prefer_less_full: bool = False
+    prefer_low_delay: bool = False
 
     @classmethod
     def from_persona(cls, persona):
@@ -21,6 +22,7 @@ class RouteConstraintProfile:
         priority = preferences.get("priority", "").lower()
         switching = preferences.get("switching", "").lower()
         fullness = preferences.get("fullness", "").lower()
+        reliability = preferences.get("reliability", "").lower()
         prefer_fast = any(term in priority for term in ("fast", "quick", "time"))
         prefer_fewer_changes = any(
             term in switching
@@ -30,10 +32,15 @@ class RouteConstraintProfile:
             term in fullness
             for term in ("less crowded", "dislikes", "packed", "very full")
         ) and "does not mind" not in fullness
+        prefer_low_delay = any(
+            term in f"{priority} {reliability}"
+            for term in ("delay", "reliable", "reliability", "on time", "low risk")
+        )
         return cls(
-            prefer_fast=prefer_fast or not (prefer_fewer_changes or prefer_less_full),
+            prefer_fast=prefer_fast or not (prefer_fewer_changes or prefer_less_full or prefer_low_delay),
             prefer_fewer_changes=prefer_fewer_changes,
             prefer_less_full=prefer_less_full,
+            prefer_low_delay=prefer_low_delay,
         )
 
     @property
@@ -45,6 +52,8 @@ class RouteConstraintProfile:
             parts.append("fewer changes")
         if self.prefer_less_full:
             parts.append("less full")
+        if self.prefer_low_delay:
+            parts.append("lower delay risk")
         return ", ".join(parts) if parts else "valid route"
 
 
@@ -57,6 +66,7 @@ class ConstraintRoute:
     line_sequence: list[str]
     line_change_count: int
     average_fullness: float
+    delay_probability: float
     score: tuple
     label: str
 
@@ -66,16 +76,25 @@ def route_average_fullness(steps):
     return round(sum(values) / len(values), 2) if values else 0.0
 
 
+def route_delay_probability(steps):
+    """Return route-level delay risk as the maximum segment risk."""
+    values = [step.get("delay_probability", 0.0) for step in steps]
+    return round(max(values), 4) if values else 0.0
+
+
 def constraint_sort_key(duration_min, steps, profile):
     line_changes = route_line_change_count(steps)
     average_fullness = route_average_fullness(steps)
+    delay_probability = route_delay_probability(steps)
     key = []
     key.append(duration_min if profile.prefer_fast else round(duration_min * 0.25))
     if profile.prefer_fewer_changes:
         key.append(line_changes)
     if profile.prefer_less_full:
         key.append(average_fullness)
-    key.extend([duration_min, line_changes, average_fullness])
+    if profile.prefer_low_delay:
+        key.append(delay_probability)
+    key.extend([duration_min, line_changes, average_fullness, delay_probability])
     return tuple(key)
 
 
@@ -105,9 +124,41 @@ def optimal_constraint_route(scenario, persona, limit=50):
         line_sequence=route_line_sequence(steps),
         line_change_count=route_line_change_count(steps),
         average_fullness=route_average_fullness(steps),
+        delay_probability=route_delay_probability(steps),
         score=constraint_sort_key(duration_min, steps, profile),
         label=profile.label,
     )
+
+
+def ranked_constraint_routes(scenario, persona, limit=6):
+    """Return valid routes sorted by the persona's scientific comparison profile."""
+    profile = RouteConstraintProfile.from_persona(persona)
+    candidates = candidate_time_routes(
+        scenario["start_station"],
+        scenario["destination_station"],
+        scenario["start_time_min"],
+        scenario["transfer_time_min"],
+        limit=max(limit * 6, 20),
+        max_extra_stops=8,
+        max_paths=20000,
+    )
+    ranked = sorted(candidates, key=lambda item: constraint_sort_key(item[0], item[2], profile))
+    out = []
+    for duration_min, route, steps in ranked[:limit]:
+        out.append(
+            ConstraintRoute(
+                route=route,
+                steps=steps,
+                duration_min=duration_min,
+                line_sequence=route_line_sequence(steps),
+                line_change_count=route_line_change_count(steps),
+                average_fullness=route_average_fullness(steps),
+                delay_probability=route_delay_probability(steps),
+                score=constraint_sort_key(duration_min, steps, profile),
+                label=profile.label,
+            )
+        )
+    return out
 
 
 def route_constraint_gap(steps, duration_min, constraint_route):
@@ -118,4 +169,5 @@ def route_constraint_gap(steps, duration_min, constraint_route):
         "duration_gap_min": duration_min - constraint_route.duration_min,
         "line_change_gap": route_line_change_count(steps) - constraint_route.line_change_count,
         "fullness_gap": round(route_average_fullness(steps) - constraint_route.average_fullness, 2),
+        "delay_probability_gap": round(route_delay_probability(steps) - constraint_route.delay_probability, 4),
     }

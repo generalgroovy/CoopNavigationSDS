@@ -117,9 +117,8 @@ def build_agent_a_system(persona, scenario):
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
-        "First say start time, start station, and destination. "
-        "Ask only for a valid route first; ask about fullness, transfers, or other secondary constraints only after Agent B gives a valid route. "
-        "Do not ask Agent B to repeat information unless something is missing. "
+        "First state start time, start station, and destination. "
+        "Get a valid route first; then ask for one better route by time, fullness, changes, or delay risk. "
         f"{compact_prompt_context(scenario)}"
     )
 
@@ -128,12 +127,12 @@ def build_agent_b_system(scenario, persona=None):
     return (
         "You are Agent B, the transit assistant. "
         "Be natural, short, and non-repetitive. "
-        "Give route propositions first. React to secondary constraints only after a valid route has been established. "
-        "Validity comes first: connected start-to-destination route, correct lines, waits, and transfer time. "
-        "After that, compare shorter or faster paths, fullness, and number of changes. "
+        "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
+        "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
+        "Then compare time, fullness, changes, and delay risk. "
         f"{preference_text(persona or {})} "
-        "Talk about the route as boarding stations: start station, each station where a new train is boarded, and destination. "
-        "Mention a change only when the line changes; state total time once. "
+        "Say boarding stations only: start, transfer boarding stations, destination. "
+        "State total time once. "
         f"{AGENT_RULES} "
         f"{compact_prompt_context(scenario)}"
     )
@@ -143,19 +142,18 @@ def build_agent_b_phase_instruction(turn, destination):
     if turn == 0:
         return (
             f"Give one valid candidate route to {destination}. "
-            "Use boarding stations only: start, change points, destination. State total time once."
+            "Use boarding stations only and state total time once."
         )
 
     if turn == 1:
         return (
             "If there is a valid alternative, compare it against the current route. "
-            "Prefer shorter station paths first, then total time and constraints."
+            "Prefer shorter paths, then time, fullness, changes, and delay risk."
         )
 
     if turn == 2:
         return (
-            "Check route validity before discussing preferences. "
-            "Repair any missing station, line, wait, or transfer detail."
+            "Check validity before preferences. Repair any missing station, line, wait, or transfer detail."
         )
 
     phase = (turn - 3) % 3
@@ -275,11 +273,13 @@ def agent_a_alternative_request(persona):
     priority = preferences.get("priority", "").lower()
     switching = preferences.get("switching", "").lower()
     fullness = preferences.get("fullness", "").lower()
+    reliability = preferences.get("reliability", "").lower()
 
     wants_less_full = any(term in fullness for term in ("less crowded", "dislikes", "crowded", "full", "packed"))
     accepts_full = any(term in fullness for term in ("does not mind", "secondary"))
     wants_fewer_changes = any(term in switching for term in ("fewer", "avoid", "avoiding", "unnecessary", "only for meaningful"))
     wants_fastest = any(term in priority for term in ("fast", "quick", "time"))
+    wants_low_delay = any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk"))
 
     constraints = []
     if wants_fastest:
@@ -288,6 +288,8 @@ def agent_a_alternative_request(persona):
         constraints.append("less full")
     if wants_fewer_changes:
         constraints.append("fewer line changes")
+    if wants_low_delay:
+        constraints.append("lower delay risk")
 
     if not constraints:
         constraints.append("a better fit for my preferences")

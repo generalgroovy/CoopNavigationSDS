@@ -257,6 +257,7 @@ class DialogManager:
                         f"({constraint_route.duration_min} min, "
                         f"{constraint_route.line_change_count} changes, "
                         f"{constraint_route.average_fullness}% full, "
+                        f"{round(constraint_route.delay_probability * 100)}% delay risk, "
                         f"{constraint_route.label})"
                     ),
                 )
@@ -417,6 +418,7 @@ class DialogManager:
         constraint_line_sequence = constraint_route.line_sequence if constraint_route else []
         constraint_line_change_count = constraint_route.line_change_count if constraint_route else None
         constraint_average_fullness = constraint_route.average_fullness if constraint_route else None
+        constraint_delay_probability = constraint_route.delay_probability if constraint_route else None
         constraint_gap = route_constraint_gap(displayed_steps, displayed_duration, constraint_route)
         displayed_line_sequence = route_line_sequence(displayed_steps)
         displayed_line_change_count = route_line_change_count(displayed_steps)
@@ -446,7 +448,8 @@ class DialogManager:
             f"Constraint line changes: {constraint_line_change_count if constraint_line_change_count is not None else 'None'}\n"
             f"Constraint duration:   {str(constraint_duration) + ' min' if constraint_duration is not None else 'None'}\n"
             f"Constraint crowding:   {str(constraint_average_fullness) + '%' if constraint_average_fullness is not None else 'None'}\n"
-            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} min, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('fullness_gap', 'None')} fullness\n"
+            f"Constraint delay risk: {str(round(constraint_delay_probability * 100, 1)) + '%' if constraint_delay_probability is not None else 'None'}\n"
+            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} min, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('fullness_gap', 'None')} fullness, {constraint_gap.get('delay_probability_gap', 'None')} delay\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
@@ -499,9 +502,11 @@ class DialogManager:
                 "constraint_line_sequence": constraint_line_sequence,
                 "constraint_line_changes": constraint_line_change_count,
                 "constraint_average_fullness": constraint_average_fullness,
+                "constraint_delay_probability": constraint_delay_probability,
                 "constraint_duration_gap_min": constraint_gap.get("duration_gap_min"),
                 "constraint_line_change_gap": constraint_gap.get("line_change_gap"),
                 "constraint_fullness_gap": constraint_gap.get("fullness_gap"),
+                "constraint_delay_probability_gap": constraint_gap.get("delay_probability_gap"),
                 "warning_count": warning_count,
                 "average_route_fullness": average_route_fullness,
                 "speech_turns": speech_turns,

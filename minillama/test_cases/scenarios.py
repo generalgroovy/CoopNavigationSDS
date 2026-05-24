@@ -9,6 +9,7 @@ def make_scenario(
     name,
     start_station,
     destination_station,
+    destination_stations=None,
     start_time_min=START_TIME_MIN,
     transfer_time_min=TRANSFER_TIME_MIN,
     allow_unreachable=False,
@@ -26,6 +27,10 @@ def make_scenario(
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    destinations = list(destination_stations or [destination_station])
+    if destination_station not in destinations:
+        destinations.insert(0, destination_station)
+
     if start_station == destination_station:
         raise ValueError("Scenario start and destination must differ.")
 
@@ -39,6 +44,7 @@ def make_scenario(
         "name": name,
         "start_station": start_station,
         "destination_station": destination_station,
+        "destination_stations": destinations,
         "start_time_min": start_time_min,
         "transfer_time_min": transfer_time_min,
         "goal": "fastest_route",
@@ -53,11 +59,16 @@ def _station_at(index_spec):
     return STATIONS[index_spec]
 
 
+def _stations_at(index_specs):
+    return [_station_at(index_spec) for index_spec in index_specs]
+
+
 SCENARIOS = {
     key: make_scenario(
         spec["name"],
         _station_at(spec["start_station_index"]),
         _station_at(spec["destination_station_index"]),
+        destination_stations=_stations_at(spec.get("destination_station_indices", [spec["destination_station_index"]])),
         start_time_min=spec["start_time_min"],
     )
     for key, spec in SCENARIO_SPECS.items()

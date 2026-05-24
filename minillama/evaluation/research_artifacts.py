@@ -92,3 +92,57 @@ def write_network_research_artifacts(current_time_min, output_dir, picture_dir=N
     picture_root = Path(picture_dir) if picture_dir is not None else output_dir / "network_graphs"
     graph_path = write_network_svg(picture_root / "network_graph.svg")
     return {"network_json": network_json, "network_graph": graph_path}
+
+
+def write_experiment_manifest(conditions, output_dir, *, num_turns, speech_engine, speech_scope, agent_b_plugin):
+    """Write a scientific-method manifest describing the experiment design."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows = [
+        {
+            "condition_id": condition.condition_id,
+            "test_case_key": condition.test_case_key,
+            "persona_key": condition.persona_key,
+            "scenario_key": condition.scenario_key,
+            "speech_pattern_key": condition.speech_pattern_key,
+            "model_param_key": condition.model_param_key,
+            "iteration": condition.iteration,
+        }
+        for condition in conditions
+    ]
+    manifest = {
+        "research_objective": "Measure whether two cooperative route-planning agents converge on valid, constraint-fitting routes through natural speech dialog.",
+        "hypotheses": [
+            "Valid route proposals should appear before secondary optimization.",
+            "Persona constraints should change route comparisons across time, fullness, transfers, and delay risk.",
+            "Speech-enabled runs should preserve route semantics while adding measurable ASR/TTS/runtime phases.",
+        ],
+        "independent_variables": [
+            "test_case_key",
+            "scenario_key",
+            "persona_key",
+            "speech_pattern_key",
+            "model_param_key",
+            "agent_b_plugin",
+        ],
+        "dependent_metrics": [
+            "route_valid",
+            "route_reaches_goal",
+            "route_duration_min",
+            "candidate_route_count",
+            "route_revision_count",
+            "automatic_eval_score",
+            "asr_word_error_rate",
+            "runtime_response_latency_sec",
+        ],
+        "controls": {
+            "num_turns": num_turns,
+            "speech_engine": speech_engine,
+            "speech_scope": speech_scope,
+            "agent_b_plugin": agent_b_plugin,
+        },
+        "conditions": rows,
+    }
+    path = output_dir / "experiment_manifest.json"
+    path.write_text(json.dumps(manifest, indent=2, ensure_ascii=True), encoding="utf-8")
+    return path
