@@ -2,6 +2,8 @@ import unittest
 
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
+    SPEECH_AUDIO_DIR,
+    SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
     SPEECH_PATTERNS,
@@ -35,6 +37,8 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertFalse(SPEECH_INCOMING_ENABLED)
         self.assertFalse(SPEECH_OUTGOING_ENABLED)
         self.assertEqual(SPEECH_SCOPE, "none")
+        self.assertEqual(SPEECH_ENGINE, "patterned")
+        self.assertTrue(SPEECH_AUDIO_DIR)
 
         transport = SpeechTransport(config=SpeechPipelineConfig())
         trace = transport.transmit_trace("Agent A", "Need Alpha to Echo.")

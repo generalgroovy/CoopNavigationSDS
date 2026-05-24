@@ -1,12 +1,19 @@
 """Speech transport abstractions and simulated ASR/TTS transformations for dialog experiments.
 """
 from dataclasses import dataclass
+import hashlib
+import math
+from pathlib import Path
 import random
 import re
+import struct
 from typing import Protocol
+import wave
 
 from minillama.agent_b.config import (
     DEFAULT_SPEECH_PATTERN,
+    SPEECH_AUDIO_DIR,
+    SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
     SPEECH_PATTERNS,
@@ -29,6 +36,8 @@ class SpeechPipelineConfig:
     outgoing_enabled: bool = SPEECH_OUTGOING_ENABLED
     scope: str = SPEECH_SCOPE
     pattern_key: str = DEFAULT_SPEECH_PATTERN
+    engine: str = SPEECH_ENGINE
+    audio_dir: str = SPEECH_AUDIO_DIR
     agent_a_words_per_minute: int = 165
     agent_b_words_per_minute: int = 175
     min_utterance_sec: float = 0.8
@@ -67,10 +76,11 @@ class SpeechPipelineTrace:
     asr_engine: str
     pattern_key: str
     simulated_duration_sec: float
+    audio: object = None
 
     @property
     def signal(self):
-        return SpeechSignal(speaker=self.speaker, text=self.outgoing_text, audio=None)
+        return SpeechSignal(speaker=self.speaker, text=self.outgoing_text, audio=self.audio)
 
 
 class TextToSpeechEngine(Protocol):
@@ -141,6 +151,69 @@ class PatternedTextToSpeech:
         return SpeechSignal(speaker=speaker, text=text, audio=None)
 
 
+class WaveFileTextToSpeech:
+    """Dependency-free TTS adapter that writes a simple WAV carrier plus transcript sidecar."""
+
+    name = "wavefile-tts"
+
+    def __init__(self, audio_dir="speech_artifacts", sample_rate=8000):
+        self.audio_dir = Path(audio_dir)
+        self.sample_rate = sample_rate
+        self._counter = 0
+
+    def synthesize(self, speaker: str, text: str) -> SpeechSignal:
+        self.audio_dir.mkdir(parents=True, exist_ok=True)
+        self._counter += 1
+        digest = hashlib.sha1(f"{speaker}:{self._counter}:{text}".encode("utf-8")).hexdigest()[:10]
+        stem = f"{self._counter:04d}-{speaker.lower().replace(' ', '-')}-{digest}"
+        wav_path = self.audio_dir / f"{stem}.wav"
+        transcript_path = self.audio_dir / f"{stem}.txt"
+        self._write_wave(wav_path, speaker, text)
+        transcript_path.write_text(text, encoding="utf-8")
+        return SpeechSignal(
+            speaker=speaker,
+            text=text,
+            audio={
+                "path": str(wav_path),
+                "transcript_path": str(transcript_path),
+                "sample_rate": self.sample_rate,
+            },
+        )
+
+    def _write_wave(self, path: Path, speaker: str, text: str):
+        words = re.findall(r"[A-Za-z0-9]+", text)
+        duration = min(max(len(words) * 0.22, 0.45), 8.0)
+        samples = int(self.sample_rate * duration)
+        base_frequency = 185 if speaker.lower().replace(" ", "_") == "agent_a" else 230
+        amplitude = 7500
+        with wave.open(str(path), "wb") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(self.sample_rate)
+            frames = bytearray()
+            for index in range(samples):
+                t = index / self.sample_rate
+                word_phase = int((index / max(samples, 1)) * max(len(words), 1))
+                frequency = base_frequency + (word_phase % 5) * 12
+                envelope = min(1.0, index / max(self.sample_rate * 0.04, 1), (samples - index) / max(self.sample_rate * 0.06, 1))
+                value = int(amplitude * envelope * math.sin(2 * math.pi * frequency * t))
+                frames.extend(struct.pack("<h", value))
+            handle.writeframes(frames)
+
+
+class WaveFileSpeechToText:
+    """ASR adapter for generated speech artifacts using their transcript sidecar."""
+
+    name = "wavefile-asr"
+
+    def transcribe(self, signal: SpeechSignal) -> str:
+        audio = signal.audio if isinstance(signal.audio, dict) else {}
+        transcript_path = audio.get("transcript_path")
+        if transcript_path and Path(transcript_path).exists():
+            return Path(transcript_path).read_text(encoding="utf-8")
+        return signal.text
+
+
 class LoopbackSpeechToText:
     """ASR test double that returns the signal text unchanged.
     """
@@ -172,8 +245,18 @@ class SpeechTransport:
             The computed value or side effect documented by the implementation.
         """
         self.config = config or SpeechPipelineConfig()
-        self.tts_engine = tts_engine or PatternedTextToSpeech(self.config.pattern_key)
-        self.asr_engine = asr_engine or PatternedSpeechToText(self.config.pattern_key)
+        self.tts_engine = tts_engine or self._default_tts_engine()
+        self.asr_engine = asr_engine or self._default_asr_engine()
+
+    def _default_tts_engine(self):
+        if self.config.engine in {"file", "wav", "wave"}:
+            return WaveFileTextToSpeech(self.config.audio_dir)
+        return PatternedTextToSpeech(self.config.pattern_key)
+
+    def _default_asr_engine(self):
+        if self.config.engine in {"file", "wav", "wave"}:
+            return WaveFileSpeechToText()
+        return PatternedSpeechToText(self.config.pattern_key)
 
     @property
     def description(self):
@@ -225,6 +308,7 @@ class SpeechTransport:
             asr_engine=self.asr_engine.name if incoming_enabled else "disabled",
             pattern_key=self.config.pattern_key,
             simulated_duration_sec=simulated_duration_sec,
+            audio=signal.audio,
         )
 
     def estimate_duration_sec(self, speaker: str, text: str) -> float:

@@ -169,6 +169,7 @@ class DialogManager:
                 "transcript": trace.incoming_transcript,
                 "latency_sec": latency_sec,
                 "simulated_duration_sec": trace.simulated_duration_sec,
+                "audio": trace.audio,
                 "outgoing_enabled": trace.outgoing_enabled,
                 "incoming_enabled": trace.incoming_enabled,
                 "tts_engine": trace.tts_engine,

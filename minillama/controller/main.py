@@ -11,6 +11,8 @@ from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
     DEFAULT_SPEECH_PATTERN,
+    SPEECH_AUDIO_DIR,
+    SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
     SPEECH_SCOPE,
@@ -48,6 +50,8 @@ def conversation_worker(event_queue, model_adapter, run_config):
             outgoing_enabled=run_config["speech_outgoing_enabled"],
             scope=run_config["speech_scope"],
             pattern_key=run_config["speech_pattern_key"],
+            engine=run_config["speech_engine"],
+            audio_dir=run_config["speech_audio_dir"],
         )
     )
     manager = DialogManager(
@@ -96,6 +100,8 @@ def default_run_config():
         "test_case_key": DEFAULT_TEST_CASE,
         "agent_b_plugin": AGENT_B_PLUGIN,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
+        "speech_engine": SPEECH_ENGINE,
+        "speech_audio_dir": SPEECH_AUDIO_DIR,
         "speech_incoming_enabled": SPEECH_INCOMING_ENABLED,
         "speech_outgoing_enabled": SPEECH_OUTGOING_ENABLED,
         "speech_scope": SPEECH_SCOPE,
@@ -109,6 +115,7 @@ def select_run_config():
         "test_case_keys": list(TEST_CASES),
         "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
         "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
+        "speech_engines": ["patterned", "file"],
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
     }
     try:

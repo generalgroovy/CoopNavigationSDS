@@ -1,4 +1,6 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 
@@ -57,6 +59,30 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertEqual(agent_a_trace.incoming_transcript, agent_a_trace.generated_text)
         self.assertFalse(agent_a_trace.outgoing_enabled)
         self.assertFalse(agent_a_trace.incoming_enabled)
+
+    def test_file_speech_engine_creates_audio_and_transcribes_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(
+                config=SpeechPipelineConfig(
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    scope="both",
+                    engine="file",
+                    audio_dir=tmpdir,
+                )
+            )
+
+            trace = transport.transmit_trace("Agent B", "Take Ring from Alpha to Bravo.")
+
+            self.assertEqual(trace.incoming_transcript, trace.generated_text)
+            self.assertTrue(trace.outgoing_enabled)
+            self.assertTrue(trace.incoming_enabled)
+            self.assertEqual(trace.tts_engine, "wavefile-tts")
+            self.assertEqual(trace.asr_engine, "wavefile-asr")
+            self.assertIsInstance(trace.audio, dict)
+            self.assertTrue(Path(trace.audio["path"]).exists())
+            self.assertGreater(Path(trace.audio["path"]).stat().st_size, 44)
+            self.assertTrue(Path(trace.audio["transcript_path"]).exists())
 
 
 if __name__ == "__main__":

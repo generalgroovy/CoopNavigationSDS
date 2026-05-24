@@ -113,6 +113,8 @@ Useful speech-pipeline batch controls:
 - `--speech-incoming true|false`: include the incoming ASR/transcript stage.
 - `--speech-outgoing true|false`: include the outgoing TTS/verbalization stage.
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
+- `--speech-engine patterned|file`: use text-pattern simulation or generate WAV speech artifacts with sidecar ASR transcripts.
+- `--speech-audio-dir PATH`: directory for generated speech artifacts when `--speech-engine file` is active.
 - `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for GUI and batch runs.
 - `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.
 - `--log-dir PATH`: destination for optional batch logs.

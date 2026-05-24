@@ -148,6 +148,8 @@ class StartupConfigDialog:
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
             "agent_b_plugin": tk.StringVar(value=defaults["agent_b_plugin"]),
             "speech_pattern_key": tk.StringVar(value=defaults["speech_pattern_key"]),
+            "speech_engine": tk.StringVar(value=defaults["speech_engine"]),
+            "speech_audio_dir": tk.StringVar(value=defaults["speech_audio_dir"]),
             "speech_scope": tk.StringVar(value=defaults["speech_scope"]),
             "speech_incoming_enabled": tk.BooleanVar(value=defaults["speech_incoming_enabled"]),
             "speech_outgoing_enabled": tk.BooleanVar(value=defaults["speech_outgoing_enabled"]),
@@ -164,6 +166,7 @@ class StartupConfigDialog:
             ("Test case", "test_case_key", self.choices["test_case_keys"]),
             ("Agent B", "agent_b_plugin", self.choices["agent_b_plugins"]),
             ("Speech pattern", "speech_pattern_key", self.choices["speech_patterns"]),
+            ("Speech engine", "speech_engine", self.choices["speech_engines"]),
             ("Speech scope", "speech_scope", self.choices["speech_scopes"]),
         ]
         for row, (label, key, values) in enumerate(rows):
@@ -184,7 +187,22 @@ class StartupConfigDialog:
             )
             combo.grid(row=row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
 
-        toggle_row = len(rows)
+        audio_row = len(rows)
+        tk.Label(
+            frame,
+            text="Speech files",
+            anchor="w",
+            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["muted_text"],
+        ).grid(row=audio_row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
+        tk.Entry(
+            frame,
+            textvariable=self.vars["speech_audio_dir"],
+            width=36,
+        ).grid(row=audio_row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
+
+        toggle_row = audio_row + 1
         tk.Checkbutton(
             frame,
             text="Incoming ASR",
