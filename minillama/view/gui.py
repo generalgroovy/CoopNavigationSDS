@@ -433,15 +433,13 @@ class DialogWindow:
 
         self.root = tk.Tk()
         self.root.title("MiniLlama Conversation")
-        self.root.geometry("960x720" if self.minimal else f"{GUI_WIDTH}x{GUI_HEIGHT}")
-        self.root.minsize(620, 420)
+        self.root.geometry(f"{GUI_WIDTH}x{GUI_HEIGHT}")
+        self.root.minsize(GUI_MIN_WIDTH, GUI_MIN_HEIGHT)
         self.root.configure(bg=GUI_COLORS["app_bg"])
         if not self.minimal:
             self.maximize_startup_window()
 
         self.configure_style()
-        if self.minimal:
-            self.build_minimal_metric_menu()
         self.build_layout()
         self.update_live_dialog_metrics()
         self.draw_network()
@@ -498,14 +496,14 @@ class DialogWindow:
         style.map("Data.Treeview", background=[("selected", GUI_COLORS["table_selected"])])
 
     def build_layout(self):
-        """Build the conversation-only workspace layout."""
+        """Build the live conversation and analysis workspace layout."""
         self.main = tk.Frame(self.root, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
         self.main.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
         self.main.grid_columnconfigure(0, weight=1)
         self.main.grid_rowconfigure(0, weight=1)
 
         if self.minimal:
-            self.build_plain_conversation(self.main)
+            self.build_live_gui_workspace(self.main)
             return
 
         self.workspace_tabs = self.make_tabs(self.main, height=GUI_HEIGHT - (GUI_MAIN_PAD * 2))
@@ -514,6 +512,46 @@ class DialogWindow:
 
         self.build_metric_data_tab(self.workspace_tabs.tab("Metric Data"))
         self.build_network_data_tab(self.workspace_tabs.tab("Network Data"))
+
+    def build_live_gui_workspace(self, parent):
+        """Build default GUI mode with transcript and all live metrics visible."""
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
+
+        split = ttk.PanedWindow(parent, orient=tk.HORIZONTAL)
+        split.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
+
+        conversation_shell = tk.Frame(split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        conversation_shell.grid_rowconfigure(0, weight=1)
+        conversation_shell.grid_columnconfigure(0, weight=1)
+        self.build_plain_conversation(conversation_shell)
+        split.add(conversation_shell, weight=3)
+
+        metric_shell = tk.Frame(split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        metric_shell.grid_rowconfigure(0, weight=1)
+        metric_shell.grid_columnconfigure(0, weight=1)
+        metric_page = make_scrollable_frame(metric_shell, GUI_COLORS["app_bg"], padx=0, pady=0)
+        metric_page.grid_columnconfigure(0, weight=1)
+        self.build_always_visible_metric_panels(metric_page)
+        split.add(metric_shell, weight=4)
+
+    def build_always_visible_metric_panels(self, parent):
+        """Build every metric area inline for real-time GUI analysis."""
+        summary_zone = tk.Frame(parent, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        summary_zone.grid(row=0, column=0, sticky="nsew")
+        summary_zone.grid_columnconfigure(0, weight=1, uniform="live_metric_summary")
+        summary_zone.grid_columnconfigure(1, weight=1, uniform="live_metric_summary")
+        summary_zone.grid_rowconfigure(0, weight=1)
+        summary_zone.grid_rowconfigure(1, weight=1)
+        self.build_snapshot_card(summary_zone, row=0, column=0)
+        self.build_run_context_card(summary_zone, row=0, column=1)
+        self.build_outcome_metrics_card(summary_zone, row=1, column=0)
+        self.build_conversation_metrics_card(summary_zone, row=1, column=1)
+
+        phase_zone = tk.Frame(parent, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        phase_zone.grid(row=1, column=0, sticky="nsew")
+        phase_zone.grid_columnconfigure(0, weight=1)
+        self.build_metric_stack_card(phase_zone, row=0, columns=3)
 
     def build_page_scroller(self, parent):
         """Build a scrollable page shell that lets cards fill the available width."""
