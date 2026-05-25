@@ -287,6 +287,8 @@ class ExperimentRunnerTests(unittest.TestCase):
                         "generated_text": "Need Alpha to Echo.",
                         "outgoing_text": "Need Alpha to Echo.",
                         "incoming_transcript": "Need Alpha to Echo.",
+                        "mode": "pure_text",
+                        "pipeline_ok": True,
                     }
                 ],
                 "timing_turns": [{"turn_latency_sec": 0.4}],

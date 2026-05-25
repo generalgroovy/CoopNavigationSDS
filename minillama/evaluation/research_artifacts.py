@@ -217,6 +217,10 @@ def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_
             {"generated_text", "outgoing_text", "incoming_transcript"}.issubset(turn)
             for turn in speech_turns
         ),
+        "speech_turns_have_pipeline_status": all(
+            {"mode", "pipeline_ok"}.issubset(turn)
+            for turn in speech_turns
+        ),
         "timing_turns_have_latency": all("turn_latency_sec" in turn for turn in timing_turns),
         "semantic_turns_have_parse_flags": all("route_valid" in turn and "route_reaches_goal" in turn for turn in nlu_turns),
         "metric_snapshots_present": bool(result.extra.get("metric_snapshots")),

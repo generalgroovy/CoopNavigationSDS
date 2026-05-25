@@ -107,6 +107,8 @@ METRIC_FAMILY_SPECS = [
     {
         "title": "Automatic speech recognition",
         "metrics": [
+            ("asr_success_rate", "Recognition Success"),
+            ("asr_failure_count", "Recognition Failures"),
             ("asr_word_error_rate", "Word error rate"),
             ("asr_character_error_rate", "Character error rate"),
             ("asr_token_error_rate", "Token error rate"),
@@ -121,6 +123,7 @@ METRIC_FAMILY_SPECS = [
     {
         "title": "Spoken language understanding",
         "metrics": [
+            ("slu_pipeline_input_match_rate", "Pipeline Input Match"),
             ("slu_intent_accuracy", "Intent Accuracy"),
             ("slu_intent_error_rate", "Intent Error"),
             ("slu_slot_f1", "Slot F one score"),
@@ -189,6 +192,8 @@ METRIC_FAMILY_SPECS = [
     {
         "title": "Text-to-speech",
         "metrics": [
+            ("tts_success_rate", "Synthesis Success"),
+            ("tts_failure_count", "Synthesis Failures"),
             ("tts_predicted_mos", "Predicted mean opinion score"),
             ("tts_intelligibility_wer", "Intelligibility word error rate"),
             ("tts_stoi", "Short-time objective intelligibility"),
@@ -214,6 +219,18 @@ METRIC_FAMILY_SPECS = [
             ("runtime_time_to_first_token_sec", "First Token"),
             ("runtime_time_to_first_audio_sec", "First Audio"),
             ("runtime_interruption_recovery_rate", "Recovery"),
+        ],
+    },
+    {
+        "title": "Pipeline phases",
+        "metrics": [
+            ("pipeline_mode", "Mode"),
+            ("pipeline_success_rate", "Pipeline Success"),
+            ("pipeline_failure_count", "Pipeline Failures"),
+            ("pipeline_tts_attempt_count", "Text-to-speech Attempts"),
+            ("pipeline_asr_attempt_count", "Automatic speech recognition Attempts"),
+            ("pipeline_nlu_attempt_count", "Semantic Parse Attempts"),
+            ("pipeline_phase_output_dependency_rate", "Phase Output Dependency"),
         ],
     },
     {
@@ -319,6 +336,14 @@ class MetricRecord:
     candidate_route_count: int
     route_revision_count: int
     best_candidate_turn: int | None
+    pipeline_mode: str
+    pipeline_success_rate: float
+    pipeline_failure_count: int
+    tts_success_rate: float
+    tts_failure_count: int
+    asr_success_rate: float
+    asr_failure_count: int
+    nlu_pipeline_input_match_rate: float
     asr_word_error_rate: float
     asr_sentence_error_rate: float
     asr_station_precision: float
@@ -581,6 +606,11 @@ class MetricComputer:
         timing_turns = result.extra.get("timing_turns", [])
         nlu_turns = result.extra.get("nlu_turns", [])
         model_parameters = result.extra.get("model_parameters", {})
+        pipeline_failure = result.extra.get("pipeline_failure")
+        pipeline_mode = next(
+            (turn.get("mode") for turn in speech_turns if turn.get("mode")),
+            result.extra.get("pipeline_mode", "unknown"),
+        )
 
         ref_word_total = 0
         word_substitutions = 0
@@ -594,8 +624,17 @@ class MetricComputer:
         tts_word_edits = 0
         incoming_enabled_count = 0
         outgoing_enabled_count = 0
+        pipeline_failure_count = 1 if pipeline_failure else 0
+        tts_success_count = 0
+        tts_failure_count = 0
+        asr_success_count = 0
+        asr_failure_count = 0
+        agent_b_transcripts = []
 
         for turn in speech_turns:
+            pipeline_ok = turn.get("pipeline_ok", True)
+            if not pipeline_ok:
+                pipeline_failure_count += 1
             generated_tokens = tokenize_words(turn.get("generated_text", turn.get("source_text", "")))
             outgoing_tokens = tokenize_words(turn.get("outgoing_text", turn.get("source_text", "")))
             tts_subs, tts_dels, tts_ins = edit_counts(generated_tokens, outgoing_tokens)
@@ -603,6 +642,12 @@ class MetricComputer:
             tts_word_edits += tts_subs + tts_dels + tts_ins
             incoming_enabled_count += 1 if turn.get("incoming_enabled") else 0
             outgoing_enabled_count += 1 if turn.get("outgoing_enabled") else 0
+            if turn.get("outgoing_enabled"):
+                audio = turn.get("audio") if isinstance(turn.get("audio"), dict) else {}
+                if pipeline_ok and (pipeline_mode == "pure_text" or audio.get("path") or turn.get("tts_engine") not in {"disabled", "loopback-tts"}):
+                    tts_success_count += 1
+                else:
+                    tts_failure_count += 1
 
             source_tokens = outgoing_tokens
             transcript_tokens = tokenize_words(turn.get("incoming_transcript", turn.get("transcript", "")))
@@ -615,6 +660,13 @@ class MetricComputer:
             transcript_text = turn.get("incoming_transcript", turn.get("transcript", ""))
             if normalized_text(source_text) != normalized_text(transcript_text):
                 sentence_errors += 1
+            if turn.get("incoming_enabled"):
+                if pipeline_ok and normalized_text(transcript_text):
+                    asr_success_count += 1
+                else:
+                    asr_failure_count += 1
+            if turn.get("speaker") == "Agent B":
+                agent_b_transcripts.append(normalized_text(transcript_text))
 
             source_stations = station_mentions_in_text(source_text)
             transcript_stations = station_mentions_in_text(transcript_text)
@@ -632,6 +684,12 @@ class MetricComputer:
         tts_text_change_rate = safe_ratio(tts_word_edits, tts_ref_word_total)
         speech_incoming_enabled_rate = safe_ratio(incoming_enabled_count, len(speech_turns))
         speech_outgoing_enabled_rate = safe_ratio(outgoing_enabled_count, len(speech_turns))
+        pipeline_success_rate = safe_ratio(
+            sum(1 for turn in speech_turns if turn.get("pipeline_ok", True)),
+            len(speech_turns),
+        )
+        tts_success_rate = safe_ratio(tts_success_count, outgoing_enabled_count)
+        asr_success_rate = safe_ratio(asr_success_count, incoming_enabled_count)
 
         nlu_route_valid_rate = safe_ratio(
             sum(1 for turn in nlu_turns if turn.get("route_valid")),
@@ -645,6 +703,12 @@ class MetricComputer:
             sum(1 for turn in nlu_turns if turn.get("has_station_mentions")),
             len(nlu_turns),
         )
+        nlu_pipeline_input_match_count = 0
+        for index, turn in enumerate(nlu_turns):
+            expected = agent_b_transcripts[index] if index < len(agent_b_transcripts) else None
+            if expected is not None and normalized_text(turn.get("text", "")) == expected:
+                nlu_pipeline_input_match_count += 1
+        nlu_pipeline_input_match_rate = safe_ratio(nlu_pipeline_input_match_count, len(nlu_turns))
 
         def average_latency(speaker):
             speaker_turns = [turn for turn in timing_turns if turn.get("speaker") == speaker]
@@ -836,7 +900,9 @@ class MetricComputer:
                 "overlap_detection_f1": None,
             },
             "asr": {
-                "available": True,
+                "available": incoming_enabled_count > 0,
+                "success_rate": round(asr_success_rate, 4),
+                "failure_count": asr_failure_count,
                 "word_error_rate": round(asr_word_error_rate, 4),
                 "token_error_rate": round(asr_token_error_rate, 4),
                 "character_error_rate": round(asr_character_error_rate, 4),
@@ -849,6 +915,7 @@ class MetricComputer:
             },
             "slu": {
                 "available": True,
+                "pipeline_input_match_rate": round(nlu_pipeline_input_match_rate, 4),
                 "intent_accuracy": round(nlu_route_valid_rate, 4),
                 "intent_error_rate": round(max(0.0, 1.0 - nlu_route_valid_rate), 4),
                 "slot_f1": slot_realization_accuracy,
@@ -907,7 +974,9 @@ class MetricComputer:
                 "constraint_satisfaction_rate": round(nlg_constraint_satisfaction_rate, 4),
             },
             "tts": {
-                "available": True,
+                "available": outgoing_enabled_count > 0,
+                "success_rate": round(tts_success_rate, 4),
+                "failure_count": tts_failure_count,
                 "predicted_mos": None,
                 "intelligibility_wer": round(asr_word_error_rate, 4),
                 "stoi": None,
@@ -931,6 +1000,17 @@ class MetricComputer:
                 "time_to_first_token_sec": None if time_to_first_token_sec is None else round(time_to_first_token_sec, 4),
                 "time_to_first_audio_sec": None if time_to_first_audio_sec is None else round(time_to_first_audio_sec, 4),
                 "interruption_recovery_rate": None,
+            },
+            "pipeline": {
+                "available": True,
+                "mode": pipeline_mode,
+                "success_rate": round(pipeline_success_rate, 4),
+                "failure_count": pipeline_failure_count,
+                "tts_attempt_count": outgoing_enabled_count,
+                "asr_attempt_count": incoming_enabled_count,
+                "nlu_attempt_count": len(nlu_turns),
+                "phase_output_dependency_rate": round(nlu_pipeline_input_match_rate, 4),
+                "failure_reason": pipeline_failure.get("message") if isinstance(pipeline_failure, dict) else None,
             },
             "end_to_end": {
                 "available": True,
@@ -1017,6 +1097,14 @@ class MetricComputer:
             candidate_route_count=result.extra.get("candidate_routes", 0),
             route_revision_count=result.extra.get("route_revisions", 0),
             best_candidate_turn=result.extra.get("best_candidate_turn"),
+            pipeline_mode=pipeline_mode,
+            pipeline_success_rate=round(pipeline_success_rate, 4),
+            pipeline_failure_count=pipeline_failure_count,
+            tts_success_rate=round(tts_success_rate, 4),
+            tts_failure_count=tts_failure_count,
+            asr_success_rate=round(asr_success_rate, 4),
+            asr_failure_count=asr_failure_count,
+            nlu_pipeline_input_match_rate=round(nlu_pipeline_input_match_rate, 4),
             asr_word_error_rate=round(asr_word_error_rate, 4),
             asr_sentence_error_rate=round(asr_sentence_error_rate, 4),
             asr_station_precision=round(asr_station_precision, 4),
