@@ -16,6 +16,7 @@ from minillama.agent_b.config import (
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
     SPEECH_PLAYBACK_ENABLED,
+    SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
 )
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
@@ -63,6 +64,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
             engine=run_config["speech_engine"],
             audio_dir=run_config["speech_audio_dir"],
             playback_enabled=run_config["speech_playback_enabled"],
+            realtime_enabled=run_config["speech_realtime_enabled"],
         )
     )
     manager = DialogManager(
@@ -116,6 +118,7 @@ def default_run_config():
         "speech_incoming_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_INCOMING_ENABLED else SPEECH_INCOMING_ENABLED,
         "speech_outgoing_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_OUTGOING_ENABLED else SPEECH_OUTGOING_ENABLED,
         "speech_playback_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_PLAYBACK_ENABLED else SPEECH_PLAYBACK_ENABLED,
+        "speech_realtime_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_REALTIME_ENABLED else SPEECH_REALTIME_ENABLED,
         "speech_scope": "both" if SPEECH_SCOPE == "none" else SPEECH_SCOPE,
         "gui_enabled": GUI_ENABLED,
     }

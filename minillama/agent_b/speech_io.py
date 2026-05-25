@@ -7,6 +7,7 @@ from pathlib import Path
 import random
 import re
 import struct
+import time
 from typing import Protocol
 import wave
 
@@ -18,6 +19,7 @@ from minillama.agent_b.config import (
     SPEECH_OUTGOING_ENABLED,
     SPEECH_PATTERNS,
     SPEECH_PLAYBACK_ENABLED,
+    SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
 )
 
@@ -44,6 +46,7 @@ class SpeechPipelineConfig:
     min_utterance_sec: float = 0.6
     max_utterance_sec: float = 3.5
     playback_enabled: bool = SPEECH_PLAYBACK_ENABLED
+    realtime_enabled: bool = SPEECH_REALTIME_ENABLED
 
     def applies_to(self, speaker: str) -> bool:
         if self.scope in {"both", "all", "*"}:
@@ -63,7 +66,8 @@ class SpeechPipelineConfig:
         if not directions:
             directions.append("text-only")
         playback = ":playback" if self.playback_enabled else ""
-        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}{playback}"
+        realtime = ":realtime" if self.realtime_enabled else ""
+        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}{playback}{realtime}"
 
 
 @dataclass(frozen=True)
@@ -164,6 +168,7 @@ class WaveFileTextToSpeech:
         audio_dir="speech_artifacts",
         sample_rate=8000,
         playback_enabled=False,
+        realtime_enabled=False,
         agent_a_words_per_minute=165,
         agent_b_words_per_minute=175,
         max_duration_sec=3.5,
@@ -171,6 +176,7 @@ class WaveFileTextToSpeech:
         self.audio_dir = Path(audio_dir)
         self.sample_rate = sample_rate
         self.playback_enabled = playback_enabled
+        self.realtime_enabled = realtime_enabled
         self.agent_a_words_per_minute = agent_a_words_per_minute
         self.agent_b_words_per_minute = agent_b_words_per_minute
         self.max_duration_sec = max_duration_sec
@@ -185,7 +191,12 @@ class WaveFileTextToSpeech:
         transcript_path = self.audio_dir / f"{stem}.txt"
         duration_sec = self._write_wave(wav_path, speaker, text)
         transcript_path.write_text(text, encoding="utf-8")
-        played = self._play_wave(wav_path) if self.playback_enabled else False
+        played = (
+            self._play_wave(wav_path, realtime=self.realtime_enabled, fallback_duration=duration_sec)
+            if self.playback_enabled
+            else False
+        )
+        waited = bool(self.playback_enabled and self.realtime_enabled)
         return SpeechSignal(
             speaker=speaker,
             text=text,
@@ -195,6 +206,8 @@ class WaveFileTextToSpeech:
                 "sample_rate": self.sample_rate,
                 "duration_sec": duration_sec,
                 "played": played,
+                "realtime": self.realtime_enabled,
+                "waited": waited,
             },
         )
 
@@ -221,13 +234,18 @@ class WaveFileTextToSpeech:
         return round(duration, 3)
 
     @staticmethod
-    def _play_wave(path: Path) -> bool:
+    def _play_wave(path: Path, realtime=False, fallback_duration=0.0) -> bool:
         try:
             import winsound
 
-            winsound.PlaySound(str(path), winsound.SND_FILENAME | winsound.SND_ASYNC)
+            flags = winsound.SND_FILENAME
+            if not realtime:
+                flags |= winsound.SND_ASYNC
+            winsound.PlaySound(str(path), flags)
             return True
         except Exception:
+            if realtime and fallback_duration:
+                time.sleep(fallback_duration)
             return False
 
 
@@ -283,6 +301,7 @@ class SpeechTransport:
             return WaveFileTextToSpeech(
                 self.config.audio_dir,
                 playback_enabled=self.config.playback_enabled,
+                realtime_enabled=self.config.realtime_enabled,
                 agent_a_words_per_minute=self.config.agent_a_words_per_minute,
                 agent_b_words_per_minute=self.config.agent_b_words_per_minute,
                 max_duration_sec=self.config.max_utterance_sec,
@@ -327,12 +346,18 @@ class SpeechTransport:
             if outgoing_enabled
             else SpeechSignal(speaker=speaker, text=text, audio=None)
         )
+        simulated_duration_sec = self.estimate_duration_sec(speaker, signal.text)
+        audio = signal.audio if isinstance(signal.audio, dict) else {}
+        if self.config.realtime_enabled and outgoing_enabled and not audio.get("waited"):
+            time.sleep(simulated_duration_sec)
+            if isinstance(signal.audio, dict):
+                signal.audio["waited"] = True
+                signal.audio["software_wait_sec"] = simulated_duration_sec
         transcript = (
             self.asr_engine.transcribe(signal)
             if incoming_enabled
             else signal.text
         )
-        simulated_duration_sec = self.estimate_duration_sec(speaker, signal.text)
         return SpeechPipelineTrace(
             speaker=speaker,
             generated_text=text,

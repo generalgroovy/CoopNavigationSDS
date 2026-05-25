@@ -86,6 +86,8 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertTrue(Path(trace.audio["transcript_path"]).exists())
             self.assertIn("duration_sec", trace.audio)
             self.assertFalse(trace.audio["played"])
+            self.assertFalse(trace.audio["realtime"])
+            self.assertFalse(trace.audio["waited"])
 
     def test_file_speech_engine_supports_playback_flag_without_breaking_transcript(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -107,6 +109,54 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertEqual(trace.incoming_transcript, "Short audible turn.")
             self.assertLessEqual(trace.simulated_duration_sec, 2.5)
             self.assertTrue(trace.audio["played"])
+
+    def test_realtime_file_speech_waits_before_transcript_delivery(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(
+                config=SpeechPipelineConfig(
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    scope="both",
+                    engine="file",
+                    audio_dir=tmpdir,
+                    playback_enabled=True,
+                    realtime_enabled=True,
+                    max_utterance_sec=2.5,
+                )
+            )
+
+            with patch("minillama.agent_b.speech_io.WaveFileTextToSpeech._play_wave", return_value=True) as play_wave:
+                trace = transport.transmit_trace("Agent B", "I can hear this after playback.")
+
+            self.assertEqual(trace.incoming_transcript, "I can hear this after playback.")
+            self.assertTrue(trace.audio["played"])
+            self.assertTrue(trace.audio["realtime"])
+            self.assertTrue(trace.audio["waited"])
+            self.assertTrue(play_wave.call_args.kwargs["realtime"])
+            self.assertGreater(play_wave.call_args.kwargs["fallback_duration"], 0)
+
+    def test_realtime_without_playback_still_waits_before_listening(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(
+                config=SpeechPipelineConfig(
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    scope="both",
+                    engine="file",
+                    audio_dir=tmpdir,
+                    playback_enabled=False,
+                    realtime_enabled=True,
+                    max_utterance_sec=1.0,
+                )
+            )
+
+            with patch("minillama.agent_b.speech_io.time.sleep") as sleep:
+                trace = transport.transmit_trace("Agent A", "Wait before the other agent hears this.")
+
+            self.assertEqual(trace.incoming_transcript, "Wait before the other agent hears this.")
+            self.assertFalse(trace.audio["played"])
+            self.assertTrue(trace.audio["waited"])
+            sleep.assert_called_once()
 
 
 if __name__ == "__main__":

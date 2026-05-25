@@ -9,6 +9,7 @@ SPEECH_INCOMING_ENABLED = os.environ.get("MINILLAMA_SPEECH_INCOMING", "0").lower
 SPEECH_OUTGOING_ENABLED = os.environ.get("MINILLAMA_SPEECH_OUTGOING", "0").lower() in {"1", "true", "on", "yes"}
 SPEECH_SCOPE = os.environ.get("MINILLAMA_SPEECH_SCOPE", "none").lower()
 SPEECH_PLAYBACK_ENABLED = os.environ.get("MINILLAMA_SPEECH_PLAYBACK", "0").lower() in {"1", "true", "on", "yes"}
+SPEECH_REALTIME_ENABLED = os.environ.get("MINILLAMA_SPEECH_REALTIME", "0").lower() in {"1", "true", "on", "yes"}
 SPEECH_SHOW_RAW_TEXT = os.environ.get("MINILLAMA_SPEECH_SHOW_RAW", "0").lower() in {"1", "true", "on", "yes"}
 
 SPEECH_PATTERNS = {
