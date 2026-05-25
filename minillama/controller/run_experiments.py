@@ -8,7 +8,7 @@ from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
-from minillama.evaluation.research_artifacts import write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 
@@ -36,19 +36,19 @@ def parse_bool_flag(value):
 def main():
     """Run the configured experiment grid and write metrics output."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--agent-b-plugin", default=AGENT_B_PLUGIN, help="Agent B plugin: minillama, simple, llm alias, or package.module:factory.")
+    parser.add_argument("--agent-b-plugin", default=AGENT_B_PLUGIN, help="Agent B plugin: minillama, simple, large language model alias, or package.module:factory.")
     parser.add_argument("--model-provider", choices=("transformers", "openai"))
     parser.add_argument("--test-cases", default="morning_peak_cross_city,midday_transfer,evening_outbound,late_event")
     parser.add_argument("--personas", default="focused_commuter")
     parser.add_argument("--speech-patterns", default=DEFAULT_SPEECH_PATTERN)
-    parser.add_argument("--speech-engine", default=SPEECH_ENGINE, choices=("patterned", "file"), help="Speech backend: text-pattern simulator or generated WAV files.")
-    parser.add_argument("--tts-engine", default=SPEECH_TTS_ENGINE, choices=("", "patterned", "file", "loopback"), help="TTS stage backend. Empty uses --speech-engine.")
-    parser.add_argument("--asr-engine", default=SPEECH_ASR_ENGINE, choices=("", "patterned", "file", "loopback"), help="ASR stage backend. Empty uses --speech-engine.")
-    parser.add_argument("--speech-audio-dir", default=SPEECH_AUDIO_DIR, help="Directory for generated speech WAV/transcript artifacts.")
-    parser.add_argument("--speech-incoming", type=parse_bool_flag, default=SPEECH_INCOMING_ENABLED, help="Enable incoming ASR/transcript processing.")
-    parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=SPEECH_OUTGOING_ENABLED, help="Enable outgoing TTS/verbalization processing.")
-    parser.add_argument("--speech-playback", type=parse_bool_flag, default=SPEECH_PLAYBACK_ENABLED, help="Play generated WAV files during file-engine runs.")
-    parser.add_argument("--speech-real-time", type=parse_bool_flag, default=SPEECH_REALTIME_ENABLED, help="Wait for each spoken turn before ASR/transcript delivery.")
+    parser.add_argument("--speech-engine", default=SPEECH_ENGINE, choices=("patterned", "file"), help="Speech backend: text-pattern simulator or generated wave files.")
+    parser.add_argument("--tts-engine", default=SPEECH_TTS_ENGINE, choices=("", "patterned", "file", "loopback"), help="Text-to-speech stage backend. Empty uses --speech-engine.")
+    parser.add_argument("--asr-engine", default=SPEECH_ASR_ENGINE, choices=("", "patterned", "file", "loopback"), help="Automatic speech recognition stage backend. Empty uses --speech-engine.")
+    parser.add_argument("--speech-audio-dir", default=SPEECH_AUDIO_DIR, help="Directory for generated speech wave files and transcript artifacts.")
+    parser.add_argument("--speech-incoming", type=parse_bool_flag, default=SPEECH_INCOMING_ENABLED, help="Enable incoming automatic speech recognition transcript processing.")
+    parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=SPEECH_OUTGOING_ENABLED, help="Enable outgoing text-to-speech verbalization processing.")
+    parser.add_argument("--speech-playback", type=parse_bool_flag, default=SPEECH_PLAYBACK_ENABLED, help="Play generated wave files during file-engine runs.")
+    parser.add_argument("--speech-real-time", type=parse_bool_flag, default=SPEECH_REALTIME_ENABLED, help="Wait for each spoken turn before automatic speech recognition transcript delivery.")
     parser.add_argument("--speech-scope", default=SPEECH_SCOPE, choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
     parser.add_argument("--speech-enabled", action="store_true", help="Shortcut: enable incoming and outgoing speech for both agents.")
     parser.add_argument("--model-params", default="greedy")
@@ -57,6 +57,7 @@ def main():
     parser.add_argument("--output", default="automatic_eval_metrics.xlsx")
     parser.add_argument("--metrics-log-dir", default=None, help="Directory for per-phase metric JSONL files.")
     parser.add_argument("--research-log-dir", default=RESEARCH_LOG_DIR, help="Directory for network/model research logs.")
+    parser.add_argument("--protocol-log-dir", default=None, help="Directory for detailed conversation protocol artifacts. Empty uses a conversation_protocols folder inside --research-log-dir.")
     parser.add_argument("--network-picture-dir", default=NETWORK_PICTURE_DIR, help="Directory for generated network graph SVG.")
     parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
     parser.add_argument("--log-dir", default=SESSION_LOG_DIR, help="Directory for optional batch JSONL/session logs.")
@@ -100,13 +101,17 @@ def main():
         log_profile=args.log_profile,
         log_dir=args.log_dir,
     )
+    results = []
     metrics = []
     for condition in conditions:
-        _, metric = runner.run_condition(condition)
+        result, metric = runner.run_condition(condition)
+        results.append(result)
         metrics.append(metric)
         if args.progress:
             print(f"completed {condition.condition_id}", flush=True)
     write_metrics_file(metrics, args.output)
+    protocol_log_dir = args.protocol_log_dir or f"{args.research_log_dir}/conversation_protocols"
+    protocol_paths = write_conversation_protocols(results, protocol_log_dir)
 
     first_case_key = (test_case_keys or [DEFAULT_TEST_CASE])[0]
     first_case = get_test_case(first_case_key)
@@ -129,6 +134,7 @@ def main():
     write_metric_phase_logs(metrics, phase_log_dir)
 
     print(f"wrote {len(metrics)} metric rows to {args.output}")
+    print(f"wrote {len(protocol_paths)} conversation protocol folders to {protocol_log_dir}")
     print(f"wrote metric phase logs to {phase_log_dir}")
     print(f"wrote experiment manifest to {manifest_path}")
     print(f"wrote network data to {artifacts['network_json']}")

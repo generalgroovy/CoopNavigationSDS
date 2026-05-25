@@ -5,10 +5,18 @@ from dataclasses import asdict
 import csv
 import json
 from pathlib import Path
+import re
 
 from minillama.evaluation.xlsx_export import write_metrics_xlsx
 from minillama.model.network_overview import build_network_overview
 from minillama.model.network_picture import write_network_svg
+
+
+def safe_artifact_name(value):
+    """Return a stable filesystem name for research artifacts."""
+    text = str(value or "run").strip().lower()
+    text = re.sub(r"[^a-z0-9_.-]+", "_", text)
+    return text.strip("._") or "run"
 
 
 def write_metrics_csv(metrics, path):
@@ -94,6 +102,115 @@ def write_network_research_artifacts(current_time_min, output_dir, picture_dir=N
     return {"network_json": network_json, "network_graph": graph_path}
 
 
+def write_conversation_protocol(result, output_dir):
+    """Write detailed, parsable protocol data for one completed conversation."""
+    output_dir = Path(output_dir)
+    condition_dir = output_dir / safe_artifact_name(result.condition_id)
+    condition_dir.mkdir(parents=True, exist_ok=True)
+
+    turns = [
+        {
+            "turn_index": index,
+            "speaker": speaker,
+            "utterance": utterance,
+        }
+        for index, (speaker, utterance) in enumerate(result.conversation, start=1)
+    ]
+    speech_turns = list(result.extra.get("speech_turns", []))
+    timing_turns = list(result.extra.get("timing_turns", []))
+    nlu_turns = list(result.extra.get("nlu_turns", []))
+    verification = verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns)
+    summary = {
+        "condition_id": result.condition_id,
+        "test_case_key": result.test_case_key,
+        "persona_key": result.persona_key,
+        "scenario_key": result.scenario_key,
+        "speech_pattern_key": result.speech_pattern_key,
+        "model_name": result.model_name,
+        "message_count": len(turns),
+        "route": result.route,
+        "route_steps": result.route_steps,
+        "route_valid": result.route_valid,
+        "route_reaches_goal": result.route_reaches_goal,
+        "route_correct": result.route_correct,
+        "route_duration_min": result.route_duration_min,
+        "runtime_sec": result.runtime_sec,
+        "extra": result.extra,
+        "verification": verification,
+    }
+
+    paths = {
+        "summary": condition_dir / "summary.json",
+        "turns": condition_dir / "turns.jsonl",
+        "speech": condition_dir / "speech_pipeline.jsonl",
+        "timing": condition_dir / "timing.jsonl",
+        "semantic": condition_dir / "semantic_parsing.jsonl",
+        "metrics": condition_dir / "metrics.txt",
+        "verification": condition_dir / "verification.json",
+    }
+    paths["summary"].write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
+    write_jsonl(paths["turns"], turns)
+    write_jsonl(paths["speech"], speech_turns)
+    write_jsonl(paths["timing"], timing_turns)
+    write_jsonl(paths["semantic"], nlu_turns)
+    paths["metrics"].write_text(result.metrics_text or "", encoding="utf-8")
+    paths["verification"].write_text(json.dumps(verification, indent=2, ensure_ascii=True), encoding="utf-8")
+    return paths
+
+
+def write_conversation_protocols(results, output_dir):
+    """Write protocol artifacts for all completed conversations."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    paths = [write_conversation_protocol(result, output_dir) for result in results]
+    index_rows = [
+        {
+            "condition_id": result.condition_id,
+            "test_case_key": result.test_case_key,
+            "persona_key": result.persona_key,
+            "scenario_key": result.scenario_key,
+            "message_count": len(result.conversation),
+            "route_correct": result.route_correct,
+            "folder": safe_artifact_name(result.condition_id),
+        }
+        for result in results
+    ]
+    write_jsonl(output_dir / "index.jsonl", index_rows)
+    return paths
+
+
+def write_jsonl(path, rows):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with Path(path).open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=True) + "\n")
+
+
+def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns):
+    """Return validation checks for research-grade protocol completeness."""
+    checks = {
+        "conversation_has_turns": bool(turns),
+        "message_count_matches_result": len(turns) == result.extra.get("messages", len(result.conversation)),
+        "route_flags_are_boolean": all(isinstance(value, bool) for value in (result.route_valid, result.route_reaches_goal, result.route_correct)),
+        "speech_turns_have_transcripts": all(
+            {"generated_text", "outgoing_text", "incoming_transcript"}.issubset(turn)
+            for turn in speech_turns
+        ),
+        "timing_turns_have_latency": all("turn_latency_sec" in turn for turn in timing_turns),
+        "semantic_turns_have_parse_flags": all("route_valid" in turn and "route_reaches_goal" in turn for turn in nlu_turns),
+    }
+    return {
+        "verified": all(checks.values()),
+        "checks": checks,
+        "counts": {
+            "turns": len(turns),
+            "speech_turns": len(speech_turns),
+            "timing_turns": len(timing_turns),
+            "semantic_turns": len(nlu_turns),
+        },
+    }
+
+
 def write_experiment_manifest(
     conditions,
     output_dir,
@@ -127,7 +244,7 @@ def write_experiment_manifest(
         "hypotheses": [
             "Valid route proposals should appear before secondary optimization.",
             "Persona constraints should change route comparisons across time, fullness, transfers, and delay risk.",
-            "Speech-enabled runs should preserve route semantics while adding measurable ASR/TTS/runtime phases.",
+            "Speech-enabled runs should preserve route semantics while adding measurable automatic speech recognition, text-to-speech, and runtime phases.",
         ],
         "independent_variables": [
             "test_case_key",

@@ -159,7 +159,7 @@ class DialogManager:
             )
 
         def emit_speech_telemetry(trace, latency_sec):
-            """Send source/transcript telemetry for ASR-facing GUI metrics."""
+            """Send source/transcript telemetry for automatic speech recognition metrics."""
             payload = {
                 "speaker": trace.speaker,
                 "generated_text": trace.generated_text,
@@ -203,7 +203,7 @@ class DialogManager:
             )
 
         def emit_nlu_telemetry(speaker, text, parsed_route, has_station_mentions):
-            """Send semantic parsing telemetry for NLU/DST metrics."""
+            """Send semantic parsing telemetry for language understanding and dialog-state metrics."""
             valid = route_is_valid(parsed_route)
             payload = {
                 "speaker": speaker,
@@ -253,11 +253,11 @@ class DialogManager:
                     "system",
                     (
                         "Constraint baseline: "
-                        f"{' -> '.join(constraint_route.route)} "
-                        f"({constraint_route.duration_min} min, "
+                        f"{' to '.join(constraint_route.route)} "
+                        f"({constraint_route.duration_min} minutes, "
                         f"{constraint_route.line_change_count} changes, "
-                        f"{constraint_route.average_fullness}% full, "
-                        f"{round(constraint_route.delay_probability * 100)}% delay risk, "
+                        f"{constraint_route.average_fullness} percent full, "
+                        f"{round(constraint_route.delay_probability * 100)} percent delay risk, "
                         f"{constraint_route.label})"
                     ),
                 )
@@ -431,32 +431,32 @@ class DialogManager:
             f"Start time:            {fmt_time(scenario['start_time_min'])}\n"
             f"Start:                 {scenario['start_station']}\n"
             f"Destination:           {scenario['destination_station']}\n"
-            f"Displayed route:       {' -> '.join(best_route) if best_route else 'None'}\n"
-            f"Displayed line sequence: {' -> '.join(displayed_line_sequence) if displayed_line_sequence else 'None'}\n"
+            f"Displayed route:       {' to '.join(best_route) if best_route else 'None'}\n"
+            f"Displayed line sequence: {' to '.join(displayed_line_sequence) if displayed_line_sequence else 'None'}\n"
             f"Displayed line changes: {displayed_line_change_count if displayed_line_sequence else 'None'}\n"
             f"Displayed arrival:     {fmt_time(displayed_arrival) if displayed_arrival else 'None'}\n"
-            f"Displayed duration:    {str(displayed_duration) + ' min' if displayed_duration is not None else 'None'}\n"
+            f"Displayed duration:    {str(displayed_duration) + ' minutes' if displayed_duration is not None else 'None'}\n"
             f"Duration breakdown:    {route_duration_text(displayed_steps)}\n"
-            f"Average crowding:      {str(average_route_fullness) + '%' if average_route_fullness is not None else 'None'}\n"
-            f"Reference route:       {' -> '.join(reference_route) if reference_route else 'None'}\n"
-            f"Reference line sequence: {' -> '.join(reference_line_sequence) if reference_line_sequence else 'None'}\n"
+            f"Average crowding:      {str(average_route_fullness) + ' percent' if average_route_fullness is not None else 'None'}\n"
+            f"Reference route:       {' to '.join(reference_route) if reference_route else 'None'}\n"
+            f"Reference line sequence: {' to '.join(reference_line_sequence) if reference_line_sequence else 'None'}\n"
             f"Reference line changes: {reference_line_change_count if reference_line_sequence else 'None'}\n"
-            f"Reference duration:    {str(reference_duration) + ' min' if reference_duration is not None else 'None'}\n"
+            f"Reference duration:    {str(reference_duration) + ' minutes' if reference_duration is not None else 'None'}\n"
             f"Constraint target:     {constraint_route.label if constraint_route else 'None'}\n"
-            f"Constraint route:      {' -> '.join(constraint_route.route) if constraint_route else 'None'}\n"
-            f"Constraint line sequence: {' -> '.join(constraint_line_sequence) if constraint_line_sequence else 'None'}\n"
+            f"Constraint route:      {' to '.join(constraint_route.route) if constraint_route else 'None'}\n"
+            f"Constraint line sequence: {' to '.join(constraint_line_sequence) if constraint_line_sequence else 'None'}\n"
             f"Constraint line changes: {constraint_line_change_count if constraint_line_change_count is not None else 'None'}\n"
-            f"Constraint duration:   {str(constraint_duration) + ' min' if constraint_duration is not None else 'None'}\n"
-            f"Constraint crowding:   {str(constraint_average_fullness) + '%' if constraint_average_fullness is not None else 'None'}\n"
-            f"Constraint delay risk: {str(round(constraint_delay_probability * 100, 1)) + '%' if constraint_delay_probability is not None else 'None'}\n"
-            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} min, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('fullness_gap', 'None')} fullness, {constraint_gap.get('delay_probability_gap', 'None')} delay\n"
+            f"Constraint duration:   {str(constraint_duration) + ' minutes' if constraint_duration is not None else 'None'}\n"
+            f"Constraint crowding:   {str(constraint_average_fullness) + ' percent' if constraint_average_fullness is not None else 'None'}\n"
+            f"Constraint delay risk: {str(round(constraint_delay_probability * 100, 1)) + ' percent' if constraint_delay_probability is not None else 'None'}\n"
+            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('fullness_gap', 'None')} fullness, {constraint_gap.get('delay_probability_gap', 'None')} delay\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
             f"Route valid:           {route_valid}\n"
             f"Route reaches goal:    {reaches_goal}\n"
             f"Route correct:         {route_correct}\n"
-            f"Runtime:               {end_wall - start_wall:.2f}s\n"
+            f"Runtime:               {end_wall - start_wall:.2f} seconds\n"
             f"Speech pipeline:       {self.speech_transport.description}\n"
         )
 

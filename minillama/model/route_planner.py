@@ -278,15 +278,16 @@ def route_text_from_steps(steps):
         return "No route found."
 
     rides = route_rides(steps)
-    boarding_route = " -> ".join(route_boarding_route(steps))
-    line_route = " -> ".join(ride["line"] for ride in rides)
+    boarding_route = " to ".join(route_boarding_route(steps))
+    line_route = " to ".join(ride["line"] for ride in rides)
     start = rides[0]["from"]
     destination = rides[-1]["to"]
     total = steps[-1]["arrive"] - (steps[0]["depart"] - steps[0]["wait"])
-    change_text = "no changes" if len(rides) == 1 else f"{len(rides) - 1} change(s)"
+    change_count = len(rides) - 1
+    change_text = "no line changes" if change_count == 0 else f"{change_count} line changes"
     if len(rides) == 1:
-        return f"Take {line_route} from {start} to {destination}. Boarding: {boarding_route}. Total {total} min, {change_text}."
-    return f"Boarding: {boarding_route}. Via {line_route}. Total {total} min."
+        return f"Take {line_route} from {start} to {destination}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
+    return f"Boarding: {boarding_route}. Via {line_route}. Total {total} minutes."
 
 
 def route_rides(steps):
@@ -387,8 +388,8 @@ def route_duration_text(steps):
     parts = route_duration_breakdown(steps)
     total = parts["wait"] + parts["transfer"] + parts["travel"]
     return (
-        f"{total} min "
-        f"(travel {parts['travel']} + wait {parts['wait']} + transfer {parts['transfer']})"
+        f"{total} minutes "
+        f"(travel {parts['travel']} minutes + wait {parts['wait']} minutes + transfer {parts['transfer']} minutes)"
     )
 
 

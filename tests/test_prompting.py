@@ -59,7 +59,7 @@ class PromptingTests(unittest.TestCase):
     def test_agent_b_system_prompt_includes_route_context(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
         self.assertIn("Agent B", prompt)
-        self.assertIn("Transfer cost: 4 min", prompt)
+        self.assertIn("Transfer cost: 4 minutes", prompt)
 
     def test_agent_b_system_prioritizes_validity_over_constraints(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
@@ -135,7 +135,7 @@ class PromptingTests(unittest.TestCase):
             1,
             self.persona,
             self.real_scenario,
-            [("Agent B", "Boarding: Bravo -> Golf -> Ivy -> Harbor. Lines: Ring -> Diagonal-SE-6 -> Ring. Total 28 min, 2 change(s).")],
+            [("Agent B", "Boarding: Bravo to Golf to Ivy to Harbor. Lines: Ring to Diagonal-SE-6 to Ring. Total 28 minutes, 2 line changes.")],
         )
 
         self.assertLessEqual(len(text.split()), 22)
@@ -157,9 +157,9 @@ class PromptingTests(unittest.TestCase):
             self.persona,
             self.real_scenario,
             [
-                ("Agent B", "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo -> Golf -> Ivy -> Harbor. Total 28 min."),
+                ("Agent B", "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo to Golf to Ivy to Harbor. Total 28 minutes."),
                 ("Agent A", "Now compare one faster valid route."),
-                ("Agent B", "Take Ring from Bravo to Mike. Change at Mike to East-West-3 to November. Change at November to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo -> Mike -> November -> Ivy -> Harbor. Total 38 min."),
+                ("Agent B", "Take Ring from Bravo to Mike. Change at Mike to East-West-3 to November. Change at November to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo to Mike to November to Ivy to Harbor. Total 38 minutes."),
             ],
         )
 
@@ -183,7 +183,7 @@ class PromptingTests(unittest.TestCase):
 
     def test_interpreter_expands_boarding_route_mentions(self):
         interpreter = NaturalRouteInterpreter()
-        text = "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 from Golf to Ivy. Boarding: Bravo -> Golf -> Ivy -> Harbor. Total 31 minutes."
+        text = "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 from Golf to Ivy. Boarding: Bravo to Golf to Ivy to Harbor. Total 31 minutes."
 
         route = interpreter.interpret_reply(text, self.real_scenario)
 

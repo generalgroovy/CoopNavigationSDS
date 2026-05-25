@@ -19,11 +19,11 @@ def compact_prompt_context(scenario):
         The computed value or side effect documented by the implementation.
     """
     destinations = scenario.get("destination_stations") or [scenario["destination_station"]]
-    destination_text = " -> ".join(destinations) if len(destinations) > 1 else scenario["destination_station"]
+    destination_text = " to ".join(destinations) if len(destinations) > 1 else scenario["destination_station"]
     return (
-        f"Time: {scenario['start_time_min']} min after midnight. "
+        f"Time: {scenario['start_time_min']} minutes after midnight. "
         f"Start: {scenario['start_station']}. Destination: {destination_text}. "
-        f"Transfer cost: {scenario['transfer_time_min']} min. "
+        f"Transfer cost: {scenario['transfer_time_min']} minutes. "
         f"{ROUTE_TASK} "
         f"Network: {compact_network_text()} "
         f"Lines: {compact_line_fullness_text(scenario['start_time_min'])} "

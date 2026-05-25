@@ -50,9 +50,9 @@ def build_network_overview(current_time_min) -> NetworkOverview:
             headway_min=data["headway"],
             fullness_percent=line_fullness_percent(line_name, current_time_min),
             stop_count=len(data["stops"]),
-            route=" -> ".join(data["stops"]),
+            route=" to ".join(data["stops"]),
             segments="; ".join(
-                f"{a}-{b}:{segment_travel(a, b)}m"
+                f"{a} to {b}: {segment_travel(a, b)} minutes"
                 for a, b in line_stop_pairs(line_name, data)
             ),
         )

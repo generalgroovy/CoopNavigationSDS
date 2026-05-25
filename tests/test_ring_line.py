@@ -36,7 +36,7 @@ class RingLineTests(unittest.TestCase):
         self.assertEqual(proposal.count("Take Ring"), 1)
         self.assertIn("Take Ring from Alpha", proposal)
         self.assertIn("to Charlie", proposal)
-        self.assertIn("Boarding: Alpha -> Charlie", proposal)
+        self.assertIn("Boarding: Alpha to Charlie", proposal)
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):
         scenario = {

@@ -172,8 +172,8 @@ class StartupConfigDialog:
             ("Agent B", "agent_b_plugin", self.choices["agent_b_plugins"]),
             ("Speech pattern", "speech_pattern_key", self.choices["speech_patterns"]),
             ("Speech engine", "speech_engine", self.choices["speech_engines"]),
-            ("TTS engine", "tts_engine", self.choices["tts_engines"]),
-            ("ASR engine", "asr_engine", self.choices["asr_engines"]),
+            ("Text-to-speech engine", "tts_engine", self.choices["tts_engines"]),
+            ("Automatic speech recognition engine", "asr_engine", self.choices["asr_engines"]),
             ("Speech scope", "speech_scope", self.choices["speech_scopes"]),
         ]
         for row, (label, key, values) in enumerate(rows):
@@ -212,7 +212,7 @@ class StartupConfigDialog:
         toggle_row = audio_row + 1
         tk.Checkbutton(
             frame,
-            text="Incoming ASR",
+            text="Incoming automatic speech recognition",
             variable=self.vars["speech_incoming_enabled"],
             bg=GUI_COLORS["panel_bg"],
             fg=GUI_COLORS["text"],
@@ -222,7 +222,7 @@ class StartupConfigDialog:
         ).grid(row=toggle_row, column=0, sticky="w", padx=(10, 8), pady=(10, 0))
         tk.Checkbutton(
             frame,
-            text="Outgoing TTS",
+            text="Outgoing text-to-speech",
             variable=self.vars["speech_outgoing_enabled"],
             bg=GUI_COLORS["panel_bg"],
             fg=GUI_COLORS["text"],
@@ -825,11 +825,11 @@ class DialogWindow:
         metric_rows = [
             (("route", "Route"), ("duration", "Duration")),
             (("breakdown", "Breakdown"), ("reference_duration", "Reference")),
-            (("line_sequence", "Line Seq"), ("line_changes", "Line Chg")),
-            (("reference_line_sequence", "Ref Seq"), ("reference_line_changes", "Ref Chg")),
+            (("line_sequence", "Line Sequence"), ("line_changes", "Line Changes")),
+            (("reference_line_sequence", "Reference Sequence"), ("reference_line_changes", "Reference Changes")),
             (("reference_route", "Reference Route"), ("best_turn", "Best Turn")),
             (("constraint_route", "Target Route"), ("constraint_duration", "Target Time")),
-            (("constraint_line_sequence", "Target Seq"), ("constraint_line_changes", "Target Chg")),
+            (("constraint_line_sequence", "Target Sequence"), ("constraint_line_changes", "Target Changes")),
             (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Full")),
             (("candidate_routes", "Candidates"), ("route_revisions", "Revisions")),
             (("valid", "Valid"), ("goal", "Goal")),
@@ -858,14 +858,14 @@ class DialogWindow:
         self.live_metrics_frame.grid_columnconfigure(3, weight=1)
 
         live_metric_rows = [
-            (("messages", "Messages"), ("agent_split", "A/B Turns")),
-            (("words", "Words"), ("agent_words", "A/B Words")),
-            (("avg_words", "Avg Words"), ("agent_avg_words", "A/B Avg")),
-            (("questions", "Questions"), ("agent_questions", "A/B Questions")),
+            (("messages", "Messages"), ("agent_split", "Agent A and Agent B Turns")),
+            (("words", "Words"), ("agent_words", "Agent A and Agent B Words")),
+            (("avg_words", "Average Words"), ("agent_avg_words", "Agent A and Agent B Average")),
+            (("questions", "Questions"), ("agent_questions", "Agent A and Agent B Questions")),
             (("question_rate", "Question Rate"), ("station_mentions", "Station Mentions")),
             (("station_density", "Station Density"), ("task_terms", "Task Terms")),
             (("task_focus", "Task Focus"), ("comparison_terms", "Compare Terms")),
-            (("comparison_rate", "Compare Rate"), ("cooperation_terms", "Coop Terms")),
+            (("comparison_rate", "Compare Rate"), ("cooperation_terms", "Cooperation Terms")),
             (("cooperation_rate", "Coop Rate"), ("last_speaker", "Last Speaker")),
         ]
         self.build_paired_metric_rows(
@@ -902,7 +902,7 @@ class DialogWindow:
             ).grid(row=metric_row, column=0, sticky="w", padx=(0, 6), pady=(0, 2))
             value = tk.Label(
                 group,
-                text="n/a",
+                text="not available",
                 anchor="e",
                 font=(GUI_MONO_FONT_FAMILY, GUI_FONT_SMALL, "bold"),
                 bg=GUI_COLORS["panel_bg"],
@@ -947,7 +947,7 @@ class DialogWindow:
                 values=(
                     item.name,
                     item.kind,
-                    f"{item.headway_min}m",
+                    f"{item.headway_min} minutes",
                     f"{item.fullness_percent}%",
                     item.stop_count,
                     item.route,
@@ -1194,7 +1194,7 @@ class DialogWindow:
             ("best_duration", "Best Time"),
             ("candidate_routes", "Candidates"),
             ("route_revisions", "Revisions"),
-            ("question_rate", "Q Rate"),
+            ("question_rate", "Question Rate"),
             ("messages", "Messages"),
             ("words", "Words"),
             ("task_focus", "Task Focus"),
@@ -1409,7 +1409,7 @@ class DialogWindow:
         line_fullness = line_fullness_percent(line_name, self.scenario["start_time_min"])
         tk.Label(
             parent,
-            text=f"{self.short_line_label(line_name)}  {direction_text}  every {data['headway']}m  {line_fullness}% full",
+            text=f"{self.line_tab_label(line_name)}  {direction_text}  every {data['headway']} minutes  {line_fullness} percent full",
             anchor="w",
             font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL + 1, "bold"),
             bg=GUI_COLORS["panel_bg"],
@@ -1444,8 +1444,8 @@ class DialogWindow:
                     f"{station_fullness_percent(station, self.scenario['start_time_min'])}%",
                     self.station_name(previous_station) if previous_station else "-",
                     self.station_name(next_station) if next_station else "-",
-                    f"{ride}m" if previous_station else "start",
-                    f"{elapsed}m",
+                    f"{ride} minutes" if previous_station else "start",
+                    f"{elapsed} minutes",
                 ),
             )
 
@@ -1494,9 +1494,9 @@ class DialogWindow:
             previous_station, next_station = self.line_neighbors_at_station(line_name, station)
             travel_parts = []
             if previous_station:
-                travel_parts.append(f"{self.station_name(previous_station)}-{self.station_name(station)}:{segment_travel(previous_station, station)}m")
+                travel_parts.append(f"{self.station_name(previous_station)} to {self.station_name(station)}: {segment_travel(previous_station, station)} minutes")
             if next_station:
-                travel_parts.append(f"{self.station_name(station)}-{self.station_name(next_station)}:{segment_travel(station, next_station)}m")
+                travel_parts.append(f"{self.station_name(station)} to {self.station_name(next_station)}: {segment_travel(station, next_station)} minutes")
             neighbors = (
                 f"{self.station_name(previous_station) if previous_station else '-'}"
                 f"  |  {self.station_name(next_station) if next_station else '-'}"
@@ -1665,7 +1665,7 @@ class DialogWindow:
         """
         previous_label = self.station_name(previous_station) if previous_station else "start"
         next_label = self.station_name(next_station) if next_station else "end"
-        return f"{previous_label} -> {next_label}"
+        return f"{previous_label} to {next_label}"
 
     def station_direction_offset(self, sequence, station_index):
         """Station direction offset method for this module's MVC responsibility.
@@ -1743,11 +1743,11 @@ class DialogWindow:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        return " -> ".join(self.station_name(station) for station in route)
+        return " to ".join(self.station_name(station) for station in route)
 
     def compact_route_label(self, route):
         """Return a compact route label for narrow tables."""
-        return " -> ".join(self.station_code(station) for station in route)
+        return " to ".join(self.station_code(station) for station in route)
 
     def compact_line_sequence_label(self, route):
         """Return a compact line-sequence label for narrow tables."""
@@ -1761,7 +1761,7 @@ class DialogWindow:
 
         _, steps = estimate
         lines = route_line_sequence(steps)
-        return " -> ".join(lines) if lines else "-"
+        return " to ".join(lines) if lines else "-"
 
     def line_stop_labels(self, line_name):
         """Line stop labels method for this module's MVC responsibility.
@@ -1776,7 +1776,7 @@ class DialogWindow:
         stops = data["stops"]
         if data.get("kind") == "Ring" and len(stops) > 2:
             stops = stops + [stops[0]]
-        return " -> ".join(self.station_code(station) for station in stops)
+        return " to ".join(self.station_code(station) for station in stops)
 
     def compact_line_segment_text(self, line_name):
         """Compact line segment text method for this module's MVC responsibility.
@@ -1788,7 +1788,7 @@ class DialogWindow:
             The computed value or side effect documented by the implementation.
         """
         return "; ".join(
-            f"{self.station_code(a)}-{self.station_code(b)}:{self.segment_minutes(a, b)}m"
+            f"{self.station_name(a)} to {self.station_name(b)}: {self.segment_minutes(a, b)} minutes"
             for a, b in line_stop_pairs(line_name, LINES[line_name])
         )
 
@@ -2178,7 +2178,7 @@ class DialogWindow:
 
         drawn_edge_labels.add(label_key)
         travel = self.segment_minutes(a, b)
-        label = f"{self.short_line_label(line_name)} {travel}m"
+        label = f"{self.line_tab_label(line_name)} {travel} minutes"
 
         mx = (x1 + x2) / 2
         my = (y1 + y2) / 2
@@ -2375,9 +2375,9 @@ class DialogWindow:
             understood = speech_trace.get("incoming_transcript", message)
             tts_engine = speech_trace.get("tts_engine", "tts")
             asr_engine = speech_trace.get("asr_engine", "asr")
-            self.textbox.insert(tk.END, f"TTS spoken ({tts_engine}): ", "speech_label")
+            self.textbox.insert(tk.END, f"Text-to-speech spoken ({tts_engine}): ", "speech_label")
             self.textbox.insert(tk.END, f"{spoken}\n", "spoken_text")
-            self.textbox.insert(tk.END, f"ASR understood ({asr_engine}): ", "speech_label")
+            self.textbox.insert(tk.END, f"Automatic speech recognition understood ({asr_engine}): ", "speech_label")
             self.textbox.insert(tk.END, f"{understood}\n\n", "understood_text")
         else:
             self.textbox.insert(tk.END, f"{message}\n\n", f"{speaker} body")
@@ -2429,7 +2429,7 @@ class DialogWindow:
             self.record_nlu_telemetry(payload)
 
     def record_speech_telemetry(self, payload):
-        """Update ASR-facing metrics from source text versus transcript."""
+        """Update automatic speech recognition metrics from source text versus transcript."""
         generated_text = payload.get("generated_text", payload.get("source_text", ""))
         source_text = payload.get("outgoing_text", payload.get("source_text", ""))
         transcript = payload.get("incoming_transcript", payload.get("transcript", ""))
@@ -2569,13 +2569,13 @@ class DialogWindow:
             self.metric_values["route"].configure(text=self.route_label(route))
         if "Displayed line sequence" in parsed and parsed["Displayed line sequence"] != "None":
             line_sequence = [segment.strip() for segment in parsed["Displayed line sequence"].split("->")]
-            self.metric_values["line_sequence"].configure(text=" -> ".join(line_sequence))
+            self.metric_values["line_sequence"].configure(text=" to ".join(line_sequence))
         if "Constraint route" in parsed and parsed["Constraint route"] != "None":
             route = [station.strip() for station in parsed["Constraint route"].split("->")]
             self.metric_values["constraint_route"].configure(text=self.route_label(route))
         if "Constraint line sequence" in parsed and parsed["Constraint line sequence"] != "None":
             line_sequence = [segment.strip() for segment in parsed["Constraint line sequence"].split("->")]
-            self.metric_values["constraint_line_sequence"].configure(text=" -> ".join(line_sequence))
+            self.metric_values["constraint_line_sequence"].configure(text=" to ".join(line_sequence))
 
     def update_route_metric(self):
         """Update route metric method for this module's MVC responsibility.
@@ -2595,7 +2595,7 @@ class DialogWindow:
                 if estimate:
                     _, steps = estimate
                     lines = route_line_sequence(steps)
-                    line_sequence_text = " -> ".join(lines) if lines else "None"
+                    line_sequence_text = " to ".join(lines) if lines else "None"
                     line_change_text = str(max(len(lines) - 1, 0)) if lines else "0"
                 else:
                     line_sequence_text = "No inferred route"
@@ -2685,7 +2685,7 @@ class DialogWindow:
         state = "Finished" if self.live_stats["finished"] else "Running"
         route_status, live_duration = self.live_route_status()
         best_duration = self.live_stats["best_duration"]
-        best_duration_text = f"{best_duration}m" if best_duration is not None else "-"
+        best_duration_text = f"{best_duration} minutes" if best_duration is not None else "-"
         route_success = 1.0 if route_status == "Correct" else 0.0
         asr_wer = self.safe_ratio(
             self.live_stats["asr_word_substitutions"] + self.live_stats["asr_word_deletions"] + self.live_stats["asr_word_insertions"],
@@ -2761,7 +2761,7 @@ class DialogWindow:
         cost_per_success = (
             f"{self.live_stats['messages']} turns"
             if route_success
-            else "n/a"
+            else "not available"
         )
 
         values = {
@@ -2773,7 +2773,7 @@ class DialogWindow:
             "agent_avg_words": f"{agent_a_avg:.1f} / {agent_b_avg:.1f}",
             "questions": str(questions),
             "agent_questions": f"{self.live_stats['agent_a_questions']} / {self.live_stats['agent_b_questions']}",
-            "question_rate": f"{question_rate:.2f}/msg",
+            "question_rate": f"{question_rate:.2f} per message",
             "task_focus": f"{task_focus:.2f}",
             "task_terms": str(task_terms),
             "station_mentions": str(self.live_stats["station_mentions"]),
@@ -2790,13 +2790,13 @@ class DialogWindow:
 
         snapshot_values = {
             "run_state": state,
-            "elapsed": f"{elapsed:.1f}s",
+            "elapsed": f"{elapsed:.1f} seconds",
             "route_status": route_status,
             "live_duration": live_duration,
             "best_duration": best_duration_text,
             "candidate_routes": str(self.live_stats["candidate_routes"]),
             "route_revisions": str(self.live_stats["route_revisions"]),
-            "question_rate": f"{question_rate:.2f}/msg",
+            "question_rate": f"{question_rate:.2f} per message",
             "messages": str(self.live_stats["messages"]),
             "words": str(words),
             "task_focus": f"{task_focus:.2f}",
@@ -2807,25 +2807,25 @@ class DialogWindow:
                 self.snapshot_values[key].configure(text=value)
 
         stage_values = {
-            "audio_snr_db": "n/a",
-            "audio_si_snr_db": "n/a",
-            "audio_clipping_rate": "n/a",
-            "audio_packet_loss_rate": "n/a",
-            "audio_sample_rate_mismatch": "n/a",
-            "audio_loudness_lufs": "n/a",
-            "audio_noise_estimate": "n/a",
-            "audio_pesq": "n/a",
-            "audio_dnsmos": "n/a",
-            "vad_false_alarm_rate": "n/a",
-            "vad_miss_rate": "n/a",
-            "vad_detection_error_rate": "n/a",
-            "vad_speech_non_speech_f1": "n/a",
-            "vad_endpointing_latency_sec": "n/a",
-            "diarization_der": "n/a",
-            "diarization_missed_speech_rate": "n/a",
-            "diarization_false_alarm_rate": "n/a",
-            "diarization_speaker_confusion_rate": "n/a",
-            "diarization_overlap_detection_f1": "n/a",
+            "audio_snr_db": "not available",
+            "audio_si_snr_db": "not available",
+            "audio_clipping_rate": "not available",
+            "audio_packet_loss_rate": "not available",
+            "audio_sample_rate_mismatch": "not available",
+            "audio_loudness_lufs": "not available",
+            "audio_noise_estimate": "not available",
+            "audio_pesq": "not available",
+            "audio_dnsmos": "not available",
+            "vad_false_alarm_rate": "not available",
+            "vad_miss_rate": "not available",
+            "vad_detection_error_rate": "not available",
+            "vad_speech_non_speech_f1": "not available",
+            "vad_endpointing_latency_sec": "not available",
+            "diarization_der": "not available",
+            "diarization_missed_speech_rate": "not available",
+            "diarization_false_alarm_rate": "not available",
+            "diarization_speaker_confusion_rate": "not available",
+            "diarization_overlap_detection_f1": "not available",
             "asr_word_error_rate": self.format_ratio(asr_wer),
             "asr_character_error_rate": self.format_ratio(asr_cer),
             "asr_token_error_rate": self.format_ratio(asr_wer),
@@ -2834,7 +2834,7 @@ class DialogWindow:
             "asr_insertion_rate": self.format_ratio(self.safe_ratio(self.live_stats["asr_word_insertions"], self.live_stats["asr_ref_words"])),
             "asr_entity_wer": self.format_ratio(asr_entity_wer),
             "asr_keyword_recall": self.format_ratio(asr_keyword_recall),
-            "asr_confidence_calibration": "n/a",
+            "asr_confidence_calibration": "not available",
             "slu_intent_accuracy": self.format_ratio(nlu_route_valid_rate),
             "slu_intent_error_rate": self.format_ratio(max(0.0, 1.0 - nlu_route_valid_rate)),
             "slu_slot_f1": self.format_ratio(slot_accuracy),
@@ -2847,12 +2847,12 @@ class DialogWindow:
             "dst_requested_slot_f1": self.format_ratio(slot_accuracy),
             "dst_active_intent_accuracy": self.format_ratio(nlu_route_valid_rate),
             "dst_state_update_accuracy": self.format_ratio(state_update_accuracy),
-            "dst_belief_state_calibration": "n/a",
-            "dst_l2": "n/a",
-            "dst_mrr": "n/a",
-            "dst_roc": "n/a",
-            "policy_dialog_act_accuracy": "n/a",
-            "policy_dialog_act_f1": "n/a",
+            "dst_belief_state_calibration": "not available",
+            "dst_l2": "not available",
+            "dst_mrr": "not available",
+            "dst_roc": "not available",
+            "policy_dialog_act_accuracy": "not available",
+            "policy_dialog_act_f1": "not available",
             "policy_next_action_accuracy": self.format_ratio(route_success),
             "policy_tool_call_exact_match": self.format_ratio(route_success),
             "policy_parameter_exact_match": self.format_ratio(route_success),
@@ -2867,33 +2867,33 @@ class DialogWindow:
             "tool_hit_at_k": self.format_ratio(route_success),
             "tool_mrr": self.format_ratio(route_success),
             "tool_grounding_accuracy": self.format_ratio(route_success),
-            "tool_hallucinated_field_rate": "n/a",
-            "nlg_bleu": "n/a",
-            "nlg_rouge": "n/a",
-            "nlg_meteor": "n/a",
-            "nlg_bert_score": "n/a",
+            "tool_hallucinated_field_rate": "not available",
+            "nlg_bleu": "not available",
+            "nlg_rouge": "not available",
+            "nlg_meteor": "not available",
+            "nlg_bert_score": "not available",
             "nlg_slot_realization_accuracy": self.format_ratio(slot_accuracy),
-            "nlg_delexicalized_bleu": "n/a",
+            "nlg_delexicalized_bleu": "not available",
             "nlg_distinct_1": self.format_ratio(distinct_1),
             "nlg_distinct_2": self.format_ratio(distinct_2),
             "nlg_repetition_rate": self.format_ratio(repetition_rate),
             "nlg_constraint_satisfaction_rate": self.format_ratio(route_success),
-            "tts_predicted_mos": "n/a",
+            "tts_predicted_mos": "not available",
             "tts_intelligibility_wer": self.format_ratio(asr_wer),
-            "tts_stoi": "n/a",
+            "tts_stoi": "not available",
             "tts_mcd": self.format_ratio(tts_change_rate),
-            "tts_pesq": "n/a",
-            "tts_speechbert_score": "n/a",
-            "tts_speaker_similarity": "n/a",
-            "tts_f0_correlation": "n/a",
-            "runtime_end_of_turn_detection_accuracy": "n/a",
-            "runtime_endpointing_latency_sec": "n/a",
-            "runtime_barge_in_true_positive_rate": "n/a",
-            "runtime_barge_in_false_positive_rate": "n/a",
-            "runtime_barge_in_suppression_latency_sec": "n/a",
+            "tts_pesq": "not available",
+            "tts_speechbert_score": "not available",
+            "tts_speaker_similarity": "not available",
+            "tts_f0_correlation": "not available",
+            "runtime_end_of_turn_detection_accuracy": "not available",
+            "runtime_endpointing_latency_sec": "not available",
+            "runtime_barge_in_true_positive_rate": "not available",
+            "runtime_barge_in_false_positive_rate": "not available",
+            "runtime_barge_in_suppression_latency_sec": "not available",
             "runtime_response_latency_sec": self.format_seconds(response_latency),
-            "runtime_time_to_first_token_sec": self.format_seconds(self.live_stats["first_agent_b_generation_sec"]) if self.live_stats["first_agent_b_generation_sec"] is not None else "n/a",
-            "runtime_time_to_first_audio_sec": self.format_seconds(self.live_stats["first_agent_b_audio_sec"]) if self.live_stats["first_agent_b_audio_sec"] is not None else "n/a",
+            "runtime_time_to_first_token_sec": self.format_seconds(self.live_stats["first_agent_b_generation_sec"]) if self.live_stats["first_agent_b_generation_sec"] is not None else "not available",
+            "runtime_time_to_first_audio_sec": self.format_seconds(self.live_stats["first_agent_b_audio_sec"]) if self.live_stats["first_agent_b_audio_sec"] is not None else "not available",
             "runtime_interruption_recovery_rate": self.format_ratio(recovery_rate),
             "e2e_task_success": self.format_ratio(route_success),
             "e2e_inform_rate": self.format_ratio(route_success),
@@ -2908,21 +2908,21 @@ class DialogWindow:
             "e2e_confirmation_count": str(questions),
             "posthoc_predicted_user_satisfaction": self.format_ratio(predicted_satisfaction),
             "posthoc_per_domain_failure_rate": self.format_ratio(1.0 - route_success),
-            "posthoc_cohort_fairness_gaps": "n/a",
+            "posthoc_cohort_fairness_gaps": "not available",
             "posthoc_robustness_by_noise_gap": self.format_ratio(1.0 - robustness_noise),
-            "posthoc_robustness_by_accent_gap": "n/a",
-            "posthoc_robustness_by_device_gap": "n/a",
+            "posthoc_robustness_by_accent_gap": "not available",
+            "posthoc_robustness_by_device_gap": "not available",
             "posthoc_robustness_by_environment_gap": speech_profile,
             "posthoc_cost_per_success": cost_per_success,
-            "posthoc_safety_refusal_precision": "n/a",
-            "posthoc_safety_refusal_recall": "n/a",
-            "posthoc_privacy_redaction_accuracy": "n/a",
+            "posthoc_safety_refusal_precision": "not available",
+            "posthoc_safety_refusal_recall": "not available",
+            "posthoc_privacy_redaction_accuracy": "not available",
         }
         for key, value in stage_values.items():
             if key in self.stage_metric_values:
                 self.stage_metric_values[key].configure(text=value)
 
-        self.set_summary("elapsed", f"{elapsed:.1f}s")
+        self.set_summary("elapsed", f"{elapsed:.1f} seconds")
         self.set_summary("warnings", str(self.live_stats["warnings"]))
         self.set_summary("run_state", state)
 
@@ -2937,7 +2937,7 @@ class DialogWindow:
             delta = "-"
         else:
             diff = duration - previous_best
-            delta = f"{diff:+d}m"
+            delta = f"{diff:+d} minutes"
         target_gap = self.candidate_target_gap_label(candidate)
 
         if candidate["decision"] == "repeat":
@@ -2946,7 +2946,7 @@ class DialogWindow:
                 tk.END,
                 values=(
                     candidate["turn"],
-                    f"{duration}m",
+                    f"{duration} minutes",
                     delta,
                     target_gap,
                     "repeat",
@@ -2970,7 +2970,7 @@ class DialogWindow:
             tk.END,
             values=(
                 candidate["turn"],
-                f"{duration}m",
+                f"{duration} minutes",
                 delta,
                 target_gap,
                 candidate["decision"],
@@ -2991,9 +2991,9 @@ class DialogWindow:
 
         parts = []
         if duration_gap is not None:
-            parts.append(f"{duration_gap:+d}m")
+            parts.append(f"{duration_gap:+d} minutes")
         if change_gap is not None:
-            parts.append(f"{change_gap:+d}ch")
+            parts.append(f"{change_gap:+d} line changes")
         if fullness_gap is not None:
             parts.append(f"{fullness_gap:+.1f}%")
         return " ".join(parts)
@@ -3020,7 +3020,7 @@ class DialogWindow:
 
         arrival, _ = estimate
         duration = arrival - self.scenario["start_time_min"]
-        return status, f"{duration}m"
+        return status, f"{duration} minutes"
 
     def route_reaches_goal(self, route):
         """Route reaches goal method for this module's MVC responsibility.
@@ -3060,7 +3060,7 @@ class DialogWindow:
     @staticmethod
     def format_seconds(value):
         """Format seconds compactly for dashboard display."""
-        return f"{value:.2f}s"
+        return f"{value:.2f} seconds"
 
     @staticmethod
     def normalized_text(message):
@@ -3173,9 +3173,9 @@ class DialogWindow:
                     f"{step.get('fullness', 0)}%",
                     fmt_time(step["depart"]),
                     fmt_time(step["arrive"]),
-                    f"{step['travel']}m",
-                    f"{step['wait']}m",
-                    f"{step['transfer']}m",
+                    f"{step['travel']} minutes",
+                    f"{step['wait']} minutes",
+                    f"{step['transfer']} minutes",
                 ),
             )
 
@@ -3252,7 +3252,7 @@ class DialogWindow:
             "route": "Route",
             "duration": "Duration",
             "reference_duration": "Reference",
-            "reference_route": "Ref Route",
+            "reference_route": "Reference Route",
             "best_turn": "Best Turn",
             "candidate_routes": "Candidates",
             "route_revisions": "Revisions",

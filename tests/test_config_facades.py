@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from minillama.agent_a.config import LLM_AGENT_A
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
     SPEECH_AUDIO_DIR,
@@ -37,6 +38,7 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertTrue(NUM_TURNS)
         self.assertTrue(AGENT_B_PLUGIN)
         self.assertTrue(SESSION_LOG_DIR)
+        self.assertFalse(LLM_AGENT_A)
 
     def test_default_speech_pipeline_plays_and_listens(self):
         self.assertTrue(SPEECH_INCOMING_ENABLED)

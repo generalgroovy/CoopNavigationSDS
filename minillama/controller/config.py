@@ -14,3 +14,4 @@ NETWORK_PICTURE_DIR = os.environ.get(
     os.path.join(ARTIFACT_DIR, "network_graphs"),
 )
 RESEARCH_LOG_DIR = os.environ.get("MINILLAMA_RESEARCH_LOG_DIR", os.path.join(ARTIFACT_DIR, "research_logs"))
+PROTOCOL_LOG_DIR = os.environ.get("MINILLAMA_PROTOCOL_LOG_DIR", os.path.join(RESEARCH_LOG_DIR, "conversation_protocols"))

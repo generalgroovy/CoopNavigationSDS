@@ -1,7 +1,8 @@
 """Agent A configuration and prompt constants."""
+import os
 
 HISTORY_MESSAGES = 10
-LLM_AGENT_A = True
+LLM_AGENT_A = os.environ.get("MINILLAMA_LLM_AGENT_A", "0").lower() in {"1", "true", "on", "yes"}
 DEFAULT_PERSONA = "focused_commuter"
 
 PERSONAS = {

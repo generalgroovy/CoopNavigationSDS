@@ -757,7 +757,7 @@ def line_segment_text(line_name):
         The computed value or side effect documented by the implementation.
     """
     return "; ".join(
-        f"{a}-{b}: {TRAVEL_TIMES.get(tuple(sorted((a, b))), DEFAULT_TRAVEL_TIME_MIN)} min"
+        f"{a} to {b}: {TRAVEL_TIMES.get(tuple(sorted((a, b))), DEFAULT_TRAVEL_TIME_MIN)} minutes"
         for a, b in line_stop_pairs(line_name, LINES[line_name])
     )
 
@@ -770,7 +770,7 @@ def compact_network_text():
         The computed value or side effect documented by the implementation.
     """
     return " ".join(
-        f"{line}({data['headway']}m,{data.get('kind', 'Line')}):{line_stop_sequence_text(line, data)}."
+        f"{line} ({data['headway']} minutes, {data.get('kind', 'Line')}): {line_stop_sequence_text(line, data)}."
         for line, data in LINES.items()
     )
 
@@ -779,7 +779,7 @@ def compact_network_text():
 def compact_line_fullness_text(current_time_min=START_TIME_MIN):
     """Compact current line crowding text for prompts."""
     return " ".join(
-        f"{line}:{line_fullness_percent(line, current_time_min)}% full."
+        f"{line}: {line_fullness_percent(line, current_time_min)} percent full."
         for line in LINES
     )
 
@@ -795,7 +795,7 @@ def compact_station_crowding_text(current_time_min=START_TIME_MIN, limit=8):
         key=lambda item: item[1],
         reverse=True,
     )[:limit]
-    return " ".join(f"{station}:{fullness}% busy." for station, fullness in busiest)
+    return " ".join(f"{station}: {fullness} percent busy." for station, fullness in busiest)
 
 
 def line_stop_sequence_text(line_name, data):
@@ -810,8 +810,8 @@ def line_stop_sequence_text(line_name, data):
     """
     stops = data["stops"]
     if data.get("kind") == "Ring" and len(stops) > 2:
-        return "-".join(stops + [stops[0]])
-    return "-".join(stops)
+        return " to ".join(stops + [stops[0]])
+    return " to ".join(stops)
 
 
 @lru_cache(maxsize=1)
@@ -822,6 +822,6 @@ def compact_travel_time_text():
         The computed value or side effect documented by the implementation.
     """
     return " ".join(
-        f"{a}-{b}:{minutes}m."
+        f"{a} to {b}: {minutes} minutes."
         for (a, b), minutes in sorted(TRAVEL_TIMES.items())
     )

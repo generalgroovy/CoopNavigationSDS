@@ -231,7 +231,7 @@ class SessionLogger:
         if kind == "program.segment":
             duration = payload.get("duration_sec")
             status = payload.get("status", "ok")
-            return f"[{timestamp}] SEGMENT {name} status={status} duration={duration}s"
+            return f"[{timestamp}] SEGMENT {name} status={status} duration={duration} seconds"
         if kind == "conversation.step":
             turn = payload.get("turn")
             speaker = payload.get("speaker")

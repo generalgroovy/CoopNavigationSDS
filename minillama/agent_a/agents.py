@@ -146,7 +146,7 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
             fullness_values = [step.get("fullness", 0) for step in steps]
             average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
             delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
-            return f"{snippet} {average_fullness}% full, {delay_probability}% delay risk."
+            return f"{snippet} {average_fullness} percent full, {delay_probability} percent delay risk."
         return (
             f"One connected option: {snippet} "
             f"Transfer time applies only when changing lines."

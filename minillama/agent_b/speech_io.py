@@ -335,7 +335,7 @@ class SpeechTransport:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        return f"{self.config.label} ({self.tts_engine.name} -> {self.asr_engine.name})"
+        return f"{self.config.label} ({self.tts_engine.name} to {self.asr_engine.name})"
 
     def transmit(self, speaker: str, text: str):
         """Transmit method for this module's MVC responsibility.

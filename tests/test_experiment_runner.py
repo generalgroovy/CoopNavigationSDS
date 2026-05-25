@@ -7,8 +7,9 @@ import unittest
 from unittest.mock import MagicMock, patch
 from zipfile import ZipFile
 
+from minillama.controller.dialog_result import DialogResult
 from minillama.controller.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from minillama.evaluation.research_artifacts import write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.model.model_adapters import ModelParameterSet
 
 
@@ -261,6 +262,50 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(manifest["controls"]["speech_engine"], "file")
         self.assertEqual(manifest["controls"]["tts_engine"], "file")
         self.assertEqual(manifest["controls"]["asr_engine"], "loopback")
+
+    def test_write_conversation_protocol_creates_verified_research_artifacts(self):
+        result = DialogResult(
+            condition_id="Case One",
+            test_case_key="case",
+            persona_key="persona",
+            scenario_key="scenario",
+            speech_pattern_key="clean",
+            model_name="model",
+            conversation=[("Agent A", "Need Alpha to Echo."), ("Agent B", "Take Alpha to Echo.")],
+            route=["Alpha", "Echo"],
+            route_steps=[{"from": "Alpha", "to": "Echo", "line": "Ring"}],
+            route_valid=True,
+            route_reaches_goal=True,
+            route_correct=True,
+            route_duration_min=12,
+            runtime_sec=1.2,
+            metrics_text="Messages: 2",
+            extra={
+                "messages": 2,
+                "speech_turns": [
+                    {
+                        "generated_text": "Need Alpha to Echo.",
+                        "outgoing_text": "Need Alpha to Echo.",
+                        "incoming_transcript": "Need Alpha to Echo.",
+                    }
+                ],
+                "timing_turns": [{"turn_latency_sec": 0.4}],
+                "nlu_turns": [{"route_valid": True, "route_reaches_goal": True}],
+            },
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            paths = write_conversation_protocol(result, tmpdir)
+            batch_paths = write_conversation_protocols([result], Path(tmpdir) / "batch")
+
+            summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
+            verification = json.loads(paths["verification"].read_text(encoding="utf-8"))
+            turn_rows = paths["turns"].read_text(encoding="utf-8").splitlines()
+
+        self.assertTrue(batch_paths)
+        self.assertEqual(summary["condition_id"], "Case One")
+        self.assertTrue(verification["verified"])
+        self.assertEqual(len(turn_rows), 2)
 
 
 if __name__ == "__main__":

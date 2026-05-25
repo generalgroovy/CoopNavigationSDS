@@ -31,6 +31,7 @@ from minillama.controller.config import (
     GUI_MODE,
     NETWORK_PICTURE_DIR,
     NUM_TURNS,
+    PROTOCOL_LOG_DIR,
     RESEARCH_LOG_DIR,
     SESSION_LOG_DIR,
     SESSION_LOG_PROFILE,
@@ -38,11 +39,10 @@ from minillama.controller.config import (
 )
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
-from minillama.evaluation.research_artifacts import write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_conversation_protocol, write_network_research_artifacts
 from minillama.model.config import MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
-from minillama.view.gui import DialogWindow, StartupConfigDialog
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -58,7 +58,7 @@ def build_agent_a_responder(model_adapter):
 
 
 def conversation_worker(event_queue, model_adapter, run_config):
-    """Run one dialog in a background worker and stream UI events."""
+    """Run one dialog and stream optional UI events."""
     test_case = get_test_case(run_config["test_case_key"])
     agent_b_plugin = create_agent_b_plugin(run_config["agent_b_plugin"], model_adapter)
     speech_transport = SpeechTransport(
@@ -85,7 +85,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
     )
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
-    device = getattr(model_adapter, "device", "n/a")
+    device = getattr(model_adapter, "device", "not available")
 
     try:
         with event_queue.segment(
@@ -106,7 +106,11 @@ def conversation_worker(event_queue, model_adapter, run_config):
             event_queue.put(("system", f"Turns={NUM_TURNS}, max_new_tokens={MAX_NEW_TOKENS}, max_length={MAX_INPUT_TOKENS}"))
             event_queue.put(("system", f"Agent A: {manager.agent_a_responder.name}"))
             event_queue.put(("system", f"Agent B: {getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)}"))
-            manager.run(event_queue)
+            result = manager.run(event_queue)
+            protocol_dir = run_config.get("protocol_log_dir")
+            if protocol_dir:
+                protocol_paths = write_conversation_protocol(result, protocol_dir)
+                event_queue.put(("system", f"Conversation protocol: {protocol_paths['summary']}"))
     except Exception as exc:
         logging.exception("Conversation worker failed")
         event_queue.put(("warning", f"Conversation stopped: {exc}"))
@@ -131,6 +135,7 @@ def default_run_config():
         "speech_realtime_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_REALTIME_ENABLED else SPEECH_REALTIME_ENABLED,
         "speech_scope": "both" if SPEECH_SCOPE == "none" else SPEECH_SCOPE,
         "gui_enabled": GUI_ENABLED,
+        "protocol_log_dir": PROTOCOL_LOG_DIR,
     }
 
 
@@ -149,11 +154,38 @@ def select_run_config():
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
     }
     try:
+        from minillama.view.gui import StartupConfigDialog
+
         selected = StartupConfigDialog(choices, defaults).show()
     except Exception as exc:
         logging.warning("Startup configuration UI unavailable; using defaults: %s", exc)
         selected = defaults
     return selected
+
+
+def run_gui_loop(ui_queue, scenario, gui_mode):
+    """Run the Tk GUI in the current thread."""
+    from minillama.view.gui import DialogWindow
+
+    dialog = DialogWindow(ui_queue, scenario, minimal=gui_mode == "conversation")
+    dialog.run()
+
+
+def start_gui_thread(ui_queue, scenario, gui_mode=GUI_MODE, dialog_runner=run_gui_loop):
+    """Start the optional GUI in an isolated thread and return the thread handle."""
+    def _target():
+        try:
+            dialog_runner(ui_queue, scenario, gui_mode)
+        except Exception:
+            logging.exception("GUI thread stopped")
+
+    thread = threading.Thread(
+        target=_target,
+        name="minillama-gui",
+        daemon=False,
+    )
+    thread.start()
+    return thread
 
 
 def main():
@@ -185,18 +217,13 @@ def main():
         with event_queue.segment("model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):
             model_adapter = create_model_adapter()
 
+    gui_thread = None
     if run_config.get("gui_enabled", True):
-        worker = threading.Thread(
-            target=conversation_worker,
-            args=(event_queue, model_adapter, run_config),
-            daemon=True,
-        )
-        worker.start()
+        gui_thread = start_gui_thread(ui_queue, scenario, GUI_MODE)
 
-        dialog = DialogWindow(ui_queue, scenario, minimal=GUI_MODE == "conversation")
-        dialog.run()
-    else:
-        conversation_worker(event_queue, model_adapter, run_config)
+    conversation_worker(event_queue, model_adapter, run_config)
+    if gui_thread is not None and gui_thread.is_alive():
+        gui_thread.join()
 
 
 if __name__ == "__main__":

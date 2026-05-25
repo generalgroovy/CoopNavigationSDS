@@ -239,9 +239,9 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         fullness_values = [step.get("fullness", 0) for step in steps]
         average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
         change_label = "change" if changes == 1 else "changes"
-        route_summary = f"Valid: {duration} min, {changes} {change_label}"
+        route_summary = f"Valid: {duration} minutes, {changes} {change_label}"
         if average_fullness:
-            route_summary += f", {average_fullness}% full"
+            route_summary += f", {average_fullness} percent full"
     else:
         steps = []
         duration = None
@@ -255,7 +255,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         )
 
     if turn >= 2:
-        station_order = " -> ".join(route_station_sequence(steps)) if steps else " -> ".join(route)
+        station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
         return f"{route_summary}. Confirm final: {station_order}, total time, and crowding."
 
     request = agent_a_alternative_request(persona)
