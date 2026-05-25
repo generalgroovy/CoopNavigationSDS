@@ -6,13 +6,16 @@ import math
 from pathlib import Path
 import random
 import re
+import shutil
 import struct
+import subprocess
 import time
 from typing import Protocol
 import wave
 
 from minillama.agent_b.config import (
     DEFAULT_SPEECH_PATTERN,
+    RUN_MODE,
     SPEECH_AUDIO_DIR,
     SPEECH_ASR_ENGINE,
     SPEECH_ENGINE,
@@ -25,6 +28,15 @@ from minillama.agent_b.config import (
     SPEECH_TTS_ENGINE,
 )
 
+
+class SpeechPipelineError(RuntimeError):
+    """Raised when a strict speech pipeline stage fails."""
+
+    def __init__(self, message, diagnostics=None):
+        super().__init__(message)
+        self.diagnostics = diagnostics or {}
+
+
 @dataclass
 class SpeechSignal:
     """Speech payload model passed between simulated TTS and ASR components.
@@ -32,11 +44,13 @@ class SpeechSignal:
     speaker: str
     text: str
     audio: object = None
+    diagnostics: dict | None = None
 
 
 @dataclass(frozen=True)
 class SpeechPipelineConfig:
     """Runtime configuration for optional speech stages."""
+    mode: str = RUN_MODE
     incoming_enabled: bool = SPEECH_INCOMING_ENABLED
     outgoing_enabled: bool = SPEECH_OUTGOING_ENABLED
     scope: str = SPEECH_SCOPE
@@ -52,7 +66,25 @@ class SpeechPipelineConfig:
     playback_enabled: bool = SPEECH_PLAYBACK_ENABLED
     realtime_enabled: bool = SPEECH_REALTIME_ENABLED
 
+    @property
+    def normalized_mode(self) -> str:
+        mode = (self.mode or "pure_text").strip().lower().replace("-", "_")
+        if mode in {"text", "puretext", "pure_text", "off"}:
+            return "pure_text"
+        if mode in {"speech", "audio", "spoken"}:
+            return "speech"
+        raise SpeechPipelineError(
+            f"Unsupported run mode '{self.mode}'. Use pure_text or speech.",
+            {"mode": self.mode},
+        )
+
+    @property
+    def strict_speech(self) -> bool:
+        return self.normalized_mode == "speech"
+
     def applies_to(self, speaker: str) -> bool:
+        if self.normalized_mode == "pure_text":
+            return False
         if self.scope in {"both", "all", "*"}:
             return True
         if self.scope in {"none", "off", "text"}:
@@ -62,6 +94,8 @@ class SpeechPipelineConfig:
 
     @property
     def label(self) -> str:
+        if self.normalized_mode == "pure_text":
+            return "pure_text"
         directions = []
         if self.outgoing_enabled:
             directions.append("outgoing")
@@ -73,7 +107,7 @@ class SpeechPipelineConfig:
         realtime = ":realtime" if self.realtime_enabled else ""
         tts = self.tts_engine or self.engine
         asr = self.asr_engine or self.engine
-        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}:tts={tts}:asr={asr}{playback}{realtime}"
+        return f"speech:{'+'.join(directions)}:{self.pattern_key}:{self.scope}:tts={tts}:asr={asr}{playback}{realtime}"
 
 
 @dataclass(frozen=True)
@@ -90,6 +124,10 @@ class SpeechPipelineTrace:
     pattern_key: str
     simulated_duration_sec: float
     audio: object = None
+    mode: str = "pure_text"
+    pipeline_ok: bool = True
+    failure_reason: str | None = None
+    diagnostics: dict | None = None
 
     @property
     def signal(self):
@@ -207,6 +245,7 @@ class WaveFileTextToSpeech:
             speaker=speaker,
             text=text,
             audio={
+                "engine": "wavefile",
                 "path": str(wav_path),
                 "transcript_path": str(transcript_path),
                 "sample_rate": self.sample_rate,
@@ -215,6 +254,7 @@ class WaveFileTextToSpeech:
                 "realtime": self.realtime_enabled,
                 "waited": waited,
             },
+            diagnostics={"synthesis": "wave carrier with transcript sidecar"},
         )
 
     def _write_wave(self, path: Path, speaker: str, text: str):
@@ -268,6 +308,139 @@ class WaveFileSpeechToText:
         return signal.text
 
 
+class WindowsSapiTextToSpeech:
+    """Windows SAPI TTS stage that writes actual spoken WAV audio."""
+
+    name = "windows-sapi-tts"
+
+    def __init__(self, audio_dir="speech_artifacts", playback_enabled=False, realtime_enabled=False):
+        self.audio_dir = Path(audio_dir)
+        self.playback_enabled = playback_enabled
+        self.realtime_enabled = realtime_enabled
+        self._counter = 0
+
+    def synthesize(self, speaker: str, text: str) -> SpeechSignal:
+        self.audio_dir.mkdir(parents=True, exist_ok=True)
+        self._counter += 1
+        digest = hashlib.sha1(f"sapi:{speaker}:{self._counter}:{text}".encode("utf-8")).hexdigest()[:10]
+        stem = f"{self._counter:04d}-{speaker.lower().replace(' ', '-')}-{digest}"
+        wav_path = self.audio_dir / f"{stem}.wav"
+        transcript_path = self.audio_dir / f"{stem}.txt"
+        transcript_path.write_text(text, encoding="utf-8")
+        command = self._powershell_command(wav_path)
+        completed = subprocess.run(
+            command,
+            input=text,
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+        if completed.returncode != 0 or not wav_path.exists() or wav_path.stat().st_size <= 44:
+            raise SpeechPipelineError(
+                "Text-to-speech failed; no usable spoken audio was generated.",
+                {
+                    "engine": self.name,
+                    "return_code": completed.returncode,
+                    "stderr": completed.stderr.strip(),
+                    "path": str(wav_path),
+                    "troubleshooting": "Install or enable Windows speech synthesis voices, or use pure_text mode.",
+                },
+            )
+        duration_sec = self._wave_duration(wav_path)
+        played = (
+            WaveFileTextToSpeech._play_wave(wav_path, realtime=self.realtime_enabled, fallback_duration=duration_sec)
+            if self.playback_enabled
+            else False
+        )
+        if self.playback_enabled and not played:
+            raise SpeechPipelineError(
+                "Text-to-speech audio was generated but playback failed.",
+                {
+                    "engine": self.name,
+                    "path": str(wav_path),
+                    "troubleshooting": "Check the output device, Windows audio service, and application audio permissions.",
+                },
+            )
+        return SpeechSignal(
+            speaker=speaker,
+            text=text,
+            audio={
+                "engine": "windows_sapi",
+                "path": str(wav_path),
+                "transcript_path": str(transcript_path),
+                "duration_sec": duration_sec,
+                "played": played,
+                "realtime": self.realtime_enabled,
+                "waited": bool(self.playback_enabled and self.realtime_enabled),
+            },
+            diagnostics={"synthesis": "windows_sapi"},
+        )
+
+    @staticmethod
+    def _powershell_command(wav_path: Path):
+        powershell = shutil.which("powershell") or shutil.which("powershell.exe") or "powershell"
+        escaped_path = str(wav_path).replace("'", "''")
+        script = (
+            "Add-Type -AssemblyName System.Speech; "
+            "$text = [Console]::In.ReadToEnd(); "
+            "$speaker = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+            f"$speaker.SetOutputToWaveFile('{escaped_path}'); "
+            "$speaker.Speak($text); "
+            "$speaker.Dispose();"
+        )
+        return [powershell, "-NoProfile", "-NonInteractive", "-Command", script]
+
+    @staticmethod
+    def _wave_duration(path: Path) -> float:
+        with wave.open(str(path), "rb") as handle:
+            return round(handle.getnframes() / float(handle.getframerate()), 3)
+
+
+class WindowsSapiSpeechToText:
+    """Windows SAPI ASR stage that transcribes a WAV file."""
+
+    name = "windows-sapi-asr"
+
+    def transcribe(self, signal: SpeechSignal) -> str:
+        audio = signal.audio if isinstance(signal.audio, dict) else {}
+        wav_path = audio.get("path")
+        if not wav_path or not Path(wav_path).exists():
+            raise SpeechPipelineError(
+                "Automatic speech recognition failed; no audio file reached the recognizer.",
+                {"engine": self.name, "audio": audio},
+            )
+        command = self._powershell_command(Path(wav_path))
+        completed = subprocess.run(command, text=True, capture_output=True, timeout=30)
+        transcript = completed.stdout.strip()
+        if completed.returncode != 0 or not transcript:
+            raise SpeechPipelineError(
+                "Automatic speech recognition failed; no transcript was produced from audio.",
+                {
+                    "engine": self.name,
+                    "return_code": completed.returncode,
+                    "stderr": completed.stderr.strip(),
+                    "path": str(wav_path),
+                    "troubleshooting": "Install a Windows speech recognizer for the language, verify microphone/speech services, or use pure_text mode.",
+                },
+            )
+        return transcript
+
+    @staticmethod
+    def _powershell_command(wav_path: Path):
+        powershell = shutil.which("powershell") or shutil.which("powershell.exe") or "powershell"
+        escaped_path = str(wav_path).replace("'", "''")
+        script = (
+            "Add-Type -AssemblyName System.Speech; "
+            "$recognizer = New-Object System.Speech.Recognition.SpeechRecognitionEngine; "
+            "$recognizer.LoadGrammar((New-Object System.Speech.Recognition.DictationGrammar)); "
+            f"$recognizer.SetInputToWaveFile('{escaped_path}'); "
+            "$result = $recognizer.Recognize(); "
+            "if ($result -ne $null) { [Console]::Out.Write($result.Text) }; "
+            "$recognizer.Dispose();"
+        )
+        return [powershell, "-NoProfile", "-NonInteractive", "-Command", script]
+
+
 class LoopbackSpeechToText:
     """ASR test double that returns the signal text unchanged.
     """
@@ -301,9 +474,18 @@ class SpeechTransport:
         self.config = config or SpeechPipelineConfig()
         self.tts_engine = tts_engine or self._default_tts_engine()
         self.asr_engine = asr_engine or self._default_asr_engine()
+        self.validate_configuration()
 
     def _default_tts_engine(self):
+        if self.config.normalized_mode == "pure_text":
+            return LoopbackTextToSpeech()
         engine = self._stage_engine(self.config.tts_engine)
+        if engine in {"sapi", "windows", "windows_sapi", "speech"}:
+            return WindowsSapiTextToSpeech(
+                self.config.audio_dir,
+                playback_enabled=self.config.playback_enabled,
+                realtime_enabled=self.config.realtime_enabled,
+            )
         if engine in {"file", "wav", "wave"}:
             return WaveFileTextToSpeech(
                 self.config.audio_dir,
@@ -318,7 +500,11 @@ class SpeechTransport:
         return PatternedTextToSpeech(self.config.pattern_key)
 
     def _default_asr_engine(self):
+        if self.config.normalized_mode == "pure_text":
+            return LoopbackSpeechToText()
         engine = self._stage_engine(self.config.asr_engine)
+        if engine in {"sapi", "windows", "windows_sapi", "speech"}:
+            return WindowsSapiSpeechToText()
         if engine in {"file", "wav", "wave"}:
             return WaveFileSpeechToText()
         if engine in {"loopback", "text", "off", "none"}:
@@ -336,6 +522,53 @@ class SpeechTransport:
             The computed value or side effect documented by the implementation.
         """
         return f"{self.config.label} ({self.tts_engine.name} to {self.asr_engine.name})"
+
+    def validate_configuration(self):
+        """Fail early when speech mode is not a complete spoken pipeline."""
+        if self.config.normalized_mode == "pure_text":
+            return
+        errors = []
+        if not self.config.outgoing_enabled:
+            errors.append("outgoing text-to-speech is disabled")
+        if not self.config.incoming_enabled:
+            errors.append("incoming automatic speech recognition is disabled")
+        if self.config.scope in {"none", "off", "text"}:
+            errors.append("speech scope disables both agents")
+        if isinstance(self.tts_engine, LoopbackTextToSpeech):
+            errors.append("loopback text-to-speech is not speech synthesis")
+        if isinstance(self.asr_engine, LoopbackSpeechToText):
+            errors.append("loopback automatic speech recognition is not speech recognition")
+        if errors:
+            raise SpeechPipelineError(
+                "Speech mode requires a complete text-to-speech and automatic speech recognition pipeline.",
+                {
+                    "errors": errors,
+                    "mode": self.config.mode,
+                    "tts_engine": self.tts_engine.name,
+                    "asr_engine": self.asr_engine.name,
+                    "troubleshooting": "Use pure_text mode for text-only runs, or configure real speech engines for speech mode.",
+                },
+            )
+
+    def health_check(self):
+        """Run a short end-to-end check through both agents before a speech dialog."""
+        if self.config.normalized_mode == "pure_text":
+            return {
+                "mode": "pure_text",
+                "ok": True,
+                "message": "Speech pipeline disabled; generated text is passed directly.",
+            }
+        checks = []
+        for speaker in ("Agent A", "Agent B"):
+            trace = self.transmit_trace(speaker, f"Speech pipeline check from {speaker}.")
+            checks.append({
+                "speaker": speaker,
+                "pipeline_ok": trace.pipeline_ok,
+                "tts_engine": trace.tts_engine,
+                "asr_engine": trace.asr_engine,
+                "audio": trace.audio,
+            })
+        return {"mode": "speech", "ok": all(check["pipeline_ok"] for check in checks), "checks": checks}
 
     def transmit(self, speaker: str, text: str):
         """Transmit method for this module's MVC responsibility.
@@ -356,36 +589,62 @@ class SpeechTransport:
         outgoing_enabled = bool(active and self.config.outgoing_enabled)
         incoming_enabled = bool(active and self.config.incoming_enabled)
 
-        signal = (
-            self.tts_engine.synthesize(speaker, text)
-            if outgoing_enabled
-            else SpeechSignal(speaker=speaker, text=text, audio=None)
-        )
-        simulated_duration_sec = self.estimate_duration_sec(speaker, signal.text)
-        audio = signal.audio if isinstance(signal.audio, dict) else {}
-        if self.config.realtime_enabled and outgoing_enabled and not audio.get("waited"):
-            time.sleep(simulated_duration_sec)
-            if isinstance(signal.audio, dict):
-                signal.audio["waited"] = True
-                signal.audio["software_wait_sec"] = simulated_duration_sec
-        transcript = (
-            self.asr_engine.transcribe(signal)
-            if incoming_enabled
-            else signal.text
-        )
-        return SpeechPipelineTrace(
-            speaker=speaker,
-            generated_text=text,
-            outgoing_text=signal.text,
-            incoming_transcript=transcript,
-            outgoing_enabled=outgoing_enabled,
-            incoming_enabled=incoming_enabled,
-            tts_engine=self.tts_engine.name if outgoing_enabled else "disabled",
-            asr_engine=self.asr_engine.name if incoming_enabled else "disabled",
-            pattern_key=self.config.pattern_key,
-            simulated_duration_sec=simulated_duration_sec,
-            audio=signal.audio,
-        )
+        try:
+            signal = (
+                self.tts_engine.synthesize(speaker, text)
+                if outgoing_enabled
+                else SpeechSignal(speaker=speaker, text=text, audio=None)
+            )
+            simulated_duration_sec = self.estimate_duration_sec(speaker, signal.text)
+            audio = signal.audio if isinstance(signal.audio, dict) else {}
+            if self.config.strict_speech and outgoing_enabled and not audio.get("path"):
+                raise SpeechPipelineError(
+                    "Text-to-speech did not produce an audio artifact.",
+                    {"speaker": speaker, "tts_engine": self.tts_engine.name},
+                )
+            if self.config.realtime_enabled and outgoing_enabled and not audio.get("waited"):
+                time.sleep(simulated_duration_sec)
+                if isinstance(signal.audio, dict):
+                    signal.audio["waited"] = True
+                    signal.audio["software_wait_sec"] = simulated_duration_sec
+            transcript = (
+                self.asr_engine.transcribe(signal)
+                if incoming_enabled
+                else signal.text
+            )
+            if self.config.strict_speech and incoming_enabled and not transcript.strip():
+                raise SpeechPipelineError(
+                    "Automatic speech recognition produced an empty transcript.",
+                    {"speaker": speaker, "asr_engine": self.asr_engine.name, "audio": signal.audio},
+                )
+            return SpeechPipelineTrace(
+                speaker=speaker,
+                generated_text=text,
+                outgoing_text=signal.text,
+                incoming_transcript=transcript,
+                outgoing_enabled=outgoing_enabled,
+                incoming_enabled=incoming_enabled,
+                tts_engine=self.tts_engine.name if outgoing_enabled else "disabled",
+                asr_engine=self.asr_engine.name if incoming_enabled else "disabled",
+                pattern_key=self.config.pattern_key,
+                simulated_duration_sec=simulated_duration_sec,
+                audio=signal.audio,
+                mode=self.config.normalized_mode,
+                pipeline_ok=True,
+                diagnostics=signal.diagnostics or {},
+            )
+        except SpeechPipelineError:
+            raise
+        except Exception as exc:
+            raise SpeechPipelineError(
+                "Speech pipeline failed unexpectedly.",
+                {
+                    "speaker": speaker,
+                    "stage": "transmit",
+                    "error": repr(exc),
+                    "troubleshooting": "Check selected speech engines, audio output, generated audio files, and recognition availability.",
+                },
+            ) from exc
 
     def estimate_duration_sec(self, speaker: str, text: str) -> float:
         """Estimate natural speech duration from utterance length and speaker rate."""

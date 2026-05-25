@@ -3,6 +3,7 @@ import os
 
 AGENT_B_PLUGIN = os.environ.get("MINILLAMA_AGENT_B_PLUGIN", "minillama").strip() or "minillama"
 DEFAULT_SPEECH_PATTERN = "clean"
+RUN_MODE = os.environ.get("MINILLAMA_RUN_MODE", "pure_text").strip().lower() or "pure_text"
 SPEECH_ENGINE = os.environ.get("MINILLAMA_SPEECH_ENGINE", "file").strip().lower() or "file"
 SPEECH_TTS_ENGINE = os.environ.get("MINILLAMA_TTS_ENGINE", "").strip().lower()
 SPEECH_ASR_ENGINE = os.environ.get("MINILLAMA_ASR_ENGINE", "").strip().lower()

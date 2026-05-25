@@ -2,7 +2,7 @@ import queue
 import threading
 import unittest
 
-from minillama.controller.main import default_run_config, select_run_config, start_gui_thread
+from minillama.controller.main import conversation_worker, default_run_config, select_run_config, start_gui_thread
 
 
 class MainControllerTests(unittest.TestCase):
@@ -12,9 +12,10 @@ class MainControllerTests(unittest.TestCase):
         self.assertIn("gui_enabled", config)
         self.assertIsInstance(config["gui_enabled"], bool)
         self.assertEqual(config["num_turns"], 5)
-        self.assertTrue(config["speech_playback_enabled"])
-        self.assertTrue(config["speech_realtime_enabled"])
-        self.assertEqual(config["speech_scope"], "both")
+        self.assertEqual(config["run_mode"], "pure_text")
+        self.assertFalse(config["speech_playback_enabled"])
+        self.assertFalse(config["speech_realtime_enabled"])
+        self.assertEqual(config["speech_scope"], "none")
         self.assertIn("persona_key", config)
 
     def test_select_run_config_skips_startup_gui_when_disabled(self):
@@ -31,6 +32,34 @@ class MainControllerTests(unittest.TestCase):
 
         self.assertFalse(config["gui_enabled"])
         self.assertEqual(config["test_case_key"], default_run_config()["test_case_key"])
+
+    def test_conversation_worker_reports_invalid_speech_pipeline(self):
+        class FakeEventQueue:
+            def __init__(self):
+                self.events = []
+                self.closed = False
+
+            def put(self, event):
+                self.events.append(event)
+
+            def close(self):
+                self.closed = True
+
+        config = default_run_config()
+        config.update({
+            "run_mode": "speech",
+            "agent_b_plugin": "simple",
+            "tts_engine": "loopback",
+            "asr_engine": "loopback",
+        })
+        event_queue = FakeEventQueue()
+
+        conversation_worker(event_queue, None, config)
+
+        self.assertTrue(event_queue.closed)
+        warnings = [event for event in event_queue.events if event[0] == "warning"]
+        self.assertTrue(any("Speech pipeline failed" in event[1] for event in warnings))
+        self.assertTrue(any("Troubleshooting" in event[1] for event in warnings))
 
     def test_start_gui_thread_runs_dialog_runner_independently(self):
         caller_thread = threading.get_ident()

@@ -21,13 +21,13 @@ Agent A prompt logic and persona handling.
 - `prompt_data.py`: shared prompt context for Agent A and Agent B.
 
 ### `minillama/agent_b/`
-Agent B prompting, plugins, and simulated speech transport.
+Agent B prompting, plugins, and speech transport.
 
 - `__init__.py`: package marker.
 - `config.py`: Agent B defaults and speech-pattern settings.
 - `plugin_registry.py`: built-in Agent B plugins, custom plugin loading, and plugin config.
 - `pipeline.py`: Agent B verbal transformation pipeline.
-- `speech_io.py`: loopback and patterned speech transport.
+- `speech_io.py`: pure-text and speech-mode transport with text-to-speech, automatic speech recognition, health checks, and diagnostics.
 
 ### `minillama/controller/`
 Runtime orchestration, graphical interface startup, batch execution, and logging.
@@ -92,7 +92,7 @@ Interactive graphical interface:
 .venv\Scripts\python.exe -m minillama
 ```
 
-The graphical interface opens with a compact run-configuration form for scenario, persona, Agent B plugin, turn limits, early-stop limits, speech setup, and graphical interface mode. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default interactive run speaks and listens for both agents with file-backed generated speech, playback, real-time turn pacing, and sidecar transcripts enabled.
+The graphical interface opens with a compact run-configuration form for run mode, scenario, persona, Agent B plugin, turn limits, early-stop limits, speech setup, and graphical interface mode. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default interactive run is `pure_text`, which passes generated text directly between agents. Select `speech` mode to require text-to-speech and automatic speech recognition; the run performs a preflight check and stops with troubleshooting details if a stage does not produce audio or a transcript.
 
 Batch metrics:
 
@@ -100,18 +100,19 @@ Batch metrics:
 .venv\Scripts\python.exe -m minillama.controller.run_experiments
 ```
 
-Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for graphical interface and batch runs. Batch speech defaults are also text-only for low overhead: `--speech-patterns clean --speech-incoming false --speech-outgoing false --speech-scope none`.
+Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for graphical interface and batch runs. Batch runs default to `pure_text` for low overhead; use `--run-mode speech` or `--speech-enabled` for speech-stage runs.
 
 Useful speech-pipeline batch controls:
 
 ```powershell
-.venv\Scripts\python.exe -m minillama.controller.run_experiments --agent-b-plugin simple --speech-patterns clean,hesitant --speech-incoming true --speech-outgoing true --speech-scope both
+.venv\Scripts\python.exe -m minillama.controller.run_experiments --agent-b-plugin simple --run-mode speech --speech-patterns clean,hesitant --speech-incoming true --speech-outgoing true --speech-scope both
 ```
 
+- `--run-mode pure_text|speech`: choose direct text exchange or a strict speech pipeline.
 - `--speech-incoming true|false`: include the incoming automatic speech recognition transcript stage.
 - `--speech-outgoing true|false`: include the outgoing text-to-speech verbalization stage.
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
-- `--speech-engine patterned|file`: use text-pattern simulation or generate wave audio artifacts with sidecar automatic speech recognition transcripts.
+- `--speech-engine file|sapi|patterned`: use generated wave artifacts, Windows speech application programming interface stages, or text-pattern diagnostics.
 - `--speech-audio-dir PATH`: directory for generated speech artifacts when `--speech-engine file` is active.
 - `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for graphical interface and batch runs.
 - `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.

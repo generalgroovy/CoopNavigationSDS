@@ -8,7 +8,7 @@ from itertools import product
 from minillama.agent_a.config import DEFAULT_PERSONA
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
+from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import create_agent_b_plugin
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.dialog_manager import DialogManager
@@ -48,6 +48,7 @@ class ExperimentRunner:
         model_adapter,
         num_turns,
         agent_b_plugin_key=AGENT_B_PLUGIN,
+        run_mode=RUN_MODE,
         speech_incoming_enabled=SPEECH_INCOMING_ENABLED,
         speech_outgoing_enabled=SPEECH_OUTGOING_ENABLED,
         speech_scope=SPEECH_SCOPE,
@@ -72,6 +73,7 @@ class ExperimentRunner:
         self.model_adapter = model_adapter
         self.num_turns = num_turns
         self.agent_b_plugin_key = agent_b_plugin_key
+        self.run_mode = run_mode
         self.speech_incoming_enabled = speech_incoming_enabled
         self.speech_outgoing_enabled = speech_outgoing_enabled
         self.speech_scope = speech_scope
@@ -99,6 +101,7 @@ class ExperimentRunner:
         model_adapter = self._model_adapter_for(condition)
         speech_transport = SpeechTransport(
             config=SpeechPipelineConfig(
+                mode=self.run_mode,
                 incoming_enabled=self.speech_incoming_enabled,
                 outgoing_enabled=self.speech_outgoing_enabled,
                 scope=self.speech_scope,

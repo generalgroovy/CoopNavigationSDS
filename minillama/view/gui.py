@@ -145,6 +145,7 @@ class StartupConfigDialog:
         self.root.configure(bg=GUI_COLORS["app_bg"])
         self.root.resizable(False, False)
         self.vars = {
+            "run_mode": tk.StringVar(value=defaults["run_mode"]),
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
             "persona_key": tk.StringVar(value=defaults["persona_key"]),
             "agent_b_plugin": tk.StringVar(value=defaults["agent_b_plugin"]),
@@ -180,6 +181,7 @@ class StartupConfigDialog:
         frame.grid_columnconfigure(1, weight=1)
 
         rows = [
+            ("Run mode", "run_mode", self.choices["run_modes"]),
             ("Test case", "test_case_key", self.choices["test_case_keys"]),
             ("Persona", "persona_key", self.choices["persona_keys"]),
             ("Agent B", "agent_b_plugin", self.choices["agent_b_plugins"]),

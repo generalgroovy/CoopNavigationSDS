@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
+from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport
 
 
 class SpeechPipelineTests(unittest.TestCase):
@@ -26,16 +26,17 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertFalse(trace.incoming_enabled)
         self.assertGreaterEqual(trace.simulated_duration_sec, 0.8)
         self.assertLessEqual(trace.simulated_duration_sec, 8.0)
-        self.assertIn("text-only:hesitant:none", transport.description)
+        self.assertEqual(trace.mode, "pure_text")
+        self.assertIn("pure_text", transport.description)
 
     def test_speech_scope_applies_only_to_selected_agent(self):
         transport = SpeechTransport(
             config=SpeechPipelineConfig(
                 incoming_enabled=True,
                 outgoing_enabled=True,
+                mode="speech",
                 scope="agent_b",
-                pattern_key="compressed",
-                engine="patterned",
+                engine="file",
                 realtime_enabled=False,
             )
         )
@@ -49,13 +50,11 @@ class SpeechPipelineTests(unittest.TestCase):
             "Please I would like to avoid full trains.",
         )
 
-        self.assertEqual(
-            agent_b_trace.outgoing_text,
-            "I'd compare the fastest route and the fewest switches.",
-        )
+        self.assertEqual(agent_b_trace.outgoing_text, agent_b_trace.generated_text)
         self.assertEqual(agent_b_trace.incoming_transcript, agent_b_trace.outgoing_text)
         self.assertTrue(agent_b_trace.outgoing_enabled)
         self.assertTrue(agent_b_trace.incoming_enabled)
+        self.assertIsInstance(agent_b_trace.audio, dict)
         self.assertGreater(agent_b_trace.simulated_duration_sec, 1.0)
 
         self.assertEqual(agent_a_trace.outgoing_text, agent_a_trace.generated_text)
@@ -68,10 +67,11 @@ class SpeechPipelineTests(unittest.TestCase):
             config=SpeechPipelineConfig(
                 incoming_enabled=True,
                 outgoing_enabled=True,
+                mode="speech",
                 scope="both",
                 pattern_key="compressed",
-                tts_engine="patterned",
-                asr_engine="loopback",
+                tts_engine="file",
+                asr_engine="patterned",
                 realtime_enabled=False,
             )
         )
@@ -81,37 +81,30 @@ class SpeechPipelineTests(unittest.TestCase):
             "Please I would compare the fastest route and the fewest switches.",
         )
 
-        self.assertEqual(trace.tts_engine, "patterned-tts:compressed")
-        self.assertEqual(trace.asr_engine, "loopback-asr")
-        self.assertEqual(
-            trace.outgoing_text,
-            "I'd compare the fastest route and the fewest switches.",
-        )
-        self.assertEqual(trace.incoming_transcript, trace.outgoing_text)
-        self.assertIn("tts=patterned:asr=loopback", transport.description)
-
-    def test_asr_can_transform_transcript_after_loopback_tts(self):
-        transport = SpeechTransport(
-            config=SpeechPipelineConfig(
-                incoming_enabled=True,
-                outgoing_enabled=True,
-                scope="both",
-                pattern_key="compressed",
-                tts_engine="loopback",
-                asr_engine="patterned",
-                realtime_enabled=False,
-            )
-        )
-
-        trace = transport.transmit_trace(
-            "Agent A",
-            "Please I would like a route with fewer switches.",
-        )
-
-        self.assertEqual(trace.tts_engine, "loopback-tts")
+        self.assertEqual(trace.tts_engine, "wavefile-tts")
         self.assertEqual(trace.asr_engine, "patterned-asr:compressed")
         self.assertEqual(trace.outgoing_text, trace.generated_text)
-        self.assertEqual(trace.incoming_transcript, "I'd like a route with fewer switches.")
+        self.assertEqual(
+            trace.incoming_transcript,
+            "I'd compare the fastest route and the fewest switches.",
+        )
+        self.assertIn("tts=file:asr=patterned", transport.description)
+
+    def test_speech_mode_rejects_loopback_tts_or_asr(self):
+        with self.assertRaises(SpeechPipelineError) as error:
+            SpeechTransport(
+                config=SpeechPipelineConfig(
+                    mode="speech",
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    scope="both",
+                    tts_engine="loopback",
+                    asr_engine="loopback",
+                    realtime_enabled=False,
+                )
+            )
+
+        self.assertIn("complete text-to-speech", str(error.exception))
 
     def test_file_speech_engine_creates_audio_and_transcribes_sidecar(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -119,6 +112,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 config=SpeechPipelineConfig(
                     incoming_enabled=True,
                     outgoing_enabled=True,
+                    mode="speech",
                     scope="both",
                     engine="file",
                     audio_dir=tmpdir,
@@ -149,6 +143,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 config=SpeechPipelineConfig(
                     incoming_enabled=True,
                     outgoing_enabled=True,
+                    mode="speech",
                     scope="both",
                     engine="file",
                     audio_dir=tmpdir,
@@ -171,6 +166,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 config=SpeechPipelineConfig(
                     incoming_enabled=True,
                     outgoing_enabled=True,
+                    mode="speech",
                     scope="both",
                     engine="file",
                     audio_dir=tmpdir,
@@ -196,6 +192,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 config=SpeechPipelineConfig(
                     incoming_enabled=True,
                     outgoing_enabled=True,
+                    mode="speech",
                     scope="both",
                     engine="file",
                     audio_dir=tmpdir,
@@ -212,6 +209,30 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertFalse(trace.audio["played"])
             self.assertTrue(trace.audio["waited"])
             sleep.assert_called_once()
+
+    def test_speech_mode_fails_when_tts_does_not_create_audio(self):
+        class BrokenTextToSpeech:
+            name = "broken-tts"
+
+            def synthesize(self, speaker, text):
+                return SpeechSignal(speaker=speaker, text=text, audio=None)
+
+        transport = SpeechTransport(
+            tts_engine=BrokenTextToSpeech(),
+            config=SpeechPipelineConfig(
+                mode="speech",
+                incoming_enabled=True,
+                outgoing_enabled=True,
+                scope="both",
+                asr_engine="file",
+                realtime_enabled=False,
+            )
+        )
+
+        with self.assertRaises(SpeechPipelineError) as error:
+            transport.transmit_trace("Agent A", "This should fail.")
+
+        self.assertIn("audio artifact", str(error.exception))
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import argparse
 
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
+from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
@@ -37,6 +37,7 @@ def main():
     """Run the configured experiment grid and write metrics output."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--agent-b-plugin", default=AGENT_B_PLUGIN, help="Agent B plugin: minillama, simple, large language model alias, or package.module:factory.")
+    parser.add_argument("--run-mode", default=RUN_MODE, choices=("pure_text", "speech"), help="Run as direct text exchange or through text-to-speech and automatic speech recognition.")
     parser.add_argument("--model-provider", choices=("transformers", "openai"))
     parser.add_argument("--test-cases", default="morning_peak_cross_city,midday_transfer,evening_outbound,late_event")
     parser.add_argument("--personas", default="focused_commuter")
@@ -65,9 +66,16 @@ def main():
     args = parser.parse_args()
 
     if args.speech_enabled:
+        args.run_mode = "speech"
         args.speech_incoming = True
         args.speech_outgoing = True
         args.speech_scope = "both"
+    if args.run_mode == "pure_text":
+        args.speech_incoming = False
+        args.speech_outgoing = False
+        args.speech_playback = False
+        args.speech_real_time = False
+        args.speech_scope = "none"
 
     test_case_keys = parse_csv_arg(args.test_cases, TEST_CASES)
     conditions = list(build_condition_grid(
@@ -89,6 +97,7 @@ def main():
         model_adapter,
         args.num_turns,
         agent_b_plugin_key=args.agent_b_plugin,
+        run_mode=args.run_mode,
         speech_incoming_enabled=args.speech_incoming,
         speech_outgoing_enabled=args.speech_outgoing,
         speech_scope=args.speech_scope,

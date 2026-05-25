@@ -6,7 +6,7 @@ from pathlib import Path
 
 from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
 from minillama.agent_b.plugin_registry import SimplePlannerAgentBPlugin
-from minillama.agent_b.speech_io import SpeechTransport
+from minillama.agent_b.speech_io import SpeechSignal, SpeechTransport
 from minillama.agent_b.speech_io import SpeechPipelineConfig
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
@@ -53,6 +53,8 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertIsNotNone(result.extra["constraint_duration_min"])
             self.assertIn("constraint_duration_gap_min", result.extra)
             self.assertTrue(result.extra["metric_snapshots"])
+            self.assertEqual(result.extra["speech_turns"][0]["mode"], "pure_text")
+            self.assertTrue(result.extra["speech_turns"][0]["pipeline_ok"])
 
             jsonl_files = list(Path(tmpdir).glob("dialog-*.jsonl"))
             self.assertEqual(len(jsonl_files), 1)
@@ -83,6 +85,56 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
         self.assertTrue(any("less full" in text or "fewer line changes" in text for text in agent_a_replies))
+
+    def test_agent_b_state_uses_last_pipeline_transcript_from_agent_a(self):
+        class TestTextToSpeech:
+            name = "test-tts"
+
+            def synthesize(self, speaker, text):
+                return SpeechSignal(speaker=speaker, text=text, audio={"path": "test.wav"})
+
+        class TestSpeechToText:
+            name = "test-asr"
+
+            def transcribe(self, signal):
+                if signal.speaker == "Agent A":
+                    return "heard start Alpha destination Echo"
+                return signal.text
+
+        class CapturingAgentB:
+            name = "capturing-agent-b"
+
+            def __init__(self):
+                self.last_agent_a_text = None
+
+            def run_agent_b(self, state):
+                self.last_agent_a_text = state.conversation[-1][1]
+                return "Take Alpha to Golf to Foxtrot to Echo."
+
+        agent_b = CapturingAgentB()
+        manager = DialogManager(
+            get_test_case("midday_transfer"),
+            agent_b,
+            num_turns=2,
+            speech_transport=SpeechTransport(
+                tts_engine=TestTextToSpeech(),
+                asr_engine=TestSpeechToText(),
+                config=SpeechPipelineConfig(
+                    mode="speech",
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    scope="both",
+                    realtime_enabled=False,
+                    playback_enabled=False,
+                ),
+            ),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(agent_b.last_agent_a_text, "heard start Alpha destination Echo")
+        self.assertEqual(result.conversation[0][1], "heard start Alpha destination Echo")
 
     def test_agent_a_stops_early_after_repeated_invalid_routes(self):
         class InvalidRoutePlugin:
@@ -146,6 +198,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
                 num_turns=2,
                 speech_transport=SpeechTransport(
                     config=SpeechPipelineConfig(
+                        mode="speech",
                         incoming_enabled=True,
                         outgoing_enabled=True,
                         scope="both",

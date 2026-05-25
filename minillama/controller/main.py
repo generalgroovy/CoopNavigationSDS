@@ -13,6 +13,7 @@ from minillama.agent_a.config import DEFAULT_PERSONA, LLM_AGENT_A, PERSONAS
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
     DEFAULT_SPEECH_PATTERN,
+    RUN_MODE,
     SPEECH_ASR_ENGINE,
     SPEECH_AUDIO_DIR,
     SPEECH_ENGINE,
@@ -24,7 +25,7 @@ from minillama.agent_b.config import (
     SPEECH_TTS_ENGINE,
 )
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys, create_agent_b_plugin
-from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
+from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechTransport
 from minillama.controller.config import (
     CONSTRAINT_MISS_LIMIT,
     GUI_ENABLED,
@@ -59,12 +60,14 @@ def build_agent_a_responder(model_adapter, llm_agent_a=LLM_AGENT_A):
     return TemplateAgentAResponder()
 
 
-def conversation_worker(event_queue, model_adapter, run_config):
-    """Run one dialog and stream optional UI events."""
+def build_dialog_runtime(event_queue, model_adapter, run_config):
+    """Build dialog runtime components after validating run mode and speech setup."""
+    run_config = normalize_run_config(run_config)
     test_case = get_test_case(run_config["test_case_key"]).with_persona(run_config.get("persona_key", DEFAULT_PERSONA))
     agent_b_plugin = create_agent_b_plugin(run_config["agent_b_plugin"], model_adapter)
     speech_transport = SpeechTransport(
         config=SpeechPipelineConfig(
+            mode=run_config["run_mode"],
             incoming_enabled=run_config["speech_incoming_enabled"],
             outgoing_enabled=run_config["speech_outgoing_enabled"],
             scope=run_config["speech_scope"],
@@ -96,8 +99,23 @@ def conversation_worker(event_queue, model_adapter, run_config):
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
     device = getattr(model_adapter, "device", "not available")
+    return run_config, test_case, agent_b_plugin, speech_transport, manager, num_turns, model_name, model_provider, device
 
+
+def conversation_worker(event_queue, model_adapter, run_config):
+    """Run one dialog and stream optional UI events."""
     try:
+        (
+            run_config,
+            test_case,
+            agent_b_plugin,
+            speech_transport,
+            manager,
+            num_turns,
+            model_name,
+            model_provider,
+            device,
+        ) = build_dialog_runtime(event_queue, model_adapter, run_config)
         with event_queue.segment(
             "dialog.run",
             model=model_name,
@@ -116,6 +134,10 @@ def conversation_worker(event_queue, model_adapter, run_config):
             event_queue.put(("system", f"Turns={num_turns}, max_new_tokens={MAX_NEW_TOKENS}, max_length={MAX_INPUT_TOKENS}"))
             event_queue.put(("system", f"Agent A: {manager.agent_a_responder.name}"))
             event_queue.put(("system", f"Agent B: {getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)}"))
+            health = speech_transport.health_check()
+            event_queue.put(("system", f"Pipeline mode: {health['mode']}"))
+            if health["mode"] == "speech":
+                event_queue.put(("system", "Speech preflight: text-to-speech and automatic speech recognition passed."))
             result = manager.run(event_queue)
             protocol_dir = run_config.get("protocol_log_dir")
             if protocol_dir:
@@ -123,6 +145,11 @@ def conversation_worker(event_queue, model_adapter, run_config):
                 event_queue.put(("system", f"Conversation protocol: {research_paths['protocol']['summary']}"))
                 event_queue.put(("system", f"Compiled metrics: {research_paths['metrics_file']}"))
                 event_queue.put(("system", f"Metric phase logs: {research_paths['phase_log_dir']}"))
+    except SpeechPipelineError as exc:
+        logging.exception("Speech pipeline failed")
+        event_queue.put(("warning", f"Speech pipeline failed: {exc}"))
+        event_queue.put(("warning", f"Troubleshooting: {exc.diagnostics}"))
+        event_queue.put(("done",))
     except Exception as exc:
         logging.exception("Conversation worker failed")
         event_queue.put(("warning", f"Conversation stopped: {exc}"))
@@ -133,7 +160,9 @@ def conversation_worker(event_queue, model_adapter, run_config):
 
 def default_run_config():
     """Return the default interactive run configuration."""
+    run_mode = RUN_MODE if RUN_MODE in {"pure_text", "speech"} else "pure_text"
     return {
+        "run_mode": run_mode,
         "test_case_key": DEFAULT_TEST_CASE,
         "persona_key": DEFAULT_PERSONA,
         "agent_b_plugin": AGENT_B_PLUGIN,
@@ -144,14 +173,14 @@ def default_run_config():
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "speech_engine": SPEECH_ENGINE if SPEECH_ENGINE != "patterned" else "file",
-        "tts_engine": SPEECH_TTS_ENGINE or ("file" if SPEECH_ENGINE == "patterned" else SPEECH_ENGINE),
-        "asr_engine": SPEECH_ASR_ENGINE or ("file" if SPEECH_ENGINE == "patterned" else SPEECH_ENGINE),
+        "tts_engine": SPEECH_TTS_ENGINE or ("sapi" if run_mode == "speech" else "file"),
+        "asr_engine": SPEECH_ASR_ENGINE or ("sapi" if run_mode == "speech" else "file"),
         "speech_audio_dir": SPEECH_AUDIO_DIR,
-        "speech_incoming_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_INCOMING_ENABLED else SPEECH_INCOMING_ENABLED,
-        "speech_outgoing_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_OUTGOING_ENABLED else SPEECH_OUTGOING_ENABLED,
-        "speech_playback_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_PLAYBACK_ENABLED else SPEECH_PLAYBACK_ENABLED,
-        "speech_realtime_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_REALTIME_ENABLED else SPEECH_REALTIME_ENABLED,
-        "speech_scope": "both" if SPEECH_SCOPE == "none" else SPEECH_SCOPE,
+        "speech_incoming_enabled": run_mode == "speech" and SPEECH_INCOMING_ENABLED,
+        "speech_outgoing_enabled": run_mode == "speech" and SPEECH_OUTGOING_ENABLED,
+        "speech_playback_enabled": run_mode == "speech" and SPEECH_PLAYBACK_ENABLED,
+        "speech_realtime_enabled": run_mode == "speech" and SPEECH_REALTIME_ENABLED,
+        "speech_scope": "both" if run_mode == "speech" and SPEECH_SCOPE == "none" else "none" if run_mode == "pure_text" else SPEECH_SCOPE,
         "agent_a_words_per_minute": 165,
         "agent_b_words_per_minute": 175,
         "min_utterance_sec": 0.6,
@@ -162,19 +191,46 @@ def default_run_config():
     }
 
 
+def normalize_run_config(config):
+    """Normalize the two supported runtime modes before execution."""
+    normalized = dict(config)
+    run_mode = (normalized.get("run_mode") or "pure_text").strip().lower().replace("-", "_")
+    if run_mode not in {"pure_text", "speech"}:
+        raise SpeechPipelineError(
+            f"Unsupported run mode '{normalized.get('run_mode')}'.",
+            {"run_mode": normalized.get("run_mode"), "allowed": ["pure_text", "speech"]},
+        )
+    normalized["run_mode"] = run_mode
+    if run_mode == "pure_text":
+        normalized["speech_incoming_enabled"] = False
+        normalized["speech_outgoing_enabled"] = False
+        normalized["speech_playback_enabled"] = False
+        normalized["speech_realtime_enabled"] = False
+        normalized["speech_scope"] = "none"
+    else:
+        normalized["speech_incoming_enabled"] = True
+        normalized["speech_outgoing_enabled"] = True
+        if normalized.get("speech_scope") in {"none", "off", "text", ""}:
+            normalized["speech_scope"] = "both"
+        normalized["tts_engine"] = normalized.get("tts_engine") or "sapi"
+        normalized["asr_engine"] = normalized.get("asr_engine") or "sapi"
+    return normalized
+
+
 def select_run_config():
     """Show the startup configuration form, falling back to defaults when unavailable."""
     defaults = default_run_config()
     if not GUI_ENABLED:
         return defaults
     choices = {
+        "run_modes": ["pure_text", "speech"],
         "test_case_keys": list(TEST_CASES),
         "persona_keys": list(PERSONAS),
         "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
         "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
-        "speech_engines": ["patterned", "file"],
-        "tts_engines": ["patterned", "file", "loopback"],
-        "asr_engines": ["patterned", "file", "loopback"],
+        "speech_engines": ["file", "sapi", "patterned"],
+        "tts_engines": ["sapi", "file", "patterned", "loopback"],
+        "asr_engines": ["sapi", "file", "patterned", "loopback"],
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
         "gui_modes": ["conversation", "full"],
     }
@@ -218,6 +274,7 @@ def main():
     run_config = select_run_config()
     if run_config is None:
         return
+    run_config = normalize_run_config(run_config)
 
     scenario = get_test_case(run_config["test_case_key"]).with_persona(run_config.get("persona_key", DEFAULT_PERSONA)).scenario
     write_network_research_artifacts(

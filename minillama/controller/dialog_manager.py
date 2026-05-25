@@ -216,6 +216,10 @@ class DialogManager:
                 "tts_engine": trace.tts_engine,
                 "asr_engine": trace.asr_engine,
                 "pattern_key": trace.pattern_key,
+                "mode": trace.mode,
+                "pipeline_ok": trace.pipeline_ok,
+                "failure_reason": trace.failure_reason,
+                "diagnostics": trace.diagnostics or {},
             }
             speech_turns.append(payload)
             event_queue.put(

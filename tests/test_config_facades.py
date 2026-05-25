@@ -5,6 +5,7 @@ import unittest
 from minillama.agent_a.config import LLM_AGENT_A
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
+    RUN_MODE,
     SPEECH_AUDIO_DIR,
     SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
@@ -41,6 +42,7 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertFalse(LLM_AGENT_A)
 
     def test_default_speech_pipeline_plays_and_listens(self):
+        self.assertEqual(RUN_MODE, "pure_text")
         self.assertTrue(SPEECH_INCOMING_ENABLED)
         self.assertTrue(SPEECH_OUTGOING_ENABLED)
         self.assertTrue(SPEECH_PLAYBACK_ENABLED)
@@ -51,6 +53,11 @@ class ConfigModuleTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             transport = SpeechTransport(config=SpeechPipelineConfig(
+                mode="speech",
+                incoming_enabled=True,
+                outgoing_enabled=True,
+                scope="both",
+                engine="file",
                 audio_dir=tmpdir,
                 playback_enabled=False,
                 realtime_enabled=False,
