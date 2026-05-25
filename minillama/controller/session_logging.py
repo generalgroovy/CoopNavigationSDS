@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager, nullcontext
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 import json
 import os
@@ -12,8 +12,6 @@ import threading
 import time
 import tracemalloc
 from typing import Any
-
-from minillama.controller.events import ConversationStepEvent, ProgramSegmentEvent, StructuredEvent, SystemEvent
 
 
 STOP = object()
@@ -28,6 +26,62 @@ VALID_LOG_PROFILES = {
     LOG_PROFILE_RUNTIME,
     LOG_PROFILE_FULL,
 }
+
+
+@dataclass(frozen=True)
+class StructuredEvent:
+    """Base structured event for monitored sessions."""
+
+    kind: str
+    session_id: str
+    timestamp: float
+    name: str
+    payload: dict = field(default_factory=dict)
+
+    def to_dict(self):
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ProgramSegmentEvent(StructuredEvent):
+    """Structured event for a monitored program segment."""
+
+    def __init__(self, session_id, timestamp, name, payload=None):
+        super().__init__(
+            kind="program.segment",
+            session_id=session_id,
+            timestamp=timestamp,
+            name=name,
+            payload=payload or {},
+        )
+
+
+@dataclass(frozen=True)
+class ConversationStepEvent(StructuredEvent):
+    """Structured event for a single conversation step."""
+
+    def __init__(self, session_id, timestamp, name, payload=None):
+        super().__init__(
+            kind="conversation.step",
+            session_id=session_id,
+            timestamp=timestamp,
+            name=name,
+            payload=payload or {},
+        )
+
+
+@dataclass(frozen=True)
+class SystemEvent(StructuredEvent):
+    """Structured event for generic session events."""
+
+    def __init__(self, session_id, timestamp, name, payload=None):
+        super().__init__(
+            kind="system",
+            session_id=session_id,
+            timestamp=timestamp,
+            name=name,
+            payload=payload or {},
+        )
 
 
 def _normalize_profile(profile: str | None) -> str:
@@ -166,6 +220,22 @@ class SessionLogger:
             )
         )
 
+    def log_metric_snapshot(self, snapshot: dict[str, Any]):
+        """Record a periodic research metric snapshot."""
+        if not self.enabled or not self._should_log_runtime():
+            return
+        self.submit(
+            SystemEvent(
+                self.session_label,
+                time.time(),
+                "metric.snapshot",
+                payload={
+                    **snapshot,
+                    **({"resources": resource_snapshot()} if self.capture_resources else {}),
+                },
+            )
+        )
+
     def close(self):
         """Flush and stop the background writer."""
         if not self.enabled or self._closed:
@@ -244,6 +314,11 @@ class SessionLogger:
                 f"route_goal={route_goal} route={route}"
             )
         if kind == "system":
+            if name == "metric.snapshot":
+                return (
+                    f"[{timestamp}] METRICS turn={payload.get('turn')} messages={payload.get('message_count')} "
+                    f"candidates={payload.get('candidate_routes')} best_duration={payload.get('best_duration')}"
+                )
             if name == "session.start":
                 return f"[{timestamp}] SESSION START {payload.get('session_name', '')}"
             if name == "session.end":
@@ -271,7 +346,7 @@ class SessionLogger:
         if self.profile == LOG_PROFILE_STARTUP:
             return False
         kind = event[0]
-        return kind in {"message", "system", "warning", "route", "candidate", "telemetry", "metrics", "done"}
+        return kind in {"message", "system", "warning", "route", "candidate", "telemetry", "metric_snapshot", "metrics", "done"}
 
 
 class MonitoringEventQueue:
@@ -300,6 +375,10 @@ class MonitoringEventQueue:
     def log_step(self, *, turn: int, speaker: str, utterance: str, metrics: dict[str, Any]):
         if self.logger is not None:
             self.logger.log_step(turn=turn, speaker=speaker, utterance=utterance, metrics=metrics)
+
+    def log_metric_snapshot(self, snapshot: dict[str, Any]):
+        if self.logger is not None:
+            self.logger.log_metric_snapshot(snapshot)
 
     def close(self):
         if self.logger is not None:
@@ -336,6 +415,8 @@ class MonitoringEventQueue:
                 f"telemetry.{telemetry_type}",
                 payload=payload if isinstance(payload, dict) else {"value": payload},
             )
+        if kind == "metric_snapshot" and len(event) >= 2:
+            return SystemEvent("ui-forward", timestamp, "metric.snapshot", payload=event[1])
         if kind == "metrics" and len(event) >= 2:
             return SystemEvent("ui-forward", timestamp, "metrics", payload={"metrics": event[1]})
         if kind == "done":

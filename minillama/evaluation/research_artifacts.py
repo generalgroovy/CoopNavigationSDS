@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 
 from minillama.evaluation.xlsx_export import write_metrics_xlsx
+from minillama.evaluation.metrics import MetricComputer
 from minillama.model.network_overview import build_network_overview
 from minillama.model.network_picture import write_network_svg
 
@@ -145,6 +146,7 @@ def write_conversation_protocol(result, output_dir):
         "speech": condition_dir / "speech_pipeline.jsonl",
         "timing": condition_dir / "timing.jsonl",
         "semantic": condition_dir / "semantic_parsing.jsonl",
+        "metric_snapshots": condition_dir / "metric_snapshots.jsonl",
         "metrics": condition_dir / "metrics.txt",
         "verification": condition_dir / "verification.json",
     }
@@ -153,9 +155,28 @@ def write_conversation_protocol(result, output_dir):
     write_jsonl(paths["speech"], speech_turns)
     write_jsonl(paths["timing"], timing_turns)
     write_jsonl(paths["semantic"], nlu_turns)
+    write_jsonl(paths["metric_snapshots"], result.extra.get("metric_snapshots", []))
     paths["metrics"].write_text(result.metrics_text or "", encoding="utf-8")
     paths["verification"].write_text(json.dumps(verification, indent=2, ensure_ascii=True), encoding="utf-8")
     return paths
+
+
+def write_single_run_research_outputs(result, scenario, output_dir):
+    """Write protocol files plus compiled metric files for one interactive run."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    protocol_paths = write_conversation_protocol(result, output_dir)
+    metric = MetricComputer().compute(result, scenario)
+    compiled_dir = output_dir / safe_artifact_name(result.condition_id) / "compiled_metrics"
+    metrics_file = compiled_dir / "metrics.xlsx"
+    phase_log_dir = compiled_dir / "metrics_by_phase"
+    write_metrics_file([metric], metrics_file)
+    write_metric_phase_logs([metric], phase_log_dir)
+    return {
+        "protocol": protocol_paths,
+        "metrics_file": metrics_file,
+        "phase_log_dir": phase_log_dir,
+    }
 
 
 def write_conversation_protocols(results, output_dir):
@@ -198,6 +219,7 @@ def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_
         ),
         "timing_turns_have_latency": all("turn_latency_sec" in turn for turn in timing_turns),
         "semantic_turns_have_parse_flags": all("route_valid" in turn and "route_reaches_goal" in turn for turn in nlu_turns),
+        "metric_snapshots_present": bool(result.extra.get("metric_snapshots")),
     }
     return {
         "verified": all(checks.values()),

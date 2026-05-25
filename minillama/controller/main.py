@@ -10,7 +10,6 @@ except ModuleNotFoundError:
 
 from minillama.agent_a.agent_a_responder import LLMAgentAResponder, TemplateAgentAResponder
 from minillama.agent_a.config import DEFAULT_PERSONA, LLM_AGENT_A, PERSONAS
-from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
     DEFAULT_SPEECH_PATTERN,
@@ -24,13 +23,14 @@ from minillama.agent_b.config import (
     SPEECH_SCOPE,
     SPEECH_TTS_ENGINE,
 )
-from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
+from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys, create_agent_b_plugin
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.config import (
     CONSTRAINT_MISS_LIMIT,
     GUI_ENABLED,
     GUI_MODE,
     INVALID_ROUTE_LIMIT,
+    METRIC_SNAPSHOT_INTERVAL,
     NETWORK_PICTURE_DIR,
     NUM_TURNS,
     PROTOCOL_LOG_DIR,
@@ -41,7 +41,7 @@ from minillama.controller.config import (
 )
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
-from minillama.evaluation.research_artifacts import write_conversation_protocol, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
 from minillama.model.config import MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
@@ -91,6 +91,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
         monitor=event_queue,
         invalid_route_limit=int(run_config["invalid_route_limit"]),
         constraint_miss_limit=int(run_config["constraint_miss_limit"]),
+        metric_snapshot_interval=int(run_config["metric_snapshot_interval"]),
     )
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
@@ -118,8 +119,10 @@ def conversation_worker(event_queue, model_adapter, run_config):
             result = manager.run(event_queue)
             protocol_dir = run_config.get("protocol_log_dir")
             if protocol_dir:
-                protocol_paths = write_conversation_protocol(result, protocol_dir)
-                event_queue.put(("system", f"Conversation protocol: {protocol_paths['summary']}"))
+                research_paths = write_single_run_research_outputs(result, test_case.scenario, protocol_dir)
+                event_queue.put(("system", f"Conversation protocol: {research_paths['protocol']['summary']}"))
+                event_queue.put(("system", f"Compiled metrics: {research_paths['metrics_file']}"))
+                event_queue.put(("system", f"Metric phase logs: {research_paths['phase_log_dir']}"))
     except Exception as exc:
         logging.exception("Conversation worker failed")
         event_queue.put(("warning", f"Conversation stopped: {exc}"))
@@ -137,6 +140,7 @@ def default_run_config():
         "num_turns": NUM_TURNS,
         "invalid_route_limit": INVALID_ROUTE_LIMIT,
         "constraint_miss_limit": CONSTRAINT_MISS_LIMIT,
+        "metric_snapshot_interval": METRIC_SNAPSHOT_INTERVAL,
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "speech_engine": SPEECH_ENGINE if SPEECH_ENGINE != "patterned" else "file",

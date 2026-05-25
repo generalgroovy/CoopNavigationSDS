@@ -6,10 +6,10 @@ from dataclasses import asdict, dataclass
 from itertools import product
 
 from minillama.agent_a.config import DEFAULT_PERSONA
-from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
+from minillama.agent_b.plugin_registry import create_agent_b_plugin
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue

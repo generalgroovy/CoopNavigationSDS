@@ -26,7 +26,6 @@ Agent B prompting, plugins, and simulated speech transport.
 - `__init__.py`: package marker.
 - `config.py`: Agent B defaults and speech-pattern settings.
 - `plugin_registry.py`: built-in Agent B plugins, custom plugin loading, and plugin config.
-- `agent_b_plugins.py`: compatibility imports for plugin code.
 - `pipeline.py`: Agent B verbal transformation pipeline.
 - `speech_io.py`: loopback and patterned speech transport.
 
@@ -37,7 +36,6 @@ Runtime orchestration, graphical interface startup, batch execution, and logging
 - `config.py`: controller defaults and logging profile.
 - `dialog_manager.py`: one-dialog controller and route tracking.
 - `dialog_result.py`: dialog result data model and null queue.
-- `events.py`: structured logging event models.
 - `main.py`: interactive startup flow.
 - `route_memory.py`: route deduplication memory.
 - `run_experiments.py`: batch CLI entrypoint.
@@ -120,7 +118,7 @@ Useful speech-pipeline batch controls:
 - `--log-dir PATH`: destination for optional batch logs.
 - `--progress`: print each completed condition id during long batch runs.
 
-The evaluation report exports a staged metric stack aligned with speech-dialog analysis. Audio ingress, voice activity detection, and diarization fields are present when available; automatic speech recognition, spoken-language understanding and dialog-state tracking proxies, policy/tool metrics, natural-language generation, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
+The evaluation report exports a staged metric stack aligned with speech-dialog analysis. During runs, compact metric snapshots are emitted periodically to the live event stream and structured logs. After a conversation ends, the run writes protocol JSONL files, metric snapshots, an analysis-ready spreadsheet, and per-phase metric JSONL files. Audio ingress, voice activity detection, and diarization fields are present when available; automatic speech recognition, spoken-language understanding and dialog-state tracking proxies, policy/tool metrics, natural-language generation, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
 
 Speech turns keep separate generated, outgoing, and incoming text traces. The graphical interface and comma-separated metrics report automatic speech recognition word error rate, text-to-speech text-change rate, station precision and recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
 

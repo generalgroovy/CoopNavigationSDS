@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 from minillama.controller.dialog_result import DialogResult
 from minillama.controller.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from minillama.evaluation.research_artifacts import write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
 from minillama.model.model_adapters import ModelParameterSet
 
 
@@ -291,6 +291,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                 ],
                 "timing_turns": [{"turn_latency_sec": 0.4}],
                 "nlu_turns": [{"route_valid": True, "route_reaches_goal": True}],
+                "metric_snapshots": [{"turn": 1, "message_count": 2, "candidate_routes": 1}],
             },
         )
 
@@ -301,11 +302,73 @@ class ExperimentRunnerTests(unittest.TestCase):
             summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
             verification = json.loads(paths["verification"].read_text(encoding="utf-8"))
             turn_rows = paths["turns"].read_text(encoding="utf-8").splitlines()
+            snapshot_rows = paths["metric_snapshots"].read_text(encoding="utf-8").splitlines()
 
         self.assertTrue(batch_paths)
         self.assertEqual(summary["condition_id"], "Case One")
         self.assertTrue(verification["verified"])
         self.assertEqual(len(turn_rows), 2)
+        self.assertEqual(len(snapshot_rows), 1)
+
+    def test_single_run_research_outputs_compile_metrics_for_analysis(self):
+        result = DialogResult(
+            condition_id="Case One",
+            test_case_key="morning_peak_cross_city",
+            persona_key="focused_commuter",
+            scenario_key="morning_peak_cross_city",
+            speech_pattern_key="clean",
+            model_name="model",
+            conversation=[("Agent A", "Need Bravo to Harbor."), ("Agent B", "Take Bravo to Alpha to Golf to November to Uniform to Birch to Ivy to Harbor.")],
+            route=["Bravo", "Alpha", "Golf", "November", "Uniform", "Birch", "Ivy", "Harbor"],
+            route_steps=[
+                {"from": "Bravo", "to": "Alpha", "line": "Ring", "travel": 2, "wait": 0, "transfer": 0, "fullness": 43, "delay_probability": 0.2},
+                {"from": "Alpha", "to": "Golf", "line": "Ring", "travel": 6, "wait": 0, "transfer": 0, "fullness": 40, "delay_probability": 0.2},
+                {"from": "Golf", "to": "November", "line": "Diagonal-SE-6", "travel": 3, "wait": 3, "transfer": 2, "fullness": 42, "delay_probability": 0.2},
+                {"from": "November", "to": "Uniform", "line": "Diagonal-SE-6", "travel": 2, "wait": 0, "transfer": 0, "fullness": 45, "delay_probability": 0.2},
+                {"from": "Uniform", "to": "Birch", "line": "Diagonal-SE-6", "travel": 2, "wait": 0, "transfer": 0, "fullness": 48, "delay_probability": 0.2},
+                {"from": "Birch", "to": "Ivy", "line": "Diagonal-SE-6", "travel": 3, "wait": 0, "transfer": 0, "fullness": 49, "delay_probability": 0.2},
+                {"from": "Ivy", "to": "Harbor", "line": "Ring", "travel": 2, "wait": 1, "transfer": 2, "fullness": 47, "delay_probability": 0.2},
+            ],
+            route_valid=True,
+            route_reaches_goal=True,
+            route_correct=True,
+            route_duration_min=28,
+            runtime_sec=1.2,
+            metrics_text="Messages: 2",
+            extra={
+                "messages": 2,
+                "route_revisions": 0,
+                "best_candidate_turn": 1,
+                "reference_duration_min": 28,
+                "constraint_duration_min": 28,
+                "displayed_line_sequence": ["Ring", "Diagonal-SE-6", "Ring"],
+                "displayed_line_changes": 2,
+                "reference_line_sequence": ["Ring", "Diagonal-SE-6", "Ring"],
+                "reference_line_changes": 2,
+                "constraint_line_sequence": ["Ring", "Diagonal-SE-6", "Ring"],
+                "constraint_line_changes": 2,
+                "constraint_delay_probability": 0.2,
+                "warning_count": 0,
+                "speech_turns": [],
+                "timing_turns": [],
+                "nlu_turns": [],
+                "metric_snapshots": [{"turn": 1, "message_count": 2, "candidate_routes": 1}],
+            },
+        )
+        from minillama.test_cases import get_test_case
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            paths = write_single_run_research_outputs(
+                result,
+                get_test_case("morning_peak_cross_city").scenario,
+                tmpdir,
+            )
+
+            metrics_file = paths["metrics_file"]
+            phase_dir = paths["phase_log_dir"]
+
+            self.assertTrue(metrics_file.exists())
+            self.assertTrue((phase_dir / "summary.jsonl").exists())
 
 
 if __name__ == "__main__":

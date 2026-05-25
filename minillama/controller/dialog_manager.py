@@ -75,6 +75,7 @@ class DialogManager:
         monitor=None,
         invalid_route_limit=2,
         constraint_miss_limit=2,
+        metric_snapshot_interval=1,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -98,6 +99,7 @@ class DialogManager:
         self.monitor = monitor
         self.invalid_route_limit = invalid_route_limit
         self.constraint_miss_limit = constraint_miss_limit
+        self.metric_snapshot_interval = max(1, int(metric_snapshot_interval or 1))
 
     def run(self, event_queue):
         """Run method for this module's MVC responsibility.
@@ -111,6 +113,7 @@ class DialogManager:
         speech_turns = []
         timing_turns = []
         nlu_turns = []
+        metric_snapshots = []
         warning_count = 0
         conversation_word_count = 0
         task_term_count = 0
@@ -161,6 +164,40 @@ class DialogManager:
                 utterance=utterance,
                 metrics=payload,
             )
+
+        def build_metric_snapshot(turn_number, phase, speaker, parsed_route=None):
+            """Build a compact periodic metric snapshot for runtime logs."""
+            parsed_route_valid = route_is_valid(parsed_route) if parsed_route else False
+            parsed_route_goal = route_reaches_goal(parsed_route, scenario) if parsed_route_valid else False
+            return {
+                "turn": turn_number,
+                "phase": phase,
+                "speaker": speaker,
+                "elapsed_sec": round(time.time() - start_wall, 6),
+                "message_count": len(conversation),
+                "word_count": conversation_word_count,
+                "task_terms": task_term_count,
+                "comparison_terms": comparison_term_count,
+                "cooperation_terms": cooperation_term_count,
+                "candidate_routes": len(route_memory.candidates),
+                "route_revisions": route_revision_count,
+                "best_route": list(best_route),
+                "best_duration": best_duration,
+                "best_candidate_turn": best_turn,
+                "warning_count": warning_count,
+                "invalid_route_count": invalid_route_count,
+                "constraint_miss_count": constraint_miss_count,
+                "route_valid": parsed_route_valid,
+                "route_reaches_goal": parsed_route_goal,
+            }
+
+        def emit_metric_snapshot(turn_number, phase, speaker, parsed_route=None, force=False):
+            """Emit periodic metric snapshots to the GUI stream and logger."""
+            if not force and turn_number % self.metric_snapshot_interval != 0:
+                return
+            snapshot = build_metric_snapshot(turn_number, phase, speaker, parsed_route=parsed_route)
+            metric_snapshots.append(snapshot)
+            event_queue.put(("metric_snapshot", snapshot))
 
         def emit_speech_telemetry(trace, latency_sec):
             """Send source/transcript telemetry for automatic speech recognition metrics."""
@@ -297,6 +334,7 @@ class DialogManager:
             0.0,
             opening_speech_sec,
         )
+        emit_metric_snapshot(len(conversation), "opening", "Agent A", force=True)
 
         route_round = 0
         while len(conversation) < self.num_turns:
@@ -327,6 +365,7 @@ class DialogManager:
                 parsed_route=parsed_route,
                 has_station_mentions=has_station_mentions,
             )
+            emit_metric_snapshot(len(conversation), "agent_b_reply", "Agent B", parsed_route=parsed_route)
 
             if route_is_valid(parsed_route):
                 duration = route_duration_min(parsed_route, scenario)
@@ -422,6 +461,7 @@ class DialogManager:
                     generation_sec,
                     speech_sec,
                 )
+                emit_metric_snapshot(len(conversation), "agent_a_reply", "Agent A")
             if early_stop_reason:
                 break
 
@@ -512,6 +552,7 @@ class DialogManager:
         )
 
         event_queue.put(("metrics", metrics))
+        emit_metric_snapshot(len(conversation), "final", "system", force=True)
         event_queue.put(("done",))
 
         return DialogResult(
@@ -566,5 +607,6 @@ class DialogManager:
                 "speech_turns": speech_turns,
                 "timing_turns": timing_turns,
                 "nlu_turns": nlu_turns,
+                "metric_snapshots": metric_snapshots,
             },
         )

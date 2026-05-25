@@ -18,6 +18,7 @@ class SessionLoggingTests(unittest.TestCase):
                     utterance="hello world",
                     metrics={"route_valid": True, "route": ["A", "B"]},
                 )
+                logger.log_metric_snapshot({"turn": 1, "message_count": 1, "candidate_routes": 0})
             logger.close()
 
             jsonl_files = list(Path(tmpdir).glob("unit-*.jsonl"))
@@ -29,6 +30,7 @@ class SessionLoggingTests(unittest.TestCase):
             kinds = [row["kind"] for row in rows]
             self.assertIn("program.segment", kinds)
             self.assertIn("conversation.step", kinds)
+            self.assertTrue(any(row["kind"] == "system" and row["name"] == "metric.snapshot" for row in rows))
             self.assertTrue(any(row["kind"] == "system" and row["name"] == "session.end" for row in rows))
 
             summary = json.loads((Path(tmpdir) / f"{jsonl_files[0].stem}-summary.json").read_text(encoding="utf-8"))
@@ -41,18 +43,21 @@ class SessionLoggingTests(unittest.TestCase):
             event_queue = MonitoringEventQueue(ui_queue, logger)
 
             event_queue.put(("message", "Agent A", "hello"))
+            event_queue.put(("metric_snapshot", {"turn": 1, "message_count": 1}))
             event_queue.put(("warning", "check route"))
             event_queue.put(("done",))
             event_queue.close()
 
-            forwarded = [ui_queue.get_nowait(), ui_queue.get_nowait(), ui_queue.get_nowait()]
+            forwarded = [ui_queue.get_nowait(), ui_queue.get_nowait(), ui_queue.get_nowait(), ui_queue.get_nowait()]
             self.assertEqual(forwarded[0][0], "message")
-            self.assertEqual(forwarded[1][0], "warning")
-            self.assertEqual(forwarded[2][0], "done")
+            self.assertEqual(forwarded[1][0], "metric_snapshot")
+            self.assertEqual(forwarded[2][0], "warning")
+            self.assertEqual(forwarded[3][0], "done")
 
             jsonl_files = list(Path(tmpdir).glob("unit-*.jsonl"))
             rows = [json.loads(line) for line in jsonl_files[0].read_text(encoding="utf-8").splitlines()]
             kinds = [row["kind"] for row in rows]
             self.assertIn("conversation.step", kinds)
             self.assertIn("system", kinds)
+            self.assertTrue(any(row["kind"] == "system" and row["name"] == "metric.snapshot" for row in rows))
             self.assertTrue(any(row["kind"] == "system" and row["name"] == "session.end" for row in rows))

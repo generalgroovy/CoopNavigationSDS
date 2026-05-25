@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
-from minillama.agent_b.agent_b_plugins import SimplePlannerAgentBPlugin
+from minillama.agent_b.plugin_registry import SimplePlannerAgentBPlugin
 from minillama.agent_b.speech_io import SpeechTransport
 from minillama.agent_b.speech_io import SpeechPipelineConfig
 from minillama.controller.dialog_manager import DialogManager
@@ -52,11 +52,13 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertIn("Constraint route:", result.metrics_text)
             self.assertIsNotNone(result.extra["constraint_duration_min"])
             self.assertIn("constraint_duration_gap_min", result.extra)
+            self.assertTrue(result.extra["metric_snapshots"])
 
             jsonl_files = list(Path(tmpdir).glob("dialog-*.jsonl"))
             self.assertEqual(len(jsonl_files), 1)
             rows = [json.loads(line) for line in jsonl_files[0].read_text(encoding="utf-8").splitlines()]
             self.assertTrue(any(row["kind"] == "conversation.step" for row in rows))
+            self.assertTrue(any(row["kind"] == "system" and row["name"] == "metric.snapshot" for row in rows))
             self.assertTrue(any(row["kind"] == "program.segment" for row in rows))
 
     def test_agent_a_elicits_multiple_compared_route_candidates(self):
