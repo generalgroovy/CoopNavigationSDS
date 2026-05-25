@@ -73,6 +73,8 @@ class DialogManager:
         speech_transport=None,
         agent_a_responder=None,
         monitor=None,
+        invalid_route_limit=2,
+        constraint_miss_limit=2,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -94,6 +96,8 @@ class DialogManager:
         self.speech_transport = speech_transport or SpeechTransport()
         self.agent_a_responder = agent_a_responder or TemplateAgentAResponder()
         self.monitor = monitor
+        self.invalid_route_limit = invalid_route_limit
+        self.constraint_miss_limit = constraint_miss_limit
 
     def run(self, event_queue):
         """Run method for this module's MVC responsibility.
@@ -232,6 +236,29 @@ class DialogManager:
         best_turn = None
         best_rank = (-1, float("-inf"))
         route_revision_count = 0
+        invalid_route_count = 0
+        constraint_miss_count = 0
+        early_stop_reason = None
+
+        def constraint_missed(gap):
+            """Return whether a valid proposal is worse than the stated constraint baseline."""
+            return any(
+                gap.get(key, 0) > 0
+                for key in (
+                    "duration_gap_min",
+                    "line_change_gap",
+                    "fullness_gap",
+                    "delay_probability_gap",
+                )
+            )
+
+        def early_stop_message(reason):
+            if reason == "invalid_route_limit":
+                return "I will stop here; the route suggestions still are not connected from start to destination."
+            if reason == "constraint_miss_limit":
+                return "I will stop here; the options still ignore the constraints I gave."
+            return "I will stop here."
+
         speech_started_at = time.time()
         opening_trace = self.speech_transport.transmit_trace(
             "Agent A",
@@ -271,8 +298,10 @@ class DialogManager:
             opening_speech_sec,
         )
 
-        for turn in range(self.num_turns):
-            state = DialogState(self.test_case, conversation, turn)
+        route_round = 0
+        while len(conversation) < self.num_turns:
+            route_round += 1
+            state = DialogState(self.test_case, conversation, route_round - 1)
             generation_started_at = time.time()
             reply_b = self.agent_b_plugin.run_agent_b(state)
             generation_sec = time.time() - generation_started_at
@@ -308,6 +337,7 @@ class DialogManager:
                         scenario["transfer_time_min"],
                     )
                     candidate_reaches_goal = route_reaches_goal(parsed_route, scenario)
+                    constraints_already_stated = bool(best_route)
                     if route_memory.already_seen(parsed_route):
                         warning_count += 1
                         gap = route_constraint_gap(candidate_steps, duration, constraint_route)
@@ -316,7 +346,7 @@ class DialogManager:
                             (
                                 "candidate",
                                 {
-                                    "turn": turn + 1,
+                                    "turn": route_round,
                                     "route": parsed_route,
                                     "duration": duration,
                                     "decision": "repeat",
@@ -327,38 +357,54 @@ class DialogManager:
                                 },
                             )
                         )
-                        continue
+                    else:
+                        is_new_route = parsed_route != best_route
+                        candidate = route_memory.record(route_round, parsed_route, duration, best_duration)
+                        gap = route_constraint_gap(candidate_steps, duration, constraint_route)
+                        candidate.update(
+                            {
+                                "constraint_duration": constraint_route.duration_min if constraint_route else None,
+                                "constraint_route": constraint_route.route if constraint_route else [],
+                                **gap,
+                            }
+                        )
+                        if (
+                            constraints_already_stated
+                            and candidate_reaches_goal
+                            and constraint_missed(gap)
+                        ):
+                            constraint_miss_count += 1
+                            event_queue.put(("warning", "Route is valid but misses stated constraints."))
+                        candidate_rank = (1 if candidate_reaches_goal else 0, -duration)
+                        if best_route and is_new_route:
+                            route_revision_count += 1
 
-                    is_new_route = parsed_route != best_route
-                    candidate = route_memory.record(turn + 1, parsed_route, duration, best_duration)
-                    gap = route_constraint_gap(candidate_steps, duration, constraint_route)
-                    candidate.update(
-                        {
-                            "constraint_duration": constraint_route.duration_min if constraint_route else None,
-                            "constraint_route": constraint_route.route if constraint_route else [],
-                            **gap,
-                        }
-                    )
-                    candidate_rank = (1 if candidate_reaches_goal else 0, -duration)
-                    if best_route and is_new_route:
-                        route_revision_count += 1
+                        if candidate_rank > best_rank:
+                            best_route = parsed_route
+                            best_duration = duration
+                            best_turn = route_round
+                            best_rank = candidate_rank
+                            event_queue.put(("route", best_route))
 
-                    if candidate_rank > best_rank:
-                        best_route = parsed_route
-                        best_duration = duration
-                        best_turn = turn + 1
-                        best_rank = candidate_rank
-                        event_queue.put(("route", best_route))
-
-                    candidate["best_duration"] = best_duration
-                    event_queue.put(("candidate", candidate))
+                        candidate["best_duration"] = best_duration
+                        event_queue.put(("candidate", candidate))
             elif has_station_mentions:
                 warning_count += 1
+                invalid_route_count += 1
                 event_queue.put(("warning", "Station names mentioned, but no connected spoken route was inferred."))
 
-            if turn < self.num_turns - 1:
+            if invalid_route_count >= self.invalid_route_limit:
+                early_stop_reason = "invalid_route_limit"
+            elif constraint_miss_count >= self.constraint_miss_limit:
+                early_stop_reason = "constraint_miss_limit"
+
+            if len(conversation) < self.num_turns:
                 generation_started_at = time.time()
-                reply_a = self.agent_a_responder.reply(turn, persona, scenario, conversation)
+                reply_a = (
+                    early_stop_message(early_stop_reason)
+                    if early_stop_reason
+                    else self.agent_a_responder.reply(route_round - 1, persona, scenario, conversation)
+                )
                 generation_sec = time.time() - generation_started_at
                 speech_started_at = time.time()
                 reply_trace = self.speech_transport.transmit_trace("Agent A", reply_a)
@@ -376,6 +422,8 @@ class DialogManager:
                     generation_sec,
                     speech_sec,
                 )
+            if early_stop_reason:
+                break
 
         end_wall = time.time()
 
@@ -453,6 +501,9 @@ class DialogManager:
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
+            f"Invalid route count:   {invalid_route_count}\n"
+            f"Constraint miss count: {constraint_miss_count}\n"
+            f"Early stop reason:     {early_stop_reason or 'None'}\n"
             f"Route valid:           {route_valid}\n"
             f"Route reaches goal:    {reaches_goal}\n"
             f"Route correct:         {route_correct}\n"
@@ -491,6 +542,9 @@ class DialogManager:
                 "candidate_routes": len(route_memory.candidates),
                 "route_revisions": route_revision_count,
                 "best_candidate_turn": best_turn,
+                "invalid_route_count": invalid_route_count,
+                "constraint_miss_count": constraint_miss_count,
+                "early_stop_reason": early_stop_reason,
                 "reference_duration_min": reference_duration,
                 "displayed_line_sequence": displayed_line_sequence,
                 "displayed_line_changes": displayed_line_change_count,

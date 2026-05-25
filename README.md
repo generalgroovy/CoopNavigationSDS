@@ -1,6 +1,6 @@
 # MiniLlama
 
-MiniLlama is a transit-route dialog sandbox with a fullscreen `tkinter`/`ttk` GUI, batch evaluation, and session logging.
+MiniLlama is a transit-route dialog sandbox with an optional `tkinter`/`ttk` graphical interface, batch evaluation, and session logging.
 
 ## Layout
 
@@ -16,7 +16,7 @@ Agent A prompt logic and persona handling.
 - `__init__.py`: package marker.
 - `config.py`: Agent A defaults, personas, and prompt text constants.
 - `agents.py`: Agent A prompt builders, cleanup, and fallback replies.
-- `agent_a_responder.py`: template and LLM-backed Agent A responders.
+- `agent_a_responder.py`: template and large-language-model-backed Agent A responders.
 - `personas.py`: persona lookup and preference formatting helpers.
 - `prompt_data.py`: shared prompt context for Agent A and Agent B.
 
@@ -31,7 +31,7 @@ Agent B prompting, plugins, and simulated speech transport.
 - `speech_io.py`: loopback and patterned speech transport.
 
 ### `minillama/controller/`
-Runtime orchestration, GUI startup, batch execution, and logging.
+Runtime orchestration, graphical interface startup, batch execution, and logging.
 
 - `__init__.py`: package marker.
 - `config.py`: controller defaults and logging profile.
@@ -60,7 +60,7 @@ Transit network model and model-runtime helpers.
 - `metro_data.py`: generated network, crowding, and prompt text helpers.
 - `model_adapters.py`: Hugging Face and OpenAI-compatible adapters.
 - `model_runtime.py`: model/tokenizer loading and adapter creation.
-- `network_overview.py`: complete line and station data rows for the GUI.
+- `network_overview.py`: complete line and station data rows for the graphical interface.
 - `route_planner.py`: route validation, timing, and schedule helpers.
 - `station_names.py`: station name generation.
 
@@ -73,10 +73,10 @@ Scenarios and standardized evaluation cases.
 - `test_cases.py`: standardized test-case binding and opening utterances.
 
 ### `minillama/view/`
-GUI rendering and view-layer layout.
+Graphical interface rendering and view-layer layout.
 
 - `__init__.py`: package marker.
-- `config.py`: GUI layout, theme, and map constants.
+- `config.py`: graphical interface layout, theme, and map constants.
 - `gui.py`: interactive dashboard and transit map view.
 
 ### `tests/`
@@ -88,13 +88,13 @@ Regression tests for config facades, dialog monitoring, and session logging.
 
 ## Run
 
-Interactive GUI:
+Interactive graphical interface:
 
 ```powershell
 .venv\Scripts\python.exe -m minillama
 ```
 
-The GUI opens with a compact run-configuration form. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default run is text-only: incoming ASR and outgoing TTS stages are off and the speech scope is `none`. The form can still enable speech simulation for Agent A, Agent B, both agents, or neither agent.
+The graphical interface opens with a compact run-configuration form for scenario, persona, Agent B plugin, turn limits, early-stop limits, speech setup, and graphical interface mode. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default interactive run speaks and listens for both agents with file-backed generated speech, playback, real-time turn pacing, and sidecar transcripts enabled.
 
 Batch metrics:
 
@@ -102,7 +102,7 @@ Batch metrics:
 .venv\Scripts\python.exe -m minillama.controller.run_experiments
 ```
 
-Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for GUI and batch runs. Batch speech defaults are also text-only: `--speech-patterns clean --speech-incoming false --speech-outgoing false --speech-scope none`.
+Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for graphical interface and batch runs. Batch speech defaults are also text-only for low overhead: `--speech-patterns clean --speech-incoming false --speech-outgoing false --speech-scope none`.
 
 Useful speech-pipeline batch controls:
 
@@ -110,20 +110,20 @@ Useful speech-pipeline batch controls:
 .venv\Scripts\python.exe -m minillama.controller.run_experiments --agent-b-plugin simple --speech-patterns clean,hesitant --speech-incoming true --speech-outgoing true --speech-scope both
 ```
 
-- `--speech-incoming true|false`: include the incoming ASR/transcript stage.
-- `--speech-outgoing true|false`: include the outgoing TTS/verbalization stage.
+- `--speech-incoming true|false`: include the incoming automatic speech recognition transcript stage.
+- `--speech-outgoing true|false`: include the outgoing text-to-speech verbalization stage.
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
-- `--speech-engine patterned|file`: use text-pattern simulation or generate WAV speech artifacts with sidecar ASR transcripts.
+- `--speech-engine patterned|file`: use text-pattern simulation or generate wave audio artifacts with sidecar automatic speech recognition transcripts.
 - `--speech-audio-dir PATH`: directory for generated speech artifacts when `--speech-engine file` is active.
-- `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for GUI and batch runs.
+- `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for graphical interface and batch runs.
 - `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.
 - `--log-dir PATH`: destination for optional batch logs.
 - `--progress`: print each completed condition id during long batch runs.
 
-The evaluation report now exports a staged metric stack aligned with speech-dialog analysis. Audio ingress, VAD, and diarization fields are present but `None` in this text-only setup; ASR, SLU/DST proxies, policy/tool metrics, NLG, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
+The evaluation report exports a staged metric stack aligned with speech-dialog analysis. Audio ingress, voice activity detection, and diarization fields are present when available; automatic speech recognition, spoken-language understanding and dialog-state tracking proxies, policy/tool metrics, natural-language generation, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
 
-Speech turns now keep separate generated, outgoing, and incoming text traces. The GUI and CSV metrics report ASR WER, TTS text-change rate, station precision/recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
+Speech turns keep separate generated, outgoing, and incoming text traces. The graphical interface and comma-separated metrics report automatic speech recognition word error rate, text-to-speech text-change rate, station precision and recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
 
-Network data is displayed in its own GUI card with complete line rows, station rows, headways, current fullness, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
+Network data is displayed in its own graphical interface card with complete line rows, station rows, headways, current fullness, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
 
 Logging defaults to `off`. Set `MINILLAMA_SESSION_LOG_PROFILE` to `startup`, `runtime`, or `full` to compare overhead.

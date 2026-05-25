@@ -9,7 +9,7 @@ except ModuleNotFoundError:
     hf_logging = None
 
 from minillama.agent_a.agent_a_responder import LLMAgentAResponder, TemplateAgentAResponder
-from minillama.agent_a.config import LLM_AGENT_A
+from minillama.agent_a.config import DEFAULT_PERSONA, LLM_AGENT_A, PERSONAS
 from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
@@ -27,8 +27,10 @@ from minillama.agent_b.config import (
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.config import (
+    CONSTRAINT_MISS_LIMIT,
     GUI_ENABLED,
     GUI_MODE,
+    INVALID_ROUTE_LIMIT,
     NETWORK_PICTURE_DIR,
     NUM_TURNS,
     PROTOCOL_LOG_DIR,
@@ -50,16 +52,16 @@ if hf_logging is not None:
     hf_logging.set_verbosity_warning()
 
 
-def build_agent_a_responder(model_adapter):
+def build_agent_a_responder(model_adapter, llm_agent_a=LLM_AGENT_A):
     """Create the configured Agent A responder implementation."""
-    if LLM_AGENT_A and model_adapter is not None:
+    if llm_agent_a and model_adapter is not None:
         return LLMAgentAResponder(model_adapter)
     return TemplateAgentAResponder()
 
 
 def conversation_worker(event_queue, model_adapter, run_config):
     """Run one dialog and stream optional UI events."""
-    test_case = get_test_case(run_config["test_case_key"])
+    test_case = get_test_case(run_config["test_case_key"]).with_persona(run_config.get("persona_key", DEFAULT_PERSONA))
     agent_b_plugin = create_agent_b_plugin(run_config["agent_b_plugin"], model_adapter)
     speech_transport = SpeechTransport(
         config=SpeechPipelineConfig(
@@ -73,15 +75,22 @@ def conversation_worker(event_queue, model_adapter, run_config):
             audio_dir=run_config["speech_audio_dir"],
             playback_enabled=run_config["speech_playback_enabled"],
             realtime_enabled=run_config["speech_realtime_enabled"],
+            agent_a_words_per_minute=int(run_config["agent_a_words_per_minute"]),
+            agent_b_words_per_minute=int(run_config["agent_b_words_per_minute"]),
+            min_utterance_sec=float(run_config["min_utterance_sec"]),
+            max_utterance_sec=float(run_config["max_utterance_sec"]),
         )
     )
+    num_turns = int(run_config["num_turns"])
     manager = DialogManager(
         test_case,
         agent_b_plugin,
-        NUM_TURNS,
+        num_turns,
         speech_transport=speech_transport,
-        agent_a_responder=build_agent_a_responder(model_adapter),
+        agent_a_responder=build_agent_a_responder(model_adapter, bool(run_config.get("llm_agent_a", LLM_AGENT_A))),
         monitor=event_queue,
+        invalid_route_limit=int(run_config["invalid_route_limit"]),
+        constraint_miss_limit=int(run_config["constraint_miss_limit"]),
     )
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
@@ -93,7 +102,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
             model=model_name,
             provider=model_provider,
             device=device,
-            turns=NUM_TURNS,
+            turns=num_turns,
             max_new_tokens=MAX_NEW_TOKENS,
             max_input_tokens=MAX_INPUT_TOKENS,
             agent_a=manager.agent_a_responder.name,
@@ -103,7 +112,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
             event_queue.put(("system", f"Model: {model_name}"))
             event_queue.put(("system", f"Provider: {model_provider}"))
             event_queue.put(("system", f"Device: {device}"))
-            event_queue.put(("system", f"Turns={NUM_TURNS}, max_new_tokens={MAX_NEW_TOKENS}, max_length={MAX_INPUT_TOKENS}"))
+            event_queue.put(("system", f"Turns={num_turns}, max_new_tokens={MAX_NEW_TOKENS}, max_length={MAX_INPUT_TOKENS}"))
             event_queue.put(("system", f"Agent A: {manager.agent_a_responder.name}"))
             event_queue.put(("system", f"Agent B: {getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)}"))
             result = manager.run(event_queue)
@@ -123,7 +132,12 @@ def default_run_config():
     """Return the default interactive run configuration."""
     return {
         "test_case_key": DEFAULT_TEST_CASE,
+        "persona_key": DEFAULT_PERSONA,
         "agent_b_plugin": AGENT_B_PLUGIN,
+        "num_turns": NUM_TURNS,
+        "invalid_route_limit": INVALID_ROUTE_LIMIT,
+        "constraint_miss_limit": CONSTRAINT_MISS_LIMIT,
+        "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "speech_engine": SPEECH_ENGINE if SPEECH_ENGINE != "patterned" else "file",
         "tts_engine": SPEECH_TTS_ENGINE or ("file" if SPEECH_ENGINE == "patterned" else SPEECH_ENGINE),
@@ -134,7 +148,12 @@ def default_run_config():
         "speech_playback_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_PLAYBACK_ENABLED else SPEECH_PLAYBACK_ENABLED,
         "speech_realtime_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_REALTIME_ENABLED else SPEECH_REALTIME_ENABLED,
         "speech_scope": "both" if SPEECH_SCOPE == "none" else SPEECH_SCOPE,
+        "agent_a_words_per_minute": 165,
+        "agent_b_words_per_minute": 175,
+        "min_utterance_sec": 0.6,
+        "max_utterance_sec": 3.5,
         "gui_enabled": GUI_ENABLED,
+        "gui_mode": GUI_MODE,
         "protocol_log_dir": PROTOCOL_LOG_DIR,
     }
 
@@ -146,12 +165,14 @@ def select_run_config():
         return defaults
     choices = {
         "test_case_keys": list(TEST_CASES),
+        "persona_keys": list(PERSONAS),
         "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
         "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
         "speech_engines": ["patterned", "file"],
         "tts_engines": ["patterned", "file", "loopback"],
         "asr_engines": ["patterned", "file", "loopback"],
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
+        "gui_modes": ["conversation", "full"],
     }
     try:
         from minillama.view.gui import StartupConfigDialog
@@ -194,7 +215,7 @@ def main():
     if run_config is None:
         return
 
-    scenario = get_test_case(run_config["test_case_key"]).scenario
+    scenario = get_test_case(run_config["test_case_key"]).with_persona(run_config.get("persona_key", DEFAULT_PERSONA)).scenario
     write_network_research_artifacts(
         scenario["start_time_min"],
         RESEARCH_LOG_DIR,
@@ -209,7 +230,7 @@ def main():
     event_queue = MonitoringEventQueue(ui_queue, session_logger)
 
     agent_b_config = AgentBPluginConfig(run_config["agent_b_plugin"])
-    if not agent_b_config.needs_model and not LLM_AGENT_A:
+    if not agent_b_config.needs_model and not run_config.get("llm_agent_a", LLM_AGENT_A):
         model_adapter = None
     else:
         from minillama.model.model_runtime import create_model_adapter
@@ -219,7 +240,7 @@ def main():
 
     gui_thread = None
     if run_config.get("gui_enabled", True):
-        gui_thread = start_gui_thread(ui_queue, scenario, GUI_MODE)
+        gui_thread = start_gui_thread(ui_queue, scenario, run_config.get("gui_mode", GUI_MODE))
 
     conversation_worker(event_queue, model_adapter, run_config)
     if gui_thread is not None and gui_thread.is_alive():

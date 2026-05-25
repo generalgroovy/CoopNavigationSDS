@@ -11,6 +11,11 @@ class MainControllerTests(unittest.TestCase):
 
         self.assertIn("gui_enabled", config)
         self.assertIsInstance(config["gui_enabled"], bool)
+        self.assertEqual(config["num_turns"], 5)
+        self.assertTrue(config["speech_playback_enabled"])
+        self.assertTrue(config["speech_realtime_enabled"])
+        self.assertEqual(config["speech_scope"], "both")
+        self.assertIn("persona_key", config)
 
     def test_select_run_config_skips_startup_gui_when_disabled(self):
         import minillama.controller.main as controller_main

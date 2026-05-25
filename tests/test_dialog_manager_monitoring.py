@@ -33,7 +33,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             manager = DialogManager(
                 get_test_case(DEFAULT_TEST_CASE),
                 SimplePlannerAgentBPlugin(),
-                num_turns=1,
+                num_turns=2,
                 speech_transport=fast_text_transport(),
                 agent_a_responder=TemplateAgentAResponder(),
                 monitor=event_queue,
@@ -63,7 +63,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         manager = DialogManager(
             get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
             SimplePlannerAgentBPlugin(),
-            num_turns=3,
+            num_turns=6,
             speech_transport=fast_text_transport(),
             agent_a_responder=TemplateAgentAResponder(),
         )
@@ -81,6 +81,60 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
         self.assertTrue(any("less full" in text or "fewer line changes" in text for text in agent_a_replies))
+
+    def test_agent_a_stops_early_after_repeated_invalid_routes(self):
+        class InvalidRoutePlugin:
+            name = "invalid-route-plugin"
+
+            def run_agent_b(self, _state):
+                return "Take Alpha to Alpha."
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            InvalidRoutePlugin(),
+            num_turns=8,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+            invalid_route_limit=2,
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(result.extra["early_stop_reason"], "invalid_route_limit")
+        self.assertEqual(result.extra["invalid_route_count"], 2)
+        self.assertLess(len(result.conversation), 8)
+        self.assertEqual(result.conversation[-1][0], "Agent A")
+        self.assertIn("stop here", result.conversation[-1][1])
+
+    def test_agent_a_stops_early_when_constraints_keep_being_missed(self):
+        class ConstraintMissPlugin:
+            name = "constraint-miss-plugin"
+
+            def __init__(self):
+                self.replies = [
+                    "Take Bravo to Alpha to Golf to November to Uniform to Birch to Ivy to Harbor.",
+                    "Take Bravo to Alpha to Golf to Mike to Sierra to Yankee to Elm to Flint to Grove to Harbor.",
+                    "Take Bravo to Alpha to Hotel to Oscar to Victor to Cedar to Jasper to Ivy to Harbor.",
+            ]
+
+            def run_agent_b(self, state):
+                return self.replies[min(state.turn, len(self.replies) - 1)]
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
+            ConstraintMissPlugin(),
+            num_turns=8,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+            constraint_miss_limit=2,
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(result.extra["early_stop_reason"], "constraint_miss_limit")
+        self.assertEqual(result.extra["constraint_miss_count"], 2)
+        self.assertEqual(result.conversation[-1][0], "Agent A")
+        self.assertIn("constraints", result.conversation[-1][1])
 
     def test_dialog_manager_runs_file_backed_speech_for_both_agents(self):
         with tempfile.TemporaryDirectory() as tmpdir:

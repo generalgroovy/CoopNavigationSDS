@@ -146,18 +146,29 @@ class StartupConfigDialog:
         self.root.resizable(False, False)
         self.vars = {
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
+            "persona_key": tk.StringVar(value=defaults["persona_key"]),
             "agent_b_plugin": tk.StringVar(value=defaults["agent_b_plugin"]),
+            "num_turns": tk.IntVar(value=defaults["num_turns"]),
+            "invalid_route_limit": tk.IntVar(value=defaults["invalid_route_limit"]),
+            "constraint_miss_limit": tk.IntVar(value=defaults["constraint_miss_limit"]),
             "speech_pattern_key": tk.StringVar(value=defaults["speech_pattern_key"]),
             "speech_engine": tk.StringVar(value=defaults["speech_engine"]),
             "tts_engine": tk.StringVar(value=defaults.get("tts_engine", defaults["speech_engine"])),
             "asr_engine": tk.StringVar(value=defaults.get("asr_engine", defaults["speech_engine"])),
             "speech_audio_dir": tk.StringVar(value=defaults["speech_audio_dir"]),
             "speech_scope": tk.StringVar(value=defaults["speech_scope"]),
+            "agent_a_words_per_minute": tk.IntVar(value=defaults["agent_a_words_per_minute"]),
+            "agent_b_words_per_minute": tk.IntVar(value=defaults["agent_b_words_per_minute"]),
+            "min_utterance_sec": tk.DoubleVar(value=defaults["min_utterance_sec"]),
+            "max_utterance_sec": tk.DoubleVar(value=defaults["max_utterance_sec"]),
             "speech_incoming_enabled": tk.BooleanVar(value=defaults["speech_incoming_enabled"]),
             "speech_outgoing_enabled": tk.BooleanVar(value=defaults["speech_outgoing_enabled"]),
             "speech_playback_enabled": tk.BooleanVar(value=defaults.get("speech_playback_enabled", False)),
             "speech_realtime_enabled": tk.BooleanVar(value=defaults.get("speech_realtime_enabled", False)),
             "gui_enabled": tk.BooleanVar(value=defaults.get("gui_enabled", True)),
+            "gui_mode": tk.StringVar(value=defaults.get("gui_mode", "conversation")),
+            "llm_agent_a": tk.BooleanVar(value=defaults.get("llm_agent_a", False)),
+            "protocol_log_dir": tk.StringVar(value=defaults.get("protocol_log_dir", "")),
         }
         self.build()
         self.root.protocol("WM_DELETE_WINDOW", self.cancel)
@@ -169,7 +180,9 @@ class StartupConfigDialog:
 
         rows = [
             ("Test case", "test_case_key", self.choices["test_case_keys"]),
+            ("Persona", "persona_key", self.choices["persona_keys"]),
             ("Agent B", "agent_b_plugin", self.choices["agent_b_plugins"]),
+            ("Graphical interface mode", "gui_mode", self.choices["gui_modes"]),
             ("Speech pattern", "speech_pattern_key", self.choices["speech_patterns"]),
             ("Speech engine", "speech_engine", self.choices["speech_engines"]),
             ("Text-to-speech engine", "tts_engine", self.choices["tts_engines"]),
@@ -194,7 +207,36 @@ class StartupConfigDialog:
             )
             combo.grid(row=row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
 
-        audio_row = len(rows)
+        number_rows = [
+            ("Maximum conversation turns", "num_turns", 2, 24, 1),
+            ("Invalid route stop limit", "invalid_route_limit", 1, 10, 1),
+            ("Constraint miss stop limit", "constraint_miss_limit", 1, 10, 1),
+            ("Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5),
+            ("Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5),
+            ("Minimum utterance seconds", "min_utterance_sec", 0.2, 3.0, 0.1),
+            ("Maximum utterance seconds", "max_utterance_sec", 0.8, 8.0, 0.1),
+        ]
+        number_row_start = len(rows)
+        for offset, (label, key, from_value, to_value, increment) in enumerate(number_rows):
+            row = number_row_start + offset
+            tk.Label(
+                frame,
+                text=label,
+                anchor="w",
+                font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
+                bg=GUI_COLORS["panel_bg"],
+                fg=GUI_COLORS["muted_text"],
+            ).grid(row=row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
+            tk.Spinbox(
+                frame,
+                textvariable=self.vars[key],
+                from_=from_value,
+                to=to_value,
+                increment=increment,
+                width=10,
+            ).grid(row=row, column=1, sticky="w", padx=(0, 10), pady=(8, 0))
+
+        audio_row = number_row_start + len(number_rows)
         tk.Label(
             frame,
             text="Speech files",
@@ -209,7 +251,22 @@ class StartupConfigDialog:
             width=36,
         ).grid(row=audio_row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
 
-        toggle_row = audio_row + 1
+        protocol_row = audio_row + 1
+        tk.Label(
+            frame,
+            text="Protocol logs",
+            anchor="w",
+            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["muted_text"],
+        ).grid(row=protocol_row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
+        tk.Entry(
+            frame,
+            textvariable=self.vars["protocol_log_dir"],
+            width=36,
+        ).grid(row=protocol_row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
+
+        toggle_row = protocol_row + 1
         tk.Checkbutton(
             frame,
             text="Incoming automatic speech recognition",
@@ -256,8 +313,20 @@ class StartupConfigDialog:
         gui_row += 1
         tk.Checkbutton(
             frame,
-            text="Conversation GUI",
+            text="Conversation graphical interface",
             variable=self.vars["gui_enabled"],
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            selectcolor=GUI_COLORS["tab_bg"],
+            activebackground=GUI_COLORS["panel_bg"],
+            activeforeground=GUI_COLORS["text"],
+        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
+
+        gui_row += 1
+        tk.Checkbutton(
+            frame,
+            text="Large language model Agent A",
+            variable=self.vars["llm_agent_a"],
             bg=GUI_COLORS["panel_bg"],
             fg=GUI_COLORS["text"],
             selectcolor=GUI_COLORS["tab_bg"],
@@ -525,15 +594,17 @@ class DialogWindow:
         conversation_shell.grid_rowconfigure(0, weight=1)
         conversation_shell.grid_columnconfigure(0, weight=1)
         self.build_plain_conversation(conversation_shell)
-        split.add(conversation_shell, weight=3)
+        split.add(conversation_shell, weight=1)
 
         metric_shell = tk.Frame(split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
         metric_shell.grid_rowconfigure(0, weight=1)
         metric_shell.grid_columnconfigure(0, weight=1)
         metric_page = make_scrollable_frame(metric_shell, GUI_COLORS["app_bg"], padx=0, pady=0)
         metric_page.grid_columnconfigure(0, weight=1)
+        metric_page.grid_rowconfigure(0, weight=0)
+        metric_page.grid_rowconfigure(1, weight=1)
         self.build_always_visible_metric_panels(metric_page)
-        split.add(metric_shell, weight=4)
+        split.add(metric_shell, weight=2)
 
     def build_always_visible_metric_panels(self, parent):
         """Build every metric area inline for real-time GUI analysis."""
@@ -551,6 +622,7 @@ class DialogWindow:
         phase_zone = tk.Frame(parent, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
         phase_zone.grid(row=1, column=0, sticky="nsew")
         phase_zone.grid_columnconfigure(0, weight=1)
+        phase_zone.grid_rowconfigure(0, weight=1)
         self.build_metric_stack_card(phase_zone, row=0, columns=3)
 
     def build_page_scroller(self, parent):
