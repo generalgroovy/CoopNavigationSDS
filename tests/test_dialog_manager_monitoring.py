@@ -14,6 +14,16 @@ from minillama.controller.session_logging import MonitoringEventQueue, SessionLo
 from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
 
 
+def fast_text_transport():
+    return SpeechTransport(config=SpeechPipelineConfig(
+        incoming_enabled=False,
+        outgoing_enabled=False,
+        scope="none",
+        realtime_enabled=False,
+        playback_enabled=False,
+    ))
+
+
 class DialogManagerMonitoringTests(unittest.TestCase):
     def test_controller_smoke_run_emits_conversation_step_logs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -24,7 +34,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
                 get_test_case(DEFAULT_TEST_CASE),
                 SimplePlannerAgentBPlugin(),
                 num_turns=1,
-                speech_transport=SpeechTransport(),
+                speech_transport=fast_text_transport(),
                 agent_a_responder=TemplateAgentAResponder(),
                 monitor=event_queue,
             )
@@ -54,7 +64,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
             SimplePlannerAgentBPlugin(),
             num_turns=3,
-            speech_transport=SpeechTransport(),
+            speech_transport=fast_text_transport(),
             agent_a_responder=TemplateAgentAResponder(),
         )
 
@@ -85,6 +95,8 @@ class DialogManagerMonitoringTests(unittest.TestCase):
                         scope="both",
                         engine="file",
                         audio_dir=tmpdir,
+                        playback_enabled=False,
+                        realtime_enabled=False,
                     )
                 ),
                 agent_a_responder=TemplateAgentAResponder(),
@@ -110,7 +122,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             get_test_case("airport_connection"),
             SimplePlannerAgentBPlugin(),
             num_turns=3,
-            speech_transport=SpeechTransport(),
+            speech_transport=fast_text_transport(),
             agent_a_responder=TemplateAgentAResponder(),
         )
 

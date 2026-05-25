@@ -1,3 +1,5 @@
+from pathlib import Path
+import tempfile
 import unittest
 
 from minillama.agent_b.config import (
@@ -7,6 +9,8 @@ from minillama.agent_b.config import (
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
     SPEECH_PATTERNS,
+    SPEECH_PLAYBACK_ENABLED,
+    SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
 )
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
@@ -34,20 +38,31 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertTrue(AGENT_B_PLUGIN)
         self.assertTrue(SESSION_LOG_DIR)
 
-    def test_default_speech_pipeline_is_text_only(self):
-        self.assertFalse(SPEECH_INCOMING_ENABLED)
-        self.assertFalse(SPEECH_OUTGOING_ENABLED)
-        self.assertEqual(SPEECH_SCOPE, "none")
-        self.assertEqual(SPEECH_ENGINE, "patterned")
+    def test_default_speech_pipeline_plays_and_listens(self):
+        self.assertTrue(SPEECH_INCOMING_ENABLED)
+        self.assertTrue(SPEECH_OUTGOING_ENABLED)
+        self.assertTrue(SPEECH_PLAYBACK_ENABLED)
+        self.assertTrue(SPEECH_REALTIME_ENABLED)
+        self.assertEqual(SPEECH_SCOPE, "both")
+        self.assertEqual(SPEECH_ENGINE, "file")
         self.assertTrue(SPEECH_AUDIO_DIR)
 
-        transport = SpeechTransport(config=SpeechPipelineConfig())
-        trace = transport.transmit_trace("Agent A", "Need Alpha to Echo.")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(config=SpeechPipelineConfig(
+                audio_dir=tmpdir,
+                playback_enabled=False,
+                realtime_enabled=False,
+            ))
+            trace = transport.transmit_trace("Agent A", "Need Alpha to Echo.")
+            self.assertTrue(Path(trace.audio["path"]).exists())
+
         self.assertEqual(trace.incoming_transcript, "Need Alpha to Echo.")
         self.assertEqual(trace.outgoing_text, "Need Alpha to Echo.")
-        self.assertFalse(trace.incoming_enabled)
-        self.assertFalse(trace.outgoing_enabled)
-        self.assertIn("text-only:clean:none", transport.description)
+        self.assertTrue(trace.incoming_enabled)
+        self.assertTrue(trace.outgoing_enabled)
+        self.assertEqual(trace.tts_engine, "wavefile-tts")
+        self.assertEqual(trace.asr_engine, "wavefile-asr")
+        self.assertIn("outgoing+incoming:clean:both", transport.description)
 
     def test_gui_only_expands_speech_trace_when_pipeline_changes_message(self):
         self.assertFalse(DialogWindow.should_show_speech_trace(None))

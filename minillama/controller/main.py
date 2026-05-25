@@ -3,7 +3,10 @@ import logging
 import queue
 import threading
 
-from huggingface_hub.utils import logging as hf_logging
+try:
+    from huggingface_hub.utils import logging as hf_logging
+except ModuleNotFoundError:
+    hf_logging = None
 
 from minillama.agent_a.agent_a_responder import LLMAgentAResponder, TemplateAgentAResponder
 from minillama.agent_a.config import LLM_AGENT_A
@@ -43,7 +46,8 @@ from minillama.view.gui import DialogWindow, StartupConfigDialog
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
-hf_logging.set_verbosity_warning()
+if hf_logging is not None:
+    hf_logging.set_verbosity_warning()
 
 
 def build_agent_a_responder(model_adapter):

@@ -35,6 +35,8 @@ class SpeechPipelineTests(unittest.TestCase):
                 outgoing_enabled=True,
                 scope="agent_b",
                 pattern_key="compressed",
+                engine="patterned",
+                realtime_enabled=False,
             )
         )
 
@@ -70,6 +72,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 pattern_key="compressed",
                 tts_engine="patterned",
                 asr_engine="loopback",
+                realtime_enabled=False,
             )
         )
 
@@ -96,6 +99,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 pattern_key="compressed",
                 tts_engine="loopback",
                 asr_engine="patterned",
+                realtime_enabled=False,
             )
         )
 
@@ -118,6 +122,8 @@ class SpeechPipelineTests(unittest.TestCase):
                     scope="both",
                     engine="file",
                     audio_dir=tmpdir,
+                    playback_enabled=False,
+                    realtime_enabled=False,
                 )
             )
 
@@ -148,6 +154,7 @@ class SpeechPipelineTests(unittest.TestCase):
                     audio_dir=tmpdir,
                     playback_enabled=True,
                     max_utterance_sec=2.5,
+                    realtime_enabled=False,
                 )
             )
 

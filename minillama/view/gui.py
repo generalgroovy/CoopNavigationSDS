@@ -15,6 +15,7 @@ from minillama.view.config import (
     GUI_MIN_HEIGHT,
     GUI_EQUAL_PANE_MIN_WIDTH,
     GUI_REFRESH_MS,
+    GUI_EVENT_BATCH_LIMIT,
     GUI_FONT_FAMILY,
     GUI_MONO_FONT_FAMILY,
     GUI_FONT_SMALL,
@@ -2275,8 +2276,9 @@ class DialogWindow:
         Returns:
             The computed value or side effect documented by the implementation.
         """
+        processed = 0
         try:
-            while True:
+            while processed < GUI_EVENT_BATCH_LIMIT:
                 event = self.event_queue.get_nowait()
                 kind = event[0]
 
@@ -2306,12 +2308,16 @@ class DialogWindow:
                 elif kind == "done":
                     self.live_stats["finished"] = True
                     self.update_live_dialog_metrics()
+                processed += 1
+                self.update_live_dialog_metrics()
+                self.root.update_idletasks()
 
         except queue.Empty:
             pass
 
         self.update_live_dialog_metrics()
-        self.root.after(GUI_REFRESH_MS, self.process_events)
+        delay = 1 if processed == GUI_EVENT_BATCH_LIMIT else GUI_REFRESH_MS
+        self.root.after(delay, self.process_events)
 
     def add_message(self, speaker, message):
         """Add message method for this module's MVC responsibility.
