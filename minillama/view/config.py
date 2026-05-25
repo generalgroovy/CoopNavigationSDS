@@ -61,7 +61,7 @@ GUI_ROUTE_TABLE_COLUMNS = [
     ("from", "From", 42, "center", False),
     ("to", "To", 42, "center", False),
     ("line", "Line", 50, "center", False),
-    ("fullness", "Full", 46, "center", False),
+    ("fullness", "Capacity", 112, "center", False),
     ("depart", "Leave", 58, "center", False),
     ("arrive", "Arrive", 58, "center", False),
     ("ride", "Ride", 46, "center", False),
@@ -71,7 +71,7 @@ GUI_ROUTE_TABLE_COLUMNS = [
 GUI_LINE_TABLE_COLUMNS = [
     ("order", "#", 34, "center", False),
     ("station", "Stop", 48, "center", False),
-    ("fullness", "Full", 46, "center", False),
+    ("fullness", "Capacity", 112, "center", False),
     ("previous", "From", 48, "center", False),
     ("next", "Toward", 62, "center", False),
     ("ride", "Ride", 82, "center", False),
@@ -79,7 +79,7 @@ GUI_LINE_TABLE_COLUMNS = [
 ]
 GUI_STATION_LINE_TABLE_COLUMNS = [
     ("line", "Line", 118, "w", False),
-    ("fullness", "Full", 46, "center", False),
+    ("fullness", "Capacity", 112, "center", False),
     ("route", "Route", 96, "w", False),
     ("stop", "Stop", 54, "center", False),
     ("neighbors", "Neighbors", 120, "w", False),
@@ -94,14 +94,14 @@ GUI_NETWORK_LINE_COLUMNS = [
     ("name", "Line", 130, "w", False),
     ("kind", "Kind", 74, "w", False),
     ("headway", "Headway", 72, "center", False),
-    ("fullness", "Full", 54, "center", False),
+    ("fullness", "Capacity", 112, "center", False),
     ("stops", "Stops", 54, "center", False),
     ("route", "Route", 250, "w", True),
     ("segments", "Segments", 260, "w", True),
 ]
 GUI_NETWORK_STATION_COLUMNS = [
     ("name", "Station", 110, "w", False),
-    ("fullness", "Full", 54, "center", False),
+    ("fullness", "Capacity", 112, "center", False),
     ("lines", "Lines", 190, "w", False),
     ("neighbors", "Neighbors", 300, "w", True),
     ("coordinates", "Map", 70, "center", False),

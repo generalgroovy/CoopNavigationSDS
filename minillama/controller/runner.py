@@ -13,7 +13,7 @@ from minillama.agent_b.plugin_registry import create_agent_b_plugin
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
-from minillama.controller.config import DEFAULT_MODEL_PARAM_KEY, SESSION_LOG_DIR
+from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, DEFAULT_MODEL_PARAM_KEY, SESSION_LOG_DIR
 from minillama.evaluation.metrics import MetricComputer
 from minillama.evaluation.research_artifacts import write_metrics_csv, write_metrics_file
 from minillama.controller.session_logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
@@ -58,6 +58,7 @@ class ExperimentRunner:
         speech_audio_dir=SPEECH_AUDIO_DIR,
         speech_playback_enabled=SPEECH_PLAYBACK_ENABLED,
         speech_realtime_enabled=SPEECH_REALTIME_ENABLED,
+        transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE,
         log_profile=LOG_PROFILE_OFF,
         log_dir=SESSION_LOG_DIR,
     ):
@@ -83,6 +84,7 @@ class ExperimentRunner:
         self.speech_audio_dir = speech_audio_dir
         self.speech_playback_enabled = speech_playback_enabled
         self.speech_realtime_enabled = speech_realtime_enabled
+        self.transfer_tolerance = transfer_tolerance
         self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
         self.log_dir = log_dir
         self.metric_computer = MetricComputer()
@@ -120,6 +122,7 @@ class ExperimentRunner:
             agent_b_plugin,
             self.num_turns,
             speech_transport=speech_transport,
+            transfer_tolerance=self.transfer_tolerance,
         )
 
         started_perf = time.perf_counter()

@@ -18,7 +18,12 @@ from minillama.model.route_planner import (
     route_is_valid,
     route_station_sequence,
 )
-from minillama.model.route_constraints import optimal_constraint_route, route_constraint_gap
+from minillama.model.route_constraints import (
+    optimal_constraint_route,
+    route_constraint_gap,
+    route_has_near_capacity,
+    route_near_capacity_count,
+)
 from minillama.agent_b.speech_io import SpeechTransport
 
 
@@ -61,6 +66,18 @@ def agent_b_model_name(agent_b_plugin):
     return getattr(agent_b_plugin, "name", type(agent_b_plugin).__name__)
 
 
+def constraint_gap_missed(gap, transfer_tolerance=1):
+    """Return whether a valid proposal is worse than the stated constraint baseline."""
+    if not gap:
+        return False
+    return (
+        gap.get("duration_gap_min", 0) > 0
+        or gap.get("line_change_gap", 0) > int(transfer_tolerance)
+        or gap.get("near_capacity_gap", gap.get("fullness_gap", 0)) > 0
+        or gap.get("delay_probability_gap", 0) > 0
+    )
+
+
 class DialogManager:
     """Controller for one two-agent dialog. It advances turns, interprets routes, and emits UI/metric events.
     """
@@ -75,6 +92,7 @@ class DialogManager:
         monitor=None,
         invalid_route_limit=2,
         constraint_miss_limit=2,
+        transfer_tolerance=1,
         metric_snapshot_interval=1,
     ):
         """  init   method for this module's MVC responsibility.
@@ -99,6 +117,7 @@ class DialogManager:
         self.monitor = monitor
         self.invalid_route_limit = invalid_route_limit
         self.constraint_miss_limit = constraint_miss_limit
+        self.transfer_tolerance = max(0, int(transfer_tolerance))
         self.metric_snapshot_interval = max(1, int(metric_snapshot_interval or 1))
 
     def run(self, event_queue):
@@ -281,18 +300,6 @@ class DialogManager:
         constraint_miss_count = 0
         early_stop_reason = None
 
-        def constraint_missed(gap):
-            """Return whether a valid proposal is worse than the stated constraint baseline."""
-            return any(
-                gap.get(key, 0) > 0
-                for key in (
-                    "duration_gap_min",
-                    "line_change_gap",
-                    "fullness_gap",
-                    "delay_probability_gap",
-                )
-            )
-
         def early_stop_message(reason):
             if reason == "invalid_route_limit":
                 return "I will stop here; the route suggestions still are not connected from start to destination."
@@ -324,12 +331,20 @@ class DialogManager:
                         f"{' to '.join(constraint_route.route)} "
                         f"({constraint_route.duration_min} minutes, "
                         f"{constraint_route.line_change_count} changes, "
-                        f"{constraint_route.average_fullness} percent full, "
+                        f"{'near capacity' if constraint_route.has_near_capacity else 'not near capacity'}, "
                         f"{round(constraint_route.delay_probability * 100)} percent delay risk, "
                         f"{constraint_route.label})"
                     ),
                 )
             )
+            event_queue.put((
+                "system",
+                (
+                    "Agent A transfer tolerance: "
+                    f"up to {constraint_route.line_change_count + self.transfer_tolerance} changes "
+                    f"({self.transfer_tolerance} over the constraint baseline)."
+                ),
+            ))
         event_queue.put(("message", conversation[0][0], conversation[0][1]))
         log_conversation_step(
             "Agent A",
@@ -414,7 +429,7 @@ class DialogManager:
                         if (
                             constraints_already_stated
                             and candidate_reaches_goal
-                            and constraint_missed(gap)
+                            and constraint_gap_missed(gap, self.transfer_tolerance)
                         ):
                             constraint_miss_count += 1
                             event_queue.put(("warning", "Route is valid but misses stated constraints."))
@@ -488,10 +503,8 @@ class DialogManager:
         route_valid = route_is_valid(best_route)
         reaches_goal = route_reaches_goal(best_route, scenario)
         route_correct = route_valid and reaches_goal
-        average_route_fullness = round(
-            sum(step.get("fullness", 0) for step in displayed_steps) / len(displayed_steps),
-            1,
-        ) if displayed_steps else None
+        displayed_near_capacity_count = route_near_capacity_count(displayed_steps)
+        displayed_has_near_capacity = route_has_near_capacity(displayed_steps)
         reference_arrival, reference_steps = optimal_time_route(
             scenario["start_station"],
             scenario["destination_station"],
@@ -509,7 +522,8 @@ class DialogManager:
         constraint_duration = constraint_route.duration_min if constraint_route else None
         constraint_line_sequence = constraint_route.line_sequence if constraint_route else []
         constraint_line_change_count = constraint_route.line_change_count if constraint_route else None
-        constraint_average_fullness = constraint_route.average_fullness if constraint_route else None
+        constraint_near_capacity_count = constraint_route.near_capacity_count if constraint_route else None
+        constraint_has_near_capacity = constraint_route.has_near_capacity if constraint_route else None
         constraint_delay_probability = constraint_route.delay_probability if constraint_route else None
         constraint_gap = route_constraint_gap(displayed_steps, displayed_duration, constraint_route)
         displayed_line_sequence = route_line_sequence(displayed_steps)
@@ -529,7 +543,7 @@ class DialogManager:
             f"Displayed arrival:     {fmt_time(displayed_arrival) if displayed_arrival else 'None'}\n"
             f"Displayed duration:    {str(displayed_duration) + ' minutes' if displayed_duration is not None else 'None'}\n"
             f"Duration breakdown:    {route_duration_text(displayed_steps)}\n"
-            f"Average crowding:      {str(average_route_fullness) + ' percent' if average_route_fullness is not None else 'None'}\n"
+            f"Near capacity:         {'yes' if displayed_has_near_capacity else 'no'} ({displayed_near_capacity_count} segments)\n"
             f"Reference route:       {' to '.join(reference_route) if reference_route else 'None'}\n"
             f"Reference line sequence: {' to '.join(reference_line_sequence) if reference_line_sequence else 'None'}\n"
             f"Reference line changes: {reference_line_change_count if reference_line_sequence else 'None'}\n"
@@ -539,9 +553,10 @@ class DialogManager:
             f"Constraint line sequence: {' to '.join(constraint_line_sequence) if constraint_line_sequence else 'None'}\n"
             f"Constraint line changes: {constraint_line_change_count if constraint_line_change_count is not None else 'None'}\n"
             f"Constraint duration:   {str(constraint_duration) + ' minutes' if constraint_duration is not None else 'None'}\n"
-            f"Constraint crowding:   {str(constraint_average_fullness) + ' percent' if constraint_average_fullness is not None else 'None'}\n"
+            f"Constraint capacity:   {('yes' if constraint_has_near_capacity else 'no') if constraint_has_near_capacity is not None else 'None'} ({constraint_near_capacity_count if constraint_near_capacity_count is not None else 'None'} segments)\n"
+            f"Transfer tolerance:    {self.transfer_tolerance} extra changes\n"
             f"Constraint delay risk: {str(round(constraint_delay_probability * 100, 1)) + ' percent' if constraint_delay_probability is not None else 'None'}\n"
-            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('fullness_gap', 'None')} fullness, {constraint_gap.get('delay_probability_gap', 'None')} delay\n"
+            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('near_capacity_gap', 'None')} near-capacity segments, {constraint_gap.get('delay_probability_gap', 'None')} delay\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
@@ -600,14 +615,18 @@ class DialogManager:
                 "constraint_duration_min": constraint_duration,
                 "constraint_line_sequence": constraint_line_sequence,
                 "constraint_line_changes": constraint_line_change_count,
-                "constraint_average_fullness": constraint_average_fullness,
+                "constraint_near_capacity": constraint_has_near_capacity,
+                "constraint_near_capacity_count": constraint_near_capacity_count,
+                "transfer_tolerance": self.transfer_tolerance,
                 "constraint_delay_probability": constraint_delay_probability,
                 "constraint_duration_gap_min": constraint_gap.get("duration_gap_min"),
                 "constraint_line_change_gap": constraint_gap.get("line_change_gap"),
                 "constraint_fullness_gap": constraint_gap.get("fullness_gap"),
+                "constraint_near_capacity_gap": constraint_gap.get("near_capacity_gap"),
                 "constraint_delay_probability_gap": constraint_gap.get("delay_probability_gap"),
                 "warning_count": warning_count,
-                "average_route_fullness": average_route_fullness,
+                "route_near_capacity": displayed_has_near_capacity,
+                "route_near_capacity_count": displayed_near_capacity_count,
                 "speech_turns": speech_turns,
                 "timing_turns": timing_turns,
                 "nlu_turns": nlu_turns,

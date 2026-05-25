@@ -1,6 +1,7 @@
 """Constraint-aware route baselines for comparing agent proposals."""
 from dataclasses import dataclass
 
+from minillama.model.metro_data import is_near_capacity
 from minillama.model.route_planner import (
     candidate_time_routes,
     route_line_change_count,
@@ -51,7 +52,7 @@ class RouteConstraintProfile:
         if self.prefer_fewer_changes:
             parts.append("fewer changes")
         if self.prefer_less_full:
-            parts.append("less full")
+            parts.append("avoid near capacity")
         if self.prefer_low_delay:
             parts.append("lower delay risk")
         return ", ".join(parts) if parts else "valid route"
@@ -66,6 +67,8 @@ class ConstraintRoute:
     line_sequence: list[str]
     line_change_count: int
     average_fullness: float
+    near_capacity_count: int
+    has_near_capacity: bool
     delay_probability: float
     score: tuple
     label: str
@@ -74,6 +77,16 @@ class ConstraintRoute:
 def route_average_fullness(steps):
     values = [step.get("fullness", 0) for step in steps]
     return round(sum(values) / len(values), 2) if values else 0.0
+
+
+def route_near_capacity_count(steps):
+    """Return the number of route segments that are near capacity."""
+    return sum(1 for step in steps if is_near_capacity(step.get("fullness", 0)))
+
+
+def route_has_near_capacity(steps):
+    """Return whether any route segment is near capacity."""
+    return route_near_capacity_count(steps) > 0
 
 
 def route_delay_probability(steps):
@@ -85,16 +98,17 @@ def route_delay_probability(steps):
 def constraint_sort_key(duration_min, steps, profile):
     line_changes = route_line_change_count(steps)
     average_fullness = route_average_fullness(steps)
+    near_capacity_count = route_near_capacity_count(steps)
     delay_probability = route_delay_probability(steps)
     key = []
     key.append(duration_min if profile.prefer_fast else round(duration_min * 0.25))
     if profile.prefer_fewer_changes:
         key.append(line_changes)
     if profile.prefer_less_full:
-        key.append(average_fullness)
+        key.append(near_capacity_count)
     if profile.prefer_low_delay:
         key.append(delay_probability)
-    key.extend([duration_min, line_changes, average_fullness, delay_probability])
+    key.extend([duration_min, line_changes, near_capacity_count, average_fullness, delay_probability])
     return tuple(key)
 
 
@@ -124,6 +138,8 @@ def optimal_constraint_route(scenario, persona, limit=50):
         line_sequence=route_line_sequence(steps),
         line_change_count=route_line_change_count(steps),
         average_fullness=route_average_fullness(steps),
+        near_capacity_count=route_near_capacity_count(steps),
+        has_near_capacity=route_has_near_capacity(steps),
         delay_probability=route_delay_probability(steps),
         score=constraint_sort_key(duration_min, steps, profile),
         label=profile.label,
@@ -153,6 +169,8 @@ def ranked_constraint_routes(scenario, persona, limit=6):
                 line_sequence=route_line_sequence(steps),
                 line_change_count=route_line_change_count(steps),
                 average_fullness=route_average_fullness(steps),
+                near_capacity_count=route_near_capacity_count(steps),
+                has_near_capacity=route_has_near_capacity(steps),
                 delay_probability=route_delay_probability(steps),
                 score=constraint_sort_key(duration_min, steps, profile),
                 label=profile.label,
@@ -165,9 +183,14 @@ def route_constraint_gap(steps, duration_min, constraint_route):
     """Return scalar proposal gaps from the constraint-aware startup baseline."""
     if not constraint_route or duration_min is None:
         return {}
+    near_capacity_count = route_near_capacity_count(steps)
+    near_capacity_gap = near_capacity_count - constraint_route.near_capacity_count
     return {
         "duration_gap_min": duration_min - constraint_route.duration_min,
         "line_change_gap": route_line_change_count(steps) - constraint_route.line_change_count,
-        "fullness_gap": round(route_average_fullness(steps) - constraint_route.average_fullness, 2),
+        "fullness_gap": near_capacity_gap,
+        "near_capacity_gap": near_capacity_gap,
+        "near_capacity_count": near_capacity_count,
+        "has_near_capacity": near_capacity_count > 0,
         "delay_probability_gap": round(route_delay_probability(steps) - constraint_route.delay_probability, 4),
     }

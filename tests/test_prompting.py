@@ -98,7 +98,7 @@ class PromptingTests(unittest.TestCase):
 
         request = agent_a_alternative_request(persona)
 
-        self.assertIn("less full", request)
+        self.assertIn("avoids near-capacity trains", request)
         self.assertIn("fewer line changes", request)
 
     def test_research_personas_and_scenarios_cover_delay_fullness_and_multi_destination(self):
@@ -119,7 +119,7 @@ class PromptingTests(unittest.TestCase):
         self.assertIsNotNone(constraint_route)
         self.assertGreater(constraint_route.delay_probability, 0.0)
         self.assertIn("delay risk", reply)
-        self.assertIn("full", reply)
+        self.assertIn("capacity", reply)
 
     def test_fallback_agent_b_turns_are_concise_for_speech(self):
         test_case = get_test_case("airport_connection")

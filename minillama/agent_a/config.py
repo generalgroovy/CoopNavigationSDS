@@ -119,7 +119,7 @@ AGENT_RULES = (
 
 ROUTE_TASK = (
     "Primary goal: a valid connected route from start to destination using listed segments, lines, waits, and transfer times. "
-    "Secondary goal: satisfy preferences such as fullness and fewer changes. "
+    "Secondary goal: satisfy preferences such as avoiding near-capacity trains and fewer changes. "
     "Delay probability is a secondary reliability constraint. "
     "Best time means riding + waiting + transfer time, with transfer time only when the line changes. "
     "Compare alternatives only when they are valid and meaningfully affect time or constraints. "

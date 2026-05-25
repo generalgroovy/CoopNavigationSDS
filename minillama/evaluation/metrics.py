@@ -308,6 +308,12 @@ class MetricRecord:
     constraint_duration_gap_min: int | None
     constraint_line_change_gap: int | None
     constraint_fullness_gap: float | None
+    constraint_near_capacity_gap: int | None
+    route_near_capacity: bool
+    route_near_capacity_count: int
+    constraint_near_capacity: bool | None
+    constraint_near_capacity_count: int | None
+    transfer_tolerance: int | None
     route_delay_probability: float | None
     constraint_delay_probability: float | None
     constraint_delay_probability_gap: float | None
@@ -565,6 +571,12 @@ class MetricComputer:
         constraint_duration_gap = result.extra.get("constraint_duration_gap_min")
         constraint_line_change_gap = result.extra.get("constraint_line_change_gap")
         constraint_fullness_gap = result.extra.get("constraint_fullness_gap")
+        constraint_near_capacity_gap = result.extra.get("constraint_near_capacity_gap")
+        route_near_capacity = bool(result.extra.get("route_near_capacity", False))
+        route_near_capacity_count = int(result.extra.get("route_near_capacity_count", 0) or 0)
+        constraint_near_capacity = result.extra.get("constraint_near_capacity")
+        constraint_near_capacity_count = result.extra.get("constraint_near_capacity_count")
+        transfer_tolerance = result.extra.get("transfer_tolerance")
         constraint_delay_probability = result.extra.get("constraint_delay_probability")
         constraint_delay_probability_gap = result.extra.get("constraint_delay_probability_gap")
         route_delay_values = [step.get("delay_probability", 0.0) for step in result.route_steps]
@@ -1069,6 +1081,12 @@ class MetricComputer:
             constraint_duration_gap_min=constraint_duration_gap,
             constraint_line_change_gap=constraint_line_change_gap,
             constraint_fullness_gap=constraint_fullness_gap,
+            constraint_near_capacity_gap=constraint_near_capacity_gap,
+            route_near_capacity=route_near_capacity,
+            route_near_capacity_count=route_near_capacity_count,
+            constraint_near_capacity=constraint_near_capacity,
+            constraint_near_capacity_count=constraint_near_capacity_count,
+            transfer_tolerance=transfer_tolerance,
             route_delay_probability=route_delay_probability,
             constraint_delay_probability=constraint_delay_probability,
             constraint_delay_probability_gap=constraint_delay_probability_gap,

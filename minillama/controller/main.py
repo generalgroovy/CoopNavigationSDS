@@ -28,6 +28,7 @@ from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agen
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechTransport
 from minillama.controller.config import (
     CONSTRAINT_MISS_LIMIT,
+    AGENT_A_TRANSFER_TOLERANCE,
     GUI_ENABLED,
     GUI_MODE,
     INVALID_ROUTE_LIMIT,
@@ -94,6 +95,7 @@ def build_dialog_runtime(event_queue, model_adapter, run_config):
         monitor=event_queue,
         invalid_route_limit=int(run_config["invalid_route_limit"]),
         constraint_miss_limit=int(run_config["constraint_miss_limit"]),
+        transfer_tolerance=int(run_config["agent_a_transfer_tolerance"]),
         metric_snapshot_interval=int(run_config["metric_snapshot_interval"]),
     )
     model_name = getattr(model_adapter, "name", "no-model")
@@ -169,6 +171,7 @@ def default_run_config():
         "num_turns": NUM_TURNS,
         "invalid_route_limit": INVALID_ROUTE_LIMIT,
         "constraint_miss_limit": CONSTRAINT_MISS_LIMIT,
+        "agent_a_transfer_tolerance": AGENT_A_TRANSFER_TOLERANCE,
         "metric_snapshot_interval": METRIC_SNAPSHOT_INTERVAL,
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,

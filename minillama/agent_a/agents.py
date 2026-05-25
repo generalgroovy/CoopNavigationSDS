@@ -142,16 +142,16 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
             )
             snippet = route_text_from_steps(steps) if steps else f"take a line from {start} to {destination}"
         if steps:
-            changes = route_line_change_count(steps)
-            fullness_values = [step.get("fullness", 0) for step in steps]
-            average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
+            from minillama.model.route_constraints import route_has_near_capacity
+
             delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
-            return f"{snippet} {average_fullness} percent full, {delay_probability} percent delay risk."
+            capacity = "near capacity" if route_has_near_capacity(steps) else "not near capacity"
+            return f"{snippet} {capacity}, {delay_probability} percent delay risk."
         return (
             f"One connected option: {snippet} "
             f"Transfer time applies only when changing lines."
         )
 
     return (
-        "Valid route. Now compare one shorter or faster option; mention transfers or fullness only if they change the choice."
+        "Valid route. Now compare one shorter or faster option; mention transfers or near-capacity trains only if they change the choice."
     )

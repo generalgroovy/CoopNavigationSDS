@@ -27,7 +27,7 @@ AGENT_A_ROUTE_TEMPLATES = {
     "distracted_multitasker": [
         (
             "Sorry, I'm moving around. Start with one line sequence to {destination}, "
-            "and mention another only if it might be faster or much less crowded."
+            "and mention another only if it might be faster or avoids near-capacity trains."
         ),
         (
             "Repeat the current best line sequence and why it wins. "
@@ -41,11 +41,11 @@ AGENT_A_ROUTE_TEMPLATES = {
     "verbose_planner": [
         (
             "Let's build a line sequence to {destination} and compare one transfer option if useful. "
-            "Check connectivity, timing, and crowding before deciding."
+            "Check connectivity, timing, and capacity status before deciding."
         ),
         (
             "Add waiting and transfer time to riding time. "
-            "Weigh the current line sequence against a different option and mention crowding."
+            "Weigh the current line sequence against a different option and mention capacity status."
         ),
         (
             "Summarize the best connected line sequence. "
@@ -73,7 +73,7 @@ AGENT_A_ROUTE_TEMPLATES = {
         ),
         (
             "That sounds plausible, but I want to test it. "
-            "Which line links, timing, and crowding details make it better than the other route?"
+            "Which line links, timing, and capacity details make it better than the other route?"
         ),
         (
             "Give me the final route once you've checked every segment. "
@@ -118,7 +118,7 @@ def build_agent_a_system(persona, scenario):
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
         "First state start time, start station, and destination. "
-        "Get a valid route first; then ask for one better route by time, fullness, changes, or delay risk. "
+        "Get a valid route first; then ask for one better route by time, near-capacity trains, changes, or delay risk. "
         f"{compact_prompt_context(scenario)}"
     )
 
@@ -129,7 +129,7 @@ def build_agent_b_system(scenario, persona=None):
         "Be natural, short, and non-repetitive. "
         "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
         "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
-        "Then compare time, fullness, changes, and delay risk. "
+        "Then compare time, near-capacity trains, changes, and delay risk. "
         f"{preference_text(persona or {})} "
         "Say boarding stations only: start, transfer boarding stations, destination. "
         "State total time once. "
@@ -148,7 +148,7 @@ def build_agent_b_phase_instruction(turn, destination):
     if turn == 1:
         return (
             "If there is a valid alternative, compare it against the current route. "
-            "Prefer shorter paths, then time, fullness, changes, and delay risk."
+            "Prefer shorter paths, then time, near-capacity trains, changes, and delay risk."
         )
 
     if turn == 2:
@@ -236,12 +236,11 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         arrival, steps = estimate
         duration = arrival - scenario["start_time_min"]
         changes = route_line_change_count(steps)
-        fullness_values = [step.get("fullness", 0) for step in steps]
-        average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
+        from minillama.model.route_constraints import route_has_near_capacity
+
         change_label = "change" if changes == 1 else "changes"
         route_summary = f"Valid: {duration} minutes, {changes} {change_label}"
-        if average_fullness:
-            route_summary += f", {average_fullness} percent full"
+        route_summary += ", near capacity" if route_has_near_capacity(steps) else ", not near capacity"
     else:
         steps = []
         duration = None
@@ -256,7 +255,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
 
     if turn >= 2:
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
-        return f"{route_summary}. Confirm final: {station_order}, total time, and crowding."
+        return f"{route_summary}. Confirm final: {station_order}, total time, and capacity status."
 
     request = agent_a_alternative_request(persona)
     return f"{route_summary}. Compare one {request} valid route."
@@ -280,7 +279,7 @@ def agent_a_alternative_request(persona):
     if wants_fastest:
         constraints.append("faster")
     if wants_less_full and not accepts_full:
-        constraints.append("less full")
+        constraints.append("avoids near-capacity trains")
     if wants_fewer_changes:
         constraints.append("fewer line changes")
     if wants_low_delay:

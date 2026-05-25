@@ -8,7 +8,7 @@ from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
 from minillama.agent_b.plugin_registry import SimplePlannerAgentBPlugin
 from minillama.agent_b.speech_io import SpeechSignal, SpeechTransport
 from minillama.agent_b.speech_io import SpeechPipelineConfig
-from minillama.controller.dialog_manager import DialogManager
+from minillama.controller.dialog_manager import DialogManager, constraint_gap_missed
 from minillama.controller.dialog_result import NullEventQueue
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
 from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
@@ -84,7 +84,13 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIsNotNone(result.extra["constraint_duration_min"])
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
-        self.assertTrue(any("less full" in text or "fewer line changes" in text for text in agent_a_replies))
+        self.assertTrue(any("near-capacity" in text or "fewer line changes" in text for text in agent_a_replies))
+
+    def test_transfer_constraint_miss_uses_configured_slack(self):
+        self.assertFalse(constraint_gap_missed({"line_change_gap": 1}, transfer_tolerance=1))
+        self.assertFalse(constraint_gap_missed({"line_change_gap": 2}, transfer_tolerance=2))
+        self.assertTrue(constraint_gap_missed({"line_change_gap": 2}, transfer_tolerance=1))
+        self.assertTrue(constraint_gap_missed({"near_capacity_gap": 1}, transfer_tolerance=2))
 
     def test_agent_b_state_uses_last_pipeline_transcript_from_agent_a(self):
         class TestTextToSpeech:

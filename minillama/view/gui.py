@@ -82,6 +82,7 @@ from minillama.model.metro_data import (
     ADJACENCY,
     LINES,
     STATION_POS,
+    capacity_status,
     line_fullness_percent,
     line_stop_pairs,
     station_fullness_percent,
@@ -152,6 +153,7 @@ class StartupConfigDialog:
             "num_turns": tk.IntVar(value=defaults["num_turns"]),
             "invalid_route_limit": tk.IntVar(value=defaults["invalid_route_limit"]),
             "constraint_miss_limit": tk.IntVar(value=defaults["constraint_miss_limit"]),
+            "agent_a_transfer_tolerance": tk.IntVar(value=defaults["agent_a_transfer_tolerance"]),
             "metric_snapshot_interval": tk.IntVar(value=defaults["metric_snapshot_interval"]),
             "speech_pattern_key": tk.StringVar(value=defaults["speech_pattern_key"]),
             "speech_engine": tk.StringVar(value=defaults["speech_engine"]),
@@ -214,6 +216,7 @@ class StartupConfigDialog:
             ("Maximum conversation turns", "num_turns", 2, 24, 1),
             ("Invalid route stop limit", "invalid_route_limit", 1, 10, 1),
             ("Constraint miss stop limit", "constraint_miss_limit", 1, 10, 1),
+            ("Agent A transfer tolerance", "agent_a_transfer_tolerance", 0, 2, 1),
             ("Metric snapshot interval", "metric_snapshot_interval", 1, 10, 1),
             ("Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5),
             ("Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5),
@@ -906,7 +909,7 @@ class DialogWindow:
             (("reference_route", "Reference Route"), ("best_turn", "Best Turn")),
             (("constraint_route", "Target Route"), ("constraint_duration", "Target Time")),
             (("constraint_line_sequence", "Target Sequence"), ("constraint_line_changes", "Target Changes")),
-            (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Full")),
+            (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Capacity")),
             (("candidate_routes", "Candidates"), ("route_revisions", "Revisions")),
             (("valid", "Valid"), ("goal", "Goal")),
             (("correct", "Correct"), ("runtime", "Runtime")),
@@ -1024,7 +1027,7 @@ class DialogWindow:
                     item.name,
                     item.kind,
                     f"{item.headway_min} minutes",
-                    f"{item.fullness_percent}%",
+                    item.capacity_status,
                     item.stop_count,
                     item.route,
                     item.segments,
@@ -1045,7 +1048,7 @@ class DialogWindow:
                 tk.END,
                 values=(
                     item.name,
-                    f"{item.fullness_percent}%",
+                    item.capacity_status,
                     item.lines,
                     item.neighbors,
                     item.coordinates,
@@ -1485,7 +1488,7 @@ class DialogWindow:
         line_fullness = line_fullness_percent(line_name, self.scenario["start_time_min"])
         tk.Label(
             parent,
-            text=f"{self.line_tab_label(line_name)}  {direction_text}  every {data['headway']} minutes  {line_fullness} percent full",
+            text=f"{self.line_tab_label(line_name)}  {direction_text}  every {data['headway']} minutes  {capacity_status(line_fullness)}",
             anchor="w",
             font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL + 1, "bold"),
             bg=GUI_COLORS["panel_bg"],
@@ -1517,7 +1520,7 @@ class DialogWindow:
                 values=(
                     index + 1,
                     self.station_name(station),
-                    f"{station_fullness_percent(station, self.scenario['start_time_min'])}%",
+                    capacity_status(station_fullness_percent(station, self.scenario["start_time_min"])),
                     self.station_name(previous_station) if previous_station else "-",
                     self.station_name(next_station) if next_station else "-",
                     f"{ride} minutes" if previous_station else "start",
@@ -1582,7 +1585,7 @@ class DialogWindow:
                 tk.END,
                 values=(
                     line_name,
-                    f"{station_fullness_percent(station, self.scenario['start_time_min'])}%",
+                    capacity_status(station_fullness_percent(station, self.scenario["start_time_min"])),
                     self.line_direction_text(line_name),
                     self.station_name(station),
                     neighbors,
@@ -2625,7 +2628,7 @@ class DialogWindow:
             "Constraint line sequence": "constraint_line_sequence",
             "Constraint line changes": "constraint_line_changes",
             "Constraint duration": "constraint_duration",
-            "Constraint crowding": "constraint_fullness",
+            "Constraint capacity": "constraint_fullness",
             "Constraint gap": "constraint_gap",
             "Candidate routes": "candidate_routes",
             "Route revisions": "route_revisions",
@@ -3061,7 +3064,7 @@ class DialogWindow:
         """Return a compact candidate gap from the constraint-aware startup baseline."""
         duration_gap = candidate.get("duration_gap_min")
         change_gap = candidate.get("line_change_gap")
-        fullness_gap = candidate.get("fullness_gap")
+        fullness_gap = candidate.get("near_capacity_gap", candidate.get("fullness_gap"))
         if duration_gap is None and change_gap is None and fullness_gap is None:
             return "-"
 
@@ -3071,7 +3074,7 @@ class DialogWindow:
         if change_gap is not None:
             parts.append(f"{change_gap:+d} line changes")
         if fullness_gap is not None:
-            parts.append(f"{fullness_gap:+.1f}%")
+            parts.append(f"{fullness_gap:+d} near-capacity")
         return " ".join(parts)
 
     def live_route_status(self):
@@ -3246,7 +3249,7 @@ class DialogWindow:
                     self.station_name(step["from"]),
                     self.station_name(step["to"]),
                     self.short_line_label(step["line"]),
-                    f"{step.get('fullness', 0)}%",
+                    capacity_status(step.get("fullness", 0)),
                     fmt_time(step["depart"]),
                     fmt_time(step["arrive"]),
                     f"{step['travel']} minutes",

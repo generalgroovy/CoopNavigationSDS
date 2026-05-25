@@ -21,6 +21,7 @@ from minillama.model.config import (
     STATION_DEMAND_SEED,
     MIN_STATION_FULLNESS_PERCENT,
     MAX_STATION_FULLNESS_PERCENT,
+    NEAR_CAPACITY_THRESHOLD_PERCENT,
     MORNING_PEAK_CENTER_MIN,
     EVENING_PEAK_CENTER_MIN,
     MIDDAY_PEAK_CENTER_MIN,
@@ -561,6 +562,16 @@ def segment_fullness_percent(line_name, station_a, station_b, current_time_min):
     return round(sum(values) / len(values))
 
 
+def is_near_capacity(fullness_percent, threshold=NEAR_CAPACITY_THRESHOLD_PERCENT):
+    """Return whether a fullness value is near capacity."""
+    return int(fullness_percent or 0) >= threshold
+
+
+def capacity_status(fullness_percent, threshold=NEAR_CAPACITY_THRESHOLD_PERCENT):
+    """Return the binary capacity label used for dialog and research outputs."""
+    return "near capacity" if is_near_capacity(fullness_percent, threshold) else "not near capacity"
+
+
 def apply_line_overrides(lines, stations):
     """Apply line overrides function for this module's MVC responsibility.
     
@@ -779,7 +790,7 @@ def compact_network_text():
 def compact_line_fullness_text(current_time_min=START_TIME_MIN):
     """Compact current line crowding text for prompts."""
     return " ".join(
-        f"{line}: {line_fullness_percent(line, current_time_min)} percent full."
+        f"{line}: {capacity_status(line_fullness_percent(line, current_time_min))}."
         for line in LINES
     )
 
@@ -795,7 +806,7 @@ def compact_station_crowding_text(current_time_min=START_TIME_MIN, limit=8):
         key=lambda item: item[1],
         reverse=True,
     )[:limit]
-    return " ".join(f"{station}: {fullness} percent busy." for station, fullness in busiest)
+    return " ".join(f"{station}: {capacity_status(fullness)}." for station, fullness in busiest)
 
 
 def line_stop_sequence_text(line_name, data):

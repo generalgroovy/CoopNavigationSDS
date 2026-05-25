@@ -6,7 +6,7 @@ from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
-from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
+from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
 from minillama.evaluation.research_artifacts import write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.test_cases.config import DEFAULT_TEST_CASE
@@ -55,6 +55,7 @@ def main():
     parser.add_argument("--model-params", default="greedy")
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
+    parser.add_argument("--agent-a-transfer-tolerance", type=int, default=AGENT_A_TRANSFER_TOLERANCE, choices=(0, 1, 2), help="Extra line changes Agent A accepts over the constraint-aware startup route.")
     parser.add_argument("--output", default="automatic_eval_metrics.xlsx")
     parser.add_argument("--metrics-log-dir", default=None, help="Directory for per-phase metric JSONL files.")
     parser.add_argument("--research-log-dir", default=RESEARCH_LOG_DIR, help="Directory for network/model research logs.")
@@ -107,6 +108,7 @@ def main():
         speech_audio_dir=args.speech_audio_dir,
         speech_playback_enabled=args.speech_playback,
         speech_realtime_enabled=args.speech_real_time,
+        transfer_tolerance=args.agent_a_transfer_tolerance,
         log_profile=args.log_profile,
         log_dir=args.log_dir,
     )

@@ -1,7 +1,7 @@
 import unittest
 
 from minillama.model.metro_data import LINES
-from minillama.model.route_constraints import optimal_constraint_route, route_constraint_gap
+from minillama.model.route_constraints import ConstraintRoute, optimal_constraint_route, route_constraint_gap, route_near_capacity_count
 from minillama.model.route_planner import (
     estimate_route_time,
     line_direction_sequences,
@@ -64,3 +64,28 @@ class RingLineTests(unittest.TestCase):
         gap = route_constraint_gap(steps, arrival - 480, target)
         self.assertEqual(gap["duration_gap_min"], 0)
         self.assertEqual(gap["line_change_gap"], 0)
+        self.assertEqual(gap["near_capacity_gap"], 0)
+
+    def test_fullness_gap_is_binary_near_capacity_difference(self):
+        target = ConstraintRoute(
+            route=["Alpha", "Charlie"],
+            steps=[],
+            duration_min=10,
+            line_sequence=["Ring"],
+            line_change_count=0,
+            average_fullness=20,
+            near_capacity_count=0,
+            has_near_capacity=False,
+            delay_probability=0.0,
+            score=(),
+            label="avoid near capacity",
+        )
+        high_capacity_steps = [
+            {"line": "Ring", "fullness": 86, "delay_probability": 0.0},
+            {"line": "Ring", "fullness": 20, "delay_probability": 0.0},
+        ]
+        gap = route_constraint_gap(high_capacity_steps, target.duration_min, target)
+
+        self.assertEqual(route_near_capacity_count(high_capacity_steps), 1)
+        self.assertEqual(gap["near_capacity_gap"], 1)
+        self.assertEqual(gap["fullness_gap"], 1)

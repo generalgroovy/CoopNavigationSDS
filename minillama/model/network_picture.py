@@ -4,7 +4,7 @@ from __future__ import annotations
 from html import escape
 from pathlib import Path
 
-from minillama.model.metro_data import LINES, STATION_POS, line_stop_pairs
+from minillama.model.metro_data import LINES, STATION_POS, capacity_status, line_stop_pairs
 
 
 def write_network_svg(path, *, title="MiniLlama transit network"):
@@ -64,7 +64,7 @@ def write_network_svg(path, *, title="MiniLlama transit network"):
         lines.append(f'<line x1="18" y1="{y}" x2="44" y2="{y}" stroke="{escape(color)}" stroke-width="5"/>')
         lines.append(
             f'<text x="52" y="{y + 4}" font-family="Arial, sans-serif" font-size="11" fill="#17202a">'
-            f'{escape(line_name)} ({data.get("headway", "?")} minutes, {data.get("fullness", "?")} percent full)</text>'
+            f'{escape(line_name)} ({data.get("headway", "?")} minutes, {capacity_status(data.get("fullness", 0))})</text>'
         )
 
     lines.append("</svg>")
