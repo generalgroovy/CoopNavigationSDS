@@ -94,6 +94,45 @@ Interactive graphical interface:
 
 The graphical interface opens with a compact run-configuration form for run mode, scenario, persona, Agent B plugin, turn limits, early-stop limits, speech setup, and graphical interface mode. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default interactive run is `pure_text`, which passes generated text directly between agents. Select `speech` mode to require text-to-speech and automatic speech recognition; the run performs a preflight check and stops with troubleshooting details if a stage does not produce audio or a transcript.
 
+## Pipeline Overview
+
+```mermaid
+flowchart LR
+    Configuration["Run configuration\nmode, persona, scenario, agent plugin"]
+    AgentA["Agent A\ncaller persona and constraints"]
+    TextMode{"Run mode"}
+    DirectText["Pure text\nuse generated text directly"]
+    TextToSpeech["Text-to-speech\nproduce spoken output and audio artifact"]
+    SpeechRecognition["Automatic speech recognition\nproduce transcript"]
+    AgentB["Agent B\nroute assistant uses last received transcript"]
+    RouteParsing["Semantic route parsing\nstations, validity, goal reach"]
+    CandidateComparison["Route candidate comparison\ntravel time, changes, fullness, delay"]
+    AgentAResponse["Agent A response\ncritique, constraint request, or stop"]
+    Metrics["Metric snapshots\nphase outputs and success or failure"]
+    ResearchOutputs["Research outputs\nprotocol files, spreadsheet, phase logs"]
+
+    Configuration --> AgentA
+    AgentA --> TextMode
+    TextMode -->|pure_text| DirectText
+    TextMode -->|speech| TextToSpeech
+    TextToSpeech --> SpeechRecognition
+    DirectText --> AgentB
+    SpeechRecognition --> AgentB
+    AgentB --> TextMode
+    AgentB --> RouteParsing
+    RouteParsing --> CandidateComparison
+    CandidateComparison --> AgentAResponse
+    AgentAResponse --> AgentA
+    DirectText --> Metrics
+    TextToSpeech --> Metrics
+    SpeechRecognition --> Metrics
+    RouteParsing --> Metrics
+    CandidateComparison --> Metrics
+    Metrics --> ResearchOutputs
+```
+
+The conversation state always stores the result of the last completed pipeline phase. In `pure_text` mode that is generated text. In `speech` mode it is the automatic speech recognition transcript, so Agent B only reacts to what the speech pipeline produced. If text-to-speech or automatic speech recognition fails in speech mode, the run stops and records diagnostics instead of using the original generated text as a hidden fallback.
+
 Batch metrics:
 
 ```powershell
@@ -119,7 +158,19 @@ Useful speech-pipeline batch controls:
 - `--log-dir PATH`: destination for optional batch logs.
 - `--progress`: print each completed condition id during long batch runs.
 
+## Metrics
+
 The evaluation report exports a staged metric stack aligned with speech-dialog analysis. During runs, compact metric snapshots are emitted periodically to the live event stream and structured logs. After a conversation ends, the run writes protocol JSONL files, metric snapshots, an analysis-ready spreadsheet, and per-phase metric JSONL files. Pipeline metrics are derived from actual phase outputs: generated text, text-to-speech output, automatic speech recognition transcript, semantic parser input, route candidates, and final route state. Audio ingress, voice activity detection, and diarization fields are present when available; automatic speech recognition, spoken-language understanding and dialog-state tracking proxies, policy/tool metrics, natural-language generation, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
+
+| Metric area | Primary phase output | Failure or success signal |
+| --- | --- | --- |
+| Pipeline phases | Run mode, phase attempts, text-to-speech output, automatic speech recognition transcript, semantic parser input | `pipeline_success_rate`, `pipeline_failure_count`, `pipeline_phase_output_dependency_rate` |
+| Text-to-speech | Generated text, spoken text, audio artifact, playback status | `tts_success_rate`, `tts_failure_count`, `tts_text_change_rate` |
+| Automatic speech recognition | Spoken text as source, recognized transcript as received input | `asr_success_rate`, `asr_failure_count`, `asr_word_error_rate`, station precision and recall |
+| Spoken language understanding | Recognized transcript passed into route parsing | `slu_pipeline_input_match_rate`, route validity rate, goal reached rate |
+| Route comparison | Parsed candidate route, duration, line changes, fullness, delay probability | candidate count, route revision count, constraint gaps |
+| Runtime | Generation time, speech time, turn latency, condition runtime | mean latency, maximum turn latency, speech duration total |
+| End to end | Final route and task state | task success, completion, abandonment, escalation, turns to success |
 
 Speech turns keep separate generated, outgoing, and incoming text traces. The graphical interface and comma-separated metrics report automatic speech recognition word error rate, text-to-speech text-change rate, station precision and recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
 
