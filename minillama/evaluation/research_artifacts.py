@@ -94,7 +94,17 @@ def write_network_research_artifacts(current_time_min, output_dir, picture_dir=N
     return {"network_json": network_json, "network_graph": graph_path}
 
 
-def write_experiment_manifest(conditions, output_dir, *, num_turns, speech_engine, speech_scope, agent_b_plugin):
+def write_experiment_manifest(
+    conditions,
+    output_dir,
+    *,
+    num_turns,
+    speech_engine,
+    speech_scope,
+    agent_b_plugin,
+    tts_engine=None,
+    asr_engine=None,
+):
     """Write a scientific-method manifest describing the experiment design."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -105,6 +115,8 @@ def write_experiment_manifest(conditions, output_dir, *, num_turns, speech_engin
             "persona_key": condition.persona_key,
             "scenario_key": condition.scenario_key,
             "speech_pattern_key": condition.speech_pattern_key,
+            "tts_engine": tts_engine or speech_engine,
+            "asr_engine": asr_engine or speech_engine,
             "model_param_key": condition.model_param_key,
             "iteration": condition.iteration,
         }
@@ -122,6 +134,8 @@ def write_experiment_manifest(conditions, output_dir, *, num_turns, speech_engin
             "scenario_key",
             "persona_key",
             "speech_pattern_key",
+            "tts_engine",
+            "asr_engine",
             "model_param_key",
             "agent_b_plugin",
         ],
@@ -138,6 +152,8 @@ def write_experiment_manifest(conditions, output_dir, *, num_turns, speech_engin
         "controls": {
             "num_turns": num_turns,
             "speech_engine": speech_engine,
+            "tts_engine": tts_engine or speech_engine,
+            "asr_engine": asr_engine or speech_engine,
             "speech_scope": speech_scope,
             "agent_b_plugin": agent_b_plugin,
         },

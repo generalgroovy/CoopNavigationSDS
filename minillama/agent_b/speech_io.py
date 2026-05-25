@@ -14,6 +14,7 @@ import wave
 from minillama.agent_b.config import (
     DEFAULT_SPEECH_PATTERN,
     SPEECH_AUDIO_DIR,
+    SPEECH_ASR_ENGINE,
     SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
@@ -21,6 +22,7 @@ from minillama.agent_b.config import (
     SPEECH_PLAYBACK_ENABLED,
     SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
+    SPEECH_TTS_ENGINE,
 )
 
 @dataclass
@@ -40,6 +42,8 @@ class SpeechPipelineConfig:
     scope: str = SPEECH_SCOPE
     pattern_key: str = DEFAULT_SPEECH_PATTERN
     engine: str = SPEECH_ENGINE
+    tts_engine: str = SPEECH_TTS_ENGINE
+    asr_engine: str = SPEECH_ASR_ENGINE
     audio_dir: str = SPEECH_AUDIO_DIR
     agent_a_words_per_minute: int = 165
     agent_b_words_per_minute: int = 175
@@ -67,7 +71,9 @@ class SpeechPipelineConfig:
             directions.append("text-only")
         playback = ":playback" if self.playback_enabled else ""
         realtime = ":realtime" if self.realtime_enabled else ""
-        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}{playback}{realtime}"
+        tts = self.tts_engine or self.engine
+        asr = self.asr_engine or self.engine
+        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}:tts={tts}:asr={asr}{playback}{realtime}"
 
 
 @dataclass(frozen=True)
@@ -297,7 +303,8 @@ class SpeechTransport:
         self.asr_engine = asr_engine or self._default_asr_engine()
 
     def _default_tts_engine(self):
-        if self.config.engine in {"file", "wav", "wave"}:
+        engine = self._stage_engine(self.config.tts_engine)
+        if engine in {"file", "wav", "wave"}:
             return WaveFileTextToSpeech(
                 self.config.audio_dir,
                 playback_enabled=self.config.playback_enabled,
@@ -306,12 +313,20 @@ class SpeechTransport:
                 agent_b_words_per_minute=self.config.agent_b_words_per_minute,
                 max_duration_sec=self.config.max_utterance_sec,
             )
+        if engine in {"loopback", "text", "off", "none"}:
+            return LoopbackTextToSpeech()
         return PatternedTextToSpeech(self.config.pattern_key)
 
     def _default_asr_engine(self):
-        if self.config.engine in {"file", "wav", "wave"}:
+        engine = self._stage_engine(self.config.asr_engine)
+        if engine in {"file", "wav", "wave"}:
             return WaveFileSpeechToText()
+        if engine in {"loopback", "text", "off", "none"}:
+            return LoopbackSpeechToText()
         return PatternedSpeechToText(self.config.pattern_key)
+
+    def _stage_engine(self, stage_engine):
+        return (stage_engine or self.config.engine or "patterned").strip().lower()
 
     @property
     def description(self):

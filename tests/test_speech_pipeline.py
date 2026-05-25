@@ -61,6 +61,54 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertFalse(agent_a_trace.outgoing_enabled)
         self.assertFalse(agent_a_trace.incoming_enabled)
 
+    def test_tts_and_asr_engines_are_independently_configurable(self):
+        transport = SpeechTransport(
+            config=SpeechPipelineConfig(
+                incoming_enabled=True,
+                outgoing_enabled=True,
+                scope="both",
+                pattern_key="compressed",
+                tts_engine="patterned",
+                asr_engine="loopback",
+            )
+        )
+
+        trace = transport.transmit_trace(
+            "Agent B",
+            "Please I would compare the fastest route and the fewest switches.",
+        )
+
+        self.assertEqual(trace.tts_engine, "patterned-tts:compressed")
+        self.assertEqual(trace.asr_engine, "loopback-asr")
+        self.assertEqual(
+            trace.outgoing_text,
+            "I'd compare the fastest route and the fewest switches.",
+        )
+        self.assertEqual(trace.incoming_transcript, trace.outgoing_text)
+        self.assertIn("tts=patterned:asr=loopback", transport.description)
+
+    def test_asr_can_transform_transcript_after_loopback_tts(self):
+        transport = SpeechTransport(
+            config=SpeechPipelineConfig(
+                incoming_enabled=True,
+                outgoing_enabled=True,
+                scope="both",
+                pattern_key="compressed",
+                tts_engine="loopback",
+                asr_engine="patterned",
+            )
+        )
+
+        trace = transport.transmit_trace(
+            "Agent A",
+            "Please I would like a route with fewer switches.",
+        )
+
+        self.assertEqual(trace.tts_engine, "loopback-tts")
+        self.assertEqual(trace.asr_engine, "patterned-asr:compressed")
+        self.assertEqual(trace.outgoing_text, trace.generated_text)
+        self.assertEqual(trace.incoming_transcript, "I'd like a route with fewer switches.")
+
     def test_file_speech_engine_creates_audio_and_transcribes_sidecar(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             transport = SpeechTransport(

@@ -148,6 +148,8 @@ class StartupConfigDialog:
             "agent_b_plugin": tk.StringVar(value=defaults["agent_b_plugin"]),
             "speech_pattern_key": tk.StringVar(value=defaults["speech_pattern_key"]),
             "speech_engine": tk.StringVar(value=defaults["speech_engine"]),
+            "tts_engine": tk.StringVar(value=defaults.get("tts_engine", defaults["speech_engine"])),
+            "asr_engine": tk.StringVar(value=defaults.get("asr_engine", defaults["speech_engine"])),
             "speech_audio_dir": tk.StringVar(value=defaults["speech_audio_dir"]),
             "speech_scope": tk.StringVar(value=defaults["speech_scope"]),
             "speech_incoming_enabled": tk.BooleanVar(value=defaults["speech_incoming_enabled"]),
@@ -169,6 +171,8 @@ class StartupConfigDialog:
             ("Agent B", "agent_b_plugin", self.choices["agent_b_plugins"]),
             ("Speech pattern", "speech_pattern_key", self.choices["speech_patterns"]),
             ("Speech engine", "speech_engine", self.choices["speech_engines"]),
+            ("TTS engine", "tts_engine", self.choices["tts_engines"]),
+            ("ASR engine", "asr_engine", self.choices["asr_engines"]),
             ("Speech scope", "speech_scope", self.choices["speech_scopes"]),
         ]
         for row, (label, key, values) in enumerate(rows):
@@ -357,6 +361,7 @@ class DialogWindow:
         self.stage_metric_values = {}
         self.metric_windows = {}
         self.latest_metrics_text = ""
+        self.pending_speech_traces = {}
         self.section_widgets = {}
         self.section_visibility = {}
         self.section_toggle_buttons = {}
@@ -550,6 +555,9 @@ class DialogWindow:
         self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing1=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent A body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent B body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("speech_label", foreground=GUI_COLORS["muted_text"], lmargin1=16, lmargin2=16, font=(GUI_FONT_FAMILY, GUI_FONT_SMALL, "bold"))
+        self.textbox.tag_config("spoken_text", foreground=GUI_COLORS["subtle_text"], lmargin1=16, lmargin2=16)
+        self.textbox.tag_config("understood_text", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("system", foreground=GUI_COLORS["subtle_text"])
         self.textbox.tag_config("warning", foreground=GUI_COLORS["warning"])
 
@@ -577,6 +585,9 @@ class DialogWindow:
         self.textbox.tag_config("Agent B", foreground=GUI_COLORS["agent_b"], font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing1=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent A body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
         self.textbox.tag_config("Agent B body", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, spacing3=TRANSCRIPT_SPACING)
+        self.textbox.tag_config("speech_label", foreground=GUI_COLORS["muted_text"], lmargin1=16, lmargin2=16, font=(GUI_FONT_FAMILY, GUI_FONT_SMALL, "bold"))
+        self.textbox.tag_config("spoken_text", foreground=GUI_COLORS["subtle_text"], lmargin1=16, lmargin2=16)
+        self.textbox.tag_config("understood_text", foreground=GUI_COLORS["text"], lmargin1=16, lmargin2=16, font=(GUI_FONT_FAMILY, TRANSCRIPT_FONT_SIZE, "bold"), spacing3=TRANSCRIPT_SPACING)
 
     def build_minimal_metric_menu(self):
         """Create lazy metric windows ordered by the dialog-system pipeline."""
@@ -2313,9 +2324,30 @@ class DialogWindow:
             The computed value or side effect documented by the implementation.
         """
         self.record_dialog_message(speaker, message)
+        speech_trace = self.pending_speech_traces.pop(speaker, None)
         self.textbox.insert(tk.END, f"{speaker}\n", speaker)
-        self.textbox.insert(tk.END, f"{message}\n\n", f"{speaker} body")
+        if self.should_show_speech_trace(speech_trace):
+            spoken = speech_trace.get("outgoing_text", message)
+            understood = speech_trace.get("incoming_transcript", message)
+            tts_engine = speech_trace.get("tts_engine", "tts")
+            asr_engine = speech_trace.get("asr_engine", "asr")
+            self.textbox.insert(tk.END, f"TTS spoken ({tts_engine}): ", "speech_label")
+            self.textbox.insert(tk.END, f"{spoken}\n", "spoken_text")
+            self.textbox.insert(tk.END, f"ASR understood ({asr_engine}): ", "speech_label")
+            self.textbox.insert(tk.END, f"{understood}\n\n", "understood_text")
+        else:
+            self.textbox.insert(tk.END, f"{message}\n\n", f"{speaker} body")
         self.textbox.see(tk.END)
+
+    @staticmethod
+    def should_show_speech_trace(speech_trace):
+        if not speech_trace:
+            return False
+        return bool(
+            speech_trace.get("outgoing_enabled")
+            or speech_trace.get("incoming_enabled")
+            or speech_trace.get("outgoing_text") != speech_trace.get("incoming_transcript")
+        )
 
     def add_system(self, message):
         """Add system method for this module's MVC responsibility.
@@ -2357,6 +2389,7 @@ class DialogWindow:
         generated_text = payload.get("generated_text", payload.get("source_text", ""))
         source_text = payload.get("outgoing_text", payload.get("source_text", ""))
         transcript = payload.get("incoming_transcript", payload.get("transcript", ""))
+        self.pending_speech_traces[payload.get("speaker")] = payload
 
         gen_words = self.dialog_words(generated_text)
         out_words = self.dialog_words(source_text)

@@ -247,6 +247,8 @@ class ExperimentRunnerTests(unittest.TestCase):
                 tmpdir,
                 num_turns=4,
                 speech_engine="file",
+                tts_engine="file",
+                asr_engine="loopback",
                 speech_scope="both",
                 agent_b_plugin="simple",
             )
@@ -255,7 +257,10 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertIn("hypotheses", manifest)
         self.assertIn("independent_variables", manifest)
         self.assertEqual(manifest["conditions"][0]["condition_id"], condition.condition_id)
+        self.assertEqual(manifest["conditions"][0]["asr_engine"], "loopback")
         self.assertEqual(manifest["controls"]["speech_engine"], "file")
+        self.assertEqual(manifest["controls"]["tts_engine"], "file")
+        self.assertEqual(manifest["controls"]["asr_engine"], "loopback")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import (
     AGENT_B_PLUGIN,
     DEFAULT_SPEECH_PATTERN,
+    SPEECH_ASR_ENGINE,
     SPEECH_AUDIO_DIR,
     SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
@@ -18,6 +19,7 @@ from minillama.agent_b.config import (
     SPEECH_PLAYBACK_ENABLED,
     SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
+    SPEECH_TTS_ENGINE,
 )
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
@@ -62,6 +64,8 @@ def conversation_worker(event_queue, model_adapter, run_config):
             scope=run_config["speech_scope"],
             pattern_key=run_config["speech_pattern_key"],
             engine=run_config["speech_engine"],
+            tts_engine=run_config["tts_engine"],
+            asr_engine=run_config["asr_engine"],
             audio_dir=run_config["speech_audio_dir"],
             playback_enabled=run_config["speech_playback_enabled"],
             realtime_enabled=run_config["speech_realtime_enabled"],
@@ -114,6 +118,8 @@ def default_run_config():
         "agent_b_plugin": AGENT_B_PLUGIN,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "speech_engine": SPEECH_ENGINE if SPEECH_ENGINE != "patterned" else "file",
+        "tts_engine": SPEECH_TTS_ENGINE or ("file" if SPEECH_ENGINE == "patterned" else SPEECH_ENGINE),
+        "asr_engine": SPEECH_ASR_ENGINE or ("file" if SPEECH_ENGINE == "patterned" else SPEECH_ENGINE),
         "speech_audio_dir": SPEECH_AUDIO_DIR,
         "speech_incoming_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_INCOMING_ENABLED else SPEECH_INCOMING_ENABLED,
         "speech_outgoing_enabled": True if SPEECH_SCOPE == "none" and not SPEECH_OUTGOING_ENABLED else SPEECH_OUTGOING_ENABLED,
@@ -134,6 +140,8 @@ def select_run_config():
         "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
         "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
         "speech_engines": ["patterned", "file"],
+        "tts_engines": ["patterned", "file", "loopback"],
+        "asr_engines": ["patterned", "file", "loopback"],
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
     }
     try:

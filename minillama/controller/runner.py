@@ -9,7 +9,7 @@ from minillama.agent_a.config import DEFAULT_PERSONA
 from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE
+from minillama.agent_b.config import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
@@ -52,6 +52,8 @@ class ExperimentRunner:
         speech_outgoing_enabled=SPEECH_OUTGOING_ENABLED,
         speech_scope=SPEECH_SCOPE,
         speech_engine=SPEECH_ENGINE,
+        tts_engine=SPEECH_TTS_ENGINE,
+        asr_engine=SPEECH_ASR_ENGINE,
         speech_audio_dir=SPEECH_AUDIO_DIR,
         speech_playback_enabled=SPEECH_PLAYBACK_ENABLED,
         speech_realtime_enabled=SPEECH_REALTIME_ENABLED,
@@ -74,6 +76,8 @@ class ExperimentRunner:
         self.speech_outgoing_enabled = speech_outgoing_enabled
         self.speech_scope = speech_scope
         self.speech_engine = speech_engine
+        self.tts_engine = tts_engine
+        self.asr_engine = asr_engine
         self.speech_audio_dir = speech_audio_dir
         self.speech_playback_enabled = speech_playback_enabled
         self.speech_realtime_enabled = speech_realtime_enabled
@@ -100,6 +104,8 @@ class ExperimentRunner:
                 scope=self.speech_scope,
                 pattern_key=condition.speech_pattern_key,
                 engine=self.speech_engine,
+                tts_engine=self.tts_engine,
+                asr_engine=self.asr_engine,
                 audio_dir=self.speech_audio_dir,
                 playback_enabled=self.speech_playback_enabled,
                 realtime_enabled=self.speech_realtime_enabled,

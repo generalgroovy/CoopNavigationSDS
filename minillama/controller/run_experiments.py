@@ -3,7 +3,7 @@ import argparse
 
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE
+from minillama.agent_b.config import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
@@ -42,6 +42,8 @@ def main():
     parser.add_argument("--personas", default="focused_commuter")
     parser.add_argument("--speech-patterns", default=DEFAULT_SPEECH_PATTERN)
     parser.add_argument("--speech-engine", default=SPEECH_ENGINE, choices=("patterned", "file"), help="Speech backend: text-pattern simulator or generated WAV files.")
+    parser.add_argument("--tts-engine", default=SPEECH_TTS_ENGINE, choices=("", "patterned", "file", "loopback"), help="TTS stage backend. Empty uses --speech-engine.")
+    parser.add_argument("--asr-engine", default=SPEECH_ASR_ENGINE, choices=("", "patterned", "file", "loopback"), help="ASR stage backend. Empty uses --speech-engine.")
     parser.add_argument("--speech-audio-dir", default=SPEECH_AUDIO_DIR, help="Directory for generated speech WAV/transcript artifacts.")
     parser.add_argument("--speech-incoming", type=parse_bool_flag, default=SPEECH_INCOMING_ENABLED, help="Enable incoming ASR/transcript processing.")
     parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=SPEECH_OUTGOING_ENABLED, help="Enable outgoing TTS/verbalization processing.")
@@ -90,6 +92,8 @@ def main():
         speech_outgoing_enabled=args.speech_outgoing,
         speech_scope=args.speech_scope,
         speech_engine=args.speech_engine,
+        tts_engine=args.tts_engine,
+        asr_engine=args.asr_engine,
         speech_audio_dir=args.speech_audio_dir,
         speech_playback_enabled=args.speech_playback,
         speech_realtime_enabled=args.speech_real_time,
@@ -116,6 +120,8 @@ def main():
         args.research_log_dir,
         num_turns=args.num_turns,
         speech_engine=args.speech_engine,
+        tts_engine=args.tts_engine or args.speech_engine,
+        asr_engine=args.asr_engine or args.speech_engine,
         speech_scope=args.speech_scope,
         agent_b_plugin=args.agent_b_plugin,
     )

@@ -15,6 +15,7 @@ from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR
 from minillama.model.config import DEVICE, MODEL
 from minillama.model.network_overview import build_network_overview
 from minillama.view.config import GUI_COLORS, GUI_WIDTH, MAP_ROUTE_LINE_WIDTH
+from minillama.view.gui import DialogWindow
 
 
 class ConfigModuleTests(unittest.TestCase):
@@ -47,6 +48,21 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertFalse(trace.incoming_enabled)
         self.assertFalse(trace.outgoing_enabled)
         self.assertIn("text-only:clean:none", transport.description)
+
+    def test_gui_only_expands_speech_trace_when_pipeline_changes_message(self):
+        self.assertFalse(DialogWindow.should_show_speech_trace(None))
+        self.assertFalse(DialogWindow.should_show_speech_trace({
+            "outgoing_enabled": False,
+            "incoming_enabled": False,
+            "outgoing_text": "Need Alpha to Echo.",
+            "incoming_transcript": "Need Alpha to Echo.",
+        }))
+        self.assertTrue(DialogWindow.should_show_speech_trace({
+            "outgoing_enabled": True,
+            "incoming_enabled": True,
+            "outgoing_text": "Take Red to Echo.",
+            "incoming_transcript": "Take red to Echo.",
+        }))
 
     def test_agent_b_plugin_config_exposes_registry(self):
         self.assertIn("minillama", available_agent_b_plugin_keys())
