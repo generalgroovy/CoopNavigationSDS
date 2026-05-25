@@ -206,15 +206,15 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
     interpreter = NaturalRouteInterpreter()
     if not interpreter.has_station_mentions(last_agent_b):
         return (
-            "I need the actual route, not just a general answer. "
-            f"Can you give me a connected station order to {scenario['destination_station']}?"
+            f"I need the actual route to {scenario['destination_station']}. "
+            "Give connected boarding stations."
         )
 
     route = interpreter.interpret_reply(last_agent_b, scenario)
     if not route:
         return (
-            "I may be missing the connection there. "
-            "Can you restate it as connected stations with the line change points?"
+            "I missed the connection. "
+            "Restate the boarding stations and change points."
         )
 
     reaches_destination = (
@@ -223,7 +223,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
     )
     if not reaches_destination:
         return (
-            f"That gives me part of the trip, but I still need to reach {scenario['destination_station']}. "
+            f"That does not reach {scenario['destination_station']} yet. "
             "What is the next connected segment?"
         )
 
@@ -238,9 +238,10 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         changes = route_line_change_count(steps)
         fullness_values = [step.get("fullness", 0) for step in steps]
         average_fullness = round(sum(fullness_values) / len(fullness_values)) if fullness_values else 0
-        route_summary = f"Valid: {duration} minutes, {changes} change(s)"
+        change_label = "change" if changes == 1 else "changes"
+        route_summary = f"Valid: {duration} min, {changes} {change_label}"
         if average_fullness:
-            route_summary += f", about {average_fullness}% full"
+            route_summary += f", {average_fullness}% full"
     else:
         steps = []
         duration = None
@@ -249,22 +250,16 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
     prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
     if duration is not None and prior_best_duration is not None and duration > prior_best_duration:
         return (
-            f"That is slower than the earlier {prior_best_duration}-minute route. "
-            "Keep the better route unless you find a faster valid one."
+            f"slower than the earlier {prior_best_duration}-minute route. "
+            "Keep that unless there is a faster valid one."
         )
 
     if turn >= 2:
         station_order = " -> ".join(route_station_sequence(steps)) if steps else " -> ".join(route)
-        return (
-            f"{route_summary}. "
-            f"Please confirm this as the final route: {station_order}, including line changes, total time, and any crowding issue."
-        )
+        return f"{route_summary}. Confirm final: {station_order}, total time, and crowding."
 
     request = agent_a_alternative_request(persona)
-    return (
-        f"{route_summary}. "
-        f"Now compare one {request} valid route."
-    )
+    return f"{route_summary}. Compare one {request} valid route."
 
 
 def agent_a_alternative_request(persona):
@@ -278,7 +273,7 @@ def agent_a_alternative_request(persona):
     wants_less_full = any(term in fullness for term in ("less crowded", "dislikes", "crowded", "full", "packed"))
     accepts_full = any(term in fullness for term in ("does not mind", "secondary"))
     wants_fewer_changes = any(term in switching for term in ("fewer", "avoid", "avoiding", "unnecessary", "only for meaningful"))
-    wants_fastest = any(term in priority for term in ("fast", "quick", "time"))
+    wants_fastest = any(term in priority for term in ("fast", "quick", "travel time"))
     wants_low_delay = any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk"))
 
     constraints = []

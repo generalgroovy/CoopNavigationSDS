@@ -3,7 +3,7 @@ import argparse
 
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_SCOPE
+from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_SCOPE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
@@ -45,6 +45,7 @@ def main():
     parser.add_argument("--speech-audio-dir", default=SPEECH_AUDIO_DIR, help="Directory for generated speech WAV/transcript artifacts.")
     parser.add_argument("--speech-incoming", type=parse_bool_flag, default=SPEECH_INCOMING_ENABLED, help="Enable incoming ASR/transcript processing.")
     parser.add_argument("--speech-outgoing", type=parse_bool_flag, default=SPEECH_OUTGOING_ENABLED, help="Enable outgoing TTS/verbalization processing.")
+    parser.add_argument("--speech-playback", type=parse_bool_flag, default=SPEECH_PLAYBACK_ENABLED, help="Play generated WAV files during file-engine runs.")
     parser.add_argument("--speech-scope", default=SPEECH_SCOPE, choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
     parser.add_argument("--speech-enabled", action="store_true", help="Shortcut: enable incoming and outgoing speech for both agents.")
     parser.add_argument("--model-params", default="greedy")
@@ -89,6 +90,7 @@ def main():
         speech_scope=args.speech_scope,
         speech_engine=args.speech_engine,
         speech_audio_dir=args.speech_audio_dir,
+        speech_playback_enabled=args.speech_playback,
         log_profile=args.log_profile,
         log_dir=args.log_dir,
     )

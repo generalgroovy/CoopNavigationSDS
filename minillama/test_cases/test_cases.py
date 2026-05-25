@@ -50,13 +50,11 @@ class StandardizedTestCase:
             later_destination_text = ", then ".join(destinations[1:])
             return (
                 f"I'm at {scenario['start_station']} at {fmt_time(scenario['start_time_min'])}. "
-                f"I first need to get to {scenario['destination_station']}, then continue to {later_destination_text}. "
-                "What route should I take first?"
+                f"First to {scenario['destination_station']}, then {later_destination_text}. What route first?"
             )
         return (
             f"I'm at {scenario['start_station']} at {fmt_time(scenario['start_time_min'])}, "
-            f"and I need to get to {scenario['destination_station']}. "
-            "What route should I take?"
+            f"going to {scenario['destination_station']}. What route?"
         )
 
     def with_persona(self, persona_key: str):

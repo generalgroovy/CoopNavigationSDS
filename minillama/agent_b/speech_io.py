@@ -17,6 +17,7 @@ from minillama.agent_b.config import (
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
     SPEECH_PATTERNS,
+    SPEECH_PLAYBACK_ENABLED,
     SPEECH_SCOPE,
 )
 
@@ -40,8 +41,9 @@ class SpeechPipelineConfig:
     audio_dir: str = SPEECH_AUDIO_DIR
     agent_a_words_per_minute: int = 165
     agent_b_words_per_minute: int = 175
-    min_utterance_sec: float = 0.8
-    max_utterance_sec: float = 8.0
+    min_utterance_sec: float = 0.6
+    max_utterance_sec: float = 3.5
+    playback_enabled: bool = SPEECH_PLAYBACK_ENABLED
 
     def applies_to(self, speaker: str) -> bool:
         if self.scope in {"both", "all", "*"}:
@@ -60,7 +62,8 @@ class SpeechPipelineConfig:
             directions.append("incoming")
         if not directions:
             directions.append("text-only")
-        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}"
+        playback = ":playback" if self.playback_enabled else ""
+        return f"{'+'.join(directions)}:{self.pattern_key}:{self.scope}{playback}"
 
 
 @dataclass(frozen=True)
@@ -156,9 +159,21 @@ class WaveFileTextToSpeech:
 
     name = "wavefile-tts"
 
-    def __init__(self, audio_dir="speech_artifacts", sample_rate=8000):
+    def __init__(
+        self,
+        audio_dir="speech_artifacts",
+        sample_rate=8000,
+        playback_enabled=False,
+        agent_a_words_per_minute=165,
+        agent_b_words_per_minute=175,
+        max_duration_sec=3.5,
+    ):
         self.audio_dir = Path(audio_dir)
         self.sample_rate = sample_rate
+        self.playback_enabled = playback_enabled
+        self.agent_a_words_per_minute = agent_a_words_per_minute
+        self.agent_b_words_per_minute = agent_b_words_per_minute
+        self.max_duration_sec = max_duration_sec
         self._counter = 0
 
     def synthesize(self, speaker: str, text: str) -> SpeechSignal:
@@ -168,8 +183,9 @@ class WaveFileTextToSpeech:
         stem = f"{self._counter:04d}-{speaker.lower().replace(' ', '-')}-{digest}"
         wav_path = self.audio_dir / f"{stem}.wav"
         transcript_path = self.audio_dir / f"{stem}.txt"
-        self._write_wave(wav_path, speaker, text)
+        duration_sec = self._write_wave(wav_path, speaker, text)
         transcript_path.write_text(text, encoding="utf-8")
+        played = self._play_wave(wav_path) if self.playback_enabled else False
         return SpeechSignal(
             speaker=speaker,
             text=text,
@@ -177,12 +193,15 @@ class WaveFileTextToSpeech:
                 "path": str(wav_path),
                 "transcript_path": str(transcript_path),
                 "sample_rate": self.sample_rate,
+                "duration_sec": duration_sec,
+                "played": played,
             },
         )
 
     def _write_wave(self, path: Path, speaker: str, text: str):
         words = re.findall(r"[A-Za-z0-9]+", text)
-        duration = min(max(len(words) * 0.22, 0.45), 8.0)
+        rate = self.agent_b_words_per_minute if speaker.lower().replace(" ", "_") == "agent_b" else self.agent_a_words_per_minute
+        duration = min(max(len(words) * 60 / max(rate, 1), 0.45), self.max_duration_sec)
         samples = int(self.sample_rate * duration)
         base_frequency = 185 if speaker.lower().replace(" ", "_") == "agent_a" else 230
         amplitude = 7500
@@ -199,6 +218,17 @@ class WaveFileTextToSpeech:
                 value = int(amplitude * envelope * math.sin(2 * math.pi * frequency * t))
                 frames.extend(struct.pack("<h", value))
             handle.writeframes(frames)
+        return round(duration, 3)
+
+    @staticmethod
+    def _play_wave(path: Path) -> bool:
+        try:
+            import winsound
+
+            winsound.PlaySound(str(path), winsound.SND_FILENAME | winsound.SND_ASYNC)
+            return True
+        except Exception:
+            return False
 
 
 class WaveFileSpeechToText:
@@ -250,7 +280,13 @@ class SpeechTransport:
 
     def _default_tts_engine(self):
         if self.config.engine in {"file", "wav", "wave"}:
-            return WaveFileTextToSpeech(self.config.audio_dir)
+            return WaveFileTextToSpeech(
+                self.config.audio_dir,
+                playback_enabled=self.config.playback_enabled,
+                agent_a_words_per_minute=self.config.agent_a_words_per_minute,
+                agent_b_words_per_minute=self.config.agent_b_words_per_minute,
+                max_duration_sec=self.config.max_utterance_sec,
+            )
         return PatternedTextToSpeech(self.config.pattern_key)
 
     def _default_asr_engine(self):

@@ -278,20 +278,15 @@ def route_text_from_steps(steps):
         return "No route found."
 
     rides = route_rides(steps)
-    parts = []
-    for index, ride in enumerate(rides):
-        if index == 0:
-            parts.append(f"Take {ride['line']} from {ride['from']} to {ride['to']}")
-        else:
-            parts.append(f"Change at {ride['from']} to {ride['line']} to {ride['to']}")
-
     boarding_route = " -> ".join(route_boarding_route(steps))
+    line_route = " -> ".join(ride["line"] for ride in rides)
+    start = rides[0]["from"]
+    destination = rides[-1]["to"]
     total = steps[-1]["arrive"] - (steps[0]["depart"] - steps[0]["wait"])
-    return (
-        f"{'. '.join(parts)}. "
-        f"Boarding: {boarding_route}. "
-        f"Total {total} min."
-    )
+    change_text = "no changes" if len(rides) == 1 else f"{len(rides) - 1} change(s)"
+    if len(rides) == 1:
+        return f"Take {line_route} from {start} to {destination}. Boarding: {boarding_route}. Total {total} min, {change_text}."
+    return f"Boarding: {boarding_route}. Via {line_route}. Total {total} min."
 
 
 def route_rides(steps):

@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 
@@ -83,6 +84,29 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertTrue(Path(trace.audio["path"]).exists())
             self.assertGreater(Path(trace.audio["path"]).stat().st_size, 44)
             self.assertTrue(Path(trace.audio["transcript_path"]).exists())
+            self.assertIn("duration_sec", trace.audio)
+            self.assertFalse(trace.audio["played"])
+
+    def test_file_speech_engine_supports_playback_flag_without_breaking_transcript(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(
+                config=SpeechPipelineConfig(
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    scope="both",
+                    engine="file",
+                    audio_dir=tmpdir,
+                    playback_enabled=True,
+                    max_utterance_sec=2.5,
+                )
+            )
+
+            with patch("minillama.agent_b.speech_io.WaveFileTextToSpeech._play_wave", return_value=True):
+                trace = transport.transmit_trace("Agent A", "Short audible turn.")
+
+            self.assertEqual(trace.incoming_transcript, "Short audible turn.")
+            self.assertLessEqual(trace.simulated_duration_sec, 2.5)
+            self.assertTrue(trace.audio["played"])
 
 
 if __name__ == "__main__":

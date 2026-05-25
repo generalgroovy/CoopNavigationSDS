@@ -104,3 +104,18 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertTrue(audio_paths)
             self.assertTrue(all(path.exists() for path in audio_paths))
             self.assertGreater(result.extra["constraint_delay_probability"], 0.0)
+
+    def test_simple_dialog_turns_stay_natural_length(self):
+        manager = DialogManager(
+            get_test_case("airport_connection"),
+            SimplePlannerAgentBPlugin(),
+            num_turns=3,
+            speech_transport=SpeechTransport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+        word_counts = [len(text.split()) for _, text in result.conversation]
+
+        self.assertLessEqual(max(word_counts), 24)
+        self.assertLessEqual(len(result.conversation), 6)

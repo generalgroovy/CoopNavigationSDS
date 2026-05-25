@@ -152,6 +152,7 @@ class StartupConfigDialog:
             "speech_scope": tk.StringVar(value=defaults["speech_scope"]),
             "speech_incoming_enabled": tk.BooleanVar(value=defaults["speech_incoming_enabled"]),
             "speech_outgoing_enabled": tk.BooleanVar(value=defaults["speech_outgoing_enabled"]),
+            "speech_playback_enabled": tk.BooleanVar(value=defaults.get("speech_playback_enabled", False)),
             "gui_enabled": tk.BooleanVar(value=defaults.get("gui_enabled", True)),
         }
         self.build()
@@ -227,6 +228,16 @@ class StartupConfigDialog:
         gui_row = toggle_row + 1
         tk.Checkbutton(
             frame,
+            text="Play generated audio",
+            variable=self.vars["speech_playback_enabled"],
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            selectcolor=GUI_COLORS["tab_bg"],
+            activebackground=GUI_COLORS["panel_bg"],
+            activeforeground=GUI_COLORS["text"],
+        ).grid(row=gui_row, column=0, sticky="w", padx=(10, 8), pady=(10, 0))
+        tk.Checkbutton(
+            frame,
             text="Conversation GUI",
             variable=self.vars["gui_enabled"],
             bg=GUI_COLORS["panel_bg"],
@@ -234,7 +245,7 @@ class StartupConfigDialog:
             selectcolor=GUI_COLORS["tab_bg"],
             activebackground=GUI_COLORS["panel_bg"],
             activeforeground=GUI_COLORS["text"],
-        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
+        ).grid(row=gui_row, column=1, sticky="w", padx=(0, 10), pady=(10, 0))
 
         button_row = gui_row + 1
         buttons = tk.Frame(frame, bg=GUI_COLORS["panel_bg"])

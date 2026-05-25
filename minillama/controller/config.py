@@ -1,7 +1,7 @@
 """Controller-layer configuration."""
 import os
 
-NUM_TURNS = 20
+NUM_TURNS = int(os.environ.get("MINILLAMA_NUM_TURNS", "6"))
 SESSION_LOG_DIR = "logs"
 SESSION_NAME = "minillama"
 DEFAULT_MODEL_PARAM_KEY = "greedy"

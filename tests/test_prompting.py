@@ -121,6 +121,26 @@ class PromptingTests(unittest.TestCase):
         self.assertIn("delay risk", reply)
         self.assertIn("full", reply)
 
+    def test_fallback_agent_b_turns_are_concise_for_speech(self):
+        test_case = get_test_case("airport_connection")
+
+        reply = fallback_reply("Agent B", test_case.scenario, route_index=0, persona=test_case.persona)
+
+        self.assertLessEqual(len(reply.split()), 28)
+        self.assertIn("Boarding:", reply)
+        self.assertIn("Total", reply)
+
+    def test_agent_a_reaction_turns_are_concise_for_speech(self):
+        text = agent_a_route_reaction(
+            1,
+            self.persona,
+            self.real_scenario,
+            [("Agent B", "Boarding: Bravo -> Golf -> Ivy -> Harbor. Lines: Ring -> Diagonal-SE-6 -> Ring. Total 28 min, 2 change(s).")],
+        )
+
+        self.assertLessEqual(len(text.split()), 22)
+        self.assertIn("Compare one", text)
+
     def test_agent_a_final_reaction_asks_for_confirmation(self):
         text = agent_a_route_reaction(
             3,

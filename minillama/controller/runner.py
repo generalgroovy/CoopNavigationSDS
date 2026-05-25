@@ -9,7 +9,7 @@ from minillama.agent_a.config import DEFAULT_PERSONA
 from minillama.agent_b.agent_b_plugins import create_agent_b_plugin
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_SCOPE
+from minillama.agent_b.config import SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_SCOPE
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.dialog_result import NullEventQueue
@@ -53,6 +53,7 @@ class ExperimentRunner:
         speech_scope=SPEECH_SCOPE,
         speech_engine=SPEECH_ENGINE,
         speech_audio_dir=SPEECH_AUDIO_DIR,
+        speech_playback_enabled=SPEECH_PLAYBACK_ENABLED,
         log_profile=LOG_PROFILE_OFF,
         log_dir=SESSION_LOG_DIR,
     ):
@@ -73,6 +74,7 @@ class ExperimentRunner:
         self.speech_scope = speech_scope
         self.speech_engine = speech_engine
         self.speech_audio_dir = speech_audio_dir
+        self.speech_playback_enabled = speech_playback_enabled
         self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
         self.log_dir = log_dir
         self.metric_computer = MetricComputer()
@@ -97,6 +99,7 @@ class ExperimentRunner:
                 pattern_key=condition.speech_pattern_key,
                 engine=self.speech_engine,
                 audio_dir=self.speech_audio_dir,
+                playback_enabled=self.speech_playback_enabled,
             )
         )
         agent_b_plugin = create_agent_b_plugin(self.agent_b_plugin_key, model_adapter)
