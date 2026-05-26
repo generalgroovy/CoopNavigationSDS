@@ -553,7 +553,7 @@ class DialogWindow:
         else:
             self.root.minsize(GUI_EQUAL_PANE_MIN_WIDTH, GUI_MIN_HEIGHT)
         self.root.configure(bg=GUI_COLORS["app_bg"])
-        if not self.minimal:
+        if self.view_mode == "combined" and not self.minimal:
             self.maximize_startup_window()
 
         self.configure_style()
@@ -575,8 +575,9 @@ class DialogWindow:
         x = index * width
         if index == count - 1:
             width = max(screen_width - x, GUI_DIALOG_MIN_WIDTH)
-        height = max(screen_height - 80, GUI_MIN_HEIGHT)
-        self.root.geometry(f"{width}x{height}+{x}+0")
+        y = 30
+        height = max(screen_height - 130, GUI_MIN_HEIGHT)
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
 
     def maximize_startup_window(self):
         """Maximize startup window method for this module's MVC responsibility.
@@ -2724,19 +2725,19 @@ class DialogWindow:
         }
 
         for source_key, metric_key in mapping.items():
-            if source_key in parsed:
+            if source_key in parsed and metric_key in self.metric_values:
                 self.metric_values[metric_key].configure(text=parsed[source_key])
 
-        if "Displayed route" in parsed and parsed["Displayed route"] != "None":
+        if "Displayed route" in parsed and parsed["Displayed route"] != "None" and "route" in self.metric_values:
             route = [station.strip() for station in parsed["Displayed route"].split("->")]
             self.metric_values["route"].configure(text=self.route_label(route))
-        if "Displayed line sequence" in parsed and parsed["Displayed line sequence"] != "None":
+        if "Displayed line sequence" in parsed and parsed["Displayed line sequence"] != "None" and "line_sequence" in self.metric_values:
             line_sequence = [segment.strip() for segment in parsed["Displayed line sequence"].split("->")]
             self.metric_values["line_sequence"].configure(text=" to ".join(line_sequence))
-        if "Constraint route" in parsed and parsed["Constraint route"] != "None":
+        if "Constraint route" in parsed and parsed["Constraint route"] != "None" and "constraint_route" in self.metric_values:
             route = [station.strip() for station in parsed["Constraint route"].split("->")]
             self.metric_values["constraint_route"].configure(text=self.route_label(route))
-        if "Constraint line sequence" in parsed and parsed["Constraint line sequence"] != "None":
+        if "Constraint line sequence" in parsed and parsed["Constraint line sequence"] != "None" and "constraint_line_sequence" in self.metric_values:
             line_sequence = [segment.strip() for segment in parsed["Constraint line sequence"].split("->")]
             self.metric_values["constraint_line_sequence"].configure(text=" to ".join(line_sequence))
 
@@ -2747,7 +2748,8 @@ class DialogWindow:
             The computed value or side effect documented by the implementation.
         """
         route_text = self.route_label(self.current_route) if self.current_route else "No inferred route"
-        self.metric_values["route"].configure(text=route_text)
+        if "route" in self.metric_values:
+            self.metric_values["route"].configure(text=route_text)
         if "line_sequence" in self.metric_values or "line_changes" in self.metric_values:
             if self.current_route:
                 estimate = estimate_route_time(
