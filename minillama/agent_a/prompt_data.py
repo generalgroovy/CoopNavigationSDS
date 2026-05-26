@@ -3,15 +3,16 @@
 from minillama.agent_a.config import AGENT_RULES, ROUTE_TASK
 from minillama.model.metro_data import (
     compact_line_fullness_text,
-    compact_network_text,
     compact_station_crowding_text,
     compact_station_transfer_text,
     compact_transport_mode_text,
-    compact_travel_time_text,
+    STATIONS,
 )
+from minillama.model.route_constraints import ranked_constraint_routes
+from minillama.model.route_planner import route_text_from_steps
 
 
-def compact_prompt_context(scenario):
+def compact_prompt_context(scenario, persona=None):
     """Compact prompt context function for this module's MVC responsibility.
 
     Args:
@@ -30,10 +31,26 @@ def compact_prompt_context(scenario):
         f"Ticket modes allowed: {allowed_modes}. "
         f"Maximum transfer-miss risk: {round(scenario.get('max_transfer_miss_probability', 0.3) * 100)} percent. "
         f"{ROUTE_TASK} "
-        f"Network: {compact_network_text()} "
+        f"Route candidates: {compact_route_candidate_text(scenario, persona)} "
         f"Modes: {compact_transport_mode_text()} "
         f"Long transfers: {compact_station_transfer_text()} "
         f"Lines: {compact_line_fullness_text(scenario['start_time_min'])} "
-        f"Hubs: {compact_station_crowding_text(scenario['start_time_min'])} "
-        f"Segments: {compact_travel_time_text()}"
+        f"Hubs: {compact_station_crowding_text(scenario['start_time_min'])}"
     )
+
+
+def compact_route_candidate_text(scenario, persona=None, limit=4):
+    """Return concise valid route candidates instead of the full network."""
+    if scenario.get("start_station") not in STATIONS or scenario.get("destination_station") not in STATIONS:
+        return "use the listed station names and constraints."
+    routes = ranked_constraint_routes(scenario, persona or {}, limit=limit)
+    if not routes:
+        return "no valid candidate found under the current ticket modes."
+    parts = []
+    for index, route in enumerate(routes, start=1):
+        parts.append(
+            f"{index}) {route_text_from_steps(route.steps)} "
+            f"Modes {' to '.join(route.mode_sequence)}; "
+            f"transfer risk {round(route.transfer_miss_probability * 100)} percent."
+        )
+    return " ".join(parts)

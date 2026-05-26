@@ -119,7 +119,7 @@ def build_agent_a_system(persona, scenario):
         f"{AGENT_RULES} "
         "First state start time, start station, and destination. "
         "Get a valid route first; then ask for one better route by time, near-capacity trains, changes, or delay risk. "
-        f"{compact_prompt_context(scenario)}"
+        f"{compact_prompt_context(scenario, persona)}"
     )
 
 
@@ -134,7 +134,7 @@ def build_agent_b_system(scenario, persona=None):
         "Say boarding stations only: start, transfer boarding stations, destination. "
         "State total time once. "
         f"{AGENT_RULES} "
-        f"{compact_prompt_context(scenario)}"
+        f"{compact_prompt_context(scenario, persona)}"
     )
 
 

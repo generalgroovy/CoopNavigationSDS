@@ -166,6 +166,7 @@ class DialogManager:
                 "generation_sec": round(generation_sec, 6),
                 "speech_sec": round(speech_sec, 6),
                 "turn_latency_sec": round(generation_sec + speech_sec, 6),
+                "turn_elapsed_sec": round(generation_sec + speech_sec, 6),
                 "message_count": len(conversation),
                 "word_count": conversation_word_count,
                 "task_terms": task_term_count,
@@ -253,13 +254,16 @@ class DialogManager:
                 )
             )
 
-        def emit_timing_telemetry(speaker, generation_sec, speech_sec):
+        def emit_timing_telemetry(speaker, generation_sec, speech_sec, turn_number=None):
             """Send turn timing telemetry for latency metrics."""
+            turn_elapsed_sec = generation_sec + speech_sec
             payload = {
+                "turn": turn_number,
                 "speaker": speaker,
                 "generation_sec": generation_sec,
                 "speech_sec": speech_sec,
-                "turn_latency_sec": generation_sec + speech_sec,
+                "turn_latency_sec": turn_elapsed_sec,
+                "turn_elapsed_sec": turn_elapsed_sec,
             }
             timing_turns.append(payload)
             event_queue.put(
@@ -358,6 +362,7 @@ class DialogManager:
             0.0,
             opening_speech_sec,
         )
+        emit_timing_telemetry("Agent A", 0.0, opening_speech_sec, turn_number=len(conversation))
         emit_metric_snapshot(len(conversation), "opening", "Agent A", force=True)
 
         route_round = 0
@@ -372,7 +377,7 @@ class DialogManager:
             reply_transcript = reply_trace.incoming_transcript
             speech_sec = max(time.time() - speech_started_at, reply_trace.simulated_duration_sec)
             emit_speech_telemetry(reply_trace, speech_sec)
-            emit_timing_telemetry("Agent B", generation_sec, speech_sec)
+            emit_timing_telemetry("Agent B", generation_sec, speech_sec, turn_number=len(conversation) + 1)
             conversation.append(("Agent B", reply_transcript))
             ingest_conversation_text(reply_transcript)
             event_queue.put(("message", "Agent B", reply_transcript))
@@ -475,7 +480,7 @@ class DialogManager:
                 reply_transcript = reply_trace.incoming_transcript
                 speech_sec = max(time.time() - speech_started_at, reply_trace.simulated_duration_sec)
                 emit_speech_telemetry(reply_trace, speech_sec)
-                emit_timing_telemetry("Agent A", generation_sec, speech_sec)
+                emit_timing_telemetry("Agent A", generation_sec, speech_sec, turn_number=len(conversation) + 1)
                 conversation.append(("Agent A", reply_transcript))
                 ingest_conversation_text(reply_transcript)
                 event_queue.put(("message", "Agent A", reply_transcript))
@@ -579,6 +584,7 @@ class DialogManager:
             f"Route valid:           {route_valid}\n"
             f"Route reaches goal:    {reaches_goal}\n"
             f"Route correct:         {route_correct}\n"
+            f"Mean turn elapsed:     {str(round(sum(turn.get('turn_elapsed_sec', turn.get('turn_latency_sec', 0.0)) for turn in timing_turns) / len(timing_turns), 4)) + ' seconds' if timing_turns else 'None'}\n"
             f"Runtime:               {end_wall - start_wall:.2f} seconds\n"
             f"Speech pipeline:       {self.speech_transport.description}\n"
         )
@@ -644,6 +650,14 @@ class DialogManager:
                 "route_near_capacity": displayed_has_near_capacity,
                 "route_near_capacity_count": displayed_near_capacity_count,
                 "route_transfer_miss_probability": displayed_transfer_miss_probability,
+                "mean_turn_elapsed_sec": round(
+                    sum(turn.get("turn_elapsed_sec", turn.get("turn_latency_sec", 0.0)) for turn in timing_turns) / len(timing_turns),
+                    6,
+                ) if timing_turns else None,
+                "max_turn_elapsed_sec": round(
+                    max((turn.get("turn_elapsed_sec", turn.get("turn_latency_sec", 0.0)) for turn in timing_turns), default=0.0),
+                    6,
+                ),
                 "speech_turns": speech_turns,
                 "timing_turns": timing_turns,
                 "nlu_turns": nlu_turns,

@@ -170,7 +170,7 @@ The evaluation report exports a staged metric stack aligned with speech-dialog a
 | Automatic speech recognition | Spoken text as source, recognized transcript as received input | `asr_success_rate`, `asr_failure_count`, `asr_word_error_rate`, station precision and recall |
 | Spoken language understanding | Recognized transcript passed into route parsing | `slu_pipeline_input_match_rate`, route validity rate, goal reached rate |
 | Route comparison | Parsed candidate route, ticket modes, station transfer times, transfer-miss probability, duration, line changes, near-capacity status, delay probability | candidate count, route revision count, constraint gaps, transfer tolerance, transfer-risk gap |
-| Runtime | Generation time, speech time, turn latency, condition runtime | mean latency, maximum turn latency, speech duration total |
+| Runtime | Generation time, speech time, explicit turn elapsed seconds, condition runtime | mean turn elapsed, maximum turn elapsed, speech duration total |
 | End to end | Final route and task state | task success, completion, abandonment, escalation, turns to success |
 
 Speech turns keep separate generated, outgoing, and incoming text traces. The graphical interface and comma-separated metrics report automatic speech recognition word error rate, text-to-speech text-change rate, station precision and recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
