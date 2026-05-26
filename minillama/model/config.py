@@ -12,10 +12,10 @@ MODEL_PROVIDER = os.environ.get("MINILLAMA_MODEL_PROVIDER", "transformers").lowe
 CHAT_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 CHAT_API_KEY = os.environ.get("OPENAI_API_KEY")
 CHAT_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-CHAT_TIMEOUT_SEC = float(os.environ.get("MINILLAMA_CHAT_TIMEOUT_SEC", "60"))
+CHAT_TIMEOUT_SEC = float(os.environ.get("MINILLAMA_CHAT_TIMEOUT_SEC", "5"))
 
 MAX_NEW_TOKENS = int(os.environ.get("MINILLAMA_MAX_NEW_TOKENS", "90"))
-GENERATION_MAX_TIME_SEC = float(os.environ.get("MINILLAMA_GENERATION_MAX_TIME_SEC", "12"))
+GENERATION_MAX_TIME_SEC = float(os.environ.get("MINILLAMA_GENERATION_MAX_TIME_SEC", "5"))
 MAX_INPUT_TOKENS = 99999
 
 NUM_STATIONS = 36

@@ -44,10 +44,10 @@ from minillama.controller.config import (
     SESSION_NAME,
 )
 from minillama.view.config import GUI_REFRESH_MS
-from minillama.controller.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, DialogManager
+from minillama.controller.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, HARD_MAX_TURN_ELAPSED_SEC, DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
 from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
-from minillama.model.config import MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
+from minillama.model.config import GENERATION_MAX_TIME_SEC, MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 
@@ -75,9 +75,21 @@ def build_agent_a_responder(model_adapter, llm_agent_a=LLM_AGENT_A):
     return TemplateAgentAResponder()
 
 
+def configure_model_adapter_runtime(model_adapter, calculation_max_time_sec):
+    """Apply interactive calculation-time budget to compatible model adapters."""
+    if model_adapter is None:
+        return
+    budget = max(1.0, float(calculation_max_time_sec or GENERATION_MAX_TIME_SEC))
+    if hasattr(model_adapter, "max_time_sec"):
+        model_adapter.max_time_sec = budget
+    if hasattr(model_adapter, "timeout_sec"):
+        model_adapter.timeout_sec = budget
+
+
 def build_dialog_runtime(event_queue, model_adapter, run_config):
     """Build dialog runtime components after validating run mode and speech setup."""
     run_config = normalize_run_config(run_config)
+    configure_model_adapter_runtime(model_adapter, run_config["calculation_max_time_sec"])
     test_case = get_test_case(run_config["test_case_key"]).with_persona(run_config.get("persona_key", DEFAULT_PERSONA))
     agent_b_plugin = create_agent_b_plugin(run_config["agent_b_plugin"], model_adapter)
     speech_transport = SpeechTransport(
@@ -141,6 +153,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
             turns=num_turns,
             max_new_tokens=MAX_NEW_TOKENS,
             max_input_tokens=MAX_INPUT_TOKENS,
+            calculation_max_time_sec=run_config["calculation_max_time_sec"],
             agent_a=manager.agent_a_responder.name,
             agent_b=getattr(agent_b_plugin, "name", type(agent_b_plugin).__name__),
             speech_pipeline=speech_transport.description,
@@ -148,7 +161,13 @@ def conversation_worker(event_queue, model_adapter, run_config):
             event_queue.put(("system", f"Model: {model_name}"))
             event_queue.put(("system", f"Provider: {model_provider}"))
             event_queue.put(("system", f"Device: {device}"))
-            event_queue.put(("system", f"Turns={num_turns}, max_new_tokens={MAX_NEW_TOKENS}, max_length={MAX_INPUT_TOKENS}"))
+            event_queue.put((
+                "system",
+                (
+                    f"Turns={num_turns}, max_new_tokens={MAX_NEW_TOKENS}, "
+                    f"max_length={MAX_INPUT_TOKENS}, calculation_seconds={run_config['calculation_max_time_sec']}"
+                ),
+            ))
             event_queue.put(("system", f"Agent A: {manager.agent_a_responder.name}"))
             event_queue.put(("system", f"Agent B: {getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)}"))
             health = speech_transport.health_check()
@@ -194,6 +213,7 @@ def default_run_config():
         "agent_a_transfer_tolerance": AGENT_A_TRANSFER_TOLERANCE,
         "metric_snapshot_interval": METRIC_SNAPSHOT_INTERVAL,
         "max_turn_elapsed_sec": DEFAULT_MAX_TURN_ELAPSED_SEC,
+        "calculation_max_time_sec": GENERATION_MAX_TIME_SEC,
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "speech_engine": SPEECH_ENGINE if SPEECH_ENGINE != "patterned" else "file",
@@ -242,8 +262,12 @@ def normalize_run_config(config):
         normalized["asr_engine"] = normalized.get("asr_engine") or "sapi"
     normalized["gui_refresh_ms"] = max(50, int(normalized.get("gui_refresh_ms", GUI_REFRESH_MS) or GUI_REFRESH_MS))
     normalized["max_turn_elapsed_sec"] = min(
-        DEFAULT_MAX_TURN_ELAPSED_SEC,
+        HARD_MAX_TURN_ELAPSED_SEC,
         max(1.0, float(normalized.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC) or DEFAULT_MAX_TURN_ELAPSED_SEC)),
+    )
+    normalized["calculation_max_time_sec"] = min(
+        HARD_MAX_TURN_ELAPSED_SEC,
+        max(1.0, float(normalized.get("calculation_max_time_sec", GENERATION_MAX_TIME_SEC) or GENERATION_MAX_TIME_SEC)),
     )
     return normalized
 

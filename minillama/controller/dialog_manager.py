@@ -30,7 +30,8 @@ from minillama.model.route_constraints import (
 )
 from minillama.agent_b.speech_io import SpeechTransport
 
-DEFAULT_MAX_TURN_ELAPSED_SEC = 20.0
+DEFAULT_MAX_TURN_ELAPSED_SEC = 5.0
+HARD_MAX_TURN_ELAPSED_SEC = 20.0
 
 
 def route_reaches_goal(stations, scenario):
@@ -134,7 +135,7 @@ class DialogManager:
         self.transfer_tolerance = max(0, int(transfer_tolerance))
         self.metric_snapshot_interval = max(1, int(metric_snapshot_interval or 1))
         self.max_turn_elapsed_sec = min(
-            DEFAULT_MAX_TURN_ELAPSED_SEC,
+            HARD_MAX_TURN_ELAPSED_SEC,
             max(1.0, float(max_turn_elapsed_sec or DEFAULT_MAX_TURN_ELAPSED_SEC)),
         )
 

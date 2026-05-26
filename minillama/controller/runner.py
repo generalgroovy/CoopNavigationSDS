@@ -11,13 +11,14 @@ from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import create_agent_b_plugin
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
-from minillama.controller.dialog_manager import DialogManager
+from minillama.controller.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, DialogManager
 from minillama.controller.dialog_result import NullEventQueue
 from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, DEFAULT_MODEL_PARAM_KEY, SESSION_LOG_DIR
 from minillama.evaluation.metrics import MetricComputer
 from minillama.evaluation.research_artifacts import write_metrics_csv, write_metrics_file
 from minillama.controller.session_logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
+from minillama.model.config import GENERATION_MAX_TIME_SEC
 
 
 class DropQueue:
@@ -59,6 +60,8 @@ class ExperimentRunner:
         speech_playback_enabled=SPEECH_PLAYBACK_ENABLED,
         speech_realtime_enabled=SPEECH_REALTIME_ENABLED,
         transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE,
+        max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
+        calculation_max_time_sec=GENERATION_MAX_TIME_SEC,
         log_profile=LOG_PROFILE_OFF,
         log_dir=SESSION_LOG_DIR,
     ):
@@ -85,6 +88,8 @@ class ExperimentRunner:
         self.speech_playback_enabled = speech_playback_enabled
         self.speech_realtime_enabled = speech_realtime_enabled
         self.transfer_tolerance = transfer_tolerance
+        self.max_turn_elapsed_sec = max_turn_elapsed_sec
+        self.calculation_max_time_sec = calculation_max_time_sec
         self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
         self.log_dir = log_dir
         self.metric_computer = MetricComputer()
@@ -101,6 +106,7 @@ class ExperimentRunner:
         base_case = get_test_case(condition.test_case_key)
         test_case = base_case.with_persona(condition.persona_key)
         model_adapter = self._model_adapter_for(condition)
+        self._configure_model_adapter_runtime(model_adapter)
         speech_transport = SpeechTransport(
             config=SpeechPipelineConfig(
                 mode=self.run_mode,
@@ -123,6 +129,7 @@ class ExperimentRunner:
             self.num_turns,
             speech_transport=speech_transport,
             transfer_tolerance=self.transfer_tolerance,
+            max_turn_elapsed_sec=self.max_turn_elapsed_sec,
         )
 
         started_perf = time.perf_counter()
@@ -136,6 +143,7 @@ class ExperimentRunner:
                 persona=condition.persona_key,
                 speech_pattern=condition.speech_pattern_key,
                 model_param=condition.model_param_key,
+                calculation_max_time_sec=self.calculation_max_time_sec,
             ):
                 result = manager.run(event_queue)
         finally:
@@ -162,6 +170,15 @@ class ExperimentRunner:
             profile=self.log_profile,
         )
         return MonitoringEventQueue(DropQueue(), logger)
+
+    def _configure_model_adapter_runtime(self, model_adapter):
+        if model_adapter is None:
+            return
+        budget = max(1.0, float(self.calculation_max_time_sec or GENERATION_MAX_TIME_SEC))
+        if hasattr(model_adapter, "max_time_sec"):
+            model_adapter.max_time_sec = budget
+        if hasattr(model_adapter, "timeout_sec"):
+            model_adapter.timeout_sec = budget
 
     def _model_adapter_for(self, condition: ExperimentCondition):
         """ model adapter for method for this module's MVC responsibility.

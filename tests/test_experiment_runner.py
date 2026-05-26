@@ -18,11 +18,12 @@ class FakeModelAdapter:
         self.name = name
         self.device = "cpu"
         self.model_parameters = model_parameters or ModelParameterSet("greedy", do_sample=False)
+        self.max_time_sec = None
         self.calls = []
 
     def with_model_params(self, model_param_key):
         self.calls.append(model_param_key)
-        return FakeModelAdapter(
+        adapter = FakeModelAdapter(
             name=self.name,
             model_parameters=ModelParameterSet(
                 model_param_key,
@@ -31,6 +32,8 @@ class FakeModelAdapter:
                 top_p=0.9 if model_param_key == "nucleus0.9" else None,
             ),
         )
+        adapter.calls = self.calls
+        return adapter
 
 
 class ExperimentRunnerTests(unittest.TestCase):
@@ -60,7 +63,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         get_test_case.return_value = base_case
 
         model_adapter = FakeModelAdapter()
-        runner = ExperimentRunner(model_adapter, num_turns=3, agent_b_plugin_key="simple", run_mode="pure_text")
+        runner = ExperimentRunner(
+            model_adapter,
+            num_turns=3,
+            agent_b_plugin_key="simple",
+            run_mode="pure_text",
+            max_turn_elapsed_sec=4.0,
+            calculation_max_time_sec=4.5,
+        )
         runner.metric_computer.compute = MagicMock(return_value="metric")
 
         result = SimpleNamespace(extra={})
@@ -84,6 +94,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         create_agent_b_plugin.assert_called_once()
         self.assertEqual(create_agent_b_plugin.call_args.args[0], "simple")
         self.assertEqual(create_agent_b_plugin.call_args.args[1].model_parameters.temperature, 0.7)
+        self.assertEqual(create_agent_b_plugin.call_args.args[1].max_time_sec, 4.5)
+        self.assertEqual(dialog_manager_cls.call_args.kwargs["max_turn_elapsed_sec"], 4.0)
         self.assertEqual(result.condition_id, condition.condition_id)
         self.assertEqual(result.speech_pattern_key, "clean")
         self.assertEqual(result.extra["model_param_key"], "temp0.7")
