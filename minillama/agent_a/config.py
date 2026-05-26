@@ -14,6 +14,7 @@ PERSONAS = {
             "fullness": "does not mind fuller trains",
             "priority": "fastest route first",
             "allowed_modes": ("metro", "tram", "bus"),
+            "max_walking_min": 8,
         },
     },
     "distracted_multitasker": {
@@ -23,6 +24,7 @@ PERSONAS = {
             "switching": "prefers fewer line changes",
             "fullness": "prefers less crowded trains",
             "priority": "simple route first",
+            "max_walking_min": 5,
         },
     },
     "verbose_planner": {
@@ -32,6 +34,7 @@ PERSONAS = {
             "switching": "accepts transfers if justified",
             "fullness": "considers fullness as a secondary factor",
             "priority": "balanced comparison of time, transfers, and fullness",
+            "max_walking_min": 10,
         },
     },
     "hesitant_speaker": {
@@ -41,6 +44,7 @@ PERSONAS = {
             "switching": "prefers avoiding line changes",
             "fullness": "prefers less crowded trains",
             "priority": "confidence and simplicity over small time savings",
+            "max_walking_min": 4,
         },
     },
     "adversarial_tester": {
@@ -50,6 +54,7 @@ PERSONAS = {
             "switching": "questions unnecessary line changes",
             "fullness": "challenges crowded-train choices",
             "priority": "prove the best tradeoff, not just the first route",
+            "max_walking_min": 8,
         },
     },
     "non_native_speaker": {
@@ -59,6 +64,7 @@ PERSONAS = {
             "switching": "prefers fewer changes",
             "fullness": "does not mind fullness if the route is clear",
             "priority": "clear and simple route",
+            "max_walking_min": 6,
         },
     },
     "frustrated_user": {
@@ -68,6 +74,7 @@ PERSONAS = {
             "switching": "accepts line changes only for meaningful savings",
             "fullness": "dislikes very full trains",
             "priority": "fast answer with obvious tradeoffs",
+            "max_walking_min": 4,
         },
     },
     "crowd_averse_rider": {
@@ -78,6 +85,7 @@ PERSONAS = {
             "fullness": "strongly prefers less crowded trains",
             "priority": "balance travel time and lower fullness",
             "reliability": "avoid very full trains that increase delay risk",
+            "max_walking_min": 10,
         },
     },
     "delay_sensitive_traveler": {
@@ -90,6 +98,7 @@ PERSONAS = {
             "reliability": "prefer lower delay probability",
             "max_transfer_miss_probability": 0.20,
             "max_delay_probability": 0.32,
+            "max_walking_min": 7,
         },
     },
     "accessibility_rider": {
@@ -102,6 +111,7 @@ PERSONAS = {
             "reliability": "prefer predictable services",
             "allowed_modes": ("metro", "tram"),
             "max_transfer_miss_probability": 0.18,
+            "max_walking_min": 3,
         },
     },
     "multi_stop_errand_runner": {
@@ -112,6 +122,7 @@ PERSONAS = {
             "fullness": "prefers moderate fullness",
             "priority": "clear route that can expand to multiple destinations",
             "reliability": "avoid high delay risk when connecting between stops",
+            "max_walking_min": 12,
         },
     },
 }
@@ -125,10 +136,11 @@ AGENT_RULES = (
 ROUTE_TASK = (
     "Primary goal: a valid connected route from start to destination using listed segments, lines, waits, and transfer times. "
     "Secondary goal: satisfy preferences such as avoiding near-capacity trains and fewer changes. "
-    "Delay probability is a secondary reliability constraint. "
+    "Delay risk is a secondary reliability constraint and is spoken only as low, medium, or high. "
     "Best time means riding + waiting + transfer time, with transfer time only when the line changes. "
     "Tickets can restrict transport modes, and station transfer times vary. "
-    "Short transfer buffers can add missed-connection risk. "
+    "Short transfer buffers can add low, medium, or high missed-connection risk. "
+    "Walking range can rule out station pairs that are too far to walk. "
     "Compare alternatives only when they are valid and meaningfully affect time or constraints. "
     "All listed segments work both ways. "
     "Say stations in travel order and keep line changes explicit."

@@ -1,7 +1,15 @@
 import unittest
 
-from minillama.model.metro_data import LINES, station_transfer_time_min
-from minillama.model.route_constraints import ConstraintRoute, optimal_constraint_route, route_constraint_gap, route_near_capacity_count
+from minillama.model.metro_data import LINES, ADJACENCY, station_transfer_time_min
+from minillama.model.route_constraints import (
+    ConstraintRoute,
+    nearby_walking_links,
+    optimal_constraint_route,
+    probability_class,
+    probability_class_allowed,
+    route_constraint_gap,
+    route_near_capacity_count,
+)
 from minillama.model.route_planner import (
     estimate_route_time,
     line_direction_sequences,
@@ -105,6 +113,31 @@ class RingLineTests(unittest.TestCase):
 
         self.assertIsNone(estimate)
         self.assertEqual(line_mode("Diagonal-SE-1"), "bus")
+
+    def test_network_contains_bus_only_stations(self):
+        station_modes = {}
+        for station in ADJACENCY:
+            station_modes[station] = {
+                line_mode(line)
+                for _next_station, line, _travel in ADJACENCY[station]
+            }
+
+        bus_only = [station for station, modes in station_modes.items() if modes == {"bus"}]
+
+        self.assertTrue(bus_only)
+
+    def test_risk_is_reported_as_general_class(self):
+        self.assertEqual(probability_class(0.1), "low")
+        self.assertEqual(probability_class(0.3), "medium")
+        self.assertEqual(probability_class(0.6), "high")
+        self.assertTrue(probability_class_allowed(0.3, 0.32))
+        self.assertFalse(probability_class_allowed(0.6, 0.32))
+
+    def test_walking_links_are_available_for_persona_constraints(self):
+        links = nearby_walking_links(max_minutes=8, limit=4)
+
+        self.assertTrue(links)
+        self.assertLessEqual(max(link[0] for link in links), 8)
 
     def test_station_specific_transfer_time_and_risk_apply_on_line_change(self):
         estimate = estimate_route_time(["Alpha", "Golf", "November"], 480, 2)

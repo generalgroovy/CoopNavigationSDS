@@ -20,8 +20,7 @@ AGENT_A_ROUTE_TEMPLATES = {
             "Can you compare that with a shorter or faster valid route?"
         ),
         (
-            "Okay, confirm the best line sequence. "
-            "Say the stations in order and the total time."
+            "Thanks, I'll take the best one. Can you confirm the stations and total time?"
         ),
     ],
     "distracted_multitasker": [
@@ -113,23 +112,24 @@ AGENT_A_ROUTE_TEMPLATES = {
 
 def build_agent_a_system(persona, scenario):
     return (
-        "You are Agent A, the traveler. "
+        "You are Agent A, a caller on a transit hotline. "
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
         "First state start time, start station, and destination. "
-        "Get a valid route first. Then ask for one faster route. Mention other constraints only after valid options exist. End by choosing the best route. "
+        "Get a valid route first. Then ask for one faster route. Mention other constraints only after valid options exist. End naturally when you choose a route. "
         f"{compact_prompt_context(scenario, persona)}"
     )
 
 
 def build_agent_b_system(scenario, persona=None):
     return (
-        "You are Agent B, the transit assistant. "
-        "Be natural, short, and non-repetitive. "
+        "You are Agent B, a transit hotline assistant. "
+        "Speak naturally in one or two short spoken sentences. "
         "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
         "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
-        "Do not mention ticket modes, near-capacity trains, line-change preference, delay risk, or transfer-miss risk until Agent A asks about them. "
+        "Do not mention ticket modes, walking range, near-capacity trains, line-change preference, delay risk, or transfer-miss risk until Agent A asks about them. "
+        "Use only low, medium, or high for delay and transfer-miss risk; never give percentages. "
         f"{preference_text(persona or {})} "
         "Say boarding stations only: start, transfer boarding stations, destination. "
         "State total time once. "
@@ -202,7 +202,14 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         route_line_change_count,
         route_station_sequence,
     )
-    from minillama.model.route_constraints import route_allowed_modes
+    from minillama.model.route_constraints import (
+        RouteConstraintProfile,
+        probability_class,
+        probability_class_allowed,
+        route_allowed_modes,
+        route_delay_probability,
+        route_transfer_miss_probability,
+    )
 
     interpreter = NaturalRouteInterpreter()
     allowed_modes = route_allowed_modes(scenario, persona)
@@ -249,6 +256,21 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
     prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
     secondary_request = agent_a_secondary_constraint_request(persona)
     secondary_asked = secondary_constraints_already_asked(conversation)
+    prior_valid_routes = valid_agent_b_route_count(conversation, scenario, allowed_modes)
+    if steps and secondary_asked:
+        profile = RouteConstraintProfile.from_persona(persona, scenario)
+        delay_risk = route_delay_probability(steps)
+        transfer_risk = route_transfer_miss_probability(steps)
+        if not probability_class_allowed(delay_risk, profile.max_delay_probability):
+            return (
+                f"That delay risk sounds {probability_class(delay_risk)}, so it is not a good fit. "
+                "Can you give me another valid route?"
+            )
+        if not probability_class_allowed(transfer_risk, profile.max_transfer_miss_probability):
+            return (
+                f"That transfer risk sounds {probability_class(transfer_risk)}, so I would avoid it. "
+                "Can you give me another valid route?"
+            )
     if duration is not None and prior_best_duration is not None and duration > prior_best_duration:
         if secondary_request and not secondary_asked:
             return (
@@ -265,11 +287,10 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
             "Keep that unless there is a faster valid one."
         )
 
-    if turn >= 3 or secondary_asked:
+    if turn >= 3 or (secondary_asked and prior_valid_routes >= 2):
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
-        return f"{route_summary}. I would choose {station_order}. Confirm total time."
+        return f"{route_summary}. Thanks, I'll take {station_order}. Please confirm the total time."
 
-    prior_valid_routes = valid_agent_b_route_count(conversation, scenario, allowed_modes)
     if prior_valid_routes <= 1:
         return f"{route_summary}. Compare one faster valid route."
 
@@ -294,6 +315,7 @@ def agent_a_alternative_request(persona):
     wants_fastest = any(term in priority for term in ("fast", "quick", "travel time"))
     wants_low_delay = any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk"))
     wants_safe_transfers = preferences.get("max_transfer_miss_probability") is not None
+    max_walking_min = preferences.get("max_walking_min")
 
     constraints = []
     if wants_fastest:
@@ -306,6 +328,8 @@ def agent_a_alternative_request(persona):
         constraints.append("lower delay risk")
     if wants_safe_transfers:
         constraints.append("safer transfers")
+    if max_walking_min is not None:
+        constraints.append(f"walking under {max_walking_min} minutes")
 
     if not constraints:
         constraints.append("a better fit for my preferences")
@@ -327,6 +351,7 @@ def agent_a_secondary_constraint_request(persona):
     wants_fewer_changes = any(term in switching for term in ("fewer", "avoid", "avoiding", "unnecessary", "only for meaningful"))
     wants_low_delay = any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk"))
     wants_safe_transfers = preferences.get("max_transfer_miss_probability") is not None
+    max_walking_min = preferences.get("max_walking_min")
 
     constraints = []
     if wants_less_full and not accepts_full:
@@ -337,6 +362,8 @@ def agent_a_secondary_constraint_request(persona):
         constraints.append("delay risk")
     if wants_safe_transfers:
         constraints.append("transfer-miss risk")
+    if max_walking_min is not None:
+        constraints.append(f"walking under {max_walking_min} minutes")
     if not constraints:
         return ""
     if len(constraints) == 1:
@@ -347,7 +374,7 @@ def agent_a_secondary_constraint_request(persona):
 
 
 def secondary_constraints_already_asked(conversation):
-    asked = agent_a_secondary_constraint_request({"preferences": {"fullness": "crowded", "switching": "fewer", "reliability": "delay", "max_transfer_miss_probability": 0.2}})
+    asked = agent_a_secondary_constraint_request({"preferences": {"fullness": "crowded", "switching": "fewer", "reliability": "delay", "max_transfer_miss_probability": 0.2, "max_walking_min": 8}})
     terms = [term.strip() for term in asked.replace("and", ",").split(",") if term.strip()]
     agent_a_text = " ".join(text.lower() for speaker, text in conversation if speaker == "Agent A")
     return any(term in agent_a_text for term in terms)

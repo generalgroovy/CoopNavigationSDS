@@ -3457,8 +3457,10 @@ class DialogWindow:
         duration_gap = candidate.get("duration_gap_min")
         change_gap = candidate.get("line_change_gap")
         fullness_gap = candidate.get("near_capacity_gap", candidate.get("fullness_gap"))
-        transfer_gap = candidate.get("transfer_miss_probability_gap")
-        if duration_gap is None and change_gap is None and fullness_gap is None and transfer_gap is None:
+        risk_unviable = candidate.get("risk_unviable")
+        transfer_risk_class = candidate.get("transfer_miss_risk_class")
+        delay_risk_class = candidate.get("delay_risk_class")
+        if duration_gap is None and change_gap is None and fullness_gap is None and risk_unviable is None:
             return "-"
 
         parts = []
@@ -3468,8 +3470,10 @@ class DialogWindow:
             parts.append(f"{change_gap:+d} line changes")
         if fullness_gap is not None:
             parts.append(f"{fullness_gap:+d} near-capacity")
-        if transfer_gap is not None:
-            parts.append(f"{transfer_gap:+.2f} transfer risk")
+        if risk_unviable:
+            parts.append("risk above threshold")
+        elif delay_risk_class or transfer_risk_class:
+            parts.append(f"risk {delay_risk_class or '-'} / {transfer_risk_class or '-'}")
         return " ".join(parts)
 
     def live_route_status(self):

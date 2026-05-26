@@ -40,6 +40,7 @@ SCENARIO_SPECS = {
         "allowed_modes": ("metro", "tram", "bus"),
         "max_delay_probability": 0.32,
         "max_transfer_miss_probability": 0.20,
+        "max_walking_min": 7,
     },
     "hospital_appointment": {
         "name": "Appointment reliability and low-transfer evaluation",
@@ -48,6 +49,7 @@ SCENARIO_SPECS = {
         "start_time_min": 9 * 60 + 12,
         "allowed_modes": ("metro",),
         "max_transfer_miss_probability": 0.18,
+        "max_walking_min": 3,
     },
     "crowded_event_exit": {
         "name": "Crowded event exit comfort evaluation",

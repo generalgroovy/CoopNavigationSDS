@@ -8,7 +8,7 @@ from minillama.model.metro_data import (
     compact_transport_mode_text,
     STATIONS,
 )
-from minillama.model.route_constraints import ranked_constraint_routes
+from minillama.model.route_constraints import nearby_walking_links, probability_class, ranked_constraint_routes
 from minillama.model.route_planner import route_text_from_steps
 
 
@@ -29,11 +29,14 @@ def compact_prompt_context(scenario, persona=None):
         f"Start: {scenario['start_station']}. Destination: {destination_text}. "
         f"Transfer cost: {scenario['transfer_time_min']} minutes base; station transfer times may be longer. "
         f"Ticket modes allowed: {allowed_modes}. "
-        f"Maximum transfer-miss risk: {round(scenario.get('max_transfer_miss_probability', 0.3) * 100)} percent. "
+        f"Maximum transfer-miss risk: {probability_class(scenario.get('max_transfer_miss_probability', 0.3))}. "
+        f"Maximum delay risk: {probability_class(scenario.get('max_delay_probability', 0.45))}. "
+        f"Walking range: {persona_walk_text(persona)}. "
         f"{ROUTE_TASK} "
         f"Route candidates: {compact_route_candidate_text(scenario, persona)} "
         f"Modes: {compact_transport_mode_text()} "
         f"Long transfers: {compact_station_transfer_text()} "
+        f"Walking links: {compact_walking_link_text()} "
         f"Lines: {compact_line_fullness_text(scenario['start_time_min'])} "
         f"Hubs: {compact_station_crowding_text(scenario['start_time_min'])}"
     )
@@ -51,6 +54,21 @@ def compact_route_candidate_text(scenario, persona=None, limit=4):
         parts.append(
             f"{index}) {route_text_from_steps(route.steps)} "
             f"Modes {' to '.join(route.mode_sequence)}; "
-            f"transfer risk {round(route.transfer_miss_probability * 100)} percent."
+            f"transfer risk {probability_class(route.transfer_miss_probability)}; "
+            f"delay risk {probability_class(route.delay_probability)}."
         )
     return " ".join(parts)
+
+
+def persona_walk_text(persona=None):
+    preferences = (persona or {}).get("preferences", {})
+    minutes = preferences.get("max_walking_min")
+    return f"up to {minutes} minutes" if minutes is not None else "not specified"
+
+
+def compact_walking_link_text(limit=6):
+    parts = []
+    for walk, station_a, station_b, transit in nearby_walking_links(limit=limit):
+        transit_text = f", direct transit {transit} minutes" if transit is not None else ""
+        parts.append(f"{station_a}-{station_b}: walk {walk} minutes{transit_text}")
+    return "; ".join(parts) if parts else "none"

@@ -21,6 +21,7 @@ def make_scenario(
     allowed_modes=DEFAULT_ALLOWED_MODES,
     max_transfer_miss_probability=MAX_TRANSFER_MISS_PROBABILITY,
     max_delay_probability=MAX_ROUTE_DELAY_PROBABILITY,
+    max_walking_min=None,
     allow_unreachable=False,
 ):
     """Make scenario function for this module's MVC responsibility.
@@ -59,6 +60,7 @@ def make_scenario(
         "allowed_modes": tuple(allowed_modes or DEFAULT_ALLOWED_MODES),
         "max_transfer_miss_probability": max_transfer_miss_probability,
         "max_delay_probability": max_delay_probability,
+        "max_walking_min": max_walking_min,
         "goal": "fastest_route",
         "allow_unreachable": allow_unreachable,
     }
@@ -85,6 +87,7 @@ SCENARIOS = {
         allowed_modes=spec.get("allowed_modes", DEFAULT_ALLOWED_MODES),
         max_transfer_miss_probability=spec.get("max_transfer_miss_probability", MAX_TRANSFER_MISS_PROBABILITY),
         max_delay_probability=spec.get("max_delay_probability", MAX_ROUTE_DELAY_PROBABILITY),
+        max_walking_min=spec.get("max_walking_min"),
     )
     for key, spec in SCENARIO_SPECS.items()
 }

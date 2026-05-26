@@ -143,13 +143,13 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None, con
             )
             snippet = route_text_from_steps(steps) if steps else f"take a line from {start} to {destination}"
         if steps:
-            from minillama.model.route_constraints import route_has_near_capacity
+            from minillama.model.route_constraints import probability_class, route_delay_probability, route_has_near_capacity, route_transfer_miss_probability
 
             if agent_a_requested_secondary_constraints(conversation or []):
-                delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
-                transfer_risk = round(max(step.get("transfer_miss_probability", 0.0) for step in steps) * 100) if steps else 0
+                delay_risk = probability_class(route_delay_probability(steps))
+                transfer_risk = probability_class(route_transfer_miss_probability(steps))
                 capacity = "near capacity" if route_has_near_capacity(steps) else "not near capacity"
-                return f"{snippet} {capacity.capitalize()}; delay risk {delay_probability} percent; transfer miss risk {transfer_risk} percent."
+                return f"{snippet} {capacity.capitalize()}; delay risk {delay_risk}; transfer miss risk {transfer_risk}."
             return snippet
         return (
             f"One connected option: {snippet} "
@@ -175,6 +175,8 @@ def agent_a_requested_secondary_constraints(conversation):
         "safer transfer",
         "ticket",
         "mode",
+        "walk",
+        "walking",
     )
     change_preference_terms = (
         "fewer changes",

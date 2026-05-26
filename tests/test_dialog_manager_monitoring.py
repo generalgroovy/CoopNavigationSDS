@@ -215,6 +215,21 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertEqual(result.conversation[-1][0], "Agent A")
         self.assertIn("constraints", result.conversation[-1][1])
 
+    def test_dialog_ends_when_agent_a_closes_call(self):
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            SimplePlannerAgentBPlugin(),
+            num_turns=9,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(result.extra["early_stop_reason"], "agent_a_closed")
+        self.assertEqual(result.conversation[-1][0], "Agent A")
+        self.assertIn("Thanks", result.conversation[-1][1])
+
     def test_dialog_manager_runs_file_backed_speech_for_both_agents(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = DialogManager(

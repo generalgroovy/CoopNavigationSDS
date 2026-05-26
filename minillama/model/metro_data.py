@@ -44,6 +44,7 @@ from minillama.model.config import (
     LINE_KIND_BONUS,
     LINE_LENGTH_SCORE_DIVISOR,
     LINE_STOP_OVERRIDES,
+    BUS_ONLY_STATIONS,
     TRANSPORT_MODE_BY_KIND,
 )
 from minillama.model.station_names import get_station_names
@@ -431,8 +432,31 @@ def choose_lines(stations, seed=None):
             )
 
     apply_line_overrides(lines, stations)
+    apply_bus_only_access(lines, stations)
     apply_line_fullness(lines, LINE_FULLNESS_SEED)
     return lines
+
+
+def apply_bus_only_access(lines, stations):
+    """Make selected stations reachable only by bus while preserving bus service."""
+    station_set = set(stations)
+    bus_only = {station for station in BUS_ONLY_STATIONS if station in station_set}
+    if not bus_only:
+        return
+
+    bus_served = {
+        station
+        for data in lines.values()
+        if data.get("mode") == "bus"
+        for station in data["stops"]
+    }
+    for station in sorted(bus_only & bus_served):
+        for data in lines.values():
+            if data.get("mode") == "bus" or station not in data["stops"]:
+                continue
+            if len(data["stops"]) <= MIN_LINE_STATIONS:
+                continue
+            data["stops"] = [stop for stop in data["stops"] if stop != station]
 
 
 def apply_line_fullness(lines, seed=None):

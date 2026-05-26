@@ -1,7 +1,9 @@
 """Constraint-aware route baselines for comparing agent proposals."""
 from dataclasses import dataclass
+import math
 
 from minillama.model.metro_data import is_near_capacity
+from minillama.model.metro_data import ADJACENCY, STATION_POS
 from minillama.model.config import DEFAULT_ALLOWED_MODES, MAX_ROUTE_DELAY_PROBABILITY, MAX_TRANSFER_MISS_PROBABILITY
 from minillama.model.route_planner import (
     candidate_time_routes,
@@ -22,6 +24,7 @@ class RouteConstraintProfile:
     allowed_modes: tuple[str, ...] | None = None
     max_transfer_miss_probability: float = MAX_TRANSFER_MISS_PROBABILITY
     max_delay_probability: float = MAX_ROUTE_DELAY_PROBABILITY
+    max_walking_min: int | None = None
 
     @classmethod
     def from_persona(cls, persona, scenario=None):
@@ -62,6 +65,10 @@ class RouteConstraintProfile:
                     (scenario or {}).get("max_delay_probability", MAX_ROUTE_DELAY_PROBABILITY),
                 )
             ),
+            max_walking_min=preferences.get(
+                "max_walking_min",
+                (scenario or {}).get("max_walking_min"),
+            ),
         )
 
     @property
@@ -77,6 +84,8 @@ class RouteConstraintProfile:
             parts.append("lower delay risk")
         if self.allowed_modes:
             parts.append("ticket " + "/".join(self.allowed_modes))
+        if self.max_walking_min is not None:
+            parts.append(f"walk up to {self.max_walking_min} minutes")
         return ", ".join(parts) if parts else "valid route"
 
 
@@ -96,6 +105,74 @@ class ConstraintRoute:
     mode_sequence: list[str]
     score: tuple
     label: str
+    max_delay_probability: float = MAX_ROUTE_DELAY_PROBABILITY
+    max_transfer_miss_probability: float = MAX_TRANSFER_MISS_PROBABILITY
+    max_walking_min: int | None = None
+
+
+def probability_class(value):
+    """Map an internal probability to a spoken risk class."""
+    if value is None:
+        return "unknown"
+    if value < 0.25:
+        return "low"
+    if value < 0.45:
+        return "medium"
+    return "high"
+
+
+def probability_class_allowed(value, threshold):
+    """Return whether a probability falls within the configured risk class."""
+    order = {"unknown": 3, "low": 0, "medium": 1, "high": 2}
+    return order[probability_class(value)] <= order[probability_class(threshold)]
+
+
+def walking_minutes_between(station_a, station_b):
+    """Estimate pedestrian time between stations from network coordinates."""
+    if station_a not in STATION_POS or station_b not in STATION_POS:
+        return None
+    ax, ay = STATION_POS[station_a]
+    bx, by = STATION_POS[station_b]
+    distance = math.hypot(ax - bx, ay - by)
+    return max(1, int(math.ceil(distance / 35.0)))
+
+
+def direct_public_transport_minutes_between(station_a, station_b):
+    """Return direct public-transport minutes if the stations share a segment."""
+    values = [travel for nxt, _line, travel in ADJACENCY.get(station_a, []) if nxt == station_b]
+    return min(values) if values else None
+
+
+def nearby_walking_links(max_minutes=12, limit=12):
+    """Return close station pairs with walking minutes relative to direct transit time."""
+    links = []
+    stations = sorted(STATION_POS)
+    for index, station_a in enumerate(stations):
+        for station_b in stations[index + 1:]:
+            walk = walking_minutes_between(station_a, station_b)
+            if walk is None or walk > max_minutes:
+                continue
+            transit = direct_public_transport_minutes_between(station_a, station_b)
+            links.append((walk, station_a, station_b, transit))
+    links.sort(key=lambda item: (item[0], item[1], item[2]))
+    return links[:limit]
+
+
+def route_risk_viability(steps, profile):
+    """Return class-based route viability for delay and transfer risk."""
+    delay = route_delay_probability(steps)
+    transfer = route_transfer_miss_probability(steps)
+    delay_allowed = probability_class_allowed(delay, profile.max_delay_probability)
+    transfer_allowed = probability_class_allowed(transfer, profile.max_transfer_miss_probability)
+    return {
+        "delay_risk_class": probability_class(delay),
+        "transfer_miss_risk_class": probability_class(transfer),
+        "max_delay_risk_class": probability_class(profile.max_delay_probability),
+        "max_transfer_miss_risk_class": probability_class(profile.max_transfer_miss_probability),
+        "delay_risk_unviable": not delay_allowed,
+        "transfer_miss_risk_unviable": not transfer_allowed,
+        "risk_unviable": not (delay_allowed and transfer_allowed),
+    }
 
 
 def route_allowed_modes(scenario, persona=None):
@@ -160,9 +237,9 @@ def constraint_sort_key(duration_min, steps, profile):
     if profile.prefer_low_delay:
         key.append(delay_probability)
     key.extend([
+        int(not probability_class_allowed(delay_probability, profile.max_delay_probability)),
+        int(not probability_class_allowed(transfer_miss_probability, profile.max_transfer_miss_probability)),
         duration_min,
-        int(transfer_miss_probability > profile.max_transfer_miss_probability),
-        int(delay_probability > profile.max_delay_probability),
         line_changes,
         near_capacity_count,
         average_fullness,
@@ -206,6 +283,9 @@ def optimal_constraint_route(scenario, persona, limit=50):
         mode_sequence=route_mode_sequence(steps),
         score=constraint_sort_key(duration_min, steps, profile),
         label=profile.label,
+        max_delay_probability=profile.max_delay_probability,
+        max_transfer_miss_probability=profile.max_transfer_miss_probability,
+        max_walking_min=profile.max_walking_min,
     )
 
 
@@ -240,6 +320,9 @@ def ranked_constraint_routes(scenario, persona, limit=6):
                 mode_sequence=route_mode_sequence(steps),
                 score=constraint_sort_key(duration_min, steps, profile),
                 label=profile.label,
+                max_delay_probability=profile.max_delay_probability,
+                max_transfer_miss_probability=profile.max_transfer_miss_probability,
+                max_walking_min=profile.max_walking_min,
             )
         )
     return out
@@ -251,6 +334,11 @@ def route_constraint_gap(steps, duration_min, constraint_route):
         return {}
     near_capacity_count = route_near_capacity_count(steps)
     near_capacity_gap = near_capacity_count - constraint_route.near_capacity_count
+    profile = RouteConstraintProfile(
+        max_delay_probability=constraint_route.max_delay_probability,
+        max_transfer_miss_probability=constraint_route.max_transfer_miss_probability,
+    )
+    viability = route_risk_viability(steps, profile)
     return {
         "duration_gap_min": duration_min - constraint_route.duration_min,
         "line_change_gap": route_line_change_count(steps) - constraint_route.line_change_count,
@@ -265,4 +353,5 @@ def route_constraint_gap(steps, duration_min, constraint_route):
         ),
         "transfer_miss_probability": route_transfer_miss_probability(steps),
         "mode_sequence": route_mode_sequence(steps),
+        **viability,
     }

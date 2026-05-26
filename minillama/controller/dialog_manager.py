@@ -21,6 +21,7 @@ from minillama.model.route_planner import (
 )
 from minillama.model.route_constraints import (
     optimal_constraint_route,
+    probability_class,
     route_allowed_modes,
     route_constraint_gap,
     route_has_near_capacity,
@@ -80,9 +81,14 @@ def constraint_gap_missed(gap, transfer_tolerance=1):
         gap.get("duration_gap_min", 0) > 0
         or gap.get("line_change_gap", 0) > int(transfer_tolerance)
         or gap.get("near_capacity_gap", gap.get("fullness_gap", 0)) > 0
-        or gap.get("delay_probability_gap", 0) > 0
-        or gap.get("transfer_miss_probability_gap", 0) > 0
+        or gap.get("risk_unviable", False)
     )
+
+
+def agent_a_ended_conversation(text):
+    """Return whether Agent A has naturally closed the call."""
+    lower = (text or "").lower()
+    return "thanks" in lower and any(term in lower for term in ("i'll take", "i will take", "choose", "that works"))
 
 
 class DialogManager:
@@ -447,7 +453,7 @@ class DialogManager:
                         f"({constraint_route.duration_min} minutes, "
                         f"{constraint_route.line_change_count} changes, "
                         f"{'near capacity' if constraint_route.has_near_capacity else 'not near capacity'}, "
-                        f"{round(constraint_route.delay_probability * 100)} percent delay risk, "
+                        f"{probability_class(constraint_route.delay_probability)} delay risk, "
                         f"{constraint_route.label})"
                     ),
                 )
@@ -549,7 +555,10 @@ class DialogManager:
                             and constraint_gap_missed(gap, self.transfer_tolerance)
                         ):
                             constraint_miss_count += 1
-                            event_queue.put(("warning", "Route is valid but misses stated constraints."))
+                            if gap.get("risk_unviable"):
+                                event_queue.put(("warning", "Route is valid but its risk class is above Agent A's threshold."))
+                            else:
+                                event_queue.put(("warning", "Route is valid but misses stated constraints."))
                         candidate_rank = (1 if candidate_reaches_goal else 0, -duration)
                         if best_route and is_new_route:
                             route_revision_count += 1
@@ -598,6 +607,8 @@ class DialogManager:
                     speech_sec,
                 )
                 emit_metric_snapshot(len(conversation), "agent_a_reply", "Agent A")
+                if agent_a_ended_conversation(reply_transcript):
+                    early_stop_reason = "agent_a_closed"
             if early_stop_reason:
                 break
 
@@ -648,6 +659,11 @@ class DialogManager:
         constraint_delay_probability = constraint_route.delay_probability if constraint_route else None
         constraint_transfer_miss_probability = constraint_route.transfer_miss_probability if constraint_route else None
         constraint_gap = route_constraint_gap(displayed_steps, displayed_duration, constraint_route)
+        displayed_delay_probability = max((step.get("delay_probability", 0.0) for step in displayed_steps), default=None)
+        displayed_delay_risk_class = probability_class(displayed_delay_probability)
+        displayed_transfer_risk_class = probability_class(displayed_transfer_miss_probability)
+        constraint_delay_risk_class = probability_class(constraint_delay_probability)
+        constraint_transfer_risk_class = probability_class(constraint_transfer_miss_probability)
         displayed_line_sequence = route_line_sequence(displayed_steps)
         displayed_line_change_count = route_line_change_count(displayed_steps)
         agent_turn_segments = build_agent_turn_segments()
@@ -680,10 +696,11 @@ class DialogManager:
             f"Constraint capacity:   {('yes' if constraint_has_near_capacity else 'no') if constraint_has_near_capacity is not None else 'None'} ({constraint_near_capacity_count if constraint_near_capacity_count is not None else 'None'} segments)\n"
             f"Transfer tolerance:    {self.transfer_tolerance} extra changes\n"
             f"Allowed modes:         {', '.join(planning_allowed_modes) if planning_allowed_modes else 'all modes'}\n"
-            f"Transfer miss risk:    {round(displayed_transfer_miss_probability * 100, 1)} percent\n"
-            f"Constraint delay risk: {str(round(constraint_delay_probability * 100, 1)) + ' percent' if constraint_delay_probability is not None else 'None'}\n"
-            f"Constraint transfer risk: {str(round(constraint_transfer_miss_probability * 100, 1)) + ' percent' if constraint_transfer_miss_probability is not None else 'None'}\n"
-            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('near_capacity_gap', 'None')} near-capacity segments, {constraint_gap.get('delay_probability_gap', 'None')} delay, {constraint_gap.get('transfer_miss_probability_gap', 'None')} transfer miss\n"
+            f"Delay risk:            {displayed_delay_risk_class}\n"
+            f"Transfer miss risk:    {displayed_transfer_risk_class}\n"
+            f"Constraint delay risk: {constraint_delay_risk_class}\n"
+            f"Constraint transfer risk: {constraint_transfer_risk_class}\n"
+            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('near_capacity_gap', 'None')} near-capacity segments, risk viable {not constraint_gap.get('risk_unviable', False)}\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
@@ -752,12 +769,17 @@ class DialogManager:
                 "allowed_modes": planning_allowed_modes,
                 "constraint_delay_probability": constraint_delay_probability,
                 "constraint_transfer_miss_probability": constraint_transfer_miss_probability,
+                "route_delay_risk_class": displayed_delay_risk_class,
+                "route_transfer_miss_risk_class": displayed_transfer_risk_class,
+                "constraint_delay_risk_class": constraint_delay_risk_class,
+                "constraint_transfer_miss_risk_class": constraint_transfer_risk_class,
                 "constraint_duration_gap_min": constraint_gap.get("duration_gap_min"),
                 "constraint_line_change_gap": constraint_gap.get("line_change_gap"),
                 "constraint_fullness_gap": constraint_gap.get("fullness_gap"),
                 "constraint_near_capacity_gap": constraint_gap.get("near_capacity_gap"),
                 "constraint_delay_probability_gap": constraint_gap.get("delay_probability_gap"),
                 "constraint_transfer_miss_probability_gap": constraint_gap.get("transfer_miss_probability_gap"),
+                "risk_unviable": constraint_gap.get("risk_unviable", False),
                 "warning_count": warning_count,
                 "route_near_capacity": displayed_has_near_capacity,
                 "route_near_capacity_count": displayed_near_capacity_count,

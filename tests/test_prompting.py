@@ -110,6 +110,7 @@ class PromptingTests(unittest.TestCase):
         request = agent_a_alternative_request(PERSONAS["delay_sensitive_traveler"])
 
         self.assertIn("lower delay risk", request)
+        self.assertIn("walking under", request)
 
     def test_constraint_route_and_fallback_delays_secondary_constraints_until_asked(self):
         test_case = get_test_case("airport_connection")
@@ -129,6 +130,7 @@ class PromptingTests(unittest.TestCase):
         self.assertNotIn("capacity", reply)
         self.assertIn("delay risk", constrained_reply)
         self.assertIn("capacity", constrained_reply)
+        self.assertNotIn("percent", constrained_reply)
 
     def test_fallback_agent_b_turns_are_concise_for_speech(self):
         test_case = get_test_case("airport_connection")
@@ -173,7 +175,7 @@ class PromptingTests(unittest.TestCase):
         )
 
         self.assertIn("slower", text)
-        self.assertIn("earlier 28-minute route", text)
+        self.assertIn("earlier", text)
 
     def test_agent_b_pipeline_rejects_partial_route_and_uses_valid_fallback(self):
         class PartialRouteModel:

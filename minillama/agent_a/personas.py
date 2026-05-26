@@ -28,4 +28,6 @@ def preference_text(persona: dict):
     )
     if preferences.get("reliability"):
         text += f"; {preferences['reliability']}"
+    if preferences.get("max_walking_min") is not None:
+        text += f"; walks up to {preferences['max_walking_min']} minutes"
     return text + "."
