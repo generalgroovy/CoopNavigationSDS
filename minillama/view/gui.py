@@ -113,6 +113,77 @@ SUMMARY_WRAP = 260
 METRIC_WRAP = 280
 REFERENCE_LIST_FONT = GUI_FONT_NORMAL
 REFERENCE_DETAIL_FONT = GUI_FONT_NORMAL
+PIPELINE_PHASES = [
+    {
+        "key": "capture",
+        "title": "Capture",
+        "families": [
+            "Audio ingress / capture",
+            "Voice activity detection and segmentation",
+            "Diarization",
+        ],
+        "metrics": [
+            ("pipeline_mode", "Mode"),
+            ("runtime_mean_turn_elapsed_sec", "Mean Turn"),
+        ],
+    },
+    {
+        "key": "speech",
+        "title": "Speech",
+        "families": [
+            "Text-to-speech",
+            "Automatic speech recognition",
+        ],
+        "metrics": [
+            ("tts_success_rate", "Synthesis"),
+            ("asr_success_rate", "Recognition"),
+        ],
+    },
+    {
+        "key": "understanding",
+        "title": "Understanding",
+        "families": [
+            "Spoken language understanding",
+            "Dialog state tracking",
+        ],
+        "metrics": [
+            ("slu_intent_accuracy", "Intent"),
+            ("dst_state_update_accuracy", "State"),
+        ],
+    },
+    {
+        "key": "planning",
+        "title": "Planning",
+        "families": [
+            "Policy and dialog management",
+            "Tool / retrieval",
+            "Pipeline phases",
+        ],
+        "metrics": [
+            ("policy_next_action_accuracy", "Action"),
+            ("tool_tool_call_validity", "Tool"),
+        ],
+    },
+    {
+        "key": "response",
+        "title": "Response",
+        "families": [
+            "Natural language generation",
+            "Runtime",
+            "Agent timing",
+            "End to end",
+            "Post hoc",
+        ],
+        "metrics": [
+            ("nlg_repetition_rate", "Repetition"),
+            ("e2e_task_success", "Success"),
+        ],
+    },
+]
+PIPELINE_FAMILY_MAP = {
+    family["title"]: family
+    for family in METRIC_FAMILY_SPECS
+}
 
 
 class NotebookTabs(tk.Frame):
@@ -466,6 +537,8 @@ class DialogWindow:
         self.metric_values = {}
         self.live_metric_values = {}
         self.stage_metric_values = {}
+        self.pipeline_phase_values = {}
+        self.pipeline_phase_status_labels = {}
         self.metric_windows = {}
         self.latest_metrics_text = ""
         self.pending_speech_traces = {}
@@ -529,6 +602,14 @@ class DialogWindow:
             "agent_b_latency_count": 0,
             "agent_a_latency_total": 0.0,
             "agent_a_latency_count": 0,
+            "agent_a_generation_total": 0.0,
+            "agent_b_generation_total": 0.0,
+            "agent_a_speech_total": 0.0,
+            "agent_b_speech_total": 0.0,
+            "agent_a_max_latency": 0.0,
+            "agent_b_max_latency": 0.0,
+            "speech_duration_total": 0.0,
+            "max_turn_elapsed": 0.0,
             "first_agent_a_generation_sec": None,
             "first_agent_a_audio_sec": None,
             "first_agent_b_generation_sec": None,
@@ -689,8 +770,15 @@ class DialogWindow:
 
     def build_always_visible_metric_panels(self, parent):
         """Build every metric area inline for real-time GUI analysis."""
+        parent.grid_rowconfigure(0, weight=0)
+        parent.grid_rowconfigure(1, weight=0)
+        parent.grid_rowconfigure(2, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
+
+        self.build_pipeline_state_card(parent, row=0)
+
         summary_zone = tk.Frame(parent, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
-        summary_zone.grid(row=0, column=0, sticky="nsew")
+        summary_zone.grid(row=1, column=0, sticky="nsew")
         summary_zone.grid_columnconfigure(0, weight=1, uniform="live_metric_summary")
         summary_zone.grid_columnconfigure(1, weight=1, uniform="live_metric_summary")
         summary_zone.grid_rowconfigure(0, weight=1)
@@ -701,10 +789,10 @@ class DialogWindow:
         self.build_conversation_metrics_card(summary_zone, row=1, column=1)
 
         phase_zone = tk.Frame(parent, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
-        phase_zone.grid(row=1, column=0, sticky="nsew")
+        phase_zone.grid(row=2, column=0, sticky="nsew")
         phase_zone.grid_columnconfigure(0, weight=1)
         phase_zone.grid_rowconfigure(0, weight=1)
-        self.build_metric_stack_card(phase_zone, row=0, columns=3)
+        self.build_pipeline_metric_sections(phase_zone, row=0, columns=3)
 
     def build_page_scroller(self, parent):
         """Build a scrollable page shell that lets cards fill the available width."""
@@ -922,6 +1010,11 @@ class DialogWindow:
         metric_split = ttk.PanedWindow(metric_shell, orient=tk.VERTICAL)
         metric_split.grid(row=0, column=0, sticky="nsew")
 
+        pipeline_zone = tk.Frame(metric_split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        pipeline_zone.grid_columnconfigure(0, weight=1)
+        self.build_pipeline_state_card(pipeline_zone, row=0)
+        metric_split.add(pipeline_zone, weight=0)
+
         summary_zone = tk.Frame(metric_split, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
         summary_zone.grid_columnconfigure(0, weight=1, uniform="metric_summary")
         summary_zone.grid_columnconfigure(1, weight=1, uniform="metric_summary")
@@ -939,28 +1032,107 @@ class DialogWindow:
         self.build_metric_stack_card(phase_zone, row=0, columns=4)
         metric_split.add(phase_zone, weight=2)
 
-    def build_metric_stack_card(self, parent, row=0, column=0, columns=3):
-        """Build one card that shows every speech-dialog metric family together."""
+    def build_pipeline_state_card(self, parent, row=0, column=0):
+        """Build a compact live pipeline status visualization."""
+        frame = self.make_section(
+            parent,
+            "Conversation Pipeline",
+            row=row,
+            column=column,
+            sticky="nsew",
+            key="conversation_pipeline",
+        )
+        for phase_index, phase in enumerate(PIPELINE_PHASES):
+            frame.grid_columnconfigure(phase_index, weight=1, uniform="conversation_pipeline")
+            phase_frame = tk.Frame(
+                frame,
+                bg=GUI_COLORS["panel_bg"],
+                bd=0,
+                highlightthickness=1,
+                highlightbackground=GUI_COLORS["table_border"],
+            )
+            phase_frame.grid(row=0, column=phase_index, sticky="nsew", padx=(0, 8), pady=(0, 4))
+            phase_frame.grid_columnconfigure(0, weight=1)
+            status_strip = tk.Frame(phase_frame, bg=GUI_COLORS["subtle_text"], height=3, bd=0, highlightthickness=0)
+            status_strip.grid(row=0, column=0, sticky="ew")
+            status_strip.grid_propagate(False)
+            tk.Label(
+                phase_frame,
+                text=f"{phase_index + 1}. {phase['title']}",
+                anchor="w",
+                font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL, "bold"),
+                bg=GUI_COLORS["panel_bg"],
+                fg=GUI_COLORS["text"],
+            ).grid(row=1, column=0, sticky="ew", padx=8, pady=(5, 0))
+            status_label = tk.Label(
+                phase_frame,
+                text="Waiting",
+                anchor="w",
+                font=(GUI_FONT_FAMILY, GUI_FONT_SMALL, "bold"),
+                bg=GUI_COLORS["panel_bg"],
+                fg=GUI_COLORS["subtle_text"],
+            )
+            status_label.grid(row=2, column=0, sticky="ew", padx=8, pady=(1, 0))
+            detail_label = tk.Label(
+                phase_frame,
+                text="No signal yet",
+                anchor="w",
+                justify=tk.LEFT,
+                wraplength=190,
+                font=(GUI_FONT_FAMILY, GUI_FONT_SMALL),
+                bg=GUI_COLORS["panel_bg"],
+                fg=GUI_COLORS["muted_text"],
+            )
+            detail_label.grid(row=3, column=0, sticky="ew", padx=8, pady=(1, 7))
+            self.pipeline_phase_values[phase["key"]] = detail_label
+            self.pipeline_phase_status_labels[phase["key"]] = {
+                "status": status_label,
+                "strip": status_strip,
+            }
+
+    def build_pipeline_metric_sections(self, parent, row=0, column=0, columns=3):
+        """Build metric families grouped underneath their matching pipeline phase."""
         self.metric_stack_frame = self.make_section(
             parent,
-            "Metric Phases",
+            "Metrics Structured by Pipeline Phase",
             row=row,
             column=column,
             sticky="nsew",
             key="metric_stack",
         )
-        for column in range(columns):
-            self.metric_stack_frame.grid_columnconfigure(column, weight=1, uniform="metric_stack")
+        self.metric_stack_frame.grid_columnconfigure(0, weight=1)
 
-        for index, family in enumerate(METRIC_FAMILY_SPECS):
-            group_row = index // columns
-            group_column = index % columns
-            self.build_stage_metric_family_group(
-                self.metric_stack_frame,
-                family,
-                row=group_row,
-                column=group_column,
-            )
+        phase_row = 0
+        for phase in PIPELINE_PHASES:
+            phase_frame = tk.Frame(self.metric_stack_frame, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
+            phase_frame.grid(row=phase_row, column=0, sticky="nsew", padx=(0, 4), pady=(0, 8))
+            for metric_column in range(columns):
+                phase_frame.grid_columnconfigure(metric_column, weight=1, uniform=f"{phase['key']}_metrics")
+            tk.Label(
+                phase_frame,
+                text=phase["title"],
+                anchor="w",
+                font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL + 1, "bold"),
+                bg=GUI_COLORS["panel_bg"],
+                fg=GUI_COLORS["text"],
+            ).grid(row=0, column=0, columnspan=columns, sticky="ew", pady=(0, 5))
+            family_index = 0
+            for family_title in phase["families"]:
+                family = PIPELINE_FAMILY_MAP.get(family_title)
+                if not family:
+                    continue
+                self.build_stage_metric_family_group(
+                    phase_frame,
+                    family,
+                    row=(family_index // columns) + 1,
+                    column=family_index % columns,
+                )
+                family_index += 1
+            phase_row += 1
+
+    def build_metric_stack_card(self, parent, row=0, column=0, columns=3):
+        """Build one card that shows every speech-dialog metric family by pipeline phase."""
+        self.build_pipeline_metric_sections(parent, row=row, column=column, columns=columns)
 
     def build_outcome_metrics_card(self, parent, row=0, column=0):
         """Build the outcome metrics card."""
@@ -2638,18 +2810,26 @@ class DialogWindow:
         generation = float(payload.get("generation_sec", 0.0) or 0.0)
         speech = float(payload.get("speech_sec", 0.0) or 0.0)
         latency = float(payload.get("turn_latency_sec", 0.0) or 0.0)
+        self.live_stats["speech_duration_total"] += speech
+        self.live_stats["max_turn_elapsed"] = max(self.live_stats["max_turn_elapsed"], latency)
         if speaker == "Agent B":
             if self.live_stats["agent_b_latency_count"] == 0:
                 self.live_stats["first_agent_b_generation_sec"] = generation
                 self.live_stats["first_agent_b_audio_sec"] = latency
             self.live_stats["agent_b_latency_total"] += latency
             self.live_stats["agent_b_latency_count"] += 1
+            self.live_stats["agent_b_generation_total"] += generation
+            self.live_stats["agent_b_speech_total"] += speech
+            self.live_stats["agent_b_max_latency"] = max(self.live_stats["agent_b_max_latency"], latency)
         elif speaker == "Agent A":
             if self.live_stats["agent_a_latency_count"] == 0:
                 self.live_stats["first_agent_a_generation_sec"] = generation
                 self.live_stats["first_agent_a_audio_sec"] = generation + speech
             self.live_stats["agent_a_latency_total"] += latency
             self.live_stats["agent_a_latency_count"] += 1
+            self.live_stats["agent_a_generation_total"] += generation
+            self.live_stats["agent_a_speech_total"] += speech
+            self.live_stats["agent_a_max_latency"] = max(self.live_stats["agent_a_max_latency"], latency)
 
     def record_nlu_telemetry(self, payload):
         """Update semantic and state-tracking metrics from parsed route attempts."""
@@ -2822,7 +3002,12 @@ class DialogWindow:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        if not self.live_metric_values and not self.snapshot_values and not self.stage_metric_values:
+        if (
+            not self.live_metric_values
+            and not self.snapshot_values
+            and not self.stage_metric_values
+            and not self.pipeline_phase_values
+        ):
             return
 
         elapsed = time.time() - self.dialog_started_at
@@ -2890,6 +3075,7 @@ class DialogWindow:
             if self.live_stats["warnings"]
             else 1.0
         )
+        agent_a_avg_latency = self.safe_ratio(self.live_stats["agent_a_latency_total"], self.live_stats["agent_a_latency_count"])
         agent_b_avg_latency = self.safe_ratio(self.live_stats["agent_b_latency_total"], self.live_stats["agent_b_latency_count"])
         distinct_1 = self.safe_ratio(
             len(set(self.metric_buffers["agent_b_tokens"])),
@@ -2922,6 +3108,28 @@ class DialogWindow:
         response_latency = self.safe_ratio(
             self.live_stats["agent_a_latency_total"] + self.live_stats["agent_b_latency_total"],
             self.live_stats["agent_a_latency_count"] + self.live_stats["agent_b_latency_count"],
+        )
+        tts_success_rate = max(0.0, 1.0 - tts_change_rate) if self.live_stats["tts_utterances"] else None
+        asr_success_rate = max(0.0, 1.0 - asr_ser) if self.live_stats["asr_utterances"] else None
+        pipeline_attempts = (
+            self.live_stats["tts_utterances"]
+            + self.live_stats["asr_utterances"]
+            + self.live_stats["semantic_attempts"]
+            + self.live_stats["messages"]
+        )
+        pipeline_failures = (
+            self.live_stats["warnings"]
+            + self.live_stats["semantic_failures"]
+            + self.live_stats["asr_sentence_errors"]
+        )
+        pipeline_success_rate = 1.0 - self.safe_ratio(pipeline_failures, pipeline_attempts) if pipeline_attempts else None
+        pipeline_dependency_rate = self.clamp(
+            self.safe_ratio(
+                self.live_stats["semantic_attempts"] + self.live_stats["candidate_routes"],
+                max(self.live_stats["agent_b_messages"], 1),
+            ),
+            0.0,
+            1.0,
         )
         cost_per_success = (
             f"{self.live_stats['messages']} turns"
@@ -2992,6 +3200,8 @@ class DialogWindow:
             "diarization_speaker_confusion_rate": "not available",
             "diarization_overlap_detection_f1": "not available",
             "asr_word_error_rate": self.format_ratio(asr_wer),
+            "asr_success_rate": self.format_ratio(asr_success_rate) if asr_success_rate is not None else "not available",
+            "asr_failure_count": str(self.live_stats["asr_sentence_errors"]),
             "asr_character_error_rate": self.format_ratio(asr_cer),
             "asr_token_error_rate": self.format_ratio(asr_wer),
             "asr_deletion_rate": self.format_ratio(self.safe_ratio(self.live_stats["asr_word_deletions"], self.live_stats["asr_ref_words"])),
@@ -3000,6 +3210,7 @@ class DialogWindow:
             "asr_entity_wer": self.format_ratio(asr_entity_wer),
             "asr_keyword_recall": self.format_ratio(asr_keyword_recall),
             "asr_confidence_calibration": "not available",
+            "slu_pipeline_input_match_rate": self.format_ratio(asr_success_rate) if asr_success_rate is not None else "not available",
             "slu_intent_accuracy": self.format_ratio(nlu_route_valid_rate),
             "slu_intent_error_rate": self.format_ratio(max(0.0, 1.0 - nlu_route_valid_rate)),
             "slu_slot_f1": self.format_ratio(slot_accuracy),
@@ -3043,6 +3254,12 @@ class DialogWindow:
             "nlg_distinct_2": self.format_ratio(distinct_2),
             "nlg_repetition_rate": self.format_ratio(repetition_rate),
             "nlg_constraint_satisfaction_rate": self.format_ratio(route_success),
+            "tts_success_rate": self.format_ratio(tts_success_rate) if tts_success_rate is not None else "not available",
+            "tts_failure_count": str(
+                self.live_stats["tts_word_substitutions"]
+                + self.live_stats["tts_word_deletions"]
+                + self.live_stats["tts_word_insertions"]
+            ),
             "tts_predicted_mos": "not available",
             "tts_intelligibility_wer": self.format_ratio(asr_wer),
             "tts_stoi": "not available",
@@ -3057,9 +3274,35 @@ class DialogWindow:
             "runtime_barge_in_false_positive_rate": "not available",
             "runtime_barge_in_suppression_latency_sec": "not available",
             "runtime_response_latency_sec": self.format_seconds(response_latency),
+            "runtime_mean_turn_elapsed_sec": self.format_seconds(response_latency),
+            "runtime_max_turn_latency_sec": self.format_seconds(self.live_stats["max_turn_elapsed"]),
+            "runtime_max_turn_elapsed_sec": self.format_seconds(self.live_stats["max_turn_elapsed"]),
+            "runtime_speech_duration_total_sec": self.format_seconds(self.live_stats["speech_duration_total"]),
+            "runtime_condition_runtime_sec": self.format_seconds(elapsed),
             "runtime_time_to_first_token_sec": self.format_seconds(self.live_stats["first_agent_b_generation_sec"]) if self.live_stats["first_agent_b_generation_sec"] is not None else "not available",
             "runtime_time_to_first_audio_sec": self.format_seconds(self.live_stats["first_agent_b_audio_sec"]) if self.live_stats["first_agent_b_audio_sec"] is not None else "not available",
             "runtime_interruption_recovery_rate": self.format_ratio(recovery_rate),
+            "agent_timing_agent_a_turn_count": str(self.live_stats["agent_a_messages"]),
+            "agent_timing_agent_a_word_count": str(self.live_stats["agent_a_words"]),
+            "agent_timing_agent_a_mean_words_per_turn": f"{agent_a_avg:.1f}",
+            "agent_timing_agent_a_total_generation_sec": self.format_seconds(self.live_stats["agent_a_generation_total"]),
+            "agent_timing_agent_a_total_speech_sec": self.format_seconds(self.live_stats["agent_a_speech_total"]),
+            "agent_timing_agent_a_mean_turn_elapsed_sec": self.format_seconds(agent_a_avg_latency),
+            "agent_timing_agent_a_max_turn_elapsed_sec": self.format_seconds(self.live_stats["agent_a_max_latency"]),
+            "agent_timing_agent_b_turn_count": str(self.live_stats["agent_b_messages"]),
+            "agent_timing_agent_b_word_count": str(self.live_stats["agent_b_words"]),
+            "agent_timing_agent_b_mean_words_per_turn": f"{agent_b_avg:.1f}",
+            "agent_timing_agent_b_total_generation_sec": self.format_seconds(self.live_stats["agent_b_generation_total"]),
+            "agent_timing_agent_b_total_speech_sec": self.format_seconds(self.live_stats["agent_b_speech_total"]),
+            "agent_timing_agent_b_mean_turn_elapsed_sec": self.format_seconds(agent_b_avg_latency),
+            "agent_timing_agent_b_max_turn_elapsed_sec": self.format_seconds(self.live_stats["agent_b_max_latency"]),
+            "pipeline_mode": speech_profile,
+            "pipeline_success_rate": self.format_ratio(pipeline_success_rate) if pipeline_success_rate is not None else "not available",
+            "pipeline_failure_count": str(pipeline_failures),
+            "pipeline_tts_attempt_count": str(self.live_stats["tts_utterances"]),
+            "pipeline_asr_attempt_count": str(self.live_stats["asr_utterances"]),
+            "pipeline_nlu_attempt_count": str(self.live_stats["semantic_attempts"]),
+            "pipeline_phase_output_dependency_rate": self.format_ratio(pipeline_dependency_rate),
             "e2e_task_success": self.format_ratio(route_success),
             "e2e_inform_rate": self.format_ratio(route_success),
             "e2e_request_success": self.format_ratio(route_success),
@@ -3086,10 +3329,67 @@ class DialogWindow:
         for key, value in stage_values.items():
             if key in self.stage_metric_values:
                 self.stage_metric_values[key].configure(text=value)
+        self.update_pipeline_state(route_status, state)
 
         self.set_summary("elapsed", f"{elapsed:.1f} seconds")
         self.set_summary("warnings", str(self.live_stats["warnings"]))
         self.set_summary("run_state", state)
+
+    def update_pipeline_state(self, route_status, run_state):
+        """Update the live visual pipeline from telemetry-backed conversation state."""
+        if not self.pipeline_phase_values:
+            return
+
+        finished = run_state == "Finished"
+        speech_events = self.live_stats["tts_utterances"] + self.live_stats["asr_utterances"]
+        if speech_events:
+            speech_status = "Complete" if finished else "Active"
+        elif self.live_stats["messages"]:
+            speech_status = "Bypassed"
+        else:
+            speech_status = "Waiting"
+
+        phase_states = {
+            "capture": (
+                "Complete" if finished else ("Active" if self.live_stats["messages"] else "Waiting"),
+                f"{self.live_stats['messages']} turns captured; {self.live_stats['warnings']} warnings",
+            ),
+            "speech": (
+                speech_status,
+                f"{self.live_stats['tts_utterances']} synthesis attempts; {self.live_stats['asr_utterances']} recognition attempts",
+            ),
+            "understanding": (
+                "Complete" if route_status == "Correct" else ("Active" if self.live_stats["semantic_attempts"] else "Waiting"),
+                f"{self.live_stats['semantic_attempts']} semantic parses; {self.live_stats['valid_state_updates']} valid state updates",
+            ),
+            "planning": (
+                "Complete" if route_status == "Correct" else ("Active" if self.live_stats["candidate_routes"] else "Waiting"),
+                f"{self.live_stats['candidate_routes']} route candidates; {self.live_stats['route_revisions']} revisions",
+            ),
+            "response": (
+                "Complete" if finished else ("Active" if self.live_stats["messages"] else "Waiting"),
+                f"Last speaker: {self.live_stats.get('last_speaker', '-')}; route status: {route_status}",
+            ),
+        }
+        colors = {
+            "Complete": GUI_COLORS["agent_b"],
+            "Active": GUI_COLORS["agent_a"],
+            "Bypassed": GUI_COLORS["subtle_text"],
+            "Waiting": GUI_COLORS["subtle_text"],
+            "Attention": GUI_COLORS["warning"],
+        }
+        for phase in PIPELINE_PHASES:
+            key = phase["key"]
+            status, detail = phase_states.get(key, ("Waiting", "No signal yet"))
+            if self.live_stats["warnings"] and key in {"capture", "planning"} and status == "Active":
+                status = "Attention"
+            if key in self.pipeline_phase_values:
+                self.pipeline_phase_values[key].configure(text=detail)
+            label_group = self.pipeline_phase_status_labels.get(key)
+            if label_group:
+                color = colors.get(status, GUI_COLORS["subtle_text"])
+                label_group["status"].configure(text=status, fg=color)
+                label_group["strip"].configure(bg=color)
 
     def add_candidate(self, candidate):
         """Add one inferred route candidate to the comparison table."""
