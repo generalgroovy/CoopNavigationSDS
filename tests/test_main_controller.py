@@ -2,7 +2,7 @@ import queue
 import threading
 import unittest
 
-from minillama.controller.main import conversation_worker, default_run_config, select_run_config, start_gui_thread
+from minillama.controller.main import BroadcastQueue, conversation_worker, default_run_config, select_run_config, start_gui_thread, start_gui_threads
 
 
 class MainControllerTests(unittest.TestCase):
@@ -11,7 +11,7 @@ class MainControllerTests(unittest.TestCase):
 
         self.assertIn("gui_enabled", config)
         self.assertIsInstance(config["gui_enabled"], bool)
-        self.assertEqual(config["num_turns"], 5)
+        self.assertEqual(config["num_turns"], 7)
         self.assertEqual(config["run_mode"], "speech")
         self.assertTrue(config["speech_incoming_enabled"])
         self.assertTrue(config["speech_outgoing_enabled"])
@@ -21,6 +21,8 @@ class MainControllerTests(unittest.TestCase):
         self.assertEqual(config["tts_engine"], "sapi")
         self.assertEqual(config["asr_engine"], "sapi")
         self.assertIn("persona_key", config)
+        self.assertIn("gui_refresh_ms", config)
+        self.assertGreaterEqual(config["gui_refresh_ms"], 50)
         self.assertIn("network_data_card_enabled", config)
         self.assertFalse(config["network_data_card_enabled"])
 
@@ -100,6 +102,34 @@ class MainControllerTests(unittest.TestCase):
         self.assertIs(seen["scenario"], scenario)
         self.assertEqual(seen["gui_mode"], "conversation")
         self.assertTrue(seen["network_data_card_enabled"])
+
+    def test_start_gui_threads_splits_conversation_metrics_and_network(self):
+        seen = []
+        lock = threading.Lock()
+
+        def fake_dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled):
+            with lock:
+                seen.append((ui_queue, scenario, gui_mode, network_data_card_enabled, threading.get_ident()))
+
+        scenario = {"name": "Threaded GUI"}
+
+        sink, threads = start_gui_threads(
+            scenario,
+            gui_mode="conversation",
+            network_data_card_enabled=True,
+            dialog_runner=fake_dialog_runner,
+        )
+        for thread in threads:
+            thread.join(timeout=2.0)
+
+        self.assertIsInstance(sink, BroadcastQueue)
+        self.assertEqual(len(threads), 3)
+        self.assertEqual({entry[2] for entry in seen}, {"conversation", "metrics", "network"})
+        self.assertTrue(any(entry[3] for entry in seen if entry[2] == "network"))
+        self.assertTrue(all(entry[1] is scenario for entry in seen))
+
+        sink.put(("message", "Agent A", "hello"))
+        self.assertTrue(all(not entry[0].empty() for entry in seen))
 
 
 if __name__ == "__main__":

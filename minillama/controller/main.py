@@ -2,6 +2,7 @@
 import logging
 import queue
 import threading
+import inspect
 
 try:
     from huggingface_hub.utils import logging as hf_logging
@@ -42,6 +43,7 @@ from minillama.controller.config import (
     SESSION_LOG_PROFILE,
     SESSION_NAME,
 )
+from minillama.view.config import GUI_REFRESH_MS
 from minillama.controller.dialog_manager import DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
 from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
@@ -53,6 +55,17 @@ from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 if hf_logging is not None:
     hf_logging.set_verbosity_warning()
+
+
+class BroadcastQueue:
+    """Fan out UI tuple events to independent GUI window queues."""
+
+    def __init__(self, queues):
+        self.queues = list(queues)
+
+    def put(self, event):
+        for target_queue in self.queues:
+            target_queue.put(event)
 
 
 def build_agent_a_responder(model_adapter, llm_agent_a=LLM_AGENT_A):
@@ -196,6 +209,7 @@ def default_run_config():
         "max_utterance_sec": 3.0,
         "gui_enabled": GUI_ENABLED,
         "gui_mode": GUI_MODE,
+        "gui_refresh_ms": GUI_REFRESH_MS,
         "network_data_card_enabled": NETWORK_DATA_CARD_ENABLED,
         "protocol_log_dir": PROTOCOL_LOG_DIR,
     }
@@ -224,7 +238,19 @@ def normalize_run_config(config):
             normalized["speech_scope"] = "both"
         normalized["tts_engine"] = normalized.get("tts_engine") or "sapi"
         normalized["asr_engine"] = normalized.get("asr_engine") or "sapi"
+    normalized["gui_refresh_ms"] = max(50, int(normalized.get("gui_refresh_ms", GUI_REFRESH_MS) or GUI_REFRESH_MS))
     return normalized
+
+
+def call_dialog_runner(dialog_runner, ui_queue, scenario, gui_mode, network_data_card_enabled, gui_refresh_ms):
+    """Call GUI runners while preserving compatibility with four-argument test doubles."""
+    try:
+        parameter_count = len(inspect.signature(dialog_runner).parameters)
+    except (TypeError, ValueError):
+        parameter_count = 4
+    if parameter_count >= 5:
+        return dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled, gui_refresh_ms)
+    return dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled)
 
 
 def select_run_config():
@@ -254,15 +280,18 @@ def select_run_config():
     return selected
 
 
-def run_gui_loop(ui_queue, scenario, gui_mode, network_data_card_enabled=False):
+def run_gui_loop(ui_queue, scenario, gui_mode, network_data_card_enabled=False, gui_refresh_ms=GUI_REFRESH_MS):
     """Run the Tk GUI in the current thread."""
     from minillama.view.gui import DialogWindow
 
+    view_mode = gui_mode if gui_mode in {"conversation", "metrics", "network", "combined"} else "combined"
     dialog = DialogWindow(
         ui_queue,
         scenario,
-        minimal=gui_mode == "conversation",
+        minimal=view_mode == "conversation",
         show_network_data=network_data_card_enabled,
+        view_mode=view_mode,
+        refresh_ms=gui_refresh_ms,
     )
     dialog.run()
 
@@ -272,12 +301,13 @@ def start_gui_thread(
     scenario,
     gui_mode=GUI_MODE,
     network_data_card_enabled=NETWORK_DATA_CARD_ENABLED,
+    gui_refresh_ms=GUI_REFRESH_MS,
     dialog_runner=run_gui_loop,
 ):
     """Start the optional GUI in an isolated thread and return the thread handle."""
     def _target():
         try:
-            dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled)
+            call_dialog_runner(dialog_runner, ui_queue, scenario, gui_mode, network_data_card_enabled, gui_refresh_ms)
         except Exception:
             logging.exception("GUI thread stopped")
 
@@ -288,6 +318,39 @@ def start_gui_thread(
     )
     thread.start()
     return thread
+
+
+def start_gui_threads(
+    scenario,
+    gui_mode=GUI_MODE,
+    network_data_card_enabled=NETWORK_DATA_CARD_ENABLED,
+    gui_refresh_ms=GUI_REFRESH_MS,
+    dialog_runner=run_gui_loop,
+):
+    """Start separate conversation, metrics, and optional network GUI threads."""
+    specs = [
+        ("conversation", False),
+        ("metrics", False),
+    ]
+    if network_data_card_enabled:
+        specs.append(("network", True))
+
+    queues = []
+    threads = []
+    for mode, show_network in specs:
+        ui_queue = queue.Queue()
+        queues.append(ui_queue)
+        threads.append(
+            start_gui_thread(
+                ui_queue,
+                scenario,
+                mode if gui_mode else mode,
+                show_network,
+                gui_refresh_ms=gui_refresh_ms,
+                dialog_runner=dialog_runner,
+            )
+        )
+    return BroadcastQueue(queues), threads
 
 
 def main():
@@ -309,6 +372,14 @@ def main():
         SESSION_LOG_DIR,
         profile=SESSION_LOG_PROFILE,
     )
+    gui_threads = []
+    if run_config.get("gui_enabled", True):
+        ui_queue, gui_threads = start_gui_threads(
+            scenario,
+            run_config.get("gui_mode", GUI_MODE),
+            bool(run_config.get("network_data_card_enabled", NETWORK_DATA_CARD_ENABLED)),
+            int(run_config.get("gui_refresh_ms", GUI_REFRESH_MS)),
+        )
     event_queue = MonitoringEventQueue(ui_queue, session_logger)
 
     agent_b_config = AgentBPluginConfig(run_config["agent_b_plugin"])
@@ -320,18 +391,10 @@ def main():
         with event_queue.segment("model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):
             model_adapter = create_model_adapter()
 
-    gui_thread = None
-    if run_config.get("gui_enabled", True):
-        gui_thread = start_gui_thread(
-            ui_queue,
-            scenario,
-            run_config.get("gui_mode", GUI_MODE),
-            bool(run_config.get("network_data_card_enabled", NETWORK_DATA_CARD_ENABLED)),
-        )
-
     conversation_worker(event_queue, model_adapter, run_config)
-    if gui_thread is not None and gui_thread.is_alive():
-        gui_thread.join()
+    for gui_thread in gui_threads:
+        if gui_thread.is_alive():
+            gui_thread.join()
 
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ class PromptingTests(unittest.TestCase):
             self.real_scenario,
             [("Agent B", "Take Ring from Bravo to Alpha to Golf, then Diagonal-SE-6 to November to Uniform to Birch to Ivy, then Ring to Harbor.")],
         )
-        self.assertIn("Valid:", text)
+        self.assertIn("Okay, that is", text)
         self.assertIn("one faster valid route", text)
         self.assertIn("faster", text)
 
@@ -111,15 +111,24 @@ class PromptingTests(unittest.TestCase):
 
         self.assertIn("lower delay risk", request)
 
-    def test_constraint_route_and_fallback_surface_delay_risk(self):
+    def test_constraint_route_and_fallback_delays_secondary_constraints_until_asked(self):
         test_case = get_test_case("airport_connection")
         constraint_route = optimal_constraint_route(test_case.scenario, test_case.persona)
         reply = fallback_reply("Agent B", test_case.scenario, route_index=0, persona=test_case.persona)
+        constrained_reply = fallback_reply(
+            "Agent B",
+            test_case.scenario,
+            route_index=0,
+            persona=test_case.persona,
+            conversation=[("Agent A", "Now compare near-capacity trains and delay risk.")],
+        )
 
         self.assertIsNotNone(constraint_route)
         self.assertGreater(constraint_route.delay_probability, 0.0)
-        self.assertIn("delay risk", reply)
-        self.assertIn("capacity", reply)
+        self.assertNotIn("delay risk", reply)
+        self.assertNotIn("capacity", reply)
+        self.assertIn("delay risk", constrained_reply)
+        self.assertIn("capacity", constrained_reply)
 
     def test_fallback_agent_b_turns_are_concise_for_speech(self):
         test_case = get_test_case("airport_connection")

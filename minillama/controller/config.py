@@ -1,7 +1,7 @@
 """Controller-layer configuration."""
 import os
 
-NUM_TURNS = int(os.environ.get("MINILLAMA_NUM_TURNS", "5"))
+NUM_TURNS = int(os.environ.get("MINILLAMA_NUM_TURNS", "7"))
 INVALID_ROUTE_LIMIT = int(os.environ.get("MINILLAMA_INVALID_ROUTE_LIMIT", "2"))
 CONSTRAINT_MISS_LIMIT = int(os.environ.get("MINILLAMA_CONSTRAINT_MISS_LIMIT", "2"))
 AGENT_A_TRANSFER_TOLERANCE = int(os.environ.get("MINILLAMA_AGENT_A_TRANSFER_TOLERANCE", "1"))

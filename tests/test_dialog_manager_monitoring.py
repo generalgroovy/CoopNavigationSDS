@@ -87,6 +87,24 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
         self.assertTrue(any("near-capacity" in text or "fewer line changes" in text for text in agent_a_replies))
 
+    def test_agent_b_defers_secondary_constraints_until_agent_a_asks(self):
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
+            SimplePlannerAgentBPlugin(),
+            num_turns=6,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+        agent_b_replies = [text for speaker, text in result.conversation if speaker == "Agent B"]
+
+        self.assertGreaterEqual(len(agent_b_replies), 3)
+        self.assertNotIn("delay risk", agent_b_replies[0])
+        self.assertNotIn("transfer miss risk", agent_b_replies[0])
+        self.assertNotIn("delay risk", agent_b_replies[1])
+        self.assertIn("delay risk", agent_b_replies[2])
+
     def test_transfer_constraint_miss_uses_configured_slack(self):
         self.assertFalse(constraint_gap_missed({"line_change_gap": 1}, transfer_tolerance=1))
         self.assertFalse(constraint_gap_missed({"line_change_gap": 2}, transfer_tolerance=2))
@@ -187,13 +205,13 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             num_turns=8,
             speech_transport=fast_text_transport(),
             agent_a_responder=TemplateAgentAResponder(),
-            constraint_miss_limit=2,
+            constraint_miss_limit=1,
         )
 
         result = manager.run(NullEventQueue())
 
         self.assertEqual(result.extra["early_stop_reason"], "constraint_miss_limit")
-        self.assertEqual(result.extra["constraint_miss_count"], 2)
+        self.assertEqual(result.extra["constraint_miss_count"], 1)
         self.assertEqual(result.conversation[-1][0], "Agent A")
         self.assertIn("constraints", result.conversation[-1][1])
 

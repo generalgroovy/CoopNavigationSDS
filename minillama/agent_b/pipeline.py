@@ -85,7 +85,7 @@ class VerbalTransformationPipeline:
         if not self.cleaner.repeats_prior_agent_b(phase_fallback, state.conversation):
             return phase_fallback
 
-        return reply if reply else fallback_reply("Agent B", state.scenario, route_index=state.turn, persona=state.persona)
+        return reply if reply else fallback_reply("Agent B", state.scenario, route_index=state.turn, persona=state.persona, conversation=state.conversation)
 
     def reply_reaches_goal(self, reply, scenario):
         route = self.route_interpreter.interpret_reply(reply, scenario)
@@ -119,7 +119,7 @@ class AgentBPromptStage:
         return build_messages("Agent B", system_prompt, repair_history)
 
     def phase_fallback(self, state: DialogState) -> str:
-        return fallback_reply("Agent B", state.scenario, route_index=state.turn, persona=state.persona)
+        return fallback_reply("Agent B", state.scenario, route_index=state.turn, persona=state.persona, conversation=state.conversation)
 
 
 class ModelGenerationStage:

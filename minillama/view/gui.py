@@ -171,6 +171,7 @@ class StartupConfigDialog:
             "speech_realtime_enabled": tk.BooleanVar(value=defaults.get("speech_realtime_enabled", False)),
             "gui_enabled": tk.BooleanVar(value=defaults.get("gui_enabled", True)),
             "gui_mode": tk.StringVar(value=defaults.get("gui_mode", "conversation")),
+            "gui_refresh_ms": tk.IntVar(value=defaults.get("gui_refresh_ms", GUI_REFRESH_MS)),
             "network_data_card_enabled": tk.BooleanVar(value=defaults.get("network_data_card_enabled", False)),
             "llm_agent_a": tk.BooleanVar(value=defaults.get("llm_agent_a", False)),
             "protocol_log_dir": tk.StringVar(value=defaults.get("protocol_log_dir", "")),
@@ -219,6 +220,7 @@ class StartupConfigDialog:
             ("Constraint miss stop limit", "constraint_miss_limit", 1, 10, 1),
             ("Agent A transfer tolerance", "agent_a_transfer_tolerance", 0, 2, 1),
             ("Metric snapshot interval", "metric_snapshot_interval", 1, 10, 1),
+            ("Graphical interface refresh milliseconds", "gui_refresh_ms", 50, 2000, 50),
             ("Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5),
             ("Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5),
             ("Minimum utterance seconds", "min_utterance_sec", 0.2, 3.0, 0.1),
@@ -430,7 +432,7 @@ def make_scrollable_frame(parent, bg, padx=0, pady=0, sticky="nsew"):
 class DialogWindow:
     """GUI view for one live dialog experiment conversation."""
 
-    def __init__(self, event_queue, scenario, minimal=True, show_network_data=False):
+    def __init__(self, event_queue, scenario, minimal=True, show_network_data=False, view_mode=None, refresh_ms=GUI_REFRESH_MS):
         """  init   method for this module's MVC responsibility.
 
         Args:
@@ -444,6 +446,8 @@ class DialogWindow:
         self.scenario = scenario
         self.minimal = minimal
         self.show_network_data = show_network_data
+        self.view_mode = view_mode or ("conversation" if minimal else "combined")
+        self.refresh_ms = max(50, int(refresh_ms or GUI_REFRESH_MS))
         self.current_route = []
         self.snapshot_values = {}
         self.summary_values = {}
@@ -522,8 +526,21 @@ class DialogWindow:
         }
 
         self.root = tk.Tk()
-        self.root.title("MiniLlama Conversation")
-        self.root.geometry(f"{GUI_WIDTH}x{GUI_HEIGHT}")
+        window_titles = {
+            "conversation": "MiniLlama Conversation",
+            "metrics": "MiniLlama Metrics",
+            "network": "MiniLlama Network Data",
+            "combined": "MiniLlama Conversation Analysis",
+        }
+        self.root.title(window_titles.get(self.view_mode, "MiniLlama Conversation"))
+        if self.view_mode == "conversation":
+            self.root.geometry("560x720")
+        elif self.view_mode == "metrics":
+            self.root.geometry("980x760")
+        elif self.view_mode == "network":
+            self.root.geometry("980x760")
+        else:
+            self.root.geometry(f"{GUI_WIDTH}x{GUI_HEIGHT}")
         self.root.minsize(GUI_MIN_WIDTH, GUI_MIN_HEIGHT)
         self.root.configure(bg=GUI_COLORS["app_bg"])
         if not self.minimal:
@@ -536,7 +553,7 @@ class DialogWindow:
 
         if hasattr(self, "canvas"):
             self.canvas.bind("<Configure>", lambda _: self.draw_network())
-        self.root.after(GUI_REFRESH_MS, self.process_events)
+        self.root.after(self.refresh_ms, self.process_events)
 
     def maximize_startup_window(self):
         """Maximize startup window method for this module's MVC responsibility.
@@ -591,6 +608,20 @@ class DialogWindow:
         self.main.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
         self.main.grid_columnconfigure(0, weight=1)
         self.main.grid_rowconfigure(0, weight=1)
+
+        if self.view_mode == "conversation":
+            self.build_plain_conversation(self.main)
+            return
+
+        if self.view_mode == "metrics":
+            metric_page = make_scrollable_frame(self.main, GUI_COLORS["app_bg"], padx=0, pady=0)
+            metric_page.grid_columnconfigure(0, weight=1)
+            self.build_always_visible_metric_panels(metric_page)
+            return
+
+        if self.view_mode == "network":
+            self.build_network_data_tab(self.main)
+            return
 
         if self.minimal:
             self.build_live_gui_workspace(self.main)
@@ -2459,7 +2490,7 @@ class DialogWindow:
             pass
 
         self.update_live_dialog_metrics()
-        delay = 1 if processed == GUI_EVENT_BATCH_LIMIT else GUI_REFRESH_MS
+        delay = 1 if processed == GUI_EVENT_BATCH_LIMIT else self.refresh_ms
         self.root.after(delay, self.process_events)
 
     def add_message(self, speaker, message):
@@ -2473,6 +2504,8 @@ class DialogWindow:
             The computed value or side effect documented by the implementation.
         """
         self.record_dialog_message(speaker, message)
+        if not hasattr(self, "textbox"):
+            return
         speech_trace = self.pending_speech_traces.pop(speaker, None)
         self.textbox.insert(tk.END, f"{speaker}\n", speaker)
         if self.should_show_speech_trace(speech_trace):
@@ -2508,7 +2541,7 @@ class DialogWindow:
             The computed value or side effect documented by the implementation.
         """
         key, value = self.parse_system_message(message)
-        if key and not self.minimal:
+        if key:
             self.set_summary(key, value)
 
     def add_warning(self, message):

@@ -123,7 +123,7 @@ def clean_reply(text):
     return text
 
 
-def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
+def fallback_reply(active_agent_name, scenario, route_index=0, persona=None, conversation=None):
     start = scenario["start_station"]
     destination = scenario["destination_station"]
 
@@ -145,10 +145,12 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
         if steps:
             from minillama.model.route_constraints import route_has_near_capacity
 
-            delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
-            transfer_risk = round(max(step.get("transfer_miss_probability", 0.0) for step in steps) * 100) if steps else 0
-            capacity = "near capacity" if route_has_near_capacity(steps) else "not near capacity"
-            return f"{snippet} {capacity.capitalize()}; delay risk {delay_probability} percent; transfer miss risk {transfer_risk} percent."
+            if agent_a_requested_secondary_constraints(conversation or []):
+                delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
+                transfer_risk = round(max(step.get("transfer_miss_probability", 0.0) for step in steps) * 100) if steps else 0
+                capacity = "near capacity" if route_has_near_capacity(steps) else "not near capacity"
+                return f"{snippet} {capacity.capitalize()}; delay risk {delay_probability} percent; transfer miss risk {transfer_risk} percent."
+            return snippet
         return (
             f"One connected option: {snippet} "
             f"Transfer time applies only when changing lines."
@@ -157,3 +159,37 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
     return (
         "Valid route. Now compare one shorter or faster option; mention transfers or near-capacity trains only if they change the choice."
     )
+
+
+def agent_a_requested_secondary_constraints(conversation):
+    """Return whether Agent A has asked about non-time route constraints."""
+    direct_terms = (
+        "near-capacity",
+        "capacity",
+        "crowded",
+        "packed",
+        "full",
+        "delay",
+        "risk",
+        "transfer miss",
+        "safer transfer",
+        "ticket",
+        "mode",
+    )
+    change_preference_terms = (
+        "fewer changes",
+        "fewer line changes",
+        "avoid changes",
+        "avoid line changes",
+        "less switching",
+        "avoid switching",
+    )
+    for speaker, text in conversation:
+        if speaker != "Agent A":
+            continue
+        lower = text.lower()
+        if any(term in lower for term in direct_terms):
+            return True
+        if any(term in lower for term in change_preference_terms):
+            return True
+    return False

@@ -3,6 +3,7 @@
 import time
 
 from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
+from minillama.agent_a.agents import agent_a_requested_secondary_constraints
 from minillama.agent_b.pipeline import DialogState
 from minillama.controller.dialog_result import DialogResult
 from minillama.controller.route_memory import RouteProposalMemory
@@ -406,7 +407,7 @@ class DialogManager:
                         allowed_modes=planning_allowed_modes,
                     )
                     candidate_reaches_goal = route_reaches_goal(parsed_route, scenario)
-                    constraints_already_stated = bool(best_route)
+                    constraints_already_stated = agent_a_requested_secondary_constraints(conversation)
                     if route_memory.already_seen(parsed_route):
                         warning_count += 1
                         gap = route_constraint_gap(candidate_steps, duration, constraint_route)

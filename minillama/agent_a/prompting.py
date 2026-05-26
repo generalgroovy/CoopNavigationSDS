@@ -118,7 +118,7 @@ def build_agent_a_system(persona, scenario):
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
         "First state start time, start station, and destination. "
-        "Get a valid route first; then ask for one better route by time, near-capacity trains, changes, or delay risk. "
+        "Get a valid route first. Then ask for one faster route. Mention other constraints only after valid options exist. End by choosing the best route. "
         f"{compact_prompt_context(scenario, persona)}"
     )
 
@@ -129,7 +129,7 @@ def build_agent_b_system(scenario, persona=None):
         "Be natural, short, and non-repetitive. "
         "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
         "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
-        "Then compare time, ticket modes, near-capacity trains, changes, delay risk, and transfer-miss risk. "
+        "Do not mention ticket modes, near-capacity trains, line-change preference, delay risk, or transfer-miss risk until Agent A asks about them. "
         f"{preference_text(persona or {})} "
         "Say boarding stations only: start, transfer boarding stations, destination. "
         "State total time once. "
@@ -148,7 +148,7 @@ def build_agent_b_phase_instruction(turn, destination):
     if turn == 1:
         return (
             "If there is a valid alternative, compare it against the current route. "
-            "Prefer shorter paths, then time, ticket modes, near-capacity trains, changes, delay risk, and transfer-miss risk."
+            "Prefer a shorter or faster path. Do not discuss secondary constraints unless Agent A asked."
         )
 
     if turn == 2:
@@ -165,7 +165,7 @@ def build_agent_b_phase_instruction(turn, destination):
     if phase == 1:
         return (
             "Update total time as riding + waiting + transfer. "
-            "Change route only for a faster valid option or better constraint fit."
+            "Change route only for a faster valid option, unless Agent A asked for other constraints."
         )
     return (
         "Confirm the best route as lines to take, station by station. "
@@ -239,29 +239,45 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         arrival, steps = estimate
         duration = arrival - scenario["start_time_min"]
         changes = route_line_change_count(steps)
-        from minillama.model.route_constraints import route_has_near_capacity
-
         change_label = "change" if changes == 1 else "changes"
-        route_summary = f"Valid: {duration} minutes, {changes} {change_label}"
-        route_summary += ", near capacity" if route_has_near_capacity(steps) else ", not near capacity"
+        route_summary = f"Okay, that is {duration} minutes with {changes} {change_label}"
     else:
         steps = []
         duration = None
         route_summary = "That sounds connected"
 
     prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
+    secondary_request = agent_a_secondary_constraint_request(persona)
+    secondary_asked = secondary_constraints_already_asked(conversation)
     if duration is not None and prior_best_duration is not None and duration > prior_best_duration:
+        if secondary_request and not secondary_asked:
+            return (
+                f"That is slower than the earlier {prior_best_duration}-minute route. "
+                f"Now compare {secondary_request}."
+            )
+        if secondary_asked:
+            return (
+                f"That is slower than the earlier {prior_best_duration}-minute route. "
+                "I would choose the earlier route."
+            )
         return (
             f"slower than the earlier {prior_best_duration}-minute route. "
             "Keep that unless there is a faster valid one."
         )
 
-    if turn >= 2:
+    if turn >= 3 or secondary_asked:
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
-        return f"{route_summary}. Confirm final: {station_order}, total time, and capacity status."
+        return f"{route_summary}. I would choose {station_order}. Confirm total time."
 
-    request = agent_a_alternative_request(persona)
-    return f"{route_summary}. Compare one {request} valid route."
+    prior_valid_routes = valid_agent_b_route_count(conversation, scenario, allowed_modes)
+    if prior_valid_routes <= 1:
+        return f"{route_summary}. Compare one faster valid route."
+
+    if secondary_request:
+        return f"{route_summary}. Now compare {secondary_request}."
+
+    station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
+    return f"{route_summary}. I would choose {station_order}. Confirm total time."
 
 
 def agent_a_alternative_request(persona):
@@ -296,6 +312,68 @@ def agent_a_alternative_request(persona):
     if len(constraints) == 1:
         return constraints[0]
     return ", ".join(constraints[:-1]) + f", or {constraints[-1]}"
+
+
+def agent_a_secondary_constraint_request(persona):
+    """Return non-time constraints Agent A should mention after valid routes exist."""
+    preferences = persona.get("preferences", {})
+    priority = preferences.get("priority", "").lower()
+    switching = preferences.get("switching", "").lower()
+    fullness = preferences.get("fullness", "").lower()
+    reliability = preferences.get("reliability", "").lower()
+
+    wants_less_full = any(term in fullness for term in ("less crowded", "dislikes", "crowded", "full", "packed"))
+    accepts_full = any(term in fullness for term in ("does not mind", "secondary"))
+    wants_fewer_changes = any(term in switching for term in ("fewer", "avoid", "avoiding", "unnecessary", "only for meaningful"))
+    wants_low_delay = any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk"))
+    wants_safe_transfers = preferences.get("max_transfer_miss_probability") is not None
+
+    constraints = []
+    if wants_less_full and not accepts_full:
+        constraints.append("near-capacity trains")
+    if wants_fewer_changes:
+        constraints.append("line changes")
+    if wants_low_delay:
+        constraints.append("delay risk")
+    if wants_safe_transfers:
+        constraints.append("transfer-miss risk")
+    if not constraints:
+        return ""
+    if len(constraints) == 1:
+        return constraints[0]
+    if len(constraints) == 2:
+        return f"{constraints[0]} and {constraints[1]}"
+    return ", ".join(constraints[:-1]) + f", and {constraints[-1]}"
+
+
+def secondary_constraints_already_asked(conversation):
+    asked = agent_a_secondary_constraint_request({"preferences": {"fullness": "crowded", "switching": "fewer", "reliability": "delay", "max_transfer_miss_probability": 0.2}})
+    terms = [term.strip() for term in asked.replace("and", ",").split(",") if term.strip()]
+    agent_a_text = " ".join(text.lower() for speaker, text in conversation if speaker == "Agent A")
+    return any(term in agent_a_text for term in terms)
+
+
+def valid_agent_b_route_count(conversation, scenario, allowed_modes):
+    """Count valid Agent B route proposals in the conversation."""
+    from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+    from minillama.model.route_planner import estimate_route_time
+
+    interpreter = NaturalRouteInterpreter()
+    count = 0
+    for speaker, text in conversation:
+        if speaker != "Agent B":
+            continue
+        route = interpreter.interpret_reply(text, scenario)
+        if not route:
+            continue
+        if estimate_route_time(
+            route,
+            scenario["start_time_min"],
+            scenario["transfer_time_min"],
+            allowed_modes=allowed_modes,
+        ):
+            count += 1
+    return count
 
 
 def best_prior_route_duration(conversation, scenario):

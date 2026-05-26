@@ -58,7 +58,7 @@ class SimplePlannerAgentBPlugin:
     name = "simple-planner-agent-b"
 
     def run_agent_b(self, state):
-        return fallback_reply("Agent B", state.scenario, route_index=state.turn, persona=state.persona)
+        return fallback_reply("Agent B", state.scenario, route_index=state.turn, persona=state.persona, conversation=state.conversation)
 
 
 class FunctionAgentBPlugin:
