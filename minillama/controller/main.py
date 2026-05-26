@@ -140,6 +140,11 @@ def conversation_worker(event_queue, model_adapter, run_config):
             health = speech_transport.health_check()
             event_queue.put(("system", f"Pipeline mode: {health['mode']}"))
             if health["mode"] == "speech":
+                if not health.get("ok"):
+                    raise SpeechPipelineError(
+                        "Speech preflight failed; text-to-speech or automatic speech recognition did not produce usable output.",
+                        health,
+                    )
                 event_queue.put(("system", "Speech preflight: text-to-speech and automatic speech recognition passed."))
             result = manager.run(event_queue)
             protocol_dir = run_config.get("protocol_log_dir")
@@ -188,7 +193,7 @@ def default_run_config():
         "agent_a_words_per_minute": 165,
         "agent_b_words_per_minute": 175,
         "min_utterance_sec": 0.6,
-        "max_utterance_sec": 3.5,
+        "max_utterance_sec": 3.0,
         "gui_enabled": GUI_ENABLED,
         "gui_mode": GUI_MODE,
         "network_data_card_enabled": NETWORK_DATA_CARD_ENABLED,

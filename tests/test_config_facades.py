@@ -42,7 +42,7 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertFalse(LLM_AGENT_A)
 
     def test_default_speech_pipeline_plays_and_listens(self):
-        self.assertEqual(RUN_MODE, "pure_text")
+        self.assertEqual(RUN_MODE, "speech")
         self.assertTrue(SPEECH_INCOMING_ENABLED)
         self.assertTrue(SPEECH_OUTGOING_ENABLED)
         self.assertTrue(SPEECH_PLAYBACK_ENABLED)

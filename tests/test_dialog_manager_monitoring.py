@@ -16,6 +16,7 @@ from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
 
 def fast_text_transport():
     return SpeechTransport(config=SpeechPipelineConfig(
+        mode="pure_text",
         incoming_enabled=False,
         outgoing_enabled=False,
         scope="none",

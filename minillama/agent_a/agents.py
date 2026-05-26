@@ -148,7 +148,7 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None):
             delay_probability = round(max(step.get("delay_probability", 0.0) for step in steps) * 100) if steps else 0
             transfer_risk = round(max(step.get("transfer_miss_probability", 0.0) for step in steps) * 100) if steps else 0
             capacity = "near capacity" if route_has_near_capacity(steps) else "not near capacity"
-            return f"{snippet} {capacity}, {delay_probability} percent delay risk, {transfer_risk} percent transfer-miss risk."
+            return f"{snippet} {capacity.capitalize()}; delay risk {delay_probability} percent; transfer miss risk {transfer_risk} percent."
         return (
             f"One connected option: {snippet} "
             f"Transfer time applies only when changing lines."

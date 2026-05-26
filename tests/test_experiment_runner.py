@@ -60,7 +60,7 @@ class ExperimentRunnerTests(unittest.TestCase):
         get_test_case.return_value = base_case
 
         model_adapter = FakeModelAdapter()
-        runner = ExperimentRunner(model_adapter, num_turns=3, agent_b_plugin_key="simple")
+        runner = ExperimentRunner(model_adapter, num_turns=3, agent_b_plugin_key="simple", run_mode="pure_text")
         runner.metric_computer.compute = MagicMock(return_value="metric")
 
         result = SimpleNamespace(extra={})
@@ -121,6 +121,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             FakeModelAdapter(),
             num_turns=1,
             agent_b_plugin_key="simple",
+            run_mode="pure_text",
             log_profile="runtime",
             log_dir=tempfile.mkdtemp(),
         )

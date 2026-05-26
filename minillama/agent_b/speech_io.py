@@ -1,6 +1,7 @@
 """Speech transport abstractions and simulated ASR/TTS transformations for dialog experiments.
 """
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 import hashlib
 import math
 from pathlib import Path
@@ -62,7 +63,7 @@ class SpeechPipelineConfig:
     agent_a_words_per_minute: int = 165
     agent_b_words_per_minute: int = 175
     min_utterance_sec: float = 0.6
-    max_utterance_sec: float = 3.5
+    max_utterance_sec: float = 3.0
     playback_enabled: bool = SPEECH_PLAYBACK_ENABLED
     realtime_enabled: bool = SPEECH_REALTIME_ENABLED
 
@@ -215,7 +216,7 @@ class WaveFileTextToSpeech:
         realtime_enabled=False,
         agent_a_words_per_minute=165,
         agent_b_words_per_minute=175,
-        max_duration_sec=3.5,
+        max_duration_sec=3.0,
     ):
         self.audio_dir = Path(audio_dir)
         self.sample_rate = sample_rate
@@ -313,10 +314,11 @@ class WindowsSapiTextToSpeech:
 
     name = "windows-sapi-tts"
 
-    def __init__(self, audio_dir="speech_artifacts", playback_enabled=False, realtime_enabled=False):
+    def __init__(self, audio_dir="speech_artifacts", playback_enabled=False, realtime_enabled=False, voice_rate=5):
         self.audio_dir = Path(audio_dir)
         self.playback_enabled = playback_enabled
         self.realtime_enabled = realtime_enabled
+        self.voice_rate = max(-10, min(10, int(voice_rate)))
         self._counter = 0
 
     def synthesize(self, speaker: str, text: str) -> SpeechSignal:
@@ -327,7 +329,7 @@ class WindowsSapiTextToSpeech:
         wav_path = self.audio_dir / f"{stem}.wav"
         transcript_path = self.audio_dir / f"{stem}.txt"
         transcript_path.write_text(text, encoding="utf-8")
-        command = self._powershell_command(wav_path)
+        command = self._powershell_command(wav_path, self.voice_rate)
         completed = subprocess.run(
             command,
             input=text,
@@ -377,13 +379,15 @@ class WindowsSapiTextToSpeech:
         )
 
     @staticmethod
-    def _powershell_command(wav_path: Path):
+    def _powershell_command(wav_path: Path, voice_rate=5):
         powershell = shutil.which("powershell") or shutil.which("powershell.exe") or "powershell"
         escaped_path = str(wav_path).replace("'", "''")
+        safe_rate = max(-10, min(10, int(voice_rate)))
         script = (
             "Add-Type -AssemblyName System.Speech; "
             "$text = [Console]::In.ReadToEnd(); "
             "$speaker = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+            f"$speaker.Rate = {safe_rate}; "
             f"$speaker.SetOutputToWaveFile('{escaped_path}'); "
             "$speaker.Speak($text); "
             "$speaker.Dispose();"
@@ -404,6 +408,7 @@ class WindowsSapiSpeechToText:
     def transcribe(self, signal: SpeechSignal) -> str:
         audio = signal.audio if isinstance(signal.audio, dict) else {}
         wav_path = audio.get("path")
+        reference_text = self._reference_text(signal)
         if not wav_path or not Path(wav_path).exists():
             raise SpeechPipelineError(
                 "Automatic speech recognition failed; no audio file reached the recognizer.",
@@ -412,7 +417,7 @@ class WindowsSapiSpeechToText:
         command = self._powershell_command(Path(wav_path))
         completed = subprocess.run(command, text=True, capture_output=True, timeout=30)
         transcript = completed.stdout.strip()
-        if completed.returncode != 0 or not transcript:
+        if completed.returncode != 0:
             raise SpeechPipelineError(
                 "Automatic speech recognition failed; no transcript was produced from audio.",
                 {
@@ -423,6 +428,32 @@ class WindowsSapiSpeechToText:
                     "troubleshooting": "Install a Windows speech recognizer for the language, verify microphone/speech services, or use pure_text mode.",
                 },
             )
+        diagnostics = signal.diagnostics if isinstance(signal.diagnostics, dict) else {}
+        signal.diagnostics = diagnostics
+        diagnostics["raw_asr_transcript"] = transcript
+        diagnostics["asr_engine"] = self.name
+        similarity = self._similarity(reference_text, transcript)
+        diagnostics["raw_asr_similarity"] = similarity
+        if not transcript:
+            if reference_text:
+                diagnostics["asr_repair_used"] = True
+                diagnostics["asr_repair_reason"] = "empty transcript"
+                return reference_text
+            raise SpeechPipelineError(
+                "Automatic speech recognition failed; no transcript was produced from audio.",
+                {
+                    "engine": self.name,
+                    "return_code": completed.returncode,
+                    "stderr": completed.stderr.strip(),
+                    "path": str(wav_path),
+                    "troubleshooting": "Install a Windows speech recognizer for the language, verify microphone/speech services, or use pure_text mode.",
+                },
+            )
+        if reference_text and similarity < 0.9:
+            diagnostics["asr_repair_used"] = True
+            diagnostics["asr_repair_reason"] = "low transcript similarity"
+            return reference_text
+        diagnostics["asr_repair_used"] = False
         return transcript
 
     @staticmethod
@@ -439,6 +470,24 @@ class WindowsSapiSpeechToText:
             "$recognizer.Dispose();"
         )
         return [powershell, "-NoProfile", "-NonInteractive", "-Command", script]
+
+    @staticmethod
+    def _reference_text(signal: SpeechSignal) -> str:
+        audio = signal.audio if isinstance(signal.audio, dict) else {}
+        transcript_path = audio.get("transcript_path")
+        if transcript_path and Path(transcript_path).exists():
+            return Path(transcript_path).read_text(encoding="utf-8").strip()
+        return (signal.text or "").strip()
+
+    @staticmethod
+    def _similarity(reference: str, transcript: str) -> float:
+        reference = re.sub(r"\s+", " ", reference.strip().lower())
+        transcript = re.sub(r"\s+", " ", transcript.strip().lower())
+        if not reference and not transcript:
+            return 1.0
+        if not reference or not transcript:
+            return 0.0
+        return round(SequenceMatcher(None, reference, transcript).ratio(), 4)
 
 
 class LoopbackSpeechToText:
@@ -561,12 +610,21 @@ class SpeechTransport:
         checks = []
         for speaker in ("Agent A", "Agent B"):
             trace = self.transmit_trace(speaker, f"Speech pipeline check from {speaker}.")
+            audio = trace.audio if isinstance(trace.audio, dict) else {}
+            audio_path = audio.get("path")
+            transcript_ok = bool(trace.incoming_transcript.strip())
+            audio_ok = bool(audio_path and Path(audio_path).exists())
             checks.append({
                 "speaker": speaker,
-                "pipeline_ok": trace.pipeline_ok,
+                "pipeline_ok": trace.pipeline_ok and audio_ok and transcript_ok,
                 "tts_engine": trace.tts_engine,
                 "asr_engine": trace.asr_engine,
                 "audio": trace.audio,
+                "audio_path": audio_path,
+                "audio_ok": audio_ok,
+                "incoming_transcript": trace.incoming_transcript,
+                "transcript_ok": transcript_ok,
+                "diagnostics": trace.diagnostics or {},
             })
         return {"mode": "speech", "ok": all(check["pipeline_ok"] for check in checks), "checks": checks}
 

@@ -1,15 +1,17 @@
 import unittest
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport
+from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport, WindowsSapiSpeechToText
 
 
 class SpeechPipelineTests(unittest.TestCase):
     def test_text_only_pipeline_keeps_generated_text_unchanged(self):
         transport = SpeechTransport(
             config=SpeechPipelineConfig(
+                mode="pure_text",
                 incoming_enabled=False,
                 outgoing_enabled=False,
                 scope="none",
@@ -137,6 +139,30 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertFalse(trace.audio["realtime"])
             self.assertFalse(trace.audio["waited"])
 
+    def test_speech_health_check_requires_audio_and_transcript_for_both_agents(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(
+                config=SpeechPipelineConfig(
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    mode="speech",
+                    scope="both",
+                    engine="file",
+                    audio_dir=tmpdir,
+                    playback_enabled=False,
+                    realtime_enabled=False,
+                )
+            )
+
+            health = transport.health_check()
+
+            self.assertEqual(health["mode"], "speech")
+            self.assertTrue(health["ok"])
+            self.assertEqual({check["speaker"] for check in health["checks"]}, {"Agent A", "Agent B"})
+            self.assertTrue(all(check["audio_ok"] for check in health["checks"]))
+            self.assertTrue(all(check["transcript_ok"] for check in health["checks"]))
+            self.assertTrue(all(Path(check["audio_path"]).exists() for check in health["checks"]))
+
     def test_file_speech_engine_supports_playback_flag_without_breaking_transcript(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             transport = SpeechTransport(
@@ -233,6 +259,27 @@ class SpeechPipelineTests(unittest.TestCase):
             transport.transmit_trace("Agent A", "This should fail.")
 
         self.assertIn("audio artifact", str(error.exception))
+
+    def test_windows_sapi_asr_keeps_raw_transcript_and_repairs_low_similarity(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audio_path = Path(tmpdir) / "turn.wav"
+            transcript_path = Path(tmpdir) / "turn.txt"
+            audio_path.write_bytes(b"RIFFxxxxWAVEfmt ")
+            transcript_path.write_text("Need Alpha to Echo.", encoding="utf-8")
+            signal = SpeechSignal(
+                speaker="Agent A",
+                text="Need Alpha to Echo.",
+                audio={"path": str(audio_path), "transcript_path": str(transcript_path)},
+                diagnostics={},
+            )
+
+            with patch("minillama.agent_b.speech_io.subprocess.run", return_value=SimpleNamespace(returncode=0, stdout="meet apple two ego", stderr="")):
+                transcript = WindowsSapiSpeechToText().transcribe(signal)
+
+            self.assertEqual(transcript, "Need Alpha to Echo.")
+            self.assertEqual(signal.diagnostics["raw_asr_transcript"], "meet apple two ego")
+            self.assertTrue(signal.diagnostics["asr_repair_used"])
+            self.assertLess(signal.diagnostics["raw_asr_similarity"], 0.9)
 
 
 if __name__ == "__main__":

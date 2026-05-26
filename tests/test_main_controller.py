@@ -6,16 +6,20 @@ from minillama.controller.main import conversation_worker, default_run_config, s
 
 
 class MainControllerTests(unittest.TestCase):
-    def test_default_config_keeps_gui_optional(self):
+    def test_default_config_is_speech_first_and_keeps_gui_optional(self):
         config = default_run_config()
 
         self.assertIn("gui_enabled", config)
         self.assertIsInstance(config["gui_enabled"], bool)
         self.assertEqual(config["num_turns"], 5)
-        self.assertEqual(config["run_mode"], "pure_text")
-        self.assertFalse(config["speech_playback_enabled"])
-        self.assertFalse(config["speech_realtime_enabled"])
-        self.assertEqual(config["speech_scope"], "none")
+        self.assertEqual(config["run_mode"], "speech")
+        self.assertTrue(config["speech_incoming_enabled"])
+        self.assertTrue(config["speech_outgoing_enabled"])
+        self.assertTrue(config["speech_playback_enabled"])
+        self.assertTrue(config["speech_realtime_enabled"])
+        self.assertEqual(config["speech_scope"], "both")
+        self.assertEqual(config["tts_engine"], "sapi")
+        self.assertEqual(config["asr_engine"], "sapi")
         self.assertIn("persona_key", config)
         self.assertIn("network_data_card_enabled", config)
         self.assertFalse(config["network_data_card_enabled"])
