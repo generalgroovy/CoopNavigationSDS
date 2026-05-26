@@ -295,6 +295,60 @@ class DialogManager:
                 )
             )
 
+        def build_agent_turn_segments():
+            """Build per-agent timing segments for research analysis."""
+            segments = []
+            for index, (speaker, utterance) in enumerate(conversation, start=1):
+                timing = next((turn for turn in timing_turns if turn.get("turn") == index and turn.get("speaker") == speaker), {})
+                speech = speech_turns[index - 1] if index - 1 < len(speech_turns) else {}
+                nlu = next((turn for turn in nlu_turns if turn.get("speaker") == speaker and turn.get("text") == utterance), {})
+                audio = speech.get("audio") if isinstance(speech.get("audio"), dict) else {}
+                segments.append({
+                    "turn": index,
+                    "speaker": speaker,
+                    "utterance": utterance,
+                    "word_count": len(utterance.split()),
+                    "character_count": len(utterance),
+                    "generation_sec": round(float(timing.get("generation_sec", 0.0) or 0.0), 6),
+                    "speech_sec": round(float(timing.get("speech_sec", 0.0) or 0.0), 6),
+                    "turn_latency_sec": round(float(timing.get("turn_latency_sec", 0.0) or 0.0), 6),
+                    "turn_elapsed_sec": round(float(timing.get("turn_elapsed_sec", timing.get("turn_latency_sec", 0.0)) or 0.0), 6),
+                    "pipeline_mode": speech.get("mode"),
+                    "tts_engine": speech.get("tts_engine"),
+                    "asr_engine": speech.get("asr_engine"),
+                    "audio_duration_sec": audio.get("duration_sec"),
+                    "audio_played": audio.get("played"),
+                    "asr_repair_used": (speech.get("diagnostics") or {}).get("asr_repair_used"),
+                    "route_valid": nlu.get("route_valid"),
+                    "route_reaches_goal": nlu.get("route_reaches_goal"),
+                    "parsed_route": nlu.get("parsed_route"),
+                })
+            return segments
+
+        def summarize_agent_turn_segments(segments):
+            """Aggregate per-agent timing segment metrics."""
+            summaries = {}
+            for speaker in ("Agent A", "Agent B"):
+                speaker_segments = [segment for segment in segments if segment["speaker"] == speaker]
+                turn_count = len(speaker_segments)
+                elapsed_values = [segment["turn_elapsed_sec"] for segment in speaker_segments]
+                generation_values = [segment["generation_sec"] for segment in speaker_segments]
+                speech_values = [segment["speech_sec"] for segment in speaker_segments]
+                word_count = sum(segment["word_count"] for segment in speaker_segments)
+                summaries[speaker] = {
+                    "speaker": speaker,
+                    "turn_count": turn_count,
+                    "word_count": word_count,
+                    "mean_words_per_turn": round(word_count / turn_count, 6) if turn_count else 0.0,
+                    "total_generation_sec": round(sum(generation_values), 6),
+                    "total_speech_sec": round(sum(speech_values), 6),
+                    "total_turn_elapsed_sec": round(sum(elapsed_values), 6),
+                    "mean_turn_elapsed_sec": round(sum(elapsed_values) / turn_count, 6) if turn_count else 0.0,
+                    "max_turn_elapsed_sec": round(max(elapsed_values), 6) if elapsed_values else 0.0,
+                    "min_turn_elapsed_sec": round(min(elapsed_values), 6) if elapsed_values else 0.0,
+                }
+            return summaries
+
         scenario = self.test_case.scenario
         persona = self.test_case.persona
         planning_allowed_modes = route_allowed_modes(scenario, persona)
@@ -544,6 +598,8 @@ class DialogManager:
         constraint_gap = route_constraint_gap(displayed_steps, displayed_duration, constraint_route)
         displayed_line_sequence = route_line_sequence(displayed_steps)
         displayed_line_change_count = route_line_change_count(displayed_steps)
+        agent_turn_segments = build_agent_turn_segments()
+        agent_timing_summary = summarize_agent_turn_segments(agent_turn_segments)
 
         metrics = (
             f"Test case:             {self.test_case.name}\n"
@@ -586,6 +642,8 @@ class DialogManager:
             f"Route reaches goal:    {reaches_goal}\n"
             f"Route correct:         {route_correct}\n"
             f"Mean turn elapsed:     {str(round(sum(turn.get('turn_elapsed_sec', turn.get('turn_latency_sec', 0.0)) for turn in timing_turns) / len(timing_turns), 4)) + ' seconds' if timing_turns else 'None'}\n"
+            f"Agent A mean turn:     {agent_timing_summary['Agent A']['mean_turn_elapsed_sec']} seconds\n"
+            f"Agent B mean turn:     {agent_timing_summary['Agent B']['mean_turn_elapsed_sec']} seconds\n"
             f"Runtime:               {end_wall - start_wall:.2f} seconds\n"
             f"Speech pipeline:       {self.speech_transport.description}\n"
         )
@@ -659,6 +717,8 @@ class DialogManager:
                     max((turn.get("turn_elapsed_sec", turn.get("turn_latency_sec", 0.0)) for turn in timing_turns), default=0.0),
                     6,
                 ),
+                "agent_turn_segments": agent_turn_segments,
+                "agent_timing_summary": agent_timing_summary,
                 "speech_turns": speech_turns,
                 "timing_turns": timing_turns,
                 "nlu_turns": nlu_turns,

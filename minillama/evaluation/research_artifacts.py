@@ -120,7 +120,9 @@ def write_conversation_protocol(result, output_dir):
     speech_turns = list(result.extra.get("speech_turns", []))
     timing_turns = list(result.extra.get("timing_turns", []))
     nlu_turns = list(result.extra.get("nlu_turns", []))
-    verification = verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns)
+    agent_turn_segments = list(result.extra.get("agent_turn_segments", []))
+    agent_timing_summary = result.extra.get("agent_timing_summary", {})
+    verification = verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns, agent_turn_segments, agent_timing_summary)
     summary = {
         "condition_id": result.condition_id,
         "test_case_key": result.test_case_key,
@@ -145,6 +147,10 @@ def write_conversation_protocol(result, output_dir):
         "turns": condition_dir / "turns.jsonl",
         "speech": condition_dir / "speech_pipeline.jsonl",
         "timing": condition_dir / "timing.jsonl",
+        "agent_turn_segments": condition_dir / "agent_turn_segments.jsonl",
+        "agent_a_segments": condition_dir / "agent_a_turn_segments.jsonl",
+        "agent_b_segments": condition_dir / "agent_b_turn_segments.jsonl",
+        "agent_timing_summary": condition_dir / "agent_timing_summary.json",
         "semantic": condition_dir / "semantic_parsing.jsonl",
         "metric_snapshots": condition_dir / "metric_snapshots.jsonl",
         "metrics": condition_dir / "metrics.txt",
@@ -154,6 +160,10 @@ def write_conversation_protocol(result, output_dir):
     write_jsonl(paths["turns"], turns)
     write_jsonl(paths["speech"], speech_turns)
     write_jsonl(paths["timing"], timing_turns)
+    write_jsonl(paths["agent_turn_segments"], agent_turn_segments)
+    write_jsonl(paths["agent_a_segments"], [row for row in agent_turn_segments if row.get("speaker") == "Agent A"])
+    write_jsonl(paths["agent_b_segments"], [row for row in agent_turn_segments if row.get("speaker") == "Agent B"])
+    paths["agent_timing_summary"].write_text(json.dumps(agent_timing_summary, indent=2, ensure_ascii=True), encoding="utf-8")
     write_jsonl(paths["semantic"], nlu_turns)
     write_jsonl(paths["metric_snapshots"], result.extra.get("metric_snapshots", []))
     paths["metrics"].write_text(result.metrics_text or "", encoding="utf-8")
@@ -207,8 +217,10 @@ def write_jsonl(path, rows):
             handle.write(json.dumps(row, ensure_ascii=True) + "\n")
 
 
-def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns):
+def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns, agent_turn_segments=None, agent_timing_summary=None):
     """Return validation checks for research-grade protocol completeness."""
+    agent_turn_segments = agent_turn_segments or []
+    agent_timing_summary = agent_timing_summary or {}
     checks = {
         "conversation_has_turns": bool(turns),
         "message_count_matches_result": len(turns) == result.extra.get("messages", len(result.conversation)),
@@ -227,6 +239,11 @@ def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_
             for turn in timing_turns
         ),
         "semantic_turns_have_parse_flags": all("route_valid" in turn and "route_reaches_goal" in turn for turn in nlu_turns),
+        "agent_segments_have_timing": all(
+            {"turn", "speaker", "turn_elapsed_sec"}.issubset(turn)
+            for turn in agent_turn_segments
+        ),
+        "agent_timing_summary_present": bool(agent_timing_summary) if agent_turn_segments else True,
         "metric_snapshots_present": bool(result.extra.get("metric_snapshots")),
     }
     return {
@@ -237,6 +254,7 @@ def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_
             "speech_turns": len(speech_turns),
             "timing_turns": len(timing_turns),
             "semantic_turns": len(nlu_turns),
+            "agent_turn_segments": len(agent_turn_segments),
         },
     }
 

@@ -293,6 +293,14 @@ class ExperimentRunnerTests(unittest.TestCase):
                     }
                 ],
                 "timing_turns": [{"turn_latency_sec": 0.4}],
+                "agent_turn_segments": [
+                    {"turn": 1, "speaker": "Agent A", "turn_elapsed_sec": 0.1},
+                    {"turn": 2, "speaker": "Agent B", "turn_elapsed_sec": 0.4},
+                ],
+                "agent_timing_summary": {
+                    "Agent A": {"turn_count": 1, "mean_turn_elapsed_sec": 0.1},
+                    "Agent B": {"turn_count": 1, "mean_turn_elapsed_sec": 0.4},
+                },
                 "nlu_turns": [{"route_valid": True, "route_reaches_goal": True}],
                 "metric_snapshots": [{"turn": 1, "message_count": 2, "candidate_routes": 1}],
             },
@@ -305,12 +313,20 @@ class ExperimentRunnerTests(unittest.TestCase):
             summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
             verification = json.loads(paths["verification"].read_text(encoding="utf-8"))
             turn_rows = paths["turns"].read_text(encoding="utf-8").splitlines()
+            agent_rows = paths["agent_turn_segments"].read_text(encoding="utf-8").splitlines()
+            agent_a_rows = paths["agent_a_segments"].read_text(encoding="utf-8").splitlines()
+            agent_b_rows = paths["agent_b_segments"].read_text(encoding="utf-8").splitlines()
+            agent_summary = json.loads(paths["agent_timing_summary"].read_text(encoding="utf-8"))
             snapshot_rows = paths["metric_snapshots"].read_text(encoding="utf-8").splitlines()
 
         self.assertTrue(batch_paths)
         self.assertEqual(summary["condition_id"], "Case One")
         self.assertTrue(verification["verified"])
         self.assertEqual(len(turn_rows), 2)
+        self.assertEqual(len(agent_rows), 2)
+        self.assertEqual(len(agent_a_rows), 1)
+        self.assertEqual(len(agent_b_rows), 1)
+        self.assertEqual(agent_summary["Agent B"]["mean_turn_elapsed_sec"], 0.4)
         self.assertEqual(len(snapshot_rows), 1)
 
     def test_single_run_research_outputs_compile_metrics_for_analysis(self):

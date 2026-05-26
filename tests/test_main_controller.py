@@ -107,9 +107,26 @@ class MainControllerTests(unittest.TestCase):
         seen = []
         lock = threading.Lock()
 
-        def fake_dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled):
+        def fake_dialog_runner(
+            ui_queue,
+            scenario,
+            gui_mode,
+            network_data_card_enabled,
+            gui_refresh_ms,
+            window_layout_index,
+            window_layout_count,
+        ):
             with lock:
-                seen.append((ui_queue, scenario, gui_mode, network_data_card_enabled, threading.get_ident()))
+                seen.append((
+                    ui_queue,
+                    scenario,
+                    gui_mode,
+                    network_data_card_enabled,
+                    gui_refresh_ms,
+                    window_layout_index,
+                    window_layout_count,
+                    threading.get_ident(),
+                ))
 
         scenario = {"name": "Threaded GUI"}
 
@@ -117,6 +134,7 @@ class MainControllerTests(unittest.TestCase):
             scenario,
             gui_mode="conversation",
             network_data_card_enabled=True,
+            gui_refresh_ms=250,
             dialog_runner=fake_dialog_runner,
         )
         for thread in threads:
@@ -127,6 +145,9 @@ class MainControllerTests(unittest.TestCase):
         self.assertEqual({entry[2] for entry in seen}, {"conversation", "metrics", "network"})
         self.assertTrue(any(entry[3] for entry in seen if entry[2] == "network"))
         self.assertTrue(all(entry[1] is scenario for entry in seen))
+        self.assertEqual({entry[4] for entry in seen}, {250})
+        self.assertEqual({entry[6] for entry in seen}, {3})
+        self.assertEqual({entry[5] for entry in seen}, {0, 1, 2})
 
         sink.put(("message", "Agent A", "hello"))
         self.assertTrue(all(not entry[0].empty() for entry in seen))

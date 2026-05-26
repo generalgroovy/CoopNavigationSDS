@@ -224,6 +224,25 @@ METRIC_FAMILY_SPECS = [
         ],
     },
     {
+        "title": "Agent timing",
+        "metrics": [
+            ("agent_timing_agent_a_turn_count", "Agent A Turns"),
+            ("agent_timing_agent_a_word_count", "Agent A Words"),
+            ("agent_timing_agent_a_mean_words_per_turn", "Agent A Words Per Turn"),
+            ("agent_timing_agent_a_total_generation_sec", "Agent A Generation"),
+            ("agent_timing_agent_a_total_speech_sec", "Agent A Speech"),
+            ("agent_timing_agent_a_mean_turn_elapsed_sec", "Agent A Mean Turn"),
+            ("agent_timing_agent_a_max_turn_elapsed_sec", "Agent A Max Turn"),
+            ("agent_timing_agent_b_turn_count", "Agent B Turns"),
+            ("agent_timing_agent_b_word_count", "Agent B Words"),
+            ("agent_timing_agent_b_mean_words_per_turn", "Agent B Words Per Turn"),
+            ("agent_timing_agent_b_total_generation_sec", "Agent B Generation"),
+            ("agent_timing_agent_b_total_speech_sec", "Agent B Speech"),
+            ("agent_timing_agent_b_mean_turn_elapsed_sec", "Agent B Mean Turn"),
+            ("agent_timing_agent_b_max_turn_elapsed_sec", "Agent B Max Turn"),
+        ],
+    },
+    {
         "title": "Pipeline phases",
         "metrics": [
             ("pipeline_mode", "Mode"),
@@ -743,6 +762,9 @@ class MetricComputer:
 
         agent_a_avg_latency_sec = average_latency("Agent A")
         agent_b_avg_latency_sec = average_latency("Agent B")
+        agent_timing_summary = result.extra.get("agent_timing_summary", {})
+        agent_a_timing = agent_timing_summary.get("Agent A", {})
+        agent_b_timing = agent_timing_summary.get("Agent B", {})
         turn_elapsed_values = [
             turn.get("turn_elapsed_sec", turn.get("turn_latency_sec", 0.0))
             for turn in timing_turns
@@ -1032,6 +1054,23 @@ class MetricComputer:
                 "time_to_first_token_sec": None if time_to_first_token_sec is None else round(time_to_first_token_sec, 4),
                 "time_to_first_audio_sec": None if time_to_first_audio_sec is None else round(time_to_first_audio_sec, 4),
                 "interruption_recovery_rate": None,
+            },
+            "agent_timing": {
+                "available": bool(agent_timing_summary),
+                "agent_a_turn_count": agent_a_timing.get("turn_count", 0),
+                "agent_a_word_count": agent_a_timing.get("word_count", 0),
+                "agent_a_mean_words_per_turn": agent_a_timing.get("mean_words_per_turn", 0.0),
+                "agent_a_total_generation_sec": agent_a_timing.get("total_generation_sec", 0.0),
+                "agent_a_total_speech_sec": agent_a_timing.get("total_speech_sec", 0.0),
+                "agent_a_mean_turn_elapsed_sec": agent_a_timing.get("mean_turn_elapsed_sec", agent_a_avg_latency_sec),
+                "agent_a_max_turn_elapsed_sec": agent_a_timing.get("max_turn_elapsed_sec", 0.0),
+                "agent_b_turn_count": agent_b_timing.get("turn_count", 0),
+                "agent_b_word_count": agent_b_timing.get("word_count", 0),
+                "agent_b_mean_words_per_turn": agent_b_timing.get("mean_words_per_turn", 0.0),
+                "agent_b_total_generation_sec": agent_b_timing.get("total_generation_sec", 0.0),
+                "agent_b_total_speech_sec": agent_b_timing.get("total_speech_sec", 0.0),
+                "agent_b_mean_turn_elapsed_sec": agent_b_timing.get("mean_turn_elapsed_sec", agent_b_avg_latency_sec),
+                "agent_b_max_turn_elapsed_sec": agent_b_timing.get("max_turn_elapsed_sec", 0.0),
             },
             "pipeline": {
                 "available": True,

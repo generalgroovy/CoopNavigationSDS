@@ -242,12 +242,31 @@ def normalize_run_config(config):
     return normalized
 
 
-def call_dialog_runner(dialog_runner, ui_queue, scenario, gui_mode, network_data_card_enabled, gui_refresh_ms):
+def call_dialog_runner(
+    dialog_runner,
+    ui_queue,
+    scenario,
+    gui_mode,
+    network_data_card_enabled,
+    gui_refresh_ms,
+    window_layout_index=0,
+    window_layout_count=1,
+):
     """Call GUI runners while preserving compatibility with four-argument test doubles."""
     try:
         parameter_count = len(inspect.signature(dialog_runner).parameters)
     except (TypeError, ValueError):
         parameter_count = 4
+    if parameter_count >= 7:
+        return dialog_runner(
+            ui_queue,
+            scenario,
+            gui_mode,
+            network_data_card_enabled,
+            gui_refresh_ms,
+            window_layout_index,
+            window_layout_count,
+        )
     if parameter_count >= 5:
         return dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled, gui_refresh_ms)
     return dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled)
@@ -280,7 +299,15 @@ def select_run_config():
     return selected
 
 
-def run_gui_loop(ui_queue, scenario, gui_mode, network_data_card_enabled=False, gui_refresh_ms=GUI_REFRESH_MS):
+def run_gui_loop(
+    ui_queue,
+    scenario,
+    gui_mode,
+    network_data_card_enabled=False,
+    gui_refresh_ms=GUI_REFRESH_MS,
+    window_layout_index=0,
+    window_layout_count=1,
+):
     """Run the Tk GUI in the current thread."""
     from minillama.view.gui import DialogWindow
 
@@ -292,6 +319,8 @@ def run_gui_loop(ui_queue, scenario, gui_mode, network_data_card_enabled=False, 
         show_network_data=network_data_card_enabled,
         view_mode=view_mode,
         refresh_ms=gui_refresh_ms,
+        window_layout_index=window_layout_index,
+        window_layout_count=window_layout_count,
     )
     dialog.run()
 
@@ -302,12 +331,23 @@ def start_gui_thread(
     gui_mode=GUI_MODE,
     network_data_card_enabled=NETWORK_DATA_CARD_ENABLED,
     gui_refresh_ms=GUI_REFRESH_MS,
+    window_layout_index=0,
+    window_layout_count=1,
     dialog_runner=run_gui_loop,
 ):
     """Start the optional GUI in an isolated thread and return the thread handle."""
     def _target():
         try:
-            call_dialog_runner(dialog_runner, ui_queue, scenario, gui_mode, network_data_card_enabled, gui_refresh_ms)
+            call_dialog_runner(
+                dialog_runner,
+                ui_queue,
+                scenario,
+                gui_mode,
+                network_data_card_enabled,
+                gui_refresh_ms,
+                window_layout_index,
+                window_layout_count,
+            )
         except Exception:
             logging.exception("GUI thread stopped")
 
@@ -337,7 +377,8 @@ def start_gui_threads(
 
     queues = []
     threads = []
-    for mode, show_network in specs:
+    window_count = len(specs)
+    for index, (mode, show_network) in enumerate(specs):
         ui_queue = queue.Queue()
         queues.append(ui_queue)
         threads.append(
@@ -347,6 +388,8 @@ def start_gui_threads(
                 mode if gui_mode else mode,
                 show_network,
                 gui_refresh_ms=gui_refresh_ms,
+                window_layout_index=index,
+                window_layout_count=window_count,
                 dialog_runner=dialog_runner,
             )
         )

@@ -83,6 +83,26 @@ class MetricFamilyTests(unittest.TestCase):
                         "route_reaches_goal": True,
                     }
                 ],
+                "agent_timing_summary": {
+                    "Agent A": {
+                        "turn_count": 1,
+                        "word_count": 12,
+                        "mean_words_per_turn": 12.0,
+                        "total_generation_sec": 0.0,
+                        "total_speech_sec": 0.03,
+                        "mean_turn_elapsed_sec": 0.03,
+                        "max_turn_elapsed_sec": 0.03,
+                    },
+                    "Agent B": {
+                        "turn_count": 1,
+                        "word_count": 14,
+                        "mean_words_per_turn": 14.0,
+                        "total_generation_sec": 0.02,
+                        "total_speech_sec": 0.05,
+                        "mean_turn_elapsed_sec": 0.07,
+                        "max_turn_elapsed_sec": 0.07,
+                    },
+                },
                 "condition_runtime_sec": 0.25,
             },
         )
@@ -125,6 +145,11 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["condition_runtime_sec"], 0.25)
         self.assertEqual(row["runtime_condition_runtime_sec"], 0.25)
         self.assertEqual(row["speech_duration_total_sec"], 0.05)
+        self.assertTrue(row["agent_timing_available"])
+        self.assertEqual(row["agent_timing_agent_a_turn_count"], 1)
+        self.assertEqual(row["agent_timing_agent_a_mean_turn_elapsed_sec"], 0.03)
+        self.assertEqual(row["agent_timing_agent_b_turn_count"], 1)
+        self.assertEqual(row["agent_timing_agent_b_mean_turn_elapsed_sec"], 0.07)
         self.assertEqual(row["pipeline_mode"], "speech")
         self.assertEqual(row["pipeline_success_rate"], 1.0)
         self.assertEqual(row["pipeline_failure_count"], 0)
@@ -165,6 +190,7 @@ class MetricFamilyTests(unittest.TestCase):
                 "Natural language generation",
                 "Text-to-speech",
                 "Runtime",
+                "Agent timing",
                 "Pipeline phases",
                 "End to end",
                 "Post hoc",

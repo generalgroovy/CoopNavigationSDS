@@ -220,7 +220,7 @@ class StartupConfigDialog:
             ("Constraint miss stop limit", "constraint_miss_limit", 1, 10, 1),
             ("Agent A transfer tolerance", "agent_a_transfer_tolerance", 0, 2, 1),
             ("Metric snapshot interval", "metric_snapshot_interval", 1, 10, 1),
-            ("Graphical interface refresh milliseconds", "gui_refresh_ms", 50, 2000, 50),
+            ("Graphical interface metrics update milliseconds", "gui_refresh_ms", 50, 2000, 50),
             ("Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5),
             ("Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5),
             ("Minimum utterance seconds", "min_utterance_sec", 0.2, 3.0, 0.1),
@@ -432,7 +432,17 @@ def make_scrollable_frame(parent, bg, padx=0, pady=0, sticky="nsew"):
 class DialogWindow:
     """GUI view for one live dialog experiment conversation."""
 
-    def __init__(self, event_queue, scenario, minimal=True, show_network_data=False, view_mode=None, refresh_ms=GUI_REFRESH_MS):
+    def __init__(
+        self,
+        event_queue,
+        scenario,
+        minimal=True,
+        show_network_data=False,
+        view_mode=None,
+        refresh_ms=GUI_REFRESH_MS,
+        window_layout_index=0,
+        window_layout_count=1,
+    ):
         """  init   method for this module's MVC responsibility.
 
         Args:
@@ -448,6 +458,8 @@ class DialogWindow:
         self.show_network_data = show_network_data
         self.view_mode = view_mode or ("conversation" if minimal else "combined")
         self.refresh_ms = max(50, int(refresh_ms or GUI_REFRESH_MS))
+        self.window_layout_index = max(0, int(window_layout_index or 0))
+        self.window_layout_count = max(1, int(window_layout_count or 1))
         self.current_route = []
         self.snapshot_values = {}
         self.summary_values = {}
@@ -533,15 +545,13 @@ class DialogWindow:
             "combined": "MiniLlama Conversation Analysis",
         }
         self.root.title(window_titles.get(self.view_mode, "MiniLlama Conversation"))
+        self.apply_window_geometry()
         if self.view_mode == "conversation":
-            self.root.geometry("560x720")
-        elif self.view_mode == "metrics":
-            self.root.geometry("980x760")
+            self.root.minsize(GUI_DIALOG_MIN_WIDTH, GUI_MIN_HEIGHT)
         elif self.view_mode == "network":
-            self.root.geometry("980x760")
+            self.root.minsize(GUI_MAP_MIN_WIDTH, GUI_MIN_HEIGHT)
         else:
-            self.root.geometry(f"{GUI_WIDTH}x{GUI_HEIGHT}")
-        self.root.minsize(GUI_MIN_WIDTH, GUI_MIN_HEIGHT)
+            self.root.minsize(GUI_EQUAL_PANE_MIN_WIDTH, GUI_MIN_HEIGHT)
         self.root.configure(bg=GUI_COLORS["app_bg"])
         if not self.minimal:
             self.maximize_startup_window()
@@ -554,6 +564,19 @@ class DialogWindow:
         if hasattr(self, "canvas"):
             self.canvas.bind("<Configure>", lambda _: self.draw_network())
         self.root.after(self.refresh_ms, self.process_events)
+
+    def apply_window_geometry(self):
+        """Tile independent GUI windows across the available screen."""
+        screen_width = max(self.root.winfo_screenwidth(), GUI_WIDTH)
+        screen_height = max(self.root.winfo_screenheight(), GUI_HEIGHT)
+        count = self.window_layout_count
+        index = min(self.window_layout_index, count - 1)
+        width = max(screen_width // count, GUI_DIALOG_MIN_WIDTH)
+        x = index * width
+        if index == count - 1:
+            width = max(screen_width - x, GUI_DIALOG_MIN_WIDTH)
+        height = max(screen_height - 80, GUI_MIN_HEIGHT)
+        self.root.geometry(f"{width}x{height}+{x}+0")
 
     def maximize_startup_window(self):
         """Maximize startup window method for this module's MVC responsibility.
