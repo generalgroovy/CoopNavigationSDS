@@ -29,6 +29,8 @@ from minillama.model.route_constraints import (
 )
 from minillama.agent_b.speech_io import SpeechTransport
 
+DEFAULT_MAX_TURN_ELAPSED_SEC = 20.0
+
 
 def route_reaches_goal(stations, scenario):
     """Route reaches goal function for this module's MVC responsibility.
@@ -99,6 +101,7 @@ class DialogManager:
         constraint_miss_limit=2,
         transfer_tolerance=1,
         metric_snapshot_interval=1,
+        max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -124,6 +127,10 @@ class DialogManager:
         self.constraint_miss_limit = constraint_miss_limit
         self.transfer_tolerance = max(0, int(transfer_tolerance))
         self.metric_snapshot_interval = max(1, int(metric_snapshot_interval or 1))
+        self.max_turn_elapsed_sec = min(
+            DEFAULT_MAX_TURN_ELAPSED_SEC,
+            max(1.0, float(max_turn_elapsed_sec or DEFAULT_MAX_TURN_ELAPSED_SEC)),
+        )
 
     def run(self, event_queue):
         """Run method for this module's MVC responsibility.
@@ -153,21 +160,51 @@ class DialogManager:
             comparison_term_count += sum(1 for word in words if word in COMPARISON_TERMS)
             cooperation_term_count += sum(1 for word in words if word in COOPERATION_TERMS)
 
+        def elapsed_since_ready():
+            """Return elapsed conversation time after both agents are ready."""
+            return time.time() - start_wall if start_wall is not None else 0.0
+
+        def cap_turn_timing(generation_sec, speech_sec):
+            """Cap effective turn timing while preserving raw measurements for diagnostics."""
+            raw_generation_sec = max(0.0, float(generation_sec or 0.0))
+            raw_speech_sec = max(0.0, float(speech_sec or 0.0))
+            raw_turn_elapsed_sec = raw_generation_sec + raw_speech_sec
+            effective_generation_sec = min(raw_generation_sec, self.max_turn_elapsed_sec)
+            remaining_sec = max(self.max_turn_elapsed_sec - effective_generation_sec, 0.0)
+            effective_speech_sec = min(raw_speech_sec, remaining_sec)
+            effective_turn_elapsed_sec = effective_generation_sec + effective_speech_sec
+            return {
+                "generation_sec": effective_generation_sec,
+                "speech_sec": effective_speech_sec,
+                "turn_elapsed_sec": effective_turn_elapsed_sec,
+                "raw_generation_sec": raw_generation_sec,
+                "raw_speech_sec": raw_speech_sec,
+                "raw_turn_elapsed_sec": raw_turn_elapsed_sec,
+                "turn_capped": raw_turn_elapsed_sec > self.max_turn_elapsed_sec,
+                "max_turn_elapsed_sec": self.max_turn_elapsed_sec,
+            }
+
         def log_conversation_step(speaker, utterance, turn_number, generation_sec, speech_sec, parsed_route=None, has_station_mentions=False):
             """Record one conversation step with the current evaluation state."""
             if not self.monitor:
                 return
 
+            timing = cap_turn_timing(generation_sec, speech_sec)
             parsed_route_valid = route_is_valid(parsed_route, allowed_modes=planning_allowed_modes) if parsed_route else False
             parsed_route_goal = route_reaches_goal(parsed_route, scenario) if parsed_route_valid else False
             payload = {
                 "turn": turn_number,
                 "speaker": speaker,
                 "utterance": utterance,
-                "generation_sec": round(generation_sec, 6),
-                "speech_sec": round(speech_sec, 6),
-                "turn_latency_sec": round(generation_sec + speech_sec, 6),
-                "turn_elapsed_sec": round(generation_sec + speech_sec, 6),
+                "generation_sec": round(timing["generation_sec"], 6),
+                "speech_sec": round(timing["speech_sec"], 6),
+                "turn_latency_sec": round(timing["turn_elapsed_sec"], 6),
+                "turn_elapsed_sec": round(timing["turn_elapsed_sec"], 6),
+                "raw_generation_sec": round(timing["raw_generation_sec"], 6),
+                "raw_speech_sec": round(timing["raw_speech_sec"], 6),
+                "raw_turn_elapsed_sec": round(timing["raw_turn_elapsed_sec"], 6),
+                "turn_capped": timing["turn_capped"],
+                "max_turn_elapsed_sec": round(timing["max_turn_elapsed_sec"], 6),
                 "message_count": len(conversation),
                 "word_count": conversation_word_count,
                 "task_terms": task_term_count,
@@ -198,7 +235,7 @@ class DialogManager:
                 "turn": turn_number,
                 "phase": phase,
                 "speaker": speaker,
-                "elapsed_sec": round(time.time() - start_wall, 6),
+                "elapsed_sec": round(elapsed_since_ready(), 6),
                 "message_count": len(conversation),
                 "word_count": conversation_word_count,
                 "task_terms": task_term_count,
@@ -257,14 +294,19 @@ class DialogManager:
 
         def emit_timing_telemetry(speaker, generation_sec, speech_sec, turn_number=None):
             """Send turn timing telemetry for latency metrics."""
-            turn_elapsed_sec = generation_sec + speech_sec
+            timing = cap_turn_timing(generation_sec, speech_sec)
             payload = {
                 "turn": turn_number,
                 "speaker": speaker,
-                "generation_sec": generation_sec,
-                "speech_sec": speech_sec,
-                "turn_latency_sec": turn_elapsed_sec,
-                "turn_elapsed_sec": turn_elapsed_sec,
+                "generation_sec": timing["generation_sec"],
+                "speech_sec": timing["speech_sec"],
+                "turn_latency_sec": timing["turn_elapsed_sec"],
+                "turn_elapsed_sec": timing["turn_elapsed_sec"],
+                "raw_generation_sec": timing["raw_generation_sec"],
+                "raw_speech_sec": timing["raw_speech_sec"],
+                "raw_turn_elapsed_sec": timing["raw_turn_elapsed_sec"],
+                "turn_capped": timing["turn_capped"],
+                "max_turn_elapsed_sec": timing["max_turn_elapsed_sec"],
             }
             timing_turns.append(payload)
             event_queue.put(
@@ -313,6 +355,11 @@ class DialogManager:
                     "speech_sec": round(float(timing.get("speech_sec", 0.0) or 0.0), 6),
                     "turn_latency_sec": round(float(timing.get("turn_latency_sec", 0.0) or 0.0), 6),
                     "turn_elapsed_sec": round(float(timing.get("turn_elapsed_sec", timing.get("turn_latency_sec", 0.0)) or 0.0), 6),
+                    "raw_generation_sec": round(float(timing.get("raw_generation_sec", timing.get("generation_sec", 0.0)) or 0.0), 6),
+                    "raw_speech_sec": round(float(timing.get("raw_speech_sec", timing.get("speech_sec", 0.0)) or 0.0), 6),
+                    "raw_turn_elapsed_sec": round(float(timing.get("raw_turn_elapsed_sec", timing.get("turn_elapsed_sec", timing.get("turn_latency_sec", 0.0))) or 0.0), 6),
+                    "turn_capped": bool(timing.get("turn_capped", False)),
+                    "max_turn_elapsed_sec": round(float(timing.get("max_turn_elapsed_sec", self.max_turn_elapsed_sec) or self.max_turn_elapsed_sec), 6),
                     "pipeline_mode": speech.get("mode"),
                     "tts_engine": speech.get("tts_engine"),
                     "asr_engine": speech.get("asr_engine"),
@@ -346,6 +393,8 @@ class DialogManager:
                     "mean_turn_elapsed_sec": round(sum(elapsed_values) / turn_count, 6) if turn_count else 0.0,
                     "max_turn_elapsed_sec": round(max(elapsed_values), 6) if elapsed_values else 0.0,
                     "min_turn_elapsed_sec": round(min(elapsed_values), 6) if elapsed_values else 0.0,
+                    "turn_over_budget_count": sum(1 for segment in speaker_segments if segment.get("turn_capped")),
+                    "max_turn_budget_sec": self.max_turn_elapsed_sec,
                 }
             return summaries
 
@@ -353,7 +402,7 @@ class DialogManager:
         persona = self.test_case.persona
         planning_allowed_modes = route_allowed_modes(scenario, persona)
         constraint_route = optimal_constraint_route(scenario, persona)
-        start_wall = time.time()
+        start_wall = None
         route_memory = RouteProposalMemory()
         best_route = []
         best_duration = None
@@ -371,6 +420,8 @@ class DialogManager:
                 return "I will stop here; the options still ignore the constraints I gave."
             return "I will stop here."
 
+        start_wall = time.time()
+        event_queue.put(("timer_start", start_wall))
         speech_started_at = time.time()
         opening_trace = self.speech_transport.transmit_trace(
             "Agent A",
@@ -551,6 +602,7 @@ class DialogManager:
                 break
 
         end_wall = time.time()
+        runtime_sec = elapsed_since_ready()
 
         estimate = estimate_route_time(
             best_route,
@@ -642,9 +694,10 @@ class DialogManager:
             f"Route reaches goal:    {reaches_goal}\n"
             f"Route correct:         {route_correct}\n"
             f"Mean turn elapsed:     {str(round(sum(turn.get('turn_elapsed_sec', turn.get('turn_latency_sec', 0.0)) for turn in timing_turns) / len(timing_turns), 4)) + ' seconds' if timing_turns else 'None'}\n"
+            f"Maximum turn budget:   {self.max_turn_elapsed_sec:.1f} seconds\n"
             f"Agent A mean turn:     {agent_timing_summary['Agent A']['mean_turn_elapsed_sec']} seconds\n"
             f"Agent B mean turn:     {agent_timing_summary['Agent B']['mean_turn_elapsed_sec']} seconds\n"
-            f"Runtime:               {end_wall - start_wall:.2f} seconds\n"
+            f"Runtime:               {runtime_sec:.2f} seconds\n"
             f"Speech pipeline:       {self.speech_transport.description}\n"
         )
 
@@ -670,7 +723,7 @@ class DialogManager:
             route_reaches_goal=reaches_goal,
             route_correct=route_correct,
             route_duration_min=displayed_duration,
-            runtime_sec=end_wall - start_wall,
+            runtime_sec=runtime_sec,
             metrics_text=metrics,
             extra={
                 "speech_transport": self.speech_transport.description,
@@ -717,6 +770,8 @@ class DialogManager:
                     max((turn.get("turn_elapsed_sec", turn.get("turn_latency_sec", 0.0)) for turn in timing_turns), default=0.0),
                     6,
                 ),
+                "max_turn_budget_sec": self.max_turn_elapsed_sec,
+                "turn_over_budget_count": sum(1 for turn in timing_turns if turn.get("turn_capped")),
                 "agent_turn_segments": agent_turn_segments,
                 "agent_timing_summary": agent_timing_summary,
                 "speech_turns": speech_turns,

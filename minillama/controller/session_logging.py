@@ -346,7 +346,7 @@ class SessionLogger:
         if self.profile == LOG_PROFILE_STARTUP:
             return False
         kind = event[0]
-        return kind in {"message", "system", "warning", "route", "candidate", "telemetry", "metric_snapshot", "metrics", "done"}
+        return kind in {"message", "system", "warning", "route", "candidate", "telemetry", "metric_snapshot", "metrics", "timer_start", "done"}
 
 
 class MonitoringEventQueue:
@@ -419,6 +419,13 @@ class MonitoringEventQueue:
             return SystemEvent("ui-forward", timestamp, "metric.snapshot", payload=event[1])
         if kind == "metrics" and len(event) >= 2:
             return SystemEvent("ui-forward", timestamp, "metrics", payload={"metrics": event[1]})
+        if kind == "timer_start":
+            return SystemEvent(
+                "ui-forward",
+                timestamp,
+                "timer.start",
+                payload={"conversation_started_at": event[1] if len(event) >= 2 else timestamp},
+            )
         if kind == "done":
             return SystemEvent("ui-forward", timestamp, "done")
         return None

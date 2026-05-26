@@ -226,6 +226,7 @@ class StartupConfigDialog:
             "constraint_miss_limit": tk.IntVar(value=defaults["constraint_miss_limit"]),
             "agent_a_transfer_tolerance": tk.IntVar(value=defaults["agent_a_transfer_tolerance"]),
             "metric_snapshot_interval": tk.IntVar(value=defaults["metric_snapshot_interval"]),
+            "max_turn_elapsed_sec": tk.DoubleVar(value=defaults["max_turn_elapsed_sec"]),
             "speech_pattern_key": tk.StringVar(value=defaults["speech_pattern_key"]),
             "speech_engine": tk.StringVar(value=defaults["speech_engine"]),
             "tts_engine": tk.StringVar(value=defaults.get("tts_engine", defaults["speech_engine"])),
@@ -291,6 +292,7 @@ class StartupConfigDialog:
             ("Constraint miss stop limit", "constraint_miss_limit", 1, 10, 1),
             ("Agent A transfer tolerance", "agent_a_transfer_tolerance", 0, 2, 1),
             ("Metric snapshot interval", "metric_snapshot_interval", 1, 10, 1),
+            ("Maximum turn seconds", "max_turn_elapsed_sec", 5.0, 20.0, 0.5),
             ("Graphical interface metrics update milliseconds", "gui_refresh_ms", 50, 2000, 50),
             ("Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5),
             ("Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5),
@@ -2655,6 +2657,10 @@ class DialogWindow:
                 if kind == "message":
                     _, speaker, message = event
                     self.add_message(speaker, message)
+                elif kind == "timer_start":
+                    self.dialog_started_at = float(event[1]) if len(event) > 1 else time.time()
+                    self.live_stats["finished"] = False
+                    self.update_live_dialog_metrics()
                 elif kind == "system":
                     _, message = event
                     self.add_system(message)

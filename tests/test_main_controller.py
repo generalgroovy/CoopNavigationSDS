@@ -23,6 +23,7 @@ class MainControllerTests(unittest.TestCase):
         self.assertIn("persona_key", config)
         self.assertIn("gui_refresh_ms", config)
         self.assertGreaterEqual(config["gui_refresh_ms"], 50)
+        self.assertEqual(config["max_turn_elapsed_sec"], 20.0)
         self.assertIn("network_data_card_enabled", config)
         self.assertFalse(config["network_data_card_enabled"])
 

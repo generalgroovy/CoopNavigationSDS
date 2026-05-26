@@ -44,7 +44,7 @@ from minillama.controller.config import (
     SESSION_NAME,
 )
 from minillama.view.config import GUI_REFRESH_MS
-from minillama.controller.dialog_manager import DialogManager
+from minillama.controller.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
 from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
 from minillama.model.config import MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
@@ -111,6 +111,7 @@ def build_dialog_runtime(event_queue, model_adapter, run_config):
         constraint_miss_limit=int(run_config["constraint_miss_limit"]),
         transfer_tolerance=int(run_config["agent_a_transfer_tolerance"]),
         metric_snapshot_interval=int(run_config["metric_snapshot_interval"]),
+        max_turn_elapsed_sec=float(run_config.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC)),
     )
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
@@ -192,6 +193,7 @@ def default_run_config():
         "constraint_miss_limit": CONSTRAINT_MISS_LIMIT,
         "agent_a_transfer_tolerance": AGENT_A_TRANSFER_TOLERANCE,
         "metric_snapshot_interval": METRIC_SNAPSHOT_INTERVAL,
+        "max_turn_elapsed_sec": DEFAULT_MAX_TURN_ELAPSED_SEC,
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "speech_engine": SPEECH_ENGINE if SPEECH_ENGINE != "patterned" else "file",
@@ -239,6 +241,10 @@ def normalize_run_config(config):
         normalized["tts_engine"] = normalized.get("tts_engine") or "sapi"
         normalized["asr_engine"] = normalized.get("asr_engine") or "sapi"
     normalized["gui_refresh_ms"] = max(50, int(normalized.get("gui_refresh_ms", GUI_REFRESH_MS) or GUI_REFRESH_MS))
+    normalized["max_turn_elapsed_sec"] = min(
+        DEFAULT_MAX_TURN_ELAPSED_SEC,
+        max(1.0, float(normalized.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC) or DEFAULT_MAX_TURN_ELAPSED_SEC)),
+    )
     return normalized
 
 

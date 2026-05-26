@@ -6,7 +6,7 @@ from pathlib import Path
 
 from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
 from minillama.agent_b.plugin_registry import SimplePlannerAgentBPlugin
-from minillama.agent_b.speech_io import SpeechSignal, SpeechTransport
+from minillama.agent_b.speech_io import SpeechPipelineTrace, SpeechSignal, SpeechTransport
 from minillama.agent_b.speech_io import SpeechPipelineConfig
 from minillama.controller.dialog_manager import DialogManager, constraint_gap_missed
 from minillama.controller.dialog_result import NullEventQueue
@@ -265,3 +265,65 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
         self.assertLessEqual(max(word_counts), 24)
         self.assertLessEqual(len(result.conversation), 6)
+
+    def test_turn_timing_is_capped_at_configured_budget(self):
+        class SlowTransport:
+            description = "slow-test-transport"
+            asr_engine = type("AsrEngine", (), {"name": "test-asr", "pattern_key": "slow"})()
+
+            def transmit_trace(self, speaker, text):
+                return SpeechPipelineTrace(
+                    speaker=speaker,
+                    generated_text=text,
+                    outgoing_text=text,
+                    incoming_transcript=text,
+                    outgoing_enabled=True,
+                    incoming_enabled=True,
+                    tts_engine="test",
+                    asr_engine="test",
+                    pattern_key="slow",
+                    simulated_duration_sec=25.0,
+                    mode="speech",
+                )
+
+        manager = DialogManager(
+            get_test_case("airport_connection"),
+            SimplePlannerAgentBPlugin(),
+            num_turns=2,
+            speech_transport=SlowTransport(),
+            agent_a_responder=TemplateAgentAResponder(),
+            max_turn_elapsed_sec=20.0,
+        )
+
+        result = manager.run(NullEventQueue())
+
+        elapsed_values = [turn["turn_elapsed_sec"] for turn in result.extra["timing_turns"]]
+        raw_values = [turn["raw_turn_elapsed_sec"] for turn in result.extra["timing_turns"]]
+        self.assertTrue(elapsed_values)
+        self.assertLessEqual(max(elapsed_values), 20.0)
+        self.assertGreater(max(raw_values), 20.0)
+        self.assertGreater(result.extra["turn_over_budget_count"], 0)
+
+    def test_conversation_timer_starts_when_agents_are_ready(self):
+        class CapturingQueue:
+            def __init__(self):
+                self.events = []
+
+            def put(self, event):
+                self.events.append(event)
+
+        event_queue = CapturingQueue()
+        manager = DialogManager(
+            get_test_case("airport_connection"),
+            SimplePlannerAgentBPlugin(),
+            num_turns=2,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(event_queue)
+
+        kinds = [event[0] for event in event_queue.events]
+        self.assertIn("timer_start", kinds)
+        self.assertLess(kinds.index("timer_start"), kinds.index("message"))
+        self.assertGreaterEqual(result.runtime_sec, result.extra["metric_snapshots"][0]["elapsed_sec"])
