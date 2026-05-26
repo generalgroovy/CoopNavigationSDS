@@ -1,6 +1,12 @@
 """Scenario model definitions for start/destination/time/transfer settings used by dialogs and experiments.
 """
-from minillama.model.config import START_TIME_MIN, TRANSFER_TIME_MIN
+from minillama.model.config import (
+    DEFAULT_ALLOWED_MODES,
+    MAX_ROUTE_DELAY_PROBABILITY,
+    MAX_TRANSFER_MISS_PROBABILITY,
+    START_TIME_MIN,
+    TRANSFER_TIME_MIN,
+)
 from minillama.model.metro_data import STATIONS, is_reachable
 from minillama.test_cases.config import DEFAULT_SCENARIO, SCENARIO_SPECS
 
@@ -12,6 +18,9 @@ def make_scenario(
     destination_stations=None,
     start_time_min=START_TIME_MIN,
     transfer_time_min=TRANSFER_TIME_MIN,
+    allowed_modes=DEFAULT_ALLOWED_MODES,
+    max_transfer_miss_probability=MAX_TRANSFER_MISS_PROBABILITY,
+    max_delay_probability=MAX_ROUTE_DELAY_PROBABILITY,
     allow_unreachable=False,
 ):
     """Make scenario function for this module's MVC responsibility.
@@ -47,6 +56,9 @@ def make_scenario(
         "destination_stations": destinations,
         "start_time_min": start_time_min,
         "transfer_time_min": transfer_time_min,
+        "allowed_modes": tuple(allowed_modes or DEFAULT_ALLOWED_MODES),
+        "max_transfer_miss_probability": max_transfer_miss_probability,
+        "max_delay_probability": max_delay_probability,
         "goal": "fastest_route",
         "allow_unreachable": allow_unreachable,
     }
@@ -70,6 +82,9 @@ SCENARIOS = {
         _station_at(spec["destination_station_index"]),
         destination_stations=_stations_at(spec.get("destination_station_indices", [spec["destination_station_index"]])),
         start_time_min=spec["start_time_min"],
+        allowed_modes=spec.get("allowed_modes", DEFAULT_ALLOWED_MODES),
+        max_transfer_miss_probability=spec.get("max_transfer_miss_probability", MAX_TRANSFER_MISS_PROBABILITY),
+        max_delay_probability=spec.get("max_delay_probability", MAX_ROUTE_DELAY_PROBABILITY),
     )
     for key, spec in SCENARIO_SPECS.items()
 }

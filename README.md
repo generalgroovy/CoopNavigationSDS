@@ -106,7 +106,7 @@ flowchart LR
     SpeechRecognition["Automatic speech recognition\nproduce transcript"]
     AgentB["Agent B\nroute assistant uses last received transcript"]
     RouteParsing["Semantic route parsing\nstations, validity, goal reach"]
-    CandidateComparison["Route candidate comparison\ntravel time, changes, near-capacity status, delay"]
+    CandidateComparison["Route candidate comparison\ntravel time, ticket modes, transfer risk, near-capacity status, delay"]
     AgentAResponse["Agent A response\ncritique, constraint request, or stop"]
     Metrics["Metric snapshots\nphase outputs and success or failure"]
     ResearchOutputs["Research outputs\nprotocol files, spreadsheet, phase logs"]
@@ -169,12 +169,12 @@ The evaluation report exports a staged metric stack aligned with speech-dialog a
 | Text-to-speech | Generated text, spoken text, audio artifact, playback status | `tts_success_rate`, `tts_failure_count`, `tts_text_change_rate` |
 | Automatic speech recognition | Spoken text as source, recognized transcript as received input | `asr_success_rate`, `asr_failure_count`, `asr_word_error_rate`, station precision and recall |
 | Spoken language understanding | Recognized transcript passed into route parsing | `slu_pipeline_input_match_rate`, route validity rate, goal reached rate |
-| Route comparison | Parsed candidate route, duration, line changes, near-capacity status, delay probability | candidate count, route revision count, constraint gaps, transfer tolerance |
+| Route comparison | Parsed candidate route, ticket modes, station transfer times, transfer-miss probability, duration, line changes, near-capacity status, delay probability | candidate count, route revision count, constraint gaps, transfer tolerance, transfer-risk gap |
 | Runtime | Generation time, speech time, turn latency, condition runtime | mean latency, maximum turn latency, speech duration total |
 | End to end | Final route and task state | task success, completion, abandonment, escalation, turns to success |
 
 Speech turns keep separate generated, outgoing, and incoming text traces. The graphical interface and comma-separated metrics report automatic speech recognition word error rate, text-to-speech text-change rate, station precision and recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
 
-Network data is displayed in its own graphical interface card with complete line rows, station rows, headways, binary capacity status, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
+Network data is displayed in its own graphical interface card with complete line rows, transport modes, station rows, station-specific transfer times, headways, binary capacity status, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
 
 Logging defaults to `off`. Set `MINILLAMA_SESSION_LOG_PROFILE` to `startup`, `runtime`, or `full` to compare overhead.

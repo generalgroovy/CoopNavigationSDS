@@ -2,8 +2,11 @@
 from dataclasses import dataclass
 
 from minillama.model.metro_data import is_near_capacity
+from minillama.model.config import DEFAULT_ALLOWED_MODES, MAX_ROUTE_DELAY_PROBABILITY, MAX_TRANSFER_MISS_PROBABILITY
 from minillama.model.route_planner import (
     candidate_time_routes,
+    line_mode,
+    normalize_allowed_modes,
     route_line_change_count,
     route_line_sequence,
 )
@@ -16,9 +19,12 @@ class RouteConstraintProfile:
     prefer_fewer_changes: bool = False
     prefer_less_full: bool = False
     prefer_low_delay: bool = False
+    allowed_modes: tuple[str, ...] | None = None
+    max_transfer_miss_probability: float = MAX_TRANSFER_MISS_PROBABILITY
+    max_delay_probability: float = MAX_ROUTE_DELAY_PROBABILITY
 
     @classmethod
-    def from_persona(cls, persona):
+    def from_persona(cls, persona, scenario=None):
         preferences = persona.get("preferences", {})
         priority = preferences.get("priority", "").lower()
         switching = preferences.get("switching", "").lower()
@@ -37,11 +43,25 @@ class RouteConstraintProfile:
             term in f"{priority} {reliability}"
             for term in ("delay", "reliable", "reliability", "on time", "low risk")
         )
+        allowed_modes = route_allowed_modes(scenario or {}, persona)
         return cls(
             prefer_fast=prefer_fast or not (prefer_fewer_changes or prefer_less_full or prefer_low_delay),
             prefer_fewer_changes=prefer_fewer_changes,
             prefer_less_full=prefer_less_full,
             prefer_low_delay=prefer_low_delay,
+            allowed_modes=allowed_modes,
+            max_transfer_miss_probability=float(
+                preferences.get(
+                    "max_transfer_miss_probability",
+                    (scenario or {}).get("max_transfer_miss_probability", MAX_TRANSFER_MISS_PROBABILITY),
+                )
+            ),
+            max_delay_probability=float(
+                preferences.get(
+                    "max_delay_probability",
+                    (scenario or {}).get("max_delay_probability", MAX_ROUTE_DELAY_PROBABILITY),
+                )
+            ),
         )
 
     @property
@@ -55,6 +75,8 @@ class RouteConstraintProfile:
             parts.append("avoid near capacity")
         if self.prefer_low_delay:
             parts.append("lower delay risk")
+        if self.allowed_modes:
+            parts.append("ticket " + "/".join(self.allowed_modes))
         return ", ".join(parts) if parts else "valid route"
 
 
@@ -70,8 +92,20 @@ class ConstraintRoute:
     near_capacity_count: int
     has_near_capacity: bool
     delay_probability: float
+    transfer_miss_probability: float
+    mode_sequence: list[str]
     score: tuple
     label: str
+
+
+def route_allowed_modes(scenario, persona=None):
+    """Return the scenario/persona ticket-mode intersection."""
+    persona_preferences = (persona or {}).get("preferences", {})
+    scenario_modes = normalize_allowed_modes((scenario or {}).get("allowed_modes"))
+    persona_modes = normalize_allowed_modes(persona_preferences.get("allowed_modes"))
+    if scenario_modes and persona_modes:
+        return tuple(mode for mode in scenario_modes if mode in set(persona_modes)) or ("__none__",)
+    return scenario_modes or persona_modes or tuple(DEFAULT_ALLOWED_MODES)
 
 
 def route_average_fullness(steps):
@@ -95,11 +129,28 @@ def route_delay_probability(steps):
     return round(max(values), 4) if values else 0.0
 
 
+def route_transfer_miss_probability(steps):
+    """Return route-level transfer-miss risk as the maximum transfer risk."""
+    values = [step.get("transfer_miss_probability", 0.0) for step in steps]
+    return round(max(values), 4) if values else 0.0
+
+
+def route_mode_sequence(steps):
+    """Return the transport modes used by a route without consecutive duplicates."""
+    sequence = []
+    for step in steps:
+        mode = step.get("mode") or line_mode(step["line"])
+        if not sequence or mode != sequence[-1]:
+            sequence.append(mode)
+    return sequence
+
+
 def constraint_sort_key(duration_min, steps, profile):
     line_changes = route_line_change_count(steps)
     average_fullness = route_average_fullness(steps)
     near_capacity_count = route_near_capacity_count(steps)
     delay_probability = route_delay_probability(steps)
+    transfer_miss_probability = route_transfer_miss_probability(steps)
     key = []
     key.append(duration_min if profile.prefer_fast else round(duration_min * 0.25))
     if profile.prefer_fewer_changes:
@@ -108,13 +159,22 @@ def constraint_sort_key(duration_min, steps, profile):
         key.append(near_capacity_count)
     if profile.prefer_low_delay:
         key.append(delay_probability)
-    key.extend([duration_min, line_changes, near_capacity_count, average_fullness, delay_probability])
+    key.extend([
+        duration_min,
+        int(transfer_miss_probability > profile.max_transfer_miss_probability),
+        int(delay_probability > profile.max_delay_probability),
+        line_changes,
+        near_capacity_count,
+        average_fullness,
+        transfer_miss_probability,
+        delay_probability,
+    ])
     return tuple(key)
 
 
 def optimal_constraint_route(scenario, persona, limit=50):
     """Compute the best startup baseline route under persona constraints."""
-    profile = RouteConstraintProfile.from_persona(persona)
+    profile = RouteConstraintProfile.from_persona(persona, scenario)
     candidates = candidate_time_routes(
         scenario["start_station"],
         scenario["destination_station"],
@@ -123,6 +183,7 @@ def optimal_constraint_route(scenario, persona, limit=50):
         limit=limit,
         max_extra_stops=8,
         max_paths=20000,
+        allowed_modes=profile.allowed_modes,
     )
     if not candidates:
         return None
@@ -141,6 +202,8 @@ def optimal_constraint_route(scenario, persona, limit=50):
         near_capacity_count=route_near_capacity_count(steps),
         has_near_capacity=route_has_near_capacity(steps),
         delay_probability=route_delay_probability(steps),
+        transfer_miss_probability=route_transfer_miss_probability(steps),
+        mode_sequence=route_mode_sequence(steps),
         score=constraint_sort_key(duration_min, steps, profile),
         label=profile.label,
     )
@@ -148,7 +211,7 @@ def optimal_constraint_route(scenario, persona, limit=50):
 
 def ranked_constraint_routes(scenario, persona, limit=6):
     """Return valid routes sorted by the persona's scientific comparison profile."""
-    profile = RouteConstraintProfile.from_persona(persona)
+    profile = RouteConstraintProfile.from_persona(persona, scenario)
     candidates = candidate_time_routes(
         scenario["start_station"],
         scenario["destination_station"],
@@ -157,6 +220,7 @@ def ranked_constraint_routes(scenario, persona, limit=6):
         limit=max(limit * 6, 20),
         max_extra_stops=8,
         max_paths=20000,
+        allowed_modes=profile.allowed_modes,
     )
     ranked = sorted(candidates, key=lambda item: constraint_sort_key(item[0], item[2], profile))
     out = []
@@ -172,6 +236,8 @@ def ranked_constraint_routes(scenario, persona, limit=6):
                 near_capacity_count=route_near_capacity_count(steps),
                 has_near_capacity=route_has_near_capacity(steps),
                 delay_probability=route_delay_probability(steps),
+                transfer_miss_probability=route_transfer_miss_probability(steps),
+                mode_sequence=route_mode_sequence(steps),
                 score=constraint_sort_key(duration_min, steps, profile),
                 label=profile.label,
             )
@@ -193,4 +259,10 @@ def route_constraint_gap(steps, duration_min, constraint_route):
         "near_capacity_count": near_capacity_count,
         "has_near_capacity": near_capacity_count > 0,
         "delay_probability_gap": round(route_delay_probability(steps) - constraint_route.delay_probability, 4),
+        "transfer_miss_probability_gap": round(
+            route_transfer_miss_probability(steps) - constraint_route.transfer_miss_probability,
+            4,
+        ),
+        "transfer_miss_probability": route_transfer_miss_probability(steps),
+        "mode_sequence": route_mode_sequence(steps),
     }

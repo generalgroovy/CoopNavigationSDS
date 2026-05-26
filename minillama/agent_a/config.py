@@ -13,6 +13,7 @@ PERSONAS = {
             "switching": "accepts line changes for a faster route",
             "fullness": "does not mind fuller trains",
             "priority": "fastest route first",
+            "allowed_modes": ("metro", "tram", "bus"),
         },
     },
     "distracted_multitasker": {
@@ -87,6 +88,8 @@ PERSONAS = {
             "fullness": "fullness matters if it increases delay probability",
             "priority": "low delay risk and on-time arrival",
             "reliability": "prefer lower delay probability",
+            "max_transfer_miss_probability": 0.20,
+            "max_delay_probability": 0.32,
         },
     },
     "accessibility_rider": {
@@ -97,6 +100,8 @@ PERSONAS = {
             "fullness": "prefers enough space to board comfortably",
             "priority": "simple route with low transfer burden",
             "reliability": "prefer predictable services",
+            "allowed_modes": ("metro", "tram"),
+            "max_transfer_miss_probability": 0.18,
         },
     },
     "multi_stop_errand_runner": {
@@ -122,6 +127,8 @@ ROUTE_TASK = (
     "Secondary goal: satisfy preferences such as avoiding near-capacity trains and fewer changes. "
     "Delay probability is a secondary reliability constraint. "
     "Best time means riding + waiting + transfer time, with transfer time only when the line changes. "
+    "Tickets can restrict transport modes, and station transfer times vary. "
+    "Short transfer buffers can add missed-connection risk. "
     "Compare alternatives only when they are valid and meaningfully affect time or constraints. "
     "All listed segments work both ways. "
     "Say stations in travel order and keep line changes explicit."

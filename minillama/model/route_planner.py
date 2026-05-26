@@ -9,6 +9,8 @@ from minillama.model.metro_data import (
     ADJACENCY,
     TRAVEL_TIMES,
     segment_fullness_percent,
+    station_fullness_percent,
+    station_transfer_time_min,
 )
 
 
@@ -23,6 +25,47 @@ def fmt_time(minutes: int) -> str:
     """
     minutes %= 24 * 60
     return f"{minutes // 60:02d}:{minutes % 60:02d}"
+
+
+def normalize_allowed_modes(allowed_modes=None):
+    """Return a hashable lower-case transport-mode filter."""
+    if not allowed_modes:
+        return None
+    if isinstance(allowed_modes, str):
+        allowed_modes = [item.strip() for item in allowed_modes.split(",")]
+    modes = tuple(sorted({str(mode).strip().lower() for mode in allowed_modes if str(mode).strip()}))
+    return modes or None
+
+
+def line_mode(line_name):
+    """Return the transport mode for a line."""
+    return LINES[line_name].get("mode", "bus")
+
+
+def line_allowed(line_name, allowed_modes=None):
+    """Return whether a line can be used by the current ticket constraint."""
+    modes = normalize_allowed_modes(allowed_modes)
+    return modes is None or line_mode(line_name) in modes
+
+
+def transfer_time_at_station(station, previous_line, next_line, default_transfer_time_min):
+    """Return transfer time only when the route changes lines."""
+    if not previous_line or previous_line == next_line:
+        return 0
+    return max(int(default_transfer_time_min), station_transfer_time_min(station))
+
+
+def transfer_miss_probability(station, next_line, transfer, wait, current_time_min):
+    """Estimate the risk of missing a connection after a line change."""
+    if transfer <= 0:
+        return 0.0
+    station_time = station_transfer_time_min(station)
+    buffer = max(0, wait)
+    fullness = station_fullness_percent(station, current_time_min)
+    headway = LINES[next_line]["headway"]
+    risk = 0.02 + max(0, 3 - buffer) * 0.08 + max(0, station_time - transfer) * 0.12
+    risk += fullness / 500.0 + headway / 220.0
+    return round(min(0.85, max(0.01, risk)), 4)
 
 
 def next_departure(current_time_min: int, line_name: str) -> int:
@@ -151,7 +194,7 @@ def segment_delay_probability(line_name: str, station_a: str, station_b: str, de
 
 
 @lru_cache(maxsize=1024)
-def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time_min: int):
+def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time_min: int, allowed_modes=None):
     """Optimal time route function for this module's MVC responsibility.
 
     Args:
@@ -163,6 +206,7 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    allowed_modes = normalize_allowed_modes(allowed_modes)
     heap = []
     heappush(heap, (start_time_min, start, None, None, []))
     best = {(start, None): start_time_min}
@@ -174,10 +218,12 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
             return current_time, path
 
         for nxt, line, travel in ADJACENCY[station]:
+            if not line_allowed(line, allowed_modes):
+                continue
             service = line_direction_key(line, station, nxt)
             if service is None:
                 continue
-            transfer = transfer_time_min if current_line and current_line != line else 0
+            transfer = transfer_time_at_station(station, current_line, line, transfer_time_min)
             ready = current_time + transfer
             continuing_same_train = current_line == line and current_service == service
             depart = current_time if continuing_same_train else next_train_departure(ready, line, station, nxt)
@@ -190,8 +236,10 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
                     "from": station,
                     "to": nxt,
                     "line": line,
+                    "mode": line_mode(line),
                     "service": service,
                     "previous_line": current_line,
+                    "previous_mode": line_mode(current_line) if current_line else None,
                     "depart": depart,
                     "arrive": arrive,
                     "wait": 0 if continuing_same_train else depart - ready,
@@ -200,6 +248,8 @@ def optimal_time_route(start: str, goal: str, start_time_min: int, transfer_time
                 }
                 step["fullness"] = segment_fullness_percent(line, station, nxt, depart)
                 step["delay_probability"] = segment_delay_probability(line, station, nxt, depart)
+                step["transfer_station_time"] = station_transfer_time_min(station) if transfer else 0
+                step["transfer_miss_probability"] = transfer_miss_probability(station, line, transfer, step["wait"], ready)
                 heappush(heap, (arrive, nxt, line, service, path + [step]))
 
     return None, []
@@ -214,6 +264,7 @@ def candidate_time_routes(
     limit: int = 4,
     max_extra_stops: int = 4,
     max_paths: int = 4000,
+    allowed_modes=None,
 ):
     """Return distinct valid route candidates, searching shorter station paths first."""
     max_stops = len(ADJACENCY) + max_extra_stops
@@ -228,7 +279,7 @@ def candidate_time_routes(
             continue
 
         if station == goal and len(path) >= 2:
-            estimate = estimate_route_time(path, start_time_min, transfer_time_min)
+            estimate = estimate_route_time(path, start_time_min, transfer_time_min, allowed_modes=allowed_modes)
             if estimate:
                 arrival, steps = estimate
                 candidates.append((arrival - start_time_min, list(path), steps))
@@ -393,7 +444,7 @@ def route_duration_text(steps):
     )
 
 
-def route_is_valid(stations):
+def route_is_valid(stations, allowed_modes=None):
     """Route is valid function for this module's MVC responsibility.
 
     Args:
@@ -405,14 +456,18 @@ def route_is_valid(stations):
     if len(stations) < 2:
         return False
 
+    allowed_modes = normalize_allowed_modes(allowed_modes)
     for a, b in zip(stations, stations[1:]):
-        if not any(nxt == b and line_direction_key(line, a, b) is not None for nxt, line, _ in ADJACENCY[a]):
+        if not any(
+            nxt == b and line_allowed(line, allowed_modes) and line_direction_key(line, a, b) is not None
+            for nxt, line, _ in ADJACENCY[a]
+        ):
             return False
 
     return True
 
 
-def estimate_route_time(stations, start_time_min, transfer_time_min):
+def estimate_route_time(stations, start_time_min, transfer_time_min, allowed_modes=None):
     """Estimate route time function for this module's MVC responsibility.
 
     Args:
@@ -423,7 +478,8 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
     Returns:
         The computed value or side effect documented by the implementation.
     """
-    if not route_is_valid(stations):
+    allowed_modes = normalize_allowed_modes(allowed_modes)
+    if not route_is_valid(stations, allowed_modes=allowed_modes):
         return None
 
     current_time = start_time_min
@@ -432,14 +488,14 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
     steps = []
 
     for a, b in zip(stations, stations[1:]):
-        options = [(line, travel) for nxt, line, travel in ADJACENCY[a] if nxt == b]
+        options = [(line, travel) for nxt, line, travel in ADJACENCY[a] if nxt == b and line_allowed(line, allowed_modes)]
         best_step = None
 
         for line, travel in options:
             service = line_direction_key(line, a, b)
             if service is None:
                 continue
-            transfer = transfer_time_min if current_line and current_line != line else 0
+            transfer = transfer_time_at_station(a, current_line, line, transfer_time_min)
             ready = current_time + transfer
             continuing_same_train = current_line == line and current_service == service
             depart = current_time if continuing_same_train else next_train_departure(ready, line, a, b)
@@ -449,8 +505,10 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
                 "from": a,
                 "to": b,
                 "line": line,
+                "mode": line_mode(line),
                 "service": service,
                 "previous_line": current_line,
+                "previous_mode": line_mode(current_line) if current_line else None,
                 "depart": depart,
                 "arrive": arrive,
                 "wait": 0 if continuing_same_train else depart - ready,
@@ -459,6 +517,8 @@ def estimate_route_time(stations, start_time_min, transfer_time_min):
             }
             candidate["fullness"] = segment_fullness_percent(line, a, b, depart)
             candidate["delay_probability"] = segment_delay_probability(line, a, b, depart)
+            candidate["transfer_station_time"] = station_transfer_time_min(a) if transfer else 0
+            candidate["transfer_miss_probability"] = transfer_miss_probability(a, line, transfer, candidate["wait"], ready)
 
             if best_step is None or arrive < best_step["arrive"]:
                 best_step = candidate

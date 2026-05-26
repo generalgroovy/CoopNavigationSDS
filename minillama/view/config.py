@@ -93,6 +93,7 @@ GUI_STATION_TIME_TABLE_COLUMNS = [
 GUI_NETWORK_LINE_COLUMNS = [
     ("name", "Line", 130, "w", False),
     ("kind", "Kind", 74, "w", False),
+    ("mode", "Mode", 70, "center", False),
     ("headway", "Headway", 72, "center", False),
     ("fullness", "Capacity", 112, "center", False),
     ("stops", "Stops", 54, "center", False),
@@ -102,6 +103,7 @@ GUI_NETWORK_LINE_COLUMNS = [
 GUI_NETWORK_STATION_COLUMNS = [
     ("name", "Station", 110, "w", False),
     ("fullness", "Capacity", 112, "center", False),
+    ("transfer", "Transfer", 78, "center", False),
     ("lines", "Lines", 190, "w", False),
     ("neighbors", "Neighbors", 300, "w", True),
     ("coordinates", "Map", 70, "center", False),

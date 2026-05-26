@@ -910,6 +910,7 @@ class DialogWindow:
             (("constraint_route", "Target Route"), ("constraint_duration", "Target Time")),
             (("constraint_line_sequence", "Target Sequence"), ("constraint_line_changes", "Target Changes")),
             (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Capacity")),
+            (("allowed_modes", "Allowed Modes"), ("transfer_miss_risk", "Transfer Risk")),
             (("candidate_routes", "Candidates"), ("route_revisions", "Revisions")),
             (("valid", "Valid"), ("goal", "Goal")),
             (("correct", "Correct"), ("runtime", "Runtime")),
@@ -1026,6 +1027,7 @@ class DialogWindow:
                 values=(
                     item.name,
                     item.kind,
+                    item.mode,
                     f"{item.headway_min} minutes",
                     item.capacity_status,
                     item.stop_count,
@@ -1049,6 +1051,7 @@ class DialogWindow:
                 values=(
                     item.name,
                     item.capacity_status,
+                    f"{item.transfer_time_min} minutes",
                     item.lines,
                     item.neighbors,
                     item.coordinates,
@@ -1488,7 +1491,7 @@ class DialogWindow:
         line_fullness = line_fullness_percent(line_name, self.scenario["start_time_min"])
         tk.Label(
             parent,
-            text=f"{self.line_tab_label(line_name)}  {direction_text}  every {data['headway']} minutes  {capacity_status(line_fullness)}",
+            text=f"{self.line_tab_label(line_name)}  {data.get('mode', 'bus')}  {direction_text}  every {data['headway']} minutes  {capacity_status(line_fullness)}",
             anchor="w",
             font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL + 1, "bold"),
             bg=GUI_COLORS["panel_bg"],
@@ -2629,6 +2632,8 @@ class DialogWindow:
             "Constraint line changes": "constraint_line_changes",
             "Constraint duration": "constraint_duration",
             "Constraint capacity": "constraint_fullness",
+            "Allowed modes": "allowed_modes",
+            "Transfer miss risk": "transfer_miss_risk",
             "Constraint gap": "constraint_gap",
             "Candidate routes": "candidate_routes",
             "Route revisions": "route_revisions",
@@ -3065,7 +3070,8 @@ class DialogWindow:
         duration_gap = candidate.get("duration_gap_min")
         change_gap = candidate.get("line_change_gap")
         fullness_gap = candidate.get("near_capacity_gap", candidate.get("fullness_gap"))
-        if duration_gap is None and change_gap is None and fullness_gap is None:
+        transfer_gap = candidate.get("transfer_miss_probability_gap")
+        if duration_gap is None and change_gap is None and fullness_gap is None and transfer_gap is None:
             return "-"
 
         parts = []
@@ -3075,6 +3081,8 @@ class DialogWindow:
             parts.append(f"{change_gap:+d} line changes")
         if fullness_gap is not None:
             parts.append(f"{fullness_gap:+d} near-capacity")
+        if transfer_gap is not None:
+            parts.append(f"{transfer_gap:+.2f} transfer risk")
         return " ".join(parts)
 
     def live_route_status(self):

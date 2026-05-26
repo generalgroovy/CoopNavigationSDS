@@ -129,7 +129,7 @@ def build_agent_b_system(scenario, persona=None):
         "Be natural, short, and non-repetitive. "
         "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
         "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
-        "Then compare time, near-capacity trains, changes, and delay risk. "
+        "Then compare time, ticket modes, near-capacity trains, changes, delay risk, and transfer-miss risk. "
         f"{preference_text(persona or {})} "
         "Say boarding stations only: start, transfer boarding stations, destination. "
         "State total time once. "
@@ -148,7 +148,7 @@ def build_agent_b_phase_instruction(turn, destination):
     if turn == 1:
         return (
             "If there is a valid alternative, compare it against the current route. "
-            "Prefer shorter paths, then time, near-capacity trains, changes, and delay risk."
+            "Prefer shorter paths, then time, ticket modes, near-capacity trains, changes, delay risk, and transfer-miss risk."
         )
 
     if turn == 2:
@@ -202,8 +202,10 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         route_line_change_count,
         route_station_sequence,
     )
+    from minillama.model.route_constraints import route_allowed_modes
 
     interpreter = NaturalRouteInterpreter()
+    allowed_modes = route_allowed_modes(scenario, persona)
     if not interpreter.has_station_mentions(last_agent_b):
         return (
             f"I need the actual route to {scenario['destination_station']}. "
@@ -231,6 +233,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         route,
         scenario["start_time_min"],
         scenario["transfer_time_min"],
+        allowed_modes=allowed_modes,
     )
     if estimate:
         arrival, steps = estimate
@@ -274,6 +277,7 @@ def agent_a_alternative_request(persona):
     wants_fewer_changes = any(term in switching for term in ("fewer", "avoid", "avoiding", "unnecessary", "only for meaningful"))
     wants_fastest = any(term in priority for term in ("fast", "quick", "travel time"))
     wants_low_delay = any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk"))
+    wants_safe_transfers = preferences.get("max_transfer_miss_probability") is not None
 
     constraints = []
     if wants_fastest:
@@ -284,6 +288,8 @@ def agent_a_alternative_request(persona):
         constraints.append("fewer line changes")
     if wants_low_delay:
         constraints.append("lower delay risk")
+    if wants_safe_transfers:
+        constraints.append("safer transfers")
 
     if not constraints:
         constraints.append("a better fit for my preferences")
@@ -295,9 +301,11 @@ def agent_a_alternative_request(persona):
 def best_prior_route_duration(conversation, scenario):
     """Return the best earlier Agent B route duration, if any."""
     from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+    from minillama.model.route_constraints import route_allowed_modes
     from minillama.model.route_planner import estimate_route_time
 
     interpreter = NaturalRouteInterpreter()
+    allowed_modes = route_allowed_modes(scenario)
     durations = []
     for speaker, text in conversation:
         if speaker != "Agent B":
@@ -309,6 +317,7 @@ def best_prior_route_duration(conversation, scenario):
             route,
             scenario["start_time_min"],
             scenario["transfer_time_min"],
+            allowed_modes=allowed_modes,
         )
         if estimate:
             arrival, _ = estimate

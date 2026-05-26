@@ -19,8 +19,11 @@ from minillama.model.config import (
     MIN_LINE_FULLNESS_PERCENT,
     MAX_LINE_FULLNESS_PERCENT,
     STATION_DEMAND_SEED,
+    STATION_TRANSFER_SEED,
     MIN_STATION_FULLNESS_PERCENT,
     MAX_STATION_FULLNESS_PERCENT,
+    MIN_STATION_TRANSFER_TIME_MIN,
+    MAX_STATION_TRANSFER_TIME_MIN,
     NEAR_CAPACITY_THRESHOLD_PERCENT,
     MORNING_PEAK_CENTER_MIN,
     EVENING_PEAK_CENTER_MIN,
@@ -41,6 +44,7 @@ from minillama.model.config import (
     LINE_KIND_BONUS,
     LINE_LENGTH_SCORE_DIVISOR,
     LINE_STOP_OVERRIDES,
+    TRANSPORT_MODE_BY_KIND,
 )
 from minillama.model.station_names import get_station_names
 
@@ -337,6 +341,7 @@ def choose_lines(stations, seed=None):
                 line_name,
                 {
                     "kind": kind,
+                    "mode": TRANSPORT_MODE_BY_KIND.get(kind, "bus"),
                     "color": LINE_COLORS[line_index % len(LINE_COLORS)],
                     "headway": DEFAULT_HEADWAY_MIN + (line_index % HEADWAY_VARIATION_MOD),
                     "stops": stops,
@@ -512,6 +517,25 @@ def build_station_profiles(stations, lines, seed=None):
     return profiles
 
 
+def build_station_transfer_times(stations, lines, seed=None):
+    """Create deterministic transfer-time variation by station."""
+    transfer_times = {}
+    for index, station in enumerate(stations):
+        interchange_degree = sum(1 for data in lines.values() if station in data["stops"])
+        local_rng = random.Random((seed or 0) + index * 53)
+        if interchange_degree >= 4:
+            base = 4 + local_rng.randint(0, 3)
+        elif interchange_degree >= 2:
+            base = 2 + local_rng.randint(0, 3)
+        else:
+            base = 1 + local_rng.randint(0, 1)
+        transfer_times[station] = max(
+            MIN_STATION_TRANSFER_TIME_MIN,
+            min(MAX_STATION_TRANSFER_TIME_MIN, base),
+        )
+    return transfer_times
+
+
 def gaussian_peak(minute, center_min, spread_min):
     """Return a smooth bell-shaped multiplier around a target minute."""
     delta = minute - center_min
@@ -570,6 +594,11 @@ def is_near_capacity(fullness_percent, threshold=NEAR_CAPACITY_THRESHOLD_PERCENT
 def capacity_status(fullness_percent, threshold=NEAR_CAPACITY_THRESHOLD_PERCENT):
     """Return the binary capacity label used for dialog and research outputs."""
     return "near capacity" if is_near_capacity(fullness_percent, threshold) else "not near capacity"
+
+
+def station_transfer_time_min(station):
+    """Return the station-specific line-change time."""
+    return STATION_TRANSFER_TIMES.get(station, MIN_STATION_TRANSFER_TIME_MIN)
 
 
 def apply_line_overrides(lines, stations):
@@ -750,6 +779,7 @@ STATION_POS = generate_station_positions(STATIONS)
 LINES = choose_lines(STATIONS, NETWORK_SEED)
 TRAVEL_TIMES = generate_travel_times(LINES, NETWORK_SEED)
 EDGES, ADJACENCY = build_edges_and_adjacency(STATIONS, LINES, TRAVEL_TIMES)
+STATION_TRANSFER_TIMES = build_station_transfer_times(STATIONS, LINES, STATION_TRANSFER_SEED)
 STATION_PROFILES = build_station_profiles(STATIONS, LINES, STATION_DEMAND_SEED)
 
 for line_name in LINES:
@@ -781,9 +811,22 @@ def compact_network_text():
         The computed value or side effect documented by the implementation.
     """
     return " ".join(
-        f"{line} ({data['headway']} minutes, {data.get('kind', 'Line')}): {line_stop_sequence_text(line, data)}."
+        f"{line} ({data['headway']} minutes, {data.get('mode', 'bus')}, {data.get('kind', 'Line')}): {line_stop_sequence_text(line, data)}."
         for line, data in LINES.items()
     )
+
+
+@lru_cache(maxsize=1)
+def compact_transport_mode_text():
+    """Return compact line-mode context for route constraints."""
+    return " ".join(f"{line}: {data.get('mode', 'bus')}." for line, data in LINES.items())
+
+
+@lru_cache(maxsize=1)
+def compact_station_transfer_text(limit=10):
+    """Return compact transfer-time context for the longest transfer stations."""
+    slowest = sorted(STATION_TRANSFER_TIMES.items(), key=lambda item: (-item[1], item[0]))[:limit]
+    return " ".join(f"{station}: {minutes} minutes." for station, minutes in slowest)
 
 
 @lru_cache(maxsize=256)

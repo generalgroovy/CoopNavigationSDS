@@ -1,10 +1,11 @@
 import unittest
 
-from minillama.model.metro_data import LINES
+from minillama.model.metro_data import LINES, station_transfer_time_min
 from minillama.model.route_constraints import ConstraintRoute, optimal_constraint_route, route_constraint_gap, route_near_capacity_count
 from minillama.model.route_planner import (
     estimate_route_time,
     line_direction_sequences,
+    line_mode,
     route_duration_breakdown,
     route_text_from_steps,
 )
@@ -77,6 +78,8 @@ class RingLineTests(unittest.TestCase):
             near_capacity_count=0,
             has_near_capacity=False,
             delay_probability=0.0,
+            transfer_miss_probability=0.0,
+            mode_sequence=["metro"],
             score=(),
             label="avoid near capacity",
         )
@@ -89,3 +92,25 @@ class RingLineTests(unittest.TestCase):
         self.assertEqual(route_near_capacity_count(high_capacity_steps), 1)
         self.assertEqual(gap["near_capacity_gap"], 1)
         self.assertEqual(gap["fullness_gap"], 1)
+
+    def test_lines_have_transport_modes_for_ticket_constraints(self):
+        modes = {data.get("mode") for data in LINES.values()}
+
+        self.assertIn("metro", modes)
+        self.assertIn("tram", modes)
+        self.assertIn("bus", modes)
+
+    def test_ticket_mode_filter_blocks_disallowed_mode(self):
+        estimate = estimate_route_time(["Alpha", "Hotel"], 480, 2, allowed_modes=("metro",))
+
+        self.assertIsNone(estimate)
+        self.assertEqual(line_mode("Diagonal-SE-1"), "bus")
+
+    def test_station_specific_transfer_time_and_risk_apply_on_line_change(self):
+        estimate = estimate_route_time(["Alpha", "Golf", "November"], 480, 2)
+        self.assertIsNotNone(estimate)
+        _, steps = estimate
+
+        self.assertEqual(steps[1]["transfer"], station_transfer_time_min("Golf"))
+        self.assertGreater(steps[1]["transfer_miss_probability"], 0.0)
+        self.assertEqual(steps[0]["transfer_miss_probability"], 0.0)

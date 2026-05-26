@@ -20,9 +20,11 @@ from minillama.model.route_planner import (
 )
 from minillama.model.route_constraints import (
     optimal_constraint_route,
+    route_allowed_modes,
     route_constraint_gap,
     route_has_near_capacity,
     route_near_capacity_count,
+    route_transfer_miss_probability,
 )
 from minillama.agent_b.speech_io import SpeechTransport
 
@@ -44,12 +46,13 @@ def route_reaches_goal(stations, scenario):
     )
 
 
-def route_duration_min(stations, scenario):
+def route_duration_min(stations, scenario, allowed_modes=None):
     """Return total route duration in minutes when the route can be scheduled."""
     estimate = estimate_route_time(
         stations,
         scenario["start_time_min"],
         scenario["transfer_time_min"],
+        allowed_modes=allowed_modes,
     )
     if not estimate:
         return None
@@ -75,6 +78,7 @@ def constraint_gap_missed(gap, transfer_tolerance=1):
         or gap.get("line_change_gap", 0) > int(transfer_tolerance)
         or gap.get("near_capacity_gap", gap.get("fullness_gap", 0)) > 0
         or gap.get("delay_probability_gap", 0) > 0
+        or gap.get("transfer_miss_probability_gap", 0) > 0
     )
 
 
@@ -153,7 +157,7 @@ class DialogManager:
             if not self.monitor:
                 return
 
-            parsed_route_valid = route_is_valid(parsed_route) if parsed_route else False
+            parsed_route_valid = route_is_valid(parsed_route, allowed_modes=planning_allowed_modes) if parsed_route else False
             parsed_route_goal = route_reaches_goal(parsed_route, scenario) if parsed_route_valid else False
             payload = {
                 "turn": turn_number,
@@ -186,7 +190,7 @@ class DialogManager:
 
         def build_metric_snapshot(turn_number, phase, speaker, parsed_route=None):
             """Build a compact periodic metric snapshot for runtime logs."""
-            parsed_route_valid = route_is_valid(parsed_route) if parsed_route else False
+            parsed_route_valid = route_is_valid(parsed_route, allowed_modes=planning_allowed_modes) if parsed_route else False
             parsed_route_goal = route_reaches_goal(parsed_route, scenario) if parsed_route_valid else False
             return {
                 "turn": turn_number,
@@ -268,7 +272,7 @@ class DialogManager:
 
         def emit_nlu_telemetry(speaker, text, parsed_route, has_station_mentions):
             """Send semantic parsing telemetry for language understanding and dialog-state metrics."""
-            valid = route_is_valid(parsed_route)
+            valid = route_is_valid(parsed_route, allowed_modes=planning_allowed_modes)
             payload = {
                 "speaker": speaker,
                 "text": text,
@@ -288,6 +292,7 @@ class DialogManager:
 
         scenario = self.test_case.scenario
         persona = self.test_case.persona
+        planning_allowed_modes = route_allowed_modes(scenario, persona)
         constraint_route = optimal_constraint_route(scenario, persona)
         start_wall = time.time()
         route_memory = RouteProposalMemory()
@@ -386,13 +391,14 @@ class DialogManager:
             )
             emit_metric_snapshot(len(conversation), "agent_b_reply", "Agent B", parsed_route=parsed_route)
 
-            if route_is_valid(parsed_route):
-                duration = route_duration_min(parsed_route, scenario)
+            if route_is_valid(parsed_route, allowed_modes=planning_allowed_modes):
+                duration = route_duration_min(parsed_route, scenario, allowed_modes=planning_allowed_modes)
                 if duration is not None:
                     _, candidate_steps = estimate_route_time(
                         parsed_route,
                         scenario["start_time_min"],
                         scenario["transfer_time_min"],
+                        allowed_modes=planning_allowed_modes,
                     )
                     candidate_reaches_goal = route_reaches_goal(parsed_route, scenario)
                     constraints_already_stated = bool(best_route)
@@ -490,6 +496,7 @@ class DialogManager:
             best_route,
             scenario["start_time_min"],
             scenario["transfer_time_min"],
+            allowed_modes=planning_allowed_modes,
         ) if best_route else None
 
         if estimate:
@@ -500,16 +507,18 @@ class DialogManager:
             displayed_duration = None
             displayed_steps = []
 
-        route_valid = route_is_valid(best_route)
+        route_valid = route_is_valid(best_route, allowed_modes=planning_allowed_modes)
         reaches_goal = route_reaches_goal(best_route, scenario)
         route_correct = route_valid and reaches_goal
         displayed_near_capacity_count = route_near_capacity_count(displayed_steps)
         displayed_has_near_capacity = route_has_near_capacity(displayed_steps)
+        displayed_transfer_miss_probability = route_transfer_miss_probability(displayed_steps)
         reference_arrival, reference_steps = optimal_time_route(
             scenario["start_station"],
             scenario["destination_station"],
             scenario["start_time_min"],
             scenario["transfer_time_min"],
+            allowed_modes=planning_allowed_modes,
         )
         reference_duration = (
             reference_arrival - scenario["start_time_min"]
@@ -525,6 +534,7 @@ class DialogManager:
         constraint_near_capacity_count = constraint_route.near_capacity_count if constraint_route else None
         constraint_has_near_capacity = constraint_route.has_near_capacity if constraint_route else None
         constraint_delay_probability = constraint_route.delay_probability if constraint_route else None
+        constraint_transfer_miss_probability = constraint_route.transfer_miss_probability if constraint_route else None
         constraint_gap = route_constraint_gap(displayed_steps, displayed_duration, constraint_route)
         displayed_line_sequence = route_line_sequence(displayed_steps)
         displayed_line_change_count = route_line_change_count(displayed_steps)
@@ -555,8 +565,11 @@ class DialogManager:
             f"Constraint duration:   {str(constraint_duration) + ' minutes' if constraint_duration is not None else 'None'}\n"
             f"Constraint capacity:   {('yes' if constraint_has_near_capacity else 'no') if constraint_has_near_capacity is not None else 'None'} ({constraint_near_capacity_count if constraint_near_capacity_count is not None else 'None'} segments)\n"
             f"Transfer tolerance:    {self.transfer_tolerance} extra changes\n"
+            f"Allowed modes:         {', '.join(planning_allowed_modes) if planning_allowed_modes else 'all modes'}\n"
+            f"Transfer miss risk:    {round(displayed_transfer_miss_probability * 100, 1)} percent\n"
             f"Constraint delay risk: {str(round(constraint_delay_probability * 100, 1)) + ' percent' if constraint_delay_probability is not None else 'None'}\n"
-            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('near_capacity_gap', 'None')} near-capacity segments, {constraint_gap.get('delay_probability_gap', 'None')} delay\n"
+            f"Constraint transfer risk: {str(round(constraint_transfer_miss_probability * 100, 1)) + ' percent' if constraint_transfer_miss_probability is not None else 'None'}\n"
+            f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('near_capacity_gap', 'None')} near-capacity segments, {constraint_gap.get('delay_probability_gap', 'None')} delay, {constraint_gap.get('transfer_miss_probability_gap', 'None')} transfer miss\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
@@ -618,15 +631,19 @@ class DialogManager:
                 "constraint_near_capacity": constraint_has_near_capacity,
                 "constraint_near_capacity_count": constraint_near_capacity_count,
                 "transfer_tolerance": self.transfer_tolerance,
+                "allowed_modes": planning_allowed_modes,
                 "constraint_delay_probability": constraint_delay_probability,
+                "constraint_transfer_miss_probability": constraint_transfer_miss_probability,
                 "constraint_duration_gap_min": constraint_gap.get("duration_gap_min"),
                 "constraint_line_change_gap": constraint_gap.get("line_change_gap"),
                 "constraint_fullness_gap": constraint_gap.get("fullness_gap"),
                 "constraint_near_capacity_gap": constraint_gap.get("near_capacity_gap"),
                 "constraint_delay_probability_gap": constraint_gap.get("delay_probability_gap"),
+                "constraint_transfer_miss_probability_gap": constraint_gap.get("transfer_miss_probability_gap"),
                 "warning_count": warning_count,
                 "route_near_capacity": displayed_has_near_capacity,
                 "route_near_capacity_count": displayed_near_capacity_count,
+                "route_transfer_miss_probability": displayed_transfer_miss_probability,
                 "speech_turns": speech_turns,
                 "timing_turns": timing_turns,
                 "nlu_turns": nlu_turns,

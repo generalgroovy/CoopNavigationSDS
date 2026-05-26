@@ -314,6 +314,10 @@ class MetricRecord:
     constraint_near_capacity: bool | None
     constraint_near_capacity_count: int | None
     transfer_tolerance: int | None
+    allowed_modes: str
+    route_transfer_miss_probability: float | None
+    constraint_transfer_miss_probability: float | None
+    constraint_transfer_miss_probability_gap: float | None
     route_delay_probability: float | None
     constraint_delay_probability: float | None
     constraint_delay_probability_gap: float | None
@@ -577,6 +581,10 @@ class MetricComputer:
         constraint_near_capacity = result.extra.get("constraint_near_capacity")
         constraint_near_capacity_count = result.extra.get("constraint_near_capacity_count")
         transfer_tolerance = result.extra.get("transfer_tolerance")
+        allowed_modes = result.extra.get("allowed_modes") or scenario.get("allowed_modes") or []
+        route_transfer_miss_probability = result.extra.get("route_transfer_miss_probability")
+        constraint_transfer_miss_probability = result.extra.get("constraint_transfer_miss_probability")
+        constraint_transfer_miss_probability_gap = result.extra.get("constraint_transfer_miss_probability_gap")
         constraint_delay_probability = result.extra.get("constraint_delay_probability")
         constraint_delay_probability_gap = result.extra.get("constraint_delay_probability_gap")
         route_delay_values = [step.get("delay_probability", 0.0) for step in result.route_steps]
@@ -1087,6 +1095,10 @@ class MetricComputer:
             constraint_near_capacity=constraint_near_capacity,
             constraint_near_capacity_count=constraint_near_capacity_count,
             transfer_tolerance=transfer_tolerance,
+            allowed_modes=", ".join(allowed_modes) if allowed_modes else "all modes",
+            route_transfer_miss_probability=route_transfer_miss_probability,
+            constraint_transfer_miss_probability=constraint_transfer_miss_probability,
+            constraint_transfer_miss_probability_gap=constraint_transfer_miss_probability_gap,
             route_delay_probability=route_delay_probability,
             constraint_delay_probability=constraint_delay_probability,
             constraint_delay_probability_gap=constraint_delay_probability_gap,

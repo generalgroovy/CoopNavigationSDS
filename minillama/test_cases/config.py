@@ -17,6 +17,8 @@ SCENARIO_SPECS = {
         "start_station_index": 4,
         "destination_station_index": 25,
         "start_time_min": 12 * 60 + 18,
+        "allowed_modes": ("metro", "tram", "bus"),
+        "max_transfer_miss_probability": 0.28,
     },
     "evening_outbound": {
         "name": "Evening outbound evaluation",
@@ -35,18 +37,24 @@ SCENARIO_SPECS = {
         "start_station_index": 0,
         "destination_station_index": -2,
         "start_time_min": 6 * 60 + 35,
+        "allowed_modes": ("metro", "tram", "bus"),
+        "max_delay_probability": 0.32,
+        "max_transfer_miss_probability": 0.20,
     },
     "hospital_appointment": {
         "name": "Appointment reliability and low-transfer evaluation",
         "start_station_index": 7,
         "destination_station_index": 28,
         "start_time_min": 9 * 60 + 12,
+        "allowed_modes": ("metro",),
+        "max_transfer_miss_probability": 0.18,
     },
     "crowded_event_exit": {
         "name": "Crowded event exit comfort evaluation",
         "start_station_index": -1,
         "destination_station_index": 5,
         "start_time_min": 22 * 60 + 18,
+        "allowed_modes": ("bus", "tram"),
     },
     "multi_destination_errands": {
         "name": "Multi-destination errand route evaluation",
@@ -54,6 +62,7 @@ SCENARIO_SPECS = {
         "destination_station_index": 16,
         "destination_station_indices": [16, 24, -4],
         "start_time_min": 14 * 60 + 5,
+        "allowed_modes": ("metro", "tram", "bus"),
     },
 }
 

@@ -9,6 +9,7 @@ from minillama.model.metro_data import (
     line_stop_pairs,
     station_fullness_percent,
     capacity_status,
+    station_transfer_time_min,
 )
 from minillama.model.route_planner import segment_travel
 
@@ -17,6 +18,7 @@ from minillama.model.route_planner import segment_travel
 class NetworkLineRow:
     name: str
     kind: str
+    mode: str
     headway_min: int
     fullness_percent: int
     capacity_status: str
@@ -30,6 +32,7 @@ class NetworkStationRow:
     name: str
     fullness_percent: int
     capacity_status: str
+    transfer_time_min: int
     lines: str
     neighbors: str
     coordinates: str
@@ -53,6 +56,7 @@ def build_network_overview(current_time_min) -> NetworkOverview:
             NetworkLineRow(
                 name=line_name,
                 kind=data.get("kind", "Line"),
+                mode=data.get("mode", "bus"),
                 headway_min=data["headway"],
                 fullness_percent=fullness_percent,
                 capacity_status=capacity_status(fullness_percent),
@@ -76,6 +80,7 @@ def build_network_overview(current_time_min) -> NetworkOverview:
                 name=station,
                 fullness_percent=fullness_percent,
                 capacity_status=capacity_status(fullness_percent),
+                transfer_time_min=station_transfer_time_min(station),
                 lines=", ".join(lines),
                 neighbors=", ".join(neighbors),
                 coordinates=f"{x},{y}",
