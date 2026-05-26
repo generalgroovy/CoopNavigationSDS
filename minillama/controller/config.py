@@ -12,6 +12,7 @@ DEFAULT_MODEL_PARAM_KEY = "greedy"
 SESSION_LOG_PROFILE = os.environ.get("MINILLAMA_SESSION_LOG_PROFILE", "runtime").lower()
 GUI_ENABLED = os.environ.get("MINILLAMA_GUI_ENABLED", "true").lower() not in {"0", "false", "off", "no"}
 GUI_MODE = os.environ.get("MINILLAMA_GUI_MODE", "conversation").lower()
+NETWORK_DATA_CARD_ENABLED = os.environ.get("MINILLAMA_NETWORK_DATA_CARD_ENABLED", "false").lower() in {"1", "true", "on", "yes"}
 ARTIFACT_DIR = os.environ.get("MINILLAMA_ARTIFACT_DIR", "artifacts")
 NETWORK_PICTURE_DIR = os.environ.get(
     "MINILLAMA_NETWORK_PICTURE_DIR",

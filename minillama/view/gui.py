@@ -171,6 +171,7 @@ class StartupConfigDialog:
             "speech_realtime_enabled": tk.BooleanVar(value=defaults.get("speech_realtime_enabled", False)),
             "gui_enabled": tk.BooleanVar(value=defaults.get("gui_enabled", True)),
             "gui_mode": tk.StringVar(value=defaults.get("gui_mode", "conversation")),
+            "network_data_card_enabled": tk.BooleanVar(value=defaults.get("network_data_card_enabled", False)),
             "llm_agent_a": tk.BooleanVar(value=defaults.get("llm_agent_a", False)),
             "protocol_log_dir": tk.StringVar(value=defaults.get("protocol_log_dir", "")),
         }
@@ -332,6 +333,18 @@ class StartupConfigDialog:
         gui_row += 1
         tk.Checkbutton(
             frame,
+            text="Network data visualization card",
+            variable=self.vars["network_data_card_enabled"],
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            selectcolor=GUI_COLORS["tab_bg"],
+            activebackground=GUI_COLORS["panel_bg"],
+            activeforeground=GUI_COLORS["text"],
+        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
+
+        gui_row += 1
+        tk.Checkbutton(
+            frame,
             text="Large language model Agent A",
             variable=self.vars["llm_agent_a"],
             bg=GUI_COLORS["panel_bg"],
@@ -417,7 +430,7 @@ def make_scrollable_frame(parent, bg, padx=0, pady=0, sticky="nsew"):
 class DialogWindow:
     """GUI view for one live dialog experiment conversation."""
 
-    def __init__(self, event_queue, scenario, minimal=True):
+    def __init__(self, event_queue, scenario, minimal=True, show_network_data=False):
         """  init   method for this module's MVC responsibility.
 
         Args:
@@ -430,6 +443,7 @@ class DialogWindow:
         self.event_queue = event_queue
         self.scenario = scenario
         self.minimal = minimal
+        self.show_network_data = show_network_data
         self.current_route = []
         self.snapshot_values = {}
         self.summary_values = {}
@@ -584,10 +598,12 @@ class DialogWindow:
 
         self.workspace_tabs = self.make_tabs(self.main, height=GUI_HEIGHT - (GUI_MAIN_PAD * 2))
         self.workspace_tabs.add("Metric Data")
-        self.workspace_tabs.add("Network Data")
+        if self.show_network_data:
+            self.workspace_tabs.add("Network Data")
 
         self.build_metric_data_tab(self.workspace_tabs.tab("Metric Data"))
-        self.build_network_data_tab(self.workspace_tabs.tab("Network Data"))
+        if self.show_network_data:
+            self.build_network_data_tab(self.workspace_tabs.tab("Network Data"))
 
     def build_live_gui_workspace(self, parent):
         """Build default GUI mode with transcript and all live metrics visible."""
@@ -610,7 +626,10 @@ class DialogWindow:
         metric_page.grid_columnconfigure(0, weight=1)
         metric_page.grid_rowconfigure(0, weight=0)
         metric_page.grid_rowconfigure(1, weight=1)
+        metric_page.grid_rowconfigure(2, weight=0)
         self.build_always_visible_metric_panels(metric_page)
+        if self.show_network_data:
+            self.build_network_visualization_card(metric_page, row=2)
         split.add(metric_shell, weight=2)
 
     def build_always_visible_metric_panels(self, parent):
@@ -998,6 +1017,10 @@ class DialogWindow:
         self.build_route_candidates_card(page, row=1)
         self.build_network_map_card(page, row=2)
         self.build_reference_browser_card(page, row=3)
+
+    def build_network_visualization_card(self, parent, row=0):
+        """Build the optional startup-controlled network data visualization card."""
+        self.build_network_overview_card(parent, row=row)
 
     def build_network_overview_card(self, parent, row=0):
         """Build complete line and station data tables in one network card."""

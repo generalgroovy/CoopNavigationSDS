@@ -33,6 +33,7 @@ from minillama.controller.config import (
     GUI_MODE,
     INVALID_ROUTE_LIMIT,
     METRIC_SNAPSHOT_INTERVAL,
+    NETWORK_DATA_CARD_ENABLED,
     NETWORK_PICTURE_DIR,
     NUM_TURNS,
     PROTOCOL_LOG_DIR,
@@ -190,6 +191,7 @@ def default_run_config():
         "max_utterance_sec": 3.5,
         "gui_enabled": GUI_ENABLED,
         "gui_mode": GUI_MODE,
+        "network_data_card_enabled": NETWORK_DATA_CARD_ENABLED,
         "protocol_log_dir": PROTOCOL_LOG_DIR,
     }
 
@@ -247,19 +249,30 @@ def select_run_config():
     return selected
 
 
-def run_gui_loop(ui_queue, scenario, gui_mode):
+def run_gui_loop(ui_queue, scenario, gui_mode, network_data_card_enabled=False):
     """Run the Tk GUI in the current thread."""
     from minillama.view.gui import DialogWindow
 
-    dialog = DialogWindow(ui_queue, scenario, minimal=gui_mode == "conversation")
+    dialog = DialogWindow(
+        ui_queue,
+        scenario,
+        minimal=gui_mode == "conversation",
+        show_network_data=network_data_card_enabled,
+    )
     dialog.run()
 
 
-def start_gui_thread(ui_queue, scenario, gui_mode=GUI_MODE, dialog_runner=run_gui_loop):
+def start_gui_thread(
+    ui_queue,
+    scenario,
+    gui_mode=GUI_MODE,
+    network_data_card_enabled=NETWORK_DATA_CARD_ENABLED,
+    dialog_runner=run_gui_loop,
+):
     """Start the optional GUI in an isolated thread and return the thread handle."""
     def _target():
         try:
-            dialog_runner(ui_queue, scenario, gui_mode)
+            dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled)
         except Exception:
             logging.exception("GUI thread stopped")
 
@@ -304,7 +317,12 @@ def main():
 
     gui_thread = None
     if run_config.get("gui_enabled", True):
-        gui_thread = start_gui_thread(ui_queue, scenario, run_config.get("gui_mode", GUI_MODE))
+        gui_thread = start_gui_thread(
+            ui_queue,
+            scenario,
+            run_config.get("gui_mode", GUI_MODE),
+            bool(run_config.get("network_data_card_enabled", NETWORK_DATA_CARD_ENABLED)),
+        )
 
     conversation_worker(event_queue, model_adapter, run_config)
     if gui_thread is not None and gui_thread.is_alive():

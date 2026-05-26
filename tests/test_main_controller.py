@@ -17,6 +17,8 @@ class MainControllerTests(unittest.TestCase):
         self.assertFalse(config["speech_realtime_enabled"])
         self.assertEqual(config["speech_scope"], "none")
         self.assertIn("persona_key", config)
+        self.assertIn("network_data_card_enabled", config)
+        self.assertFalse(config["network_data_card_enabled"])
 
     def test_select_run_config_skips_startup_gui_when_disabled(self):
         import minillama.controller.main as controller_main
@@ -66,11 +68,12 @@ class MainControllerTests(unittest.TestCase):
         seen = {}
         done = threading.Event()
 
-        def fake_dialog_runner(ui_queue, scenario, gui_mode):
+        def fake_dialog_runner(ui_queue, scenario, gui_mode, network_data_card_enabled):
             seen["thread"] = threading.get_ident()
             seen["queue"] = ui_queue
             seen["scenario"] = scenario
             seen["gui_mode"] = gui_mode
+            seen["network_data_card_enabled"] = network_data_card_enabled
             done.set()
 
         ui_queue = queue.Queue()
@@ -80,6 +83,7 @@ class MainControllerTests(unittest.TestCase):
             ui_queue,
             scenario,
             gui_mode="conversation",
+            network_data_card_enabled=True,
             dialog_runner=fake_dialog_runner,
         )
         thread.join(timeout=2.0)
@@ -91,6 +95,7 @@ class MainControllerTests(unittest.TestCase):
         self.assertIs(seen["queue"], ui_queue)
         self.assertIs(seen["scenario"], scenario)
         self.assertEqual(seen["gui_mode"], "conversation")
+        self.assertTrue(seen["network_data_card_enabled"])
 
 
 if __name__ == "__main__":

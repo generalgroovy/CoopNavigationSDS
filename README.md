@@ -92,7 +92,7 @@ Interactive graphical interface:
 .venv\Scripts\python.exe -m minillama
 ```
 
-The graphical interface opens with a compact run-configuration form for run mode, scenario, persona, Agent B plugin, turn limits, early-stop limits, speech setup, and graphical interface mode. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default interactive run is `pure_text`, which passes generated text directly between agents. Select `speech` mode to require text-to-speech and automatic speech recognition; the run performs a preflight check and stops with troubleshooting details if a stage does not produce audio or a transcript.
+The graphical interface opens with a compact run-configuration form for run mode, scenario, persona, Agent B plugin, turn limits, early-stop limits, speech setup, graphical interface mode, and the optional network data visualization card. Agent B defaults to the MiniLlama/model-backed assistant and can optionally switch to the built-in deterministic planner or a custom `package.module:factory` plugin. The default interactive run is `pure_text`, which passes generated text directly between agents. Select `speech` mode to require text-to-speech and automatic speech recognition; the run performs a preflight check and stops with troubleshooting details if a stage does not produce audio or a transcript.
 
 ## Pipeline Overview
 
@@ -175,6 +175,6 @@ The evaluation report exports a staged metric stack aligned with speech-dialog a
 
 Speech turns keep separate generated, outgoing, and incoming text traces. The graphical interface and comma-separated metrics report automatic speech recognition word error rate, text-to-speech text-change rate, station precision and recall, and incoming/outgoing speech-stage enabled rates without duplicating those details in the conversation window.
 
-Network data is displayed in its own graphical interface card with complete line rows, transport modes, station rows, station-specific transfer times, headways, binary capacity status, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
+When enabled in the startup form, network data is displayed in its own graphical interface card with complete line rows, transport modes, station rows, station-specific transfer times, headways, binary capacity status, neighbors, route sequences, and segment travel times. The map remains separate so the data table can be scanned without depending on the drawing.
 
 Logging defaults to `off`. Set `MINILLAMA_SESSION_LOG_PROFILE` to `startup`, `runtime`, or `full` to compare overhead.
