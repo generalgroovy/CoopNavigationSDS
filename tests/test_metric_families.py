@@ -109,55 +109,41 @@ class MetricFamilyTests(unittest.TestCase):
 
         row = MetricComputer().compute(result, scenario).as_dict()
 
-        self.assertIn("audio_available", row)
-        self.assertFalse(row["audio_available"])
-        self.assertIn("audio_snr_db", row)
-        self.assertIn("vad_false_alarm_rate", row)
-        self.assertIn("diarization_der", row)
-        self.assertIn("asr_word_error_rate", row)
+        self.assertIn("audio_turn_latency", row)
+        self.assertEqual(row["audio_turn_latency"], 0.07)
+        self.assertIn("audio_end_of_utterance_error", row)
+        self.assertIn("audio_overlap_rate", row)
+        self.assertIn("asr_wer", row)
         self.assertEqual(row["asr_success_rate"], 1.0)
         self.assertEqual(row["asr_failure_count"], 0)
-        self.assertIn("asr_confidence_calibration", row)
         self.assertEqual(row["asr_word_error_rate"], 0.0)
-        self.assertEqual(row["asr_entity_wer"], 0.0)
-        self.assertIn("slu_intent_error_rate", row)
-        self.assertEqual(row["slu_pipeline_input_match_rate"], 1.0)
-        self.assertEqual(row["slu_slot_f1"], 1.0)
-        self.assertIn("dst_requested_slot_f1", row)
-        self.assertEqual(row["dst_joint_goal_accuracy"], 1.0)
-        self.assertIn("policy_dialog_act_f1", row)
-        self.assertEqual(row["policy_tool_call_exact_match"], 1.0)
-        self.assertIn("tool_result_relevance", row)
-        self.assertIn("nlg_rouge", row)
-        self.assertEqual(row["nlg_constraint_satisfaction_rate"], 1.0)
-        self.assertIn("tts_predicted_mos", row)
+        self.assertEqual(row["asr_wer"], 0.0)
+        self.assertEqual(row["asr_entity_error_rate"], 0.0)
+        self.assertEqual(row["nlu_pipeline_input_match_rate"], 1.0)
+        self.assertEqual(row["nlu_constraint_extraction_f1"], 1.0)
+        self.assertEqual(row["nlu_semantic_frame_accuracy"], 1.0)
+        self.assertEqual(row["dialogue_state_shared_state_agreement"], 1.0)
+        self.assertEqual(row["dialogue_management_premature_answer_rate"], 0.0)
+        self.assertEqual(row["agent_b_grounded_proposal_score"], 1.0)
+        self.assertEqual(row["agent_b_actionability_score"], 1.0)
+        self.assertEqual(row["agent_a_false_acceptance_rate"], 0.0)
+        self.assertEqual(row["nlg_faithfulness"], 1.0)
         self.assertEqual(row["tts_success_rate"], 1.0)
         self.assertEqual(row["tts_failure_count"], 0)
-        self.assertEqual(row["tts_intelligibility_wer"], 0.0)
+        self.assertEqual(row["tts_round_trip_semantic_intelligibility"], 1.0)
         self.assertGreater(row["tts_text_change_rate"], 0.0)
         self.assertEqual(row["speech_incoming_enabled_rate"], 1.0)
         self.assertEqual(row["speech_outgoing_enabled_rate"], 1.0)
-        self.assertIn("runtime_time_to_first_token_sec", row)
         self.assertEqual(row["mean_turn_elapsed_sec"], 0.07)
-        self.assertEqual(row["runtime_mean_turn_elapsed_sec"], 0.07)
         self.assertEqual(row["max_turn_elapsed_sec"], 0.07)
-        self.assertEqual(row["runtime_max_turn_elapsed_sec"], 0.07)
         self.assertEqual(row["condition_runtime_sec"], 0.25)
-        self.assertEqual(row["runtime_condition_runtime_sec"], 0.25)
         self.assertEqual(row["speech_duration_total_sec"], 0.05)
-        self.assertTrue(row["agent_timing_available"])
-        self.assertEqual(row["agent_timing_agent_a_turn_count"], 1)
-        self.assertEqual(row["agent_timing_agent_a_mean_turn_elapsed_sec"], 0.03)
-        self.assertEqual(row["agent_timing_agent_b_turn_count"], 1)
-        self.assertEqual(row["agent_timing_agent_b_mean_turn_elapsed_sec"], 0.07)
+        self.assertEqual(row["whole_dialogue_dialogue_cost"], 2)
         self.assertEqual(row["pipeline_mode"], "speech")
         self.assertEqual(row["pipeline_success_rate"], 1.0)
         self.assertEqual(row["pipeline_failure_count"], 0)
-        self.assertEqual(row["pipeline_phase_output_dependency_rate"], 1.0)
-        self.assertIn("end_to_end_abandonment_rate", row)
-        self.assertEqual(row["end_to_end_task_success"], 1.0)
-        self.assertIn("posthoc_safety_refusal_precision", row)
-        self.assertEqual(row["posthoc_predicted_user_satisfaction"], row["automatic_eval_score"])
+        self.assertEqual(row["whole_dialogue_interaction_quality_trajectory"], row["automatic_eval_score"])
+        self.assertIsNone(row["metric_validity_rank_stability"])
         self.assertIn("route_line_sequence", row)
         self.assertIn("reference_line_sequence", row)
         self.assertGreaterEqual(row["route_line_change_count"], 0)
@@ -179,23 +165,51 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(
             titles,
             [
-                "Audio ingress / capture",
-                "Voice activity detection and segmentation",
-                "Diarization",
-                "Automatic speech recognition",
-                "Spoken language understanding",
-                "Dialog state tracking",
-                "Policy and dialog management",
-                "Tool / retrieval",
-                "Natural language generation",
-                "Text-to-speech",
-                "Runtime",
-                "Agent timing",
-                "Pipeline phases",
-                "End to end",
-                "Post hoc",
+                "Audio / turn-taking",
+                "ASR",
+                "NLU",
+                "Dialogue state",
+                "Dialogue management",
+                "Agent B response",
+                "Agent A evaluation",
+                "NLG",
+                "TTS",
+                "Whole dialogue",
+                "Metric validity",
             ],
         )
+
+    def test_metric_configuration_filters_research_phase_metrics(self):
+        test_case = get_test_case(DEFAULT_TEST_CASE)
+        scenario = test_case.scenario
+        result = DialogResult(
+            condition_id="metric-config",
+            test_case_key=test_case.key,
+            persona_key=test_case.persona_key,
+            scenario_key=test_case.scenario_key,
+            speech_pattern_key="clean",
+            model_name="fake-model",
+            conversation=[("Agent A", "Need Alpha to Harbor.")],
+            route=[],
+            route_steps=[],
+            route_valid=False,
+            route_reaches_goal=False,
+            route_correct=False,
+            route_duration_min=None,
+            runtime_sec=0.1,
+            extra={
+                "metric_config": {
+                    "asr_wer": False,
+                    "audio_turn_latency": True,
+                }
+            },
+        )
+
+        row = MetricComputer().compute(result, scenario).as_dict()
+
+        self.assertIn("audio_turn_latency", row)
+        self.assertNotIn("asr_wer", row)
+        self.assertIn("asr_word_error_rate", row)
 
     def test_metric_record_exposes_pipeline_failure_case(self):
         test_case = get_test_case(DEFAULT_TEST_CASE)
@@ -245,7 +259,7 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["tts_failure_count"], 1)
         self.assertEqual(row["asr_success_rate"], 0.0)
         self.assertEqual(row["asr_failure_count"], 1)
-        self.assertEqual(row["pipeline_failure_reason"], "text-to-speech failed")
+        self.assertEqual(row["tts_round_trip_semantic_intelligibility"], 0.0)
 
 
 if __name__ == "__main__":

@@ -77,7 +77,14 @@ from minillama.view.config import (
     MAP_LEGEND_TOP,
     MAP_LEGEND_ROW_GAP,
 )
-from minillama.evaluation.metrics import COMPARISON_TERMS, COOPERATION_TERMS, METRIC_FAMILY_SPECS, TASK_TERMS
+from minillama.evaluation.metrics import (
+    COMPARISON_TERMS,
+    COOPERATION_TERMS,
+    METRIC_FAMILY_SPECS,
+    TASK_TERMS,
+    enabled_metric_family_specs,
+    metric_config_with_defaults,
+)
 from minillama.model.metro_data import (
     ADJACENCY,
     LINES,
@@ -115,77 +122,51 @@ REFERENCE_LIST_FONT = GUI_FONT_NORMAL
 REFERENCE_DETAIL_FONT = GUI_FONT_NORMAL
 PIPELINE_PHASES = [
     {
-        "key": "capture",
-        "title": "Capture",
-        "families": [
-            "Audio ingress / capture",
-            "Voice activity detection and segmentation",
-            "Diarization",
-        ],
+        "key": "audio",
+        "title": "Audio",
+        "families": ["Audio / turn-taking", "ASR", "TTS"],
         "metrics": [
-            ("pipeline_mode", "Mode"),
-            ("runtime_mean_turn_elapsed_sec", "Mean Turn"),
-        ],
-    },
-    {
-        "key": "speech",
-        "title": "Speech",
-        "families": [
-            "Text-to-speech",
-            "Automatic speech recognition",
-        ],
-        "metrics": [
-            ("tts_success_rate", "Synthesis"),
-            ("asr_success_rate", "Recognition"),
+            ("audio_turn_latency", "Latency"),
+            ("asr_wer", "Word Error"),
         ],
     },
     {
         "key": "understanding",
         "title": "Understanding",
-        "families": [
-            "Spoken language understanding",
-            "Dialog state tracking",
-        ],
+        "families": ["NLU", "Dialogue state"],
         "metrics": [
-            ("slu_intent_accuracy", "Intent"),
-            ("dst_state_update_accuracy", "State"),
+            ("nlu_semantic_frame_accuracy", "Frame"),
+            ("dialogue_state_shared_state_agreement", "State"),
         ],
     },
     {
-        "key": "planning",
-        "title": "Planning",
-        "families": [
-            "Policy and dialog management",
-            "Tool / retrieval",
-            "Pipeline phases",
-        ],
+        "key": "management",
+        "title": "Management",
+        "families": ["Dialogue management", "Agent A evaluation"],
         "metrics": [
-            ("policy_next_action_accuracy", "Action"),
-            ("tool_tool_call_validity", "Tool"),
+            ("dialogue_management_repair_success_rate", "Repair"),
+            ("agent_a_satisfaction_calibration", "Satisfaction"),
         ],
     },
     {
         "key": "response",
         "title": "Response",
-        "families": [
-            "Natural language generation",
-            "Runtime",
-            "Agent timing",
-            "End to end",
-            "Post hoc",
-        ],
+        "families": ["Agent B response", "NLG"],
         "metrics": [
-            ("nlg_repetition_rate", "Repetition"),
-            ("e2e_task_success", "Success"),
+            ("agent_b_actionability_score", "Actionable"),
+            ("nlg_faithfulness", "Faithful"),
+        ],
+    },
+    {
+        "key": "outcome",
+        "title": "Outcome",
+        "families": ["Whole dialogue", "Metric validity"],
+        "metrics": [
+            ("whole_dialogue_interaction_quality_trajectory", "Quality"),
+            ("metric_validity_rank_stability", "Validity"),
         ],
     },
 ]
-PIPELINE_FAMILY_MAP = {
-    family["title"]: family
-    for family in METRIC_FAMILY_SPECS
-}
-
-
 class NotebookTabs(tk.Frame):
     """Small notebook wrapper with the add/tab API used by the existing view code."""
 
@@ -215,7 +196,8 @@ class StartupConfigDialog:
         self.root = tk.Tk()
         self.root.title("MiniLlama Run Configuration")
         self.root.configure(bg=GUI_COLORS["app_bg"])
-        self.root.resizable(False, False)
+        self.root.geometry("780x820")
+        self.root.resizable(True, True)
         self.vars = {
             "run_mode": tk.StringVar(value=defaults["run_mode"]),
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
@@ -249,12 +231,21 @@ class StartupConfigDialog:
             "llm_agent_a": tk.BooleanVar(value=defaults.get("llm_agent_a", False)),
             "protocol_log_dir": tk.StringVar(value=defaults.get("protocol_log_dir", "")),
         }
+        metric_defaults = metric_config_with_defaults(defaults.get("metric_config"))
+        self.metric_vars = {
+            key: tk.BooleanVar(value=metric_defaults.get(key, True))
+            for family in METRIC_FAMILY_SPECS
+            for key, _label in family["metrics"]
+        }
         self.build()
         self.root.protocol("WM_DELETE_WINDOW", self.cancel)
 
     def build(self):
-        frame = tk.Frame(self.root, bg=GUI_COLORS["panel_bg"], bd=1, relief="solid")
-        frame.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        content = make_scrollable_frame(self.root, GUI_COLORS["app_bg"], padx=12, pady=12)
+        frame = tk.Frame(content, bg=GUI_COLORS["panel_bg"], bd=1, relief="solid")
+        frame.grid(row=0, column=0, sticky="nsew")
         frame.grid_columnconfigure(1, weight=1)
 
         rows = [
@@ -431,7 +422,46 @@ class StartupConfigDialog:
             activeforeground=GUI_COLORS["text"],
         ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
 
-        button_row = gui_row + 1
+        metric_row = gui_row + 1
+        metric_frame = tk.LabelFrame(
+            frame,
+            text="Research metrics",
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL, "bold"),
+            bd=1,
+            relief="solid",
+            padx=6,
+            pady=4,
+        )
+        metric_frame.grid(row=metric_row, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 0))
+        for column_index in range(3):
+            metric_frame.grid_columnconfigure(column_index, weight=1)
+        metric_index = 0
+        for family in METRIC_FAMILY_SPECS:
+            tk.Label(
+                metric_frame,
+                text=family["title"],
+                anchor="w",
+                font=(GUI_FONT_FAMILY, GUI_FONT_SMALL, "bold"),
+                bg=GUI_COLORS["panel_bg"],
+                fg=GUI_COLORS["text"],
+            ).grid(row=metric_index // 3, column=metric_index % 3, sticky="w", padx=4, pady=(4, 0))
+            metric_index += 1
+            for key, label in family["metrics"]:
+                tk.Checkbutton(
+                    metric_frame,
+                    text=label,
+                    variable=self.metric_vars[key],
+                    bg=GUI_COLORS["panel_bg"],
+                    fg=GUI_COLORS["text"],
+                    selectcolor=GUI_COLORS["tab_bg"],
+                    activebackground=GUI_COLORS["panel_bg"],
+                    activeforeground=GUI_COLORS["text"],
+                ).grid(row=metric_index // 3, column=metric_index % 3, sticky="w", padx=4, pady=(2, 0))
+                metric_index += 1
+
+        button_row = metric_row + 1
         buttons = tk.Frame(frame, bg=GUI_COLORS["panel_bg"])
         buttons.grid(row=button_row, column=0, columnspan=2, sticky="e", padx=10, pady=12)
         tk.Button(
@@ -463,6 +493,10 @@ class StartupConfigDialog:
         self.result = {
             key: var.get()
             for key, var in self.vars.items()
+        }
+        self.result["metric_config"] = {
+            key: var.get()
+            for key, var in self.metric_vars.items()
         }
         self.root.destroy()
 
@@ -517,6 +551,7 @@ class DialogWindow:
         refresh_ms=GUI_REFRESH_MS,
         window_layout_index=0,
         window_layout_count=1,
+        metric_config=None,
     ):
         """  init   method for this module's MVC responsibility.
 
@@ -535,6 +570,8 @@ class DialogWindow:
         self.refresh_ms = max(50, int(refresh_ms or GUI_REFRESH_MS))
         self.window_layout_index = max(0, int(window_layout_index or 0))
         self.window_layout_count = max(1, int(window_layout_count or 1))
+        self.metric_config = metric_config_with_defaults(metric_config)
+        self.enabled_metric_specs = enabled_metric_family_specs(self.metric_config)
         self.current_route = []
         self.snapshot_values = {}
         self.summary_values = {}
@@ -886,7 +923,7 @@ class DialogWindow:
             command=lambda: self.toggle_outcome_metric_window(),
         )
         metric_menu.add_separator()
-        for index, family in enumerate(METRIC_FAMILY_SPECS, start=1):
+        for index, family in enumerate(self.enabled_metric_specs, start=1):
             metric_menu.add_command(
                 label=f"{index}. {family['title']}",
                 command=lambda selected=family: self.toggle_pipeline_metric_window(selected),
@@ -1106,8 +1143,19 @@ class DialogWindow:
         )
         self.metric_stack_frame.grid_columnconfigure(0, weight=1)
 
+        family_map = {
+            family["title"]: family
+            for family in self.enabled_metric_specs
+        }
         phase_row = 0
         for phase in PIPELINE_PHASES:
+            phase_families = [
+                family_map[family_title]
+                for family_title in phase["families"]
+                if family_title in family_map
+            ]
+            if not phase_families:
+                continue
             phase_frame = tk.Frame(self.metric_stack_frame, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
             phase_frame.grid(row=phase_row, column=0, sticky="nsew", padx=(0, 4), pady=(0, 8))
             for metric_column in range(columns):
@@ -1121,10 +1169,7 @@ class DialogWindow:
                 fg=GUI_COLORS["text"],
             ).grid(row=0, column=0, columnspan=columns, sticky="ew", pady=(0, 5))
             family_index = 0
-            for family_title in phase["families"]:
-                family = PIPELINE_FAMILY_MAP.get(family_title)
-                if not family:
-                    continue
+            for family in phase_families:
                 self.build_stage_metric_family_group(
                     phase_frame,
                     family,
@@ -1208,7 +1253,13 @@ class DialogWindow:
 
     def build_stage_metric_family_group(self, parent, family, row=0, column=0):
         """Build an unframed family group inside the complete metric stack card."""
-        group = tk.Frame(parent, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
+        group = tk.Frame(
+            parent,
+            bg=GUI_COLORS["panel_bg"],
+            bd=1,
+            relief="solid",
+            highlightthickness=0,
+        )
         group.grid(row=row, column=column, sticky="nsew", padx=(0, 8), pady=(0, 6))
         group.grid_columnconfigure(1, weight=1)
 
@@ -1219,7 +1270,7 @@ class DialogWindow:
             font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL, "bold"),
             bg=GUI_COLORS["panel_bg"],
             fg=GUI_COLORS["text"],
-        ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 4))
+        ).grid(row=0, column=0, columnspan=2, sticky="ew", padx=6, pady=(5, 4))
 
         for metric_row, (key, label) in enumerate(family["metrics"], start=1):
             tk.Label(
@@ -1229,7 +1280,7 @@ class DialogWindow:
                 font=(GUI_FONT_FAMILY, GUI_FONT_SMALL),
                 bg=GUI_COLORS["panel_bg"],
                 fg=GUI_COLORS["muted_text"],
-            ).grid(row=metric_row, column=0, sticky="w", padx=(0, 6), pady=(0, 2))
+            ).grid(row=metric_row, column=0, sticky="w", padx=(6, 6), pady=(0, 2))
             value = tk.Label(
                 group,
                 text="not available",
@@ -3334,6 +3385,41 @@ class DialogWindow:
             "posthoc_safety_refusal_recall": "not available",
             "posthoc_privacy_redaction_accuracy": "not available",
         }
+        stage_values.update({
+            "audio_turn_latency": self.format_seconds(response_latency),
+            "audio_end_of_utterance_error": self.format_ratio(asr_ser),
+            "audio_overlap_rate": "0.00",
+            "asr_wer": self.format_ratio(asr_wer),
+            "asr_entity_error_rate": self.format_ratio(asr_entity_wer),
+            "asr_semantic_asr_error_rate": self.format_ratio(asr_ser),
+            "nlu_constraint_extraction_f1": self.format_ratio(slot_accuracy),
+            "nlu_semantic_frame_accuracy": self.format_ratio(frame_accuracy),
+            "nlu_critical_slot_accuracy": self.format_ratio(slot_accuracy),
+            "dialogue_state_state_drift_rate": self.format_ratio(max(0.0, 1.0 - frame_accuracy)),
+            "dialogue_state_constraint_retention_rate": self.format_ratio(1.0 - warning_pressure),
+            "dialogue_state_shared_state_agreement": self.format_ratio(pipeline_dependency_rate),
+            "dialogue_management_clarification_calibration": self.format_ratio(question_rate),
+            "dialogue_management_repair_success_rate": self.format_ratio(recovery_rate),
+            "dialogue_management_premature_answer_rate": self.format_ratio(semantic_error_rate),
+            "agent_b_grounded_proposal_score": self.format_ratio(route_success),
+            "agent_b_hallucinated_content_rate": self.format_ratio(semantic_error_rate),
+            "agent_b_actionability_score": self.format_ratio(route_success),
+            "agent_a_verifier_catch_rate": self.format_ratio(recovery_rate),
+            "agent_a_false_acceptance_rate": self.format_ratio(0.0 if route_success else semantic_error_rate),
+            "agent_a_satisfaction_calibration": self.format_ratio(predicted_satisfaction),
+            "nlg_semantic_adequacy": self.format_ratio(slot_accuracy),
+            "nlg_faithfulness": self.format_ratio(route_success),
+            "nlg_executable_utterance_rate": self.format_ratio(route_success),
+            "tts_nisqa": "not available",
+            "tts_pronunciation_accuracy": self.format_ratio(max(0.0, 1.0 - tts_change_rate)),
+            "tts_round_trip_semantic_intelligibility": self.format_ratio(max(0.0, 1.0 - asr_ser)),
+            "whole_dialogue_interaction_quality_trajectory": self.format_ratio(predicted_satisfaction),
+            "whole_dialogue_dialogue_cost": str(self.live_stats["messages"]),
+            "whole_dialogue_failure_localization_score": self.format_ratio(1.0 if pipeline_failures else 0.0),
+            "metric_validity_metric_outcome_correlation": "not available",
+            "metric_validity_rank_stability": "not available",
+            "metric_validity_seed_variance": "not available",
+        })
         for key, value in stage_values.items():
             if key in self.stage_metric_values:
                 self.stage_metric_values[key].configure(text=value)
@@ -3349,34 +3435,26 @@ class DialogWindow:
             return
 
         finished = run_state == "Finished"
-        speech_events = self.live_stats["tts_utterances"] + self.live_stats["asr_utterances"]
-        if speech_events:
-            speech_status = "Complete" if finished else "Active"
-        elif self.live_stats["messages"]:
-            speech_status = "Bypassed"
-        else:
-            speech_status = "Waiting"
-
         phase_states = {
-            "capture": (
+            "audio": (
                 "Complete" if finished else ("Active" if self.live_stats["messages"] else "Waiting"),
-                f"{self.live_stats['messages']} turns captured; {self.live_stats['warnings']} warnings",
-            ),
-            "speech": (
-                speech_status,
-                f"{self.live_stats['tts_utterances']} synthesis attempts; {self.live_stats['asr_utterances']} recognition attempts",
+                f"{self.live_stats['messages']} turns; {self.live_stats['tts_utterances']} synthesis attempts; {self.live_stats['asr_utterances']} recognition attempts",
             ),
             "understanding": (
                 "Complete" if route_status == "Correct" else ("Active" if self.live_stats["semantic_attempts"] else "Waiting"),
                 f"{self.live_stats['semantic_attempts']} semantic parses; {self.live_stats['valid_state_updates']} valid state updates",
             ),
-            "planning": (
+            "management": (
                 "Complete" if route_status == "Correct" else ("Active" if self.live_stats["candidate_routes"] else "Waiting"),
                 f"{self.live_stats['candidate_routes']} route candidates; {self.live_stats['route_revisions']} revisions",
             ),
             "response": (
                 "Complete" if finished else ("Active" if self.live_stats["messages"] else "Waiting"),
                 f"Last speaker: {self.live_stats.get('last_speaker', '-')}; route status: {route_status}",
+            ),
+            "outcome": (
+                "Complete" if finished else ("Active" if self.live_stats["messages"] else "Waiting"),
+                f"{self.live_stats['warnings']} warnings; satisfaction {self.live_stats['messages']} turns observed",
             ),
         }
         colors = {
@@ -3389,7 +3467,7 @@ class DialogWindow:
         for phase in PIPELINE_PHASES:
             key = phase["key"]
             status, detail = phase_states.get(key, ("Waiting", "No signal yet"))
-            if self.live_stats["warnings"] and key in {"capture", "planning"} and status == "Active":
+            if self.live_stats["warnings"] and key in {"audio", "management"} and status == "Active":
                 status = "Attention"
             if key in self.pipeline_phase_values:
                 self.pipeline_phase_values[key].configure(text=detail)

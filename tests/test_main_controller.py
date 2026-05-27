@@ -27,6 +27,17 @@ class MainControllerTests(unittest.TestCase):
         self.assertEqual(config["calculation_max_time_sec"], 5.0)
         self.assertIn("network_data_card_enabled", config)
         self.assertFalse(config["network_data_card_enabled"])
+        self.assertIn("metric_config", config)
+        self.assertTrue(config["metric_config"]["asr_wer"])
+
+    def test_metric_switches_are_normalized(self):
+        config = default_run_config()
+        config["metric_config"] = {"asr_wer": False}
+
+        normalized = normalize_run_config(config)
+
+        self.assertFalse(normalized["metric_config"]["asr_wer"])
+        self.assertTrue(normalized["metric_config"]["audio_turn_latency"])
 
     def test_runtime_lengths_are_configurable_and_clamped(self):
         config = default_run_config()

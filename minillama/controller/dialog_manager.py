@@ -109,6 +109,7 @@ class DialogManager:
         transfer_tolerance=1,
         metric_snapshot_interval=1,
         max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
+        metric_config=None,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -138,6 +139,7 @@ class DialogManager:
             HARD_MAX_TURN_ELAPSED_SEC,
             max(1.0, float(max_turn_elapsed_sec or DEFAULT_MAX_TURN_ELAPSED_SEC)),
         )
+        self.metric_config = dict(metric_config or {})
 
     def run(self, event_queue):
         """Run method for this module's MVC responsibility.
@@ -801,5 +803,6 @@ class DialogManager:
                 "timing_turns": timing_turns,
                 "nlu_turns": nlu_turns,
                 "metric_snapshots": metric_snapshots,
+                "metric_config": self.metric_config,
             },
         )

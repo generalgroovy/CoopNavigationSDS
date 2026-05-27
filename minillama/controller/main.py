@@ -46,6 +46,7 @@ from minillama.controller.config import (
 from minillama.view.config import GUI_REFRESH_MS
 from minillama.controller.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, HARD_MAX_TURN_ELAPSED_SEC, DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
+from minillama.evaluation.metrics import DEFAULT_METRIC_CONFIG, metric_config_with_defaults
 from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
 from minillama.model.config import GENERATION_MAX_TIME_SEC, MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
 from minillama.test_cases.config import DEFAULT_TEST_CASE
@@ -124,6 +125,7 @@ def build_dialog_runtime(event_queue, model_adapter, run_config):
         transfer_tolerance=int(run_config["agent_a_transfer_tolerance"]),
         metric_snapshot_interval=int(run_config["metric_snapshot_interval"]),
         max_turn_elapsed_sec=float(run_config.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC)),
+        metric_config=run_config.get("metric_config"),
     )
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
@@ -234,6 +236,7 @@ def default_run_config():
         "gui_refresh_ms": GUI_REFRESH_MS,
         "network_data_card_enabled": NETWORK_DATA_CARD_ENABLED,
         "protocol_log_dir": PROTOCOL_LOG_DIR,
+        "metric_config": dict(DEFAULT_METRIC_CONFIG),
     }
 
 
@@ -269,6 +272,7 @@ def normalize_run_config(config):
         HARD_MAX_TURN_ELAPSED_SEC,
         max(1.0, float(normalized.get("calculation_max_time_sec", GENERATION_MAX_TIME_SEC) or GENERATION_MAX_TIME_SEC)),
     )
+    normalized["metric_config"] = metric_config_with_defaults(normalized.get("metric_config"))
     return normalized
 
 
@@ -281,12 +285,24 @@ def call_dialog_runner(
     gui_refresh_ms,
     window_layout_index=0,
     window_layout_count=1,
+    metric_config=None,
 ):
     """Call GUI runners while preserving compatibility with four-argument test doubles."""
     try:
         parameter_count = len(inspect.signature(dialog_runner).parameters)
     except (TypeError, ValueError):
         parameter_count = 4
+    if parameter_count >= 8:
+        return dialog_runner(
+            ui_queue,
+            scenario,
+            gui_mode,
+            network_data_card_enabled,
+            gui_refresh_ms,
+            window_layout_index,
+            window_layout_count,
+            metric_config,
+        )
     if parameter_count >= 7:
         return dialog_runner(
             ui_queue,
@@ -337,6 +353,7 @@ def run_gui_loop(
     gui_refresh_ms=GUI_REFRESH_MS,
     window_layout_index=0,
     window_layout_count=1,
+    metric_config=None,
 ):
     """Run the Tk GUI in the current thread."""
     from minillama.view.gui import DialogWindow
@@ -351,6 +368,7 @@ def run_gui_loop(
         refresh_ms=gui_refresh_ms,
         window_layout_index=window_layout_index,
         window_layout_count=window_layout_count,
+        metric_config=metric_config,
     )
     dialog.run()
 
@@ -363,6 +381,7 @@ def start_gui_thread(
     gui_refresh_ms=GUI_REFRESH_MS,
     window_layout_index=0,
     window_layout_count=1,
+    metric_config=None,
     dialog_runner=run_gui_loop,
 ):
     """Start the optional GUI in an isolated thread and return the thread handle."""
@@ -377,6 +396,7 @@ def start_gui_thread(
                 gui_refresh_ms,
                 window_layout_index,
                 window_layout_count,
+                metric_config,
             )
         except Exception:
             logging.exception("GUI thread stopped")
@@ -395,6 +415,7 @@ def start_gui_threads(
     gui_mode=GUI_MODE,
     network_data_card_enabled=NETWORK_DATA_CARD_ENABLED,
     gui_refresh_ms=GUI_REFRESH_MS,
+    metric_config=None,
     dialog_runner=run_gui_loop,
 ):
     """Start separate conversation, metrics, and optional network GUI threads."""
@@ -420,6 +441,7 @@ def start_gui_threads(
                 gui_refresh_ms=gui_refresh_ms,
                 window_layout_index=index,
                 window_layout_count=window_count,
+                metric_config=metric_config,
                 dialog_runner=dialog_runner,
             )
         )
@@ -452,6 +474,7 @@ def main():
             run_config.get("gui_mode", GUI_MODE),
             bool(run_config.get("network_data_card_enabled", NETWORK_DATA_CARD_ENABLED)),
             int(run_config.get("gui_refresh_ms", GUI_REFRESH_MS)),
+            run_config.get("metric_config"),
         )
     event_queue = MonitoringEventQueue(ui_queue, session_logger)
 

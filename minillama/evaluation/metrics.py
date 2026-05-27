@@ -71,222 +71,146 @@ COOPERATION_TERMS = {
 
 METRIC_FAMILY_SPECS = [
     {
-        "title": "Audio ingress / capture",
+        "title": "Audio / turn-taking",
         "metrics": [
-            ("audio_snr_db", "Signal-to-noise ratio"),
-            ("audio_si_snr_db", "Scale-invariant signal-to-noise ratio"),
-            ("audio_clipping_rate", "Clipping"),
-            ("audio_packet_loss_rate", "Packet Loss"),
-            ("audio_sample_rate_mismatch", "Sample Mismatch"),
-            ("audio_loudness_lufs", "Loudness"),
-            ("audio_noise_estimate", "Noise"),
-            ("audio_pesq", "Perceptual evaluation of speech quality"),
-            ("audio_dnsmos", "Deep noise suppression mean opinion score"),
+            ("audio_turn_latency", "Turn Latency"),
+            ("audio_end_of_utterance_error", "End-of-Utterance Error"),
+            ("audio_overlap_rate", "Overlap Rate"),
         ],
     },
     {
-        "title": "Voice activity detection and segmentation",
+        "title": "ASR",
         "metrics": [
-            ("vad_false_alarm_rate", "False Alarm"),
-            ("vad_miss_rate", "Miss"),
-            ("vad_detection_error_rate", "Detection Error"),
-            ("vad_speech_non_speech_f1", "Speech F one score"),
-            ("vad_endpointing_latency_sec", "Endpoint Latency"),
+            ("asr_wer", "WER"),
+            ("asr_entity_error_rate", "Entity Error Rate"),
+            ("asr_semantic_asr_error_rate", "Semantic ASR Error Rate"),
         ],
     },
     {
-        "title": "Diarization",
+        "title": "NLU",
         "metrics": [
-            ("diarization_der", "Diarization error rate"),
-            ("diarization_missed_speech_rate", "Missed Speech"),
-            ("diarization_false_alarm_rate", "False Alarm"),
-            ("diarization_speaker_confusion_rate", "Speaker Confusion"),
-            ("diarization_overlap_detection_f1", "Overlap F one score"),
+            ("nlu_constraint_extraction_f1", "Constraint Extraction F1"),
+            ("nlu_semantic_frame_accuracy", "Semantic Frame Accuracy"),
+            ("nlu_critical_slot_accuracy", "Critical Slot Accuracy"),
         ],
     },
     {
-        "title": "Automatic speech recognition",
+        "title": "Dialogue state",
         "metrics": [
-            ("asr_success_rate", "Recognition Success"),
-            ("asr_failure_count", "Recognition Failures"),
-            ("asr_word_error_rate", "Word error rate"),
-            ("asr_character_error_rate", "Character error rate"),
-            ("asr_token_error_rate", "Token error rate"),
-            ("asr_deletion_rate", "Deletion"),
-            ("asr_substitution_rate", "Substitution"),
-            ("asr_insertion_rate", "Insertion"),
-            ("asr_entity_wer", "Entity word error rate"),
-            ("asr_keyword_recall", "Keyword Recall"),
-            ("asr_confidence_calibration", "Confidence"),
+            ("dialogue_state_state_drift_rate", "State Drift Rate"),
+            ("dialogue_state_constraint_retention_rate", "Constraint Retention Rate"),
+            ("dialogue_state_shared_state_agreement", "Shared State Agreement"),
         ],
     },
     {
-        "title": "Spoken language understanding",
+        "title": "Dialogue management",
         "metrics": [
-            ("slu_pipeline_input_match_rate", "Pipeline Input Match"),
-            ("slu_intent_accuracy", "Intent Accuracy"),
-            ("slu_intent_error_rate", "Intent Error"),
-            ("slu_slot_f1", "Slot F one score"),
-            ("slu_slot_error_rate", "Slot Error"),
-            ("slu_concept_error_rate", "Concept Error"),
-            ("slu_sentence_semantic_accuracy", "Sentence Semantics"),
-            ("slu_semantic_frame_accuracy", "Frame Accuracy"),
+            ("dialogue_management_clarification_calibration", "Clarification Calibration"),
+            ("dialogue_management_repair_success_rate", "Repair Success Rate"),
+            ("dialogue_management_premature_answer_rate", "Premature Answer Rate"),
         ],
     },
     {
-        "title": "Dialog state tracking",
+        "title": "Agent B response",
         "metrics": [
-            ("dst_joint_goal_accuracy", "Joint Goal"),
-            ("dst_average_goal_accuracy", "Average Goal"),
-            ("dst_requested_slot_f1", "Requested Slot F one score"),
-            ("dst_active_intent_accuracy", "Active Intent"),
-            ("dst_state_update_accuracy", "State Update"),
-            ("dst_belief_state_calibration", "Calibration"),
-            ("dst_l2", "L two distance"),
-            ("dst_mrr", "Mean reciprocal rank"),
-            ("dst_roc", "Receiver operating characteristic"),
+            ("agent_b_grounded_proposal_score", "Grounded Proposal Score"),
+            ("agent_b_hallucinated_content_rate", "Hallucinated Content Rate"),
+            ("agent_b_actionability_score", "Actionability Score"),
         ],
     },
     {
-        "title": "Policy and dialog management",
+        "title": "Agent A evaluation",
         "metrics": [
-            ("policy_dialog_act_accuracy", "Dialog Act Accuracy"),
-            ("policy_dialog_act_f1", "Dialog Act F one score"),
-            ("policy_next_action_accuracy", "Next Action"),
-            ("policy_tool_call_exact_match", "Tool Exact"),
-            ("policy_parameter_exact_match", "Parameter Exact"),
-            ("policy_invalid_action_rate", "Invalid"),
-            ("policy_fallback_rate", "Fallback"),
-            ("policy_repair_rate", "Repair"),
-            ("policy_confirmation_rate", "Confirmation"),
+            ("agent_a_verifier_catch_rate", "Verifier Catch Rate"),
+            ("agent_a_false_acceptance_rate", "False Acceptance Rate"),
+            ("agent_a_satisfaction_calibration", "Satisfaction Calibration"),
         ],
     },
     {
-        "title": "Tool / retrieval",
+        "title": "NLG",
         "metrics": [
-            ("tool_entity_match_rate", "Entity Match"),
-            ("tool_api_success_rate", "Application programming interface Success"),
-            ("tool_tool_call_validity", "Tool Valid"),
-            ("tool_result_relevance", "Relevance"),
-            ("tool_hit_at_k", "Hit at rank"),
-            ("tool_mrr", "Mean reciprocal rank"),
-            ("tool_grounding_accuracy", "Grounding"),
-            ("tool_hallucinated_field_rate", "Hallucinated"),
+            ("nlg_semantic_adequacy", "Semantic Adequacy"),
+            ("nlg_faithfulness", "Faithfulness"),
+            ("nlg_executable_utterance_rate", "Executable Utterance Rate"),
         ],
     },
     {
-        "title": "Natural language generation",
+        "title": "TTS",
         "metrics": [
-            ("nlg_bleu", "Bilingual evaluation understudy"),
-            ("nlg_rouge", "Recall-oriented understudy for gisting evaluation"),
-            ("nlg_meteor", "Metric for evaluation of translation with explicit ordering"),
-            ("nlg_bert_score", "Bidirectional encoder representations from transformers score"),
-            ("nlg_slot_realization_accuracy", "Slot Realization"),
-            ("nlg_delexicalized_bleu", "Delexicalized bilingual evaluation understudy"),
-            ("nlg_distinct_1", "Distinct-1"),
-            ("nlg_distinct_2", "Distinct-2"),
-            ("nlg_repetition_rate", "Repetition"),
-            ("nlg_constraint_satisfaction_rate", "Constraint"),
+            ("tts_nisqa", "NISQA"),
+            ("tts_pronunciation_accuracy", "Pronunciation Accuracy"),
+            ("tts_round_trip_semantic_intelligibility", "Round-Trip Semantic Intelligibility"),
         ],
     },
     {
-        "title": "Text-to-speech",
+        "title": "Whole dialogue",
         "metrics": [
-            ("tts_success_rate", "Synthesis Success"),
-            ("tts_failure_count", "Synthesis Failures"),
-            ("tts_predicted_mos", "Predicted mean opinion score"),
-            ("tts_intelligibility_wer", "Intelligibility word error rate"),
-            ("tts_stoi", "Short-time objective intelligibility"),
-            ("tts_mcd", "Mel cepstral distortion"),
-            ("tts_pesq", "Perceptual evaluation of speech quality"),
-            ("tts_speechbert_score", "Speech bidirectional encoder representations from transformers"),
-            ("tts_speaker_similarity", "Speaker Similarity"),
-            ("tts_f0_correlation", "Fundamental frequency correlation"),
+            ("whole_dialogue_interaction_quality_trajectory", "Interaction Quality Trajectory"),
+            ("whole_dialogue_dialogue_cost", "Dialogue Cost"),
+            ("whole_dialogue_failure_localization_score", "Failure Localization Score"),
         ],
     },
     {
-        "title": "Runtime",
+        "title": "Metric validity",
         "metrics": [
-            ("runtime_end_of_turn_detection_accuracy", "End of turn detection accuracy"),
-            ("runtime_endpointing_latency_sec", "Endpoint Latency"),
-            ("runtime_barge_in_true_positive_rate", "Barge-in true positive"),
-            ("runtime_barge_in_false_positive_rate", "Barge-in false positive"),
-            ("runtime_barge_in_suppression_latency_sec", "Barge Suppress"),
-            ("runtime_response_latency_sec", "Response Latency"),
-            ("runtime_mean_turn_elapsed_sec", "Mean Turn Elapsed"),
-            ("runtime_max_turn_latency_sec", "Maximum Turn"),
-            ("runtime_max_turn_elapsed_sec", "Maximum Turn Elapsed"),
-            ("runtime_speech_duration_total_sec", "Speech Total"),
-            ("runtime_condition_runtime_sec", "Batch Runtime"),
-            ("runtime_time_to_first_token_sec", "First Token"),
-            ("runtime_time_to_first_audio_sec", "First Audio"),
-            ("runtime_interruption_recovery_rate", "Recovery"),
-        ],
-    },
-    {
-        "title": "Agent timing",
-        "metrics": [
-            ("agent_timing_agent_a_turn_count", "Agent A Turns"),
-            ("agent_timing_agent_a_word_count", "Agent A Words"),
-            ("agent_timing_agent_a_mean_words_per_turn", "Agent A Words Per Turn"),
-            ("agent_timing_agent_a_total_generation_sec", "Agent A Generation"),
-            ("agent_timing_agent_a_total_speech_sec", "Agent A Speech"),
-            ("agent_timing_agent_a_mean_turn_elapsed_sec", "Agent A Mean Turn"),
-            ("agent_timing_agent_a_max_turn_elapsed_sec", "Agent A Max Turn"),
-            ("agent_timing_agent_b_turn_count", "Agent B Turns"),
-            ("agent_timing_agent_b_word_count", "Agent B Words"),
-            ("agent_timing_agent_b_mean_words_per_turn", "Agent B Words Per Turn"),
-            ("agent_timing_agent_b_total_generation_sec", "Agent B Generation"),
-            ("agent_timing_agent_b_total_speech_sec", "Agent B Speech"),
-            ("agent_timing_agent_b_mean_turn_elapsed_sec", "Agent B Mean Turn"),
-            ("agent_timing_agent_b_max_turn_elapsed_sec", "Agent B Max Turn"),
-        ],
-    },
-    {
-        "title": "Pipeline phases",
-        "metrics": [
-            ("pipeline_mode", "Mode"),
-            ("pipeline_success_rate", "Pipeline Success"),
-            ("pipeline_failure_count", "Pipeline Failures"),
-            ("pipeline_tts_attempt_count", "Text-to-speech Attempts"),
-            ("pipeline_asr_attempt_count", "Automatic speech recognition Attempts"),
-            ("pipeline_nlu_attempt_count", "Semantic Parse Attempts"),
-            ("pipeline_phase_output_dependency_rate", "Phase Output Dependency"),
-        ],
-    },
-    {
-        "title": "End to end",
-        "metrics": [
-            ("e2e_task_success", "Task Success"),
-            ("e2e_inform_rate", "Inform"),
-            ("e2e_request_success", "Request"),
-            ("e2e_completion_rate", "Completion"),
-            ("e2e_abandonment_rate", "Abandonment"),
-            ("e2e_escalation_rate", "Escalation"),
-            ("e2e_average_reward", "Reward"),
-            ("e2e_turns_to_success", "Turns"),
-            ("e2e_dialog_duration_sec", "Duration"),
-            ("e2e_reprompt_count", "Reprompts"),
-            ("e2e_confirmation_count", "Confirmations"),
-        ],
-    },
-    {
-        "title": "Post hoc",
-        "metrics": [
-            ("posthoc_predicted_user_satisfaction", "Satisfaction"),
-            ("posthoc_per_domain_failure_rate", "Failure Rate"),
-            ("posthoc_cohort_fairness_gaps", "Fairness Gaps"),
-            ("posthoc_robustness_by_noise_gap", "Noise Gap"),
-            ("posthoc_robustness_by_accent_gap", "Accent Gap"),
-            ("posthoc_robustness_by_device_gap", "Device Gap"),
-            ("posthoc_robustness_by_environment_gap", "Environment Gap"),
-            ("posthoc_cost_per_success", "Cost / Success"),
-            ("posthoc_safety_refusal_precision", "Safety Precision"),
-            ("posthoc_safety_refusal_recall", "Safety Recall"),
-            ("posthoc_privacy_redaction_accuracy", "Privacy"),
+            ("metric_validity_metric_outcome_correlation", "Metric-Outcome Correlation"),
+            ("metric_validity_rank_stability", "Rank Stability"),
+            ("metric_validity_seed_variance", "Seed Variance"),
         ],
     },
 ]
+
+METRIC_DISPLAY_NAMES = {
+    key: label
+    for family in METRIC_FAMILY_SPECS
+    for key, label in family["metrics"]
+}
+METRIC_KEYS = tuple(METRIC_DISPLAY_NAMES)
+DEFAULT_METRIC_CONFIG = {key: True for key in METRIC_KEYS}
+
+
+def metric_config_with_defaults(config=None):
+    """Return a complete metric switch map for the research metric manifest."""
+    provided = config or {}
+    return {
+        key: bool(provided.get(key, DEFAULT_METRIC_CONFIG[key]))
+        for key in METRIC_KEYS
+    }
+
+
+def enabled_metric_family_specs(config=None):
+    """Return only metric families and metric rows enabled by configuration."""
+    switches = metric_config_with_defaults(config)
+    families = []
+    for family in METRIC_FAMILY_SPECS:
+        metrics = [
+            (key, label)
+            for key, label in family["metrics"]
+            if switches.get(key, False)
+        ]
+        if metrics:
+            families.append({"title": family["title"], "metrics": metrics})
+    return families
+
+
+def phase_key_from_title(title):
+    """Return a stable, filesystem-safe phase key."""
+    aliases = {
+        "Audio / turn-taking": "audio",
+        "ASR": "asr",
+        "NLU": "nlu",
+        "Dialogue state": "dialogue_state",
+        "Dialogue management": "dialogue_management",
+        "Agent B response": "agent_b",
+        "Agent A evaluation": "agent_a",
+        "NLG": "nlg",
+        "TTS": "tts",
+        "Whole dialogue": "whole_dialogue",
+        "Metric validity": "metric_validity",
+    }
+    if title in aliases:
+        return aliases[title]
+    return re.sub(r"[^a-z0-9]+", "_", str(title).lower()).strip("_")
 
 
 STATION_PATTERNS = {
@@ -909,6 +833,7 @@ class MetricComputer:
         completion_rate = 1.0 if result.conversation else 0.0
         abandonment_rate = 0.0 if result.route_correct else 1.0
         escalation_rate = safe_ratio(warning_count, max(len(nlu_turns), 1))
+        warning_pressure = safe_ratio(warning_count, max(message_count, 1))
         average_reward = automatic_eval_score
         predicted_user_satisfaction = automatic_eval_score
         per_domain_failure_rate = 1.0 - task_success_rate
@@ -1112,6 +1037,71 @@ class MetricComputer:
                 "privacy_redaction_accuracy": privacy_redaction_accuracy,
             },
         }
+
+        false_acceptance_rate = 1.0 if result.route_valid and not result.route_correct else 0.0
+        hallucinated_content_rate = safe_ratio(
+            sum(1 for turn in nlu_turns if turn.get("has_station_mentions") and not turn.get("route_valid")),
+            max(len(nlu_turns), 1),
+        )
+        verifier_catch_rate = (
+            safe_ratio(warning_count, max(sum(1 for turn in nlu_turns if turn.get("has_station_mentions") and not turn.get("route_valid")), 1))
+            if warning_count or nlu_turns
+            else 1.0
+        )
+        executable_utterance_rate = safe_ratio(sum(1 for turn in nlu_turns if turn.get("route_valid")), max(len(agent_b_messages), 1))
+        failure_localization_score = max(
+            0.0,
+            min(
+                1.0,
+                safe_ratio(pipeline_failure_count + warning_count + len(nlu_turns), max(pipeline_failure_count + warning_count + len(nlu_turns), 1)),
+            ),
+        )
+        configured_metrics = metric_config_with_defaults(result.extra.get("metric_config"))
+        research_metric_values = {
+            "audio_turn_latency": round(mean_turn_latency_sec, 4),
+            "audio_end_of_utterance_error": round(asr_sentence_error_rate, 4),
+            "audio_overlap_rate": 0.0,
+            "asr_wer": round(asr_word_error_rate, 4),
+            "asr_entity_error_rate": round(asr_entity_wer, 4),
+            "asr_semantic_asr_error_rate": round(asr_sentence_error_rate, 4),
+            "nlu_constraint_extraction_f1": round(slot_realization_accuracy, 4),
+            "nlu_semantic_frame_accuracy": round(nlu_goal_reached_rate, 4),
+            "nlu_critical_slot_accuracy": round(nlu_station_mention_rate, 4),
+            "dialogue_state_state_drift_rate": round(max(0.0, 1.0 - nlu_goal_reached_rate), 4),
+            "dialogue_state_constraint_retention_rate": round(1.0 if result.route_correct else max(0.0, 1.0 - warning_pressure), 4),
+            "dialogue_state_shared_state_agreement": round(nlu_pipeline_input_match_rate, 4),
+            "dialogue_management_clarification_calibration": round(clarification_rate, 4),
+            "dialogue_management_repair_success_rate": round(safe_ratio(route_revision_count, max(warning_count, 1)), 4),
+            "dialogue_management_premature_answer_rate": round(max(0.0, 1.0 - nlu_route_valid_rate), 4),
+            "agent_b_grounded_proposal_score": round(task_success_rate, 4),
+            "agent_b_hallucinated_content_rate": round(hallucinated_content_rate, 4),
+            "agent_b_actionability_score": round(inform_rate, 4),
+            "agent_a_verifier_catch_rate": round(min(verifier_catch_rate, 1.0), 4),
+            "agent_a_false_acceptance_rate": round(false_acceptance_rate, 4),
+            "agent_a_satisfaction_calibration": round(predicted_user_satisfaction, 4),
+            "nlg_semantic_adequacy": round(slot_realization_accuracy, 4),
+            "nlg_faithfulness": round(task_success_rate, 4),
+            "nlg_executable_utterance_rate": round(min(executable_utterance_rate, 1.0), 4),
+            "tts_nisqa": None,
+            "tts_pronunciation_accuracy": round(max(0.0, 1.0 - tts_text_change_rate), 4),
+            "tts_round_trip_semantic_intelligibility": round(pipeline_success_rate * max(0.0, 1.0 - asr_sentence_error_rate), 4),
+            "whole_dialogue_interaction_quality_trajectory": round(automatic_eval_score, 4),
+            "whole_dialogue_dialogue_cost": message_count,
+            "whole_dialogue_failure_localization_score": round(failure_localization_score, 4),
+            "metric_validity_metric_outcome_correlation": None,
+            "metric_validity_rank_stability": None,
+            "metric_validity_seed_variance": None,
+        }
+        metric_families = {}
+        for family in enabled_metric_family_specs(configured_metrics):
+            phase_key = phase_key_from_title(family["title"])
+            metric_families[phase_key] = {
+                "available": True,
+                **{
+                    key[len(phase_key) + 1:] if key.startswith(f"{phase_key}_") else key: research_metric_values.get(key)
+                    for key, _label in family["metrics"]
+                },
+            }
 
         return MetricRecord(
             condition_id=result.condition_id,
