@@ -961,21 +961,23 @@ class DialogWindow:
         """Build the route comparison card."""
         self.route_frame = self.make_section(
             parent,
-            "Route Candidate Comparison",
+            "Routes",
             row=row,
             sticky="nsew",
             pady=0,
             key="route",
         )
         self.route_frame.grid_columnconfigure(0, weight=1)
-        self.route_frame.grid_rowconfigure(0, weight=1)
         self.route_frame.grid_rowconfigure(1, weight=1)
+        self.route_frame.grid_rowconfigure(3, weight=2)
+
+        self.build_subsection_label(self.route_frame, "Candidate Comparison", row=0)
 
         self.candidate_table = ttk.Treeview(
             self.route_frame,
             columns=("turn", "duration", "delta", "gap", "decision", "route", "lines"),
             show="headings",
-            height=4,
+            height=3,
             style="Data.Treeview",
         )
         candidate_columns = [
@@ -990,7 +992,9 @@ class DialogWindow:
         for col, label, width, anchor, stretch in candidate_columns:
             self.candidate_table.heading(col, text=label)
             self.candidate_table.column(col, width=width, minwidth=width, anchor=anchor, stretch=stretch)
-        self.candidate_table.grid(row=0, column=0, sticky="nsew", pady=(0, 2))
+        self.candidate_table.grid(row=1, column=0, sticky="nsew", pady=(0, 4))
+
+        self.build_subsection_label(self.route_frame, "Selected Route Legs", row=2)
 
         self.route_table = ttk.Treeview(
             self.route_frame,
@@ -1003,7 +1007,7 @@ class DialogWindow:
             self.route_table.heading(col, text=label)
             self.route_table.column(col, width=width, minwidth=width, anchor=anchor, stretch=stretch)
 
-        self.route_table.grid(row=1, column=0, sticky="nsew")
+        self.route_table.grid(row=3, column=0, sticky="nsew")
 
     def build_metric_data_tab(self, parent):
         """Build metric data as a left transcript and right metric workspace."""
@@ -1165,32 +1169,49 @@ class DialogWindow:
         """Build the outcome metrics card."""
         self.metrics_frame = self.make_section(
             parent,
-            "Outcome Metrics",
+            "Route Outcome",
             row=row,
             column=column,
             sticky="nsew",
             key="evaluation",
         )
-        self.metrics_frame.grid_columnconfigure(1, weight=1)
-        self.metrics_frame.grid_columnconfigure(3, weight=1)
-
-        metric_rows = [
-            (("route", "Route"), ("duration", "Duration")),
-            (("breakdown", "Breakdown"), ("reference_duration", "Reference")),
-            (("line_sequence", "Line Sequence"), ("line_changes", "Line Changes")),
-            (("reference_line_sequence", "Reference Sequence"), ("reference_line_changes", "Reference Changes")),
-            (("reference_route", "Reference Route"), ("best_turn", "Best Turn")),
-            (("constraint_route", "Target Route"), ("constraint_duration", "Target Time")),
-            (("constraint_line_sequence", "Target Sequence"), ("constraint_line_changes", "Target Changes")),
-            (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Capacity")),
-            (("allowed_modes", "Allowed Modes"), ("transfer_miss_risk", "Transfer Risk")),
-            (("candidate_routes", "Candidates"), ("route_revisions", "Revisions")),
-            (("valid", "Valid"), ("goal", "Goal")),
-            (("correct", "Correct"), ("runtime", "Runtime")),
+        groups = [
+            (
+                "Route",
+                [
+                    (("route", "Stations"), ("duration", "Duration")),
+                    (("breakdown", "Time Split"), ("line_sequence", "Lines")),
+                    (("line_changes", "Line Changes"), ("best_turn", "Best Turn")),
+                ],
+            ),
+            (
+                "Reference",
+                [
+                    (("reference_route", "Optimal Route"), ("reference_duration", "Optimal Time")),
+                    (("reference_line_sequence", "Optimal Lines"), ("reference_line_changes", "Optimal Changes")),
+                ],
+            ),
+            (
+                "Constraints",
+                [
+                    (("constraint_route", "Target Route"), ("constraint_duration", "Target Time")),
+                    (("constraint_line_sequence", "Target Lines"), ("constraint_line_changes", "Target Changes")),
+                    (("constraint_gap", "Target Gap"), ("constraint_fullness", "Target Capacity")),
+                    (("allowed_modes", "Allowed Modes"), ("transfer_miss_risk", "Transfer Risk")),
+                ],
+            ),
+            (
+                "Evaluation",
+                [
+                    (("candidate_routes", "Candidates"), ("route_revisions", "Revisions")),
+                    (("valid", "Valid"), ("goal", "Goal")),
+                    (("correct", "Correct"), ("runtime", "Runtime")),
+                ],
+            ),
         ]
-        self.build_paired_metric_rows(
+        self.build_grouped_metric_rows(
             self.metrics_frame,
-            metric_rows,
+            groups,
             self.metric_values,
             label_font_size=BODY_FONT_SIZE,
             value_font_size=BODY_FONT_SIZE,
@@ -1201,29 +1222,41 @@ class DialogWindow:
         """Build the conversation metrics card."""
         self.live_metrics_frame = self.make_section(
             parent,
-            "Conversation Metrics",
+            "Conversation Signals",
             row=row,
             column=column,
             sticky="nsew",
             key="dialog_metrics",
         )
-        self.live_metrics_frame.grid_columnconfigure(1, weight=1)
-        self.live_metrics_frame.grid_columnconfigure(3, weight=1)
-
-        live_metric_rows = [
-            (("messages", "Messages"), ("agent_split", "Agent A and Agent B Turns")),
-            (("words", "Words"), ("agent_words", "Agent A and Agent B Words")),
-            (("avg_words", "Average Words"), ("agent_avg_words", "Agent A and Agent B Average")),
-            (("questions", "Questions"), ("agent_questions", "Agent A and Agent B Questions")),
-            (("question_rate", "Question Rate"), ("station_mentions", "Station Mentions")),
-            (("station_density", "Station Density"), ("task_terms", "Task Terms")),
-            (("task_focus", "Task Focus"), ("comparison_terms", "Compare Terms")),
-            (("comparison_rate", "Compare Rate"), ("cooperation_terms", "Cooperation Terms")),
-            (("cooperation_rate", "Coop Rate"), ("last_speaker", "Last Speaker")),
+        groups = [
+            (
+                "Turns",
+                [
+                    (("messages", "Messages"), ("agent_split", "Agent Turns")),
+                    (("words", "Words"), ("agent_words", "Agent Words")),
+                    (("avg_words", "Average Words"), ("agent_avg_words", "Agent Average")),
+                ],
+            ),
+            (
+                "Dialog Acts",
+                [
+                    (("questions", "Questions"), ("agent_questions", "Agent Questions")),
+                    (("question_rate", "Question Rate"), ("last_speaker", "Last Speaker")),
+                ],
+            ),
+            (
+                "Task Focus",
+                [
+                    (("station_mentions", "Station Mentions"), ("station_density", "Station Density")),
+                    (("task_terms", "Task Terms"), ("task_focus", "Task Focus")),
+                    (("comparison_terms", "Compare Terms"), ("comparison_rate", "Compare Rate")),
+                    (("cooperation_terms", "Cooperation Terms"), ("cooperation_rate", "Cooperation Rate")),
+                ],
+            ),
         ]
-        self.build_paired_metric_rows(
+        self.build_grouped_metric_rows(
             self.live_metrics_frame,
-            live_metric_rows,
+            groups,
             self.live_metric_values,
             label_font_size=BODY_FONT_SIZE,
             value_font_size=BODY_FONT_SIZE,
@@ -1287,7 +1320,7 @@ class DialogWindow:
         overview = build_network_overview(self.scenario["start_time_min"])
         frame = self.make_section(
             parent,
-            f"Network Data: {overview.line_count} lines, {overview.station_count} stations, {overview.segment_count} segments",
+            f"Network Overview: {overview.line_count} lines, {overview.station_count} stations, {overview.segment_count} segments",
             row=row,
             sticky="nsew",
             key="network_overview",
@@ -1298,10 +1331,12 @@ class DialogWindow:
         line_panel = tk.Frame(frame, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
         line_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 4), pady=0)
         line_panel.grid_columnconfigure(0, weight=1)
+        self.build_subsection_label(line_panel, "Lines", row=0)
         self.network_line_table = self.build_scroll_table(
             line_panel,
             GUI_NETWORK_LINE_COLUMNS,
             height=GUI_NETWORK_TABLE_HEIGHT,
+            row=1,
         )
         for item in overview.lines:
             self.network_line_table.insert(
@@ -1322,10 +1357,12 @@ class DialogWindow:
         station_panel = tk.Frame(frame, bg=GUI_COLORS["panel_bg"], bd=0, highlightthickness=0)
         station_panel.grid(row=0, column=1, sticky="nsew", padx=(4, 0), pady=0)
         station_panel.grid_columnconfigure(0, weight=1)
+        self.build_subsection_label(station_panel, "Stations", row=0)
         self.network_station_table = self.build_scroll_table(
             station_panel,
             GUI_NETWORK_STATION_COLUMNS,
             height=GUI_NETWORK_TABLE_HEIGHT,
+            row=1,
         )
         for item in overview.stations:
             self.network_station_table.insert(
@@ -1362,7 +1399,7 @@ class DialogWindow:
         )
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
-    def build_scroll_table(self, parent, columns, height):
+    def build_scroll_table(self, parent, columns, height, row=0):
         table = ttk.Treeview(
             parent,
             columns=tuple(column[0] for column in columns),
@@ -1375,8 +1412,8 @@ class DialogWindow:
             table.column(col, width=width, minwidth=width, anchor=anchor, stretch=stretch)
         scrollbar = ttk.Scrollbar(parent, orient="vertical", command=table.yview)
         table.configure(yscrollcommand=scrollbar.set)
-        table.grid(row=0, column=0, sticky="nsew")
-        scrollbar.grid(row=0, column=1, sticky="ns")
+        table.grid(row=row, column=0, sticky="nsew")
+        scrollbar.grid(row=row, column=1, sticky="ns")
         return table
 
     def build_reference_browser_card(self, parent, row=0):
@@ -1412,25 +1449,47 @@ class DialogWindow:
             sticky="nsew",
             key="run",
         )
-        self.summary_frame.grid_columnconfigure(1, weight=1)
-        self.summary_frame.grid_columnconfigure(3, weight=1)
-
-        summary_rows = [
-            (("test_case", "Test"), ("persona", "Persona")),
-            (("scenario", "Scenario"), ("speech", "Speech")),
-            (("model", "Model"), ("device", "Device")),
-            (("agent_a", "Agent A"), ("settings", "Settings")),
-            (("run_state", "State"), ("elapsed", "Elapsed")),
-            (("warnings", "Warnings"), ("", "")),
+        groups = [
+            (
+                "Scenario",
+                [
+                    (("test_case", "Test"), ("persona", "Persona")),
+                    (("scenario", "Scenario"), ("speech", "Speech")),
+                ],
+            ),
+            (
+                "Execution",
+                [
+                    (("model", "Model"), ("device", "Device")),
+                    (("agent_a", "Agent A"), ("settings", "Settings")),
+                ],
+            ),
+            (
+                "Status",
+                [
+                    (("run_state", "State"), ("elapsed", "Elapsed")),
+                    (("warnings", "Warnings"), ("", "")),
+                ],
+            ),
         ]
-        self.build_paired_metric_rows(
+        self.build_grouped_metric_rows(
             self.summary_frame,
-            summary_rows,
+            groups,
             self.summary_values,
             label_font_size=GUI_FONT_SMALL + 1,
             value_font_size=BODY_FONT_SIZE,
             wraplength=SUMMARY_WRAP,
         )
+
+    def build_subsection_label(self, parent, title, row=0, column=0, columnspan=1):
+        tk.Label(
+            parent,
+            text=title,
+            anchor="w",
+            font=(GUI_FONT_FAMILY, GUI_FONT_SMALL + 1, "bold"),
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+        ).grid(row=row, column=column, columnspan=columnspan, sticky="ew", pady=(0, 3))
 
     def build_paired_metric_rows(self, parent, rows, target_values, label_font_size=BODY_FONT_SIZE, value_font_size=BODY_FONT_SIZE, wraplength=None):
         """Build a compact two-column label/value grid."""
@@ -1463,6 +1522,44 @@ class DialogWindow:
                     value.configure(wraplength=wraplength)
                 value.grid(row=row, column=value_column, sticky="ew", padx=(0, 12), pady=(0, 2))
                 target_values[key] = value
+
+    def build_grouped_metric_rows(self, parent, groups, target_values, label_font_size=BODY_FONT_SIZE, value_font_size=BODY_FONT_SIZE, wraplength=None):
+        """Build compact metric rows separated by readable group labels."""
+        parent.grid_columnconfigure(1, weight=1)
+        parent.grid_columnconfigure(3, weight=1)
+        grid_row = 0
+        for group_title, rows in groups:
+            self.build_subsection_label(parent, group_title, row=grid_row, column=0, columnspan=4)
+            grid_row += 1
+            for pair in rows:
+                for column_offset, (key, label) in enumerate(pair):
+                    if not key:
+                        continue
+                    label_column = column_offset * 2
+                    value_column = label_column + 1
+                    tk.Label(
+                        parent,
+                        text=label,
+                        anchor="w",
+                        font=(GUI_FONT_FAMILY, label_font_size),
+                        bg=GUI_COLORS["panel_bg"],
+                        fg=GUI_COLORS["muted_text"],
+                    ).grid(row=grid_row, column=label_column, sticky="w", padx=(0, 6), pady=(0, 2))
+                    value = tk.Label(
+                        parent,
+                        text="-",
+                        anchor="w",
+                        font=(GUI_MONO_FONT_FAMILY, value_font_size, "bold"),
+                        bg=GUI_COLORS["panel_bg"],
+                        fg=GUI_COLORS["text"],
+                        justify="left",
+                    )
+                    if wraplength is not None:
+                        value.configure(wraplength=wraplength)
+                    value.grid(row=grid_row, column=value_column, sticky="ew", padx=(0, 12), pady=(0, 2))
+                    target_values[key] = value
+                grid_row += 1
+            grid_row += 1
 
     @staticmethod
     def section_slug(title):
@@ -1565,7 +1662,7 @@ class DialogWindow:
             ("task_focus", "Task Focus"),
             ("warnings", "Warnings"),
         ]
-        columns = 4
+        columns = 6
         for column in range(columns):
             parent.grid_columnconfigure(column, weight=1)
 
