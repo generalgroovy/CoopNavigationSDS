@@ -196,7 +196,7 @@ class StartupConfigDialog:
         self.root = tk.Tk()
         self.root.title("MiniLlama Run Configuration")
         self.root.configure(bg=GUI_COLORS["app_bg"])
-        self.root.geometry("780x820")
+        self.root.geometry("920x680")
         self.root.resizable(True, True)
         self.vars = {
             "run_mode": tk.StringVar(value=defaults["run_mode"]),
@@ -243,227 +243,29 @@ class StartupConfigDialog:
     def build(self):
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        content = make_scrollable_frame(self.root, GUI_COLORS["app_bg"], padx=12, pady=12)
-        frame = tk.Frame(content, bg=GUI_COLORS["panel_bg"], bd=1, relief="solid")
-        frame.grid(row=0, column=0, sticky="nsew")
-        frame.grid_columnconfigure(1, weight=1)
+        shell = tk.Frame(self.root, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        shell.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        shell.grid_rowconfigure(1, weight=1)
+        shell.grid_columnconfigure(0, weight=1)
 
-        rows = [
-            ("Run mode", "run_mode", self.choices["run_modes"]),
-            ("Test case", "test_case_key", self.choices["test_case_keys"]),
-            ("Persona", "persona_key", self.choices["persona_keys"]),
-            ("Agent B", "agent_b_plugin", self.choices["agent_b_plugins"]),
-            ("Graphical interface mode", "gui_mode", self.choices["gui_modes"]),
-            ("Speech pattern", "speech_pattern_key", self.choices["speech_patterns"]),
-            ("Speech engine", "speech_engine", self.choices["speech_engines"]),
-            ("Text-to-speech engine", "tts_engine", self.choices["tts_engines"]),
-            ("Automatic speech recognition engine", "asr_engine", self.choices["asr_engines"]),
-            ("Speech scope", "speech_scope", self.choices["speech_scopes"]),
-        ]
-        for row, (label, key, values) in enumerate(rows):
-            tk.Label(
-                frame,
-                text=label,
-                anchor="w",
-                font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
-                bg=GUI_COLORS["panel_bg"],
-                fg=GUI_COLORS["muted_text"],
-            ).grid(row=row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
-            combo = ttk.Combobox(
-                frame,
-                textvariable=self.vars[key],
-                values=values,
-                state="normal" if key == "agent_b_plugin" else "readonly",
-                width=36,
-            )
-            combo.grid(row=row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
-
-        number_rows = [
-            ("Maximum conversation turns", "num_turns", 2, 24, 1),
-            ("Invalid route stop limit", "invalid_route_limit", 1, 10, 1),
-            ("Constraint miss stop limit", "constraint_miss_limit", 1, 10, 1),
-            ("Agent A transfer tolerance", "agent_a_transfer_tolerance", 0, 2, 1),
-            ("Metric snapshot interval", "metric_snapshot_interval", 1, 10, 1),
-            ("Maximum turn seconds", "max_turn_elapsed_sec", 1.0, 20.0, 0.5),
-            ("Maximum calculation seconds", "calculation_max_time_sec", 1.0, 20.0, 0.5),
-            ("Graphical interface metrics update milliseconds", "gui_refresh_ms", 50, 2000, 50),
-            ("Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5),
-            ("Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5),
-            ("Minimum utterance seconds", "min_utterance_sec", 0.2, 3.0, 0.1),
-            ("Maximum utterance seconds", "max_utterance_sec", 0.8, 8.0, 0.1),
-        ]
-        number_row_start = len(rows)
-        for offset, (label, key, from_value, to_value, increment) in enumerate(number_rows):
-            row = number_row_start + offset
-            tk.Label(
-                frame,
-                text=label,
-                anchor="w",
-                font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
-                bg=GUI_COLORS["panel_bg"],
-                fg=GUI_COLORS["muted_text"],
-            ).grid(row=row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
-            tk.Spinbox(
-                frame,
-                textvariable=self.vars[key],
-                from_=from_value,
-                to=to_value,
-                increment=increment,
-                width=10,
-            ).grid(row=row, column=1, sticky="w", padx=(0, 10), pady=(8, 0))
-
-        audio_row = number_row_start + len(number_rows)
         tk.Label(
-            frame,
-            text="Speech files",
+            shell,
+            text="Run Configuration",
             anchor="w",
-            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["muted_text"],
-        ).grid(row=audio_row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
-        tk.Entry(
-            frame,
-            textvariable=self.vars["speech_audio_dir"],
-            width=36,
-        ).grid(row=audio_row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
-
-        protocol_row = audio_row + 1
-        tk.Label(
-            frame,
-            text="Protocol logs",
-            anchor="w",
-            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL),
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["muted_text"],
-        ).grid(row=protocol_row, column=0, sticky="w", padx=(10, 8), pady=(8, 0))
-        tk.Entry(
-            frame,
-            textvariable=self.vars["protocol_log_dir"],
-            width=36,
-        ).grid(row=protocol_row, column=1, sticky="ew", padx=(0, 10), pady=(8, 0))
-
-        toggle_row = protocol_row + 1
-        tk.Checkbutton(
-            frame,
-            text="Incoming automatic speech recognition",
-            variable=self.vars["speech_incoming_enabled"],
-            bg=GUI_COLORS["panel_bg"],
+            font=(GUI_FONT_FAMILY, GUI_FONT_SECTION + 2, "bold"),
+            bg=GUI_COLORS["app_bg"],
             fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=toggle_row, column=0, sticky="w", padx=(10, 8), pady=(10, 0))
-        tk.Checkbutton(
-            frame,
-            text="Outgoing text-to-speech",
-            variable=self.vars["speech_outgoing_enabled"],
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=toggle_row, column=1, sticky="w", padx=(0, 10), pady=(10, 0))
+        ).grid(row=0, column=0, sticky="ew", pady=(0, 8))
 
-        gui_row = toggle_row + 1
-        tk.Checkbutton(
-            frame,
-            text="Play generated audio",
-            variable=self.vars["speech_playback_enabled"],
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=gui_row, column=0, sticky="w", padx=(10, 8), pady=(10, 0))
-        tk.Checkbutton(
-            frame,
-            text="Real-time listening",
-            variable=self.vars["speech_realtime_enabled"],
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=gui_row, column=1, sticky="w", padx=(0, 10), pady=(10, 0))
+        notebook = ttk.Notebook(shell)
+        notebook.grid(row=1, column=0, sticky="nsew")
+        self.build_run_settings_tab(notebook)
+        self.build_speech_settings_tab(notebook)
+        self.build_interface_settings_tab(notebook)
+        self.build_metric_settings_tab(notebook)
 
-        gui_row += 1
-        tk.Checkbutton(
-            frame,
-            text="Conversation graphical interface",
-            variable=self.vars["gui_enabled"],
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
-
-        gui_row += 1
-        tk.Checkbutton(
-            frame,
-            text="Network data visualization card",
-            variable=self.vars["network_data_card_enabled"],
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
-
-        gui_row += 1
-        tk.Checkbutton(
-            frame,
-            text="Large language model Agent A",
-            variable=self.vars["llm_agent_a"],
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            selectcolor=GUI_COLORS["tab_bg"],
-            activebackground=GUI_COLORS["panel_bg"],
-            activeforeground=GUI_COLORS["text"],
-        ).grid(row=gui_row, column=0, columnspan=2, sticky="w", padx=(10, 8), pady=(10, 0))
-
-        metric_row = gui_row + 1
-        metric_frame = tk.LabelFrame(
-            frame,
-            text="Research metrics",
-            bg=GUI_COLORS["panel_bg"],
-            fg=GUI_COLORS["text"],
-            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL, "bold"),
-            bd=1,
-            relief="solid",
-            padx=6,
-            pady=4,
-        )
-        metric_frame.grid(row=metric_row, column=0, columnspan=2, sticky="ew", padx=10, pady=(10, 0))
-        for column_index in range(3):
-            metric_frame.grid_columnconfigure(column_index, weight=1)
-        metric_index = 0
-        for family in METRIC_FAMILY_SPECS:
-            tk.Label(
-                metric_frame,
-                text=family["title"],
-                anchor="w",
-                font=(GUI_FONT_FAMILY, GUI_FONT_SMALL, "bold"),
-                bg=GUI_COLORS["panel_bg"],
-                fg=GUI_COLORS["text"],
-            ).grid(row=metric_index // 3, column=metric_index % 3, sticky="w", padx=4, pady=(4, 0))
-            metric_index += 1
-            for key, label in family["metrics"]:
-                tk.Checkbutton(
-                    metric_frame,
-                    text=label,
-                    variable=self.metric_vars[key],
-                    bg=GUI_COLORS["panel_bg"],
-                    fg=GUI_COLORS["text"],
-                    selectcolor=GUI_COLORS["tab_bg"],
-                    activebackground=GUI_COLORS["panel_bg"],
-                    activeforeground=GUI_COLORS["text"],
-                ).grid(row=metric_index // 3, column=metric_index % 3, sticky="w", padx=4, pady=(2, 0))
-                metric_index += 1
-
-        button_row = metric_row + 1
-        buttons = tk.Frame(frame, bg=GUI_COLORS["panel_bg"])
-        buttons.grid(row=button_row, column=0, columnspan=2, sticky="e", padx=10, pady=12)
+        buttons = tk.Frame(shell, bg=GUI_COLORS["app_bg"])
+        buttons.grid(row=2, column=0, sticky="e", pady=(10, 0))
         tk.Button(
             buttons,
             text="Start",
@@ -488,6 +290,182 @@ class StartupConfigDialog:
             padx=14,
             pady=5,
         ).grid(row=0, column=1)
+
+    def build_tab_page(self, notebook, title):
+        page = tk.Frame(notebook, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        notebook.add(page, text=title)
+        page.grid_rowconfigure(0, weight=1)
+        page.grid_columnconfigure(0, weight=1)
+        content = make_scrollable_frame(page, GUI_COLORS["app_bg"], padx=8, pady=8)
+        for column in range(2):
+            content.grid_columnconfigure(column, weight=1, uniform=f"{title}_config")
+        return content
+
+    def build_config_card(self, parent, title, row, column, columnspan=1):
+        card = tk.LabelFrame(
+            parent,
+            text=title,
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            font=(GUI_FONT_FAMILY, GUI_FONT_NORMAL, "bold"),
+            bd=1,
+            relief="solid",
+            padx=8,
+            pady=6,
+        )
+        card.grid(row=row, column=column, columnspan=columnspan, sticky="nsew", padx=5, pady=5)
+        card.grid_columnconfigure(1, weight=1)
+        return card
+
+    def add_field_label(self, parent, row, label):
+        tk.Label(
+            parent,
+            text=label,
+            anchor="w",
+            font=(GUI_FONT_FAMILY, GUI_FONT_SMALL),
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["muted_text"],
+        ).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=(4, 0))
+
+    def add_combo_row(self, parent, row, label, key, values, editable=False):
+        self.add_field_label(parent, row, label)
+        combo = ttk.Combobox(
+            parent,
+            textvariable=self.vars[key],
+            values=values,
+            state="normal" if editable else "readonly",
+            width=24,
+        )
+        combo.grid(row=row, column=1, sticky="ew", pady=(4, 0))
+
+    def add_spinbox_row(self, parent, row, label, key, from_value, to_value, increment):
+        self.add_field_label(parent, row, label)
+        tk.Spinbox(
+            parent,
+            textvariable=self.vars[key],
+            from_=from_value,
+            to=to_value,
+            increment=increment,
+            width=8,
+        ).grid(row=row, column=1, sticky="w", pady=(4, 0))
+
+    def add_entry_row(self, parent, row, label, key):
+        self.add_field_label(parent, row, label)
+        tk.Entry(
+            parent,
+            textvariable=self.vars[key],
+            width=24,
+        ).grid(row=row, column=1, sticky="ew", pady=(4, 0))
+
+    def add_check_row(self, parent, row, text, key, column=0):
+        tk.Checkbutton(
+            parent,
+            text=text,
+            variable=self.vars[key],
+            bg=GUI_COLORS["panel_bg"],
+            fg=GUI_COLORS["text"],
+            selectcolor=GUI_COLORS["tab_bg"],
+            activebackground=GUI_COLORS["panel_bg"],
+            activeforeground=GUI_COLORS["text"],
+        ).grid(row=row, column=column, sticky="w", padx=(0, 8), pady=(4, 0))
+
+    def build_run_settings_tab(self, notebook):
+        content = self.build_tab_page(notebook, "Run")
+        experiment = self.build_config_card(content, "Experiment", 0, 0)
+        self.add_combo_row(experiment, 0, "Run mode", "run_mode", self.choices["run_modes"])
+        self.add_combo_row(experiment, 1, "Test case", "test_case_key", self.choices["test_case_keys"])
+        self.add_combo_row(experiment, 2, "Persona", "persona_key", self.choices["persona_keys"])
+        self.add_combo_row(experiment, 3, "Agent B", "agent_b_plugin", self.choices["agent_b_plugins"], editable=True)
+
+        limits = self.build_config_card(content, "Conversation Limits", 0, 1)
+        self.add_spinbox_row(limits, 0, "Maximum turns", "num_turns", 2, 24, 1)
+        self.add_spinbox_row(limits, 1, "Invalid route limit", "invalid_route_limit", 1, 10, 1)
+        self.add_spinbox_row(limits, 2, "Constraint miss limit", "constraint_miss_limit", 1, 10, 1)
+        self.add_spinbox_row(limits, 3, "Transfer tolerance", "agent_a_transfer_tolerance", 0, 2, 1)
+        self.add_spinbox_row(limits, 4, "Turn seconds", "max_turn_elapsed_sec", 1.0, 20.0, 0.5)
+        self.add_spinbox_row(limits, 5, "Calculation seconds", "calculation_max_time_sec", 1.0, 20.0, 0.5)
+
+        research = self.build_config_card(content, "Research Output", 1, 0, columnspan=2)
+        self.add_spinbox_row(research, 0, "Metric snapshot interval", "metric_snapshot_interval", 1, 10, 1)
+        self.add_entry_row(research, 1, "Protocol log folder", "protocol_log_dir")
+        self.add_check_row(research, 2, "Use large language model Agent A", "llm_agent_a")
+
+    def build_speech_settings_tab(self, notebook):
+        content = self.build_tab_page(notebook, "Speech")
+        engines = self.build_config_card(content, "Pipeline Engines", 0, 0)
+        self.add_combo_row(engines, 0, "Speech pattern", "speech_pattern_key", self.choices["speech_patterns"])
+        self.add_combo_row(engines, 1, "Speech engine", "speech_engine", self.choices["speech_engines"])
+        self.add_combo_row(engines, 2, "Text-to-speech", "tts_engine", self.choices["tts_engines"])
+        self.add_combo_row(engines, 3, "Speech recognition", "asr_engine", self.choices["asr_engines"])
+        self.add_combo_row(engines, 4, "Speech scope", "speech_scope", self.choices["speech_scopes"])
+        self.add_entry_row(engines, 5, "Speech file folder", "speech_audio_dir")
+
+        audio = self.build_config_card(content, "Audio Behavior", 0, 1)
+        self.add_check_row(audio, 0, "Incoming speech recognition", "speech_incoming_enabled")
+        self.add_check_row(audio, 1, "Outgoing text-to-speech", "speech_outgoing_enabled")
+        self.add_check_row(audio, 2, "Play generated audio", "speech_playback_enabled")
+        self.add_check_row(audio, 3, "Real-time listening", "speech_realtime_enabled")
+
+        timing = self.build_config_card(content, "Natural Turn Timing", 1, 0, columnspan=2)
+        self.add_spinbox_row(timing, 0, "Agent A words per minute", "agent_a_words_per_minute", 90, 240, 5)
+        self.add_spinbox_row(timing, 1, "Agent B words per minute", "agent_b_words_per_minute", 90, 240, 5)
+        self.add_spinbox_row(timing, 2, "Minimum utterance seconds", "min_utterance_sec", 0.2, 3.0, 0.1)
+        self.add_spinbox_row(timing, 3, "Maximum utterance seconds", "max_utterance_sec", 0.8, 8.0, 0.1)
+
+    def build_interface_settings_tab(self, notebook):
+        content = self.build_tab_page(notebook, "Interface")
+        gui = self.build_config_card(content, "Graphical Interface", 0, 0)
+        self.add_combo_row(gui, 0, "Interface mode", "gui_mode", self.choices["gui_modes"])
+        self.add_spinbox_row(gui, 1, "Metrics update milliseconds", "gui_refresh_ms", 50, 2000, 50)
+        self.add_check_row(gui, 2, "Enable conversation interface", "gui_enabled")
+        self.add_check_row(gui, 3, "Network data visualization card", "network_data_card_enabled")
+
+    def build_metric_settings_tab(self, notebook):
+        content = self.build_tab_page(notebook, "Metrics")
+        controls = tk.Frame(content, bg=GUI_COLORS["app_bg"], bd=0, highlightthickness=0)
+        controls.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=(0, 5))
+        tk.Button(
+            controls,
+            text="Enable all metrics",
+            command=lambda: self.set_all_metrics(True),
+            bg=GUI_COLORS["tab_button_bg"],
+            fg=GUI_COLORS["text"],
+            activebackground=GUI_COLORS["tab_unselected_hover"],
+            activeforeground=GUI_COLORS["text"],
+            bd=0,
+            padx=10,
+            pady=4,
+        ).grid(row=0, column=0, sticky="w", padx=(0, 6))
+        tk.Button(
+            controls,
+            text="Disable all metrics",
+            command=lambda: self.set_all_metrics(False),
+            bg=GUI_COLORS["tab_button_bg"],
+            fg=GUI_COLORS["text"],
+            activebackground=GUI_COLORS["tab_unselected_hover"],
+            activeforeground=GUI_COLORS["text"],
+            bd=0,
+            padx=10,
+            pady=4,
+        ).grid(row=0, column=1, sticky="w")
+
+        for index, family in enumerate(METRIC_FAMILY_SPECS):
+            card = self.build_config_card(content, family["title"], (index // 2) + 1, index % 2)
+            for row, (key, label) in enumerate(family["metrics"]):
+                tk.Checkbutton(
+                    card,
+                    text=label,
+                    variable=self.metric_vars[key],
+                    bg=GUI_COLORS["panel_bg"],
+                    fg=GUI_COLORS["text"],
+                    selectcolor=GUI_COLORS["tab_bg"],
+                    activebackground=GUI_COLORS["panel_bg"],
+                    activeforeground=GUI_COLORS["text"],
+                ).grid(row=row, column=0, sticky="w", pady=(2, 0))
+
+    def set_all_metrics(self, enabled):
+        for metric_var in self.metric_vars.values():
+            metric_var.set(bool(enabled))
 
     def start(self):
         self.result = {
