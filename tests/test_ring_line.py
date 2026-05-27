@@ -31,7 +31,7 @@ class RingLineTests(unittest.TestCase):
         self.assertEqual(sequences[1][0], sequences[1][-1])
 
     def test_same_line_through_station_has_no_intermediate_wait_or_transfer(self):
-        estimate = estimate_route_time(["Alpha", "Bravo", "Charlie"], 480, 4)
+        estimate = estimate_route_time(["Alpha", "Bravo", "Ivy"], 480, 4)
         self.assertIsNotNone(estimate)
         _, steps = estimate
 
@@ -43,9 +43,8 @@ class RingLineTests(unittest.TestCase):
 
         proposal = route_text_from_steps(steps)
         self.assertEqual(proposal.count("Take Ring"), 1)
-        self.assertIn("Take Ring from Alpha", proposal)
-        self.assertIn("to Charlie", proposal)
-        self.assertIn("Boarding: Alpha to Charlie", proposal)
+        self.assertIn("Stations: Alpha to Bravo to Ivy", proposal)
+        self.assertIn("Boarding: Alpha to Ivy", proposal)
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):
         scenario = {
@@ -122,7 +121,7 @@ class RingLineTests(unittest.TestCase):
                 for _next_station, line, _travel in ADJACENCY[station]
             }
 
-        bus_only = [station for station, modes in station_modes.items() if modes == {"bus"}]
+        bus_only = [station for station, modes in station_modes.items() if modes - {"walking"} == {"bus"}]
 
         self.assertTrue(bus_only)
 

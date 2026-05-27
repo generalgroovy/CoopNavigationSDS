@@ -53,6 +53,15 @@ class NaturalRouteInterpreter:
             The computed value or side effect documented by the implementation.
         """
         candidates = []
+        station_route = self._route_from_labeled_station_sequence(text, "Stations")
+        if station_route and route_is_valid(station_route):
+            if station_route[0] == scenario["start_station"] and station_route[-1] == scenario["destination_station"]:
+                return station_route
+        boarding_route = self._route_from_labeled_station_sequence(text, "Boarding")
+        if boarding_route and route_is_valid(boarding_route):
+            if boarding_route[0] == scenario["start_station"] and boarding_route[-1] == scenario["destination_station"]:
+                return boarding_route
+
         line_route = self._route_from_named_line_legs(text)
         if line_route and route_is_valid(line_route):
             if line_route[0] == scenario["start_station"] and line_route[-1] == scenario["destination_station"]:
@@ -98,6 +107,18 @@ class NaturalRouteInterpreter:
 
         candidates.sort(key=lambda item: item["score"], reverse=True)
         return candidates[0]["route"]
+
+    def _route_from_labeled_station_sequence(self, text, label):
+        """Parse an explicit station sequence such as 'Stations: Alpha to Bravo'."""
+        pattern = re.compile(rf"\b{re.escape(label)}\s*:\s*([^.!?]+)", flags=re.IGNORECASE)
+        match = pattern.search(text)
+        if not match:
+            return []
+        mentions = self.station_mentions(match.group(1))
+        if len(mentions) < 2:
+            return []
+        route = self._expand_spoken_route(mentions)
+        return [] if len(route) != len(set(route)) else route
 
     def has_station_mentions(self, text):
         """Has station mentions method for this module's MVC responsibility.
@@ -156,6 +177,8 @@ class NaturalRouteInterpreter:
             for end in range(start + 2, len(mentions) + 1):
                 route = mentions[start:end]
                 route = self._expand_spoken_route(route)
+                if len(route) != len(set(route)):
+                    continue
                 if not route_is_valid(route):
                     continue
 

@@ -14,6 +14,10 @@ from minillama.model.config import (
     DEFAULT_TRAVEL_TIME_MIN,
     MIN_TRAVEL_TIME_MIN,
     MAX_TRAVEL_TIME_MIN,
+    TRANSPORT_TRAVEL_MINUTES_PER_MAP_UNIT,
+    TRANSPORT_MIN_TRAVEL_TIME_MIN,
+    TRANSPORT_MAX_TRAVEL_TIME_MIN,
+    WALKING_LINK_MAX_MIN,
     NETWORK_SEED,
     LINE_FULLNESS_SEED,
     MIN_LINE_FULLNESS_PERCENT,
@@ -45,6 +49,8 @@ from minillama.model.config import (
     LINE_LENGTH_SCORE_DIVISOR,
     LINE_STOP_OVERRIDES,
     BUS_ONLY_STATIONS,
+    STATION_CLASS_RATIOS,
+    STATION_CLASS_ACCESS_MODES,
     TRANSPORT_MODE_BY_KIND,
 )
 from minillama.model.station_names import get_station_names
@@ -120,6 +126,63 @@ def generate_station_positions(stations):
             positions[station] = (x, y)
 
     return positions
+
+
+def build_station_classes(stations):
+    """Assign station access classes with stable target ratios."""
+    station_count = len(stations)
+    class_1_count = max(1, round(station_count * STATION_CLASS_RATIOS.get(1, 0.2)))
+    class_3_count = max(1, round(station_count * STATION_CLASS_RATIOS.get(3, 0.3)))
+    protected_hubs = [
+        station
+        for station in ("Alpha", "Bravo", "Golf", "Mike", "Sierra", "Harbor", "Ivy")
+        if station in stations
+    ]
+    class_1 = []
+    for station in protected_hubs:
+        if station not in class_1 and len(class_1) < class_1_count:
+            class_1.append(station)
+    if len(class_1) < class_1_count:
+        step = max(1, len(stations) // class_1_count)
+        for index in range(0, len(stations), step):
+            station = stations[index]
+            if station not in class_1:
+                class_1.append(station)
+            if len(class_1) >= class_1_count:
+                break
+
+    class_3 = []
+    for station in BUS_ONLY_STATIONS:
+        if station in stations and station not in class_1:
+            class_3.append(station)
+    for station in reversed(stations):
+        if station in class_1 or station in class_3:
+            continue
+        class_3.append(station)
+        if len(class_3) >= class_3_count:
+            break
+
+    class_lookup = {}
+    for station in stations:
+        if station in class_1:
+            class_lookup[station] = 1
+        elif station in class_3:
+            class_lookup[station] = 3
+        else:
+            class_lookup[station] = 2
+    return class_lookup
+
+
+def station_access_modes(station):
+    """Return transport modes that may serve a station class."""
+    station_class = STATION_CLASSES.get(station, 2)
+    return STATION_CLASS_ACCESS_MODES.get(station_class, ("bus", "walking"))
+
+
+def station_class_label(station):
+    """Return a readable station class label."""
+    station_class = STATION_CLASSES.get(station, 2)
+    return f"class {station_class}"
 
 
 def valid_sequence(seq):
@@ -431,32 +494,63 @@ def choose_lines(stations, seed=None):
                 "Increase NUM_LINES or adjust LAYOUT_COLUMNS."
             )
 
+    station_classes = build_station_classes(stations)
     apply_line_overrides(lines, stations)
-    apply_bus_only_access(lines, stations)
+    apply_station_class_access(lines, station_classes)
+    ensure_station_class_service(lines, stations, station_classes)
     apply_line_fullness(lines, LINE_FULLNESS_SEED)
     return lines
 
 
-def apply_bus_only_access(lines, stations):
-    """Make selected stations reachable only by bus while preserving bus service."""
-    station_set = set(stations)
-    bus_only = {station for station in BUS_ONLY_STATIONS if station in station_set}
-    if not bus_only:
-        return
+def apply_station_class_access(lines, station_classes):
+    """Remove stops from line modes that are not allowed by station class."""
+    removed = []
+    for line_name, data in list(lines.items()):
+        mode = data.get("mode", "bus")
+        if mode == "walking":
+            continue
+        stops = [
+            station
+            for station in data["stops"]
+            if mode in STATION_CLASS_ACCESS_MODES.get(station_classes.get(station, 2), ("bus", "walking"))
+        ]
+        if len(stops) >= MIN_LINE_STATIONS:
+            data["stops"] = stops
+        else:
+            removed.append(line_name)
+    for line_name in removed:
+        lines.pop(line_name, None)
 
-    bus_served = {
-        station
-        for data in lines.values()
-        if data.get("mode") == "bus"
-        for station in data["stops"]
-    }
-    for station in sorted(bus_only & bus_served):
-        for data in lines.values():
-            if data.get("mode") == "bus" or station not in data["stops"]:
-                continue
-            if len(data["stops"]) <= MIN_LINE_STATIONS:
-                continue
-            data["stops"] = [stop for stop in data["stops"] if stop != station]
+
+def ensure_station_class_service(lines, stations, station_classes):
+    """Add compact service lines so station-class access guarantees are explicit."""
+    next_color_index = len(lines)
+
+    def add_line(name, kind, mode, stops, headway):
+        nonlocal next_color_index
+        clean_stops = []
+        for station in stops:
+            if station in stations and station not in clean_stops:
+                clean_stops.append(station)
+        if len(clean_stops) < MIN_LINE_STATIONS or name in lines:
+            return
+        lines[name] = {
+            "kind": kind,
+            "mode": mode,
+            "color": LINE_COLORS[next_color_index % len(LINE_COLORS)],
+            "headway": headway,
+            "stops": clean_stops,
+        }
+        next_color_index += 1
+
+    class_1 = [station for station in stations if station_classes.get(station) == 1]
+    class_1_and_2 = [station for station in stations if station_classes.get(station) in {1, 2}]
+    all_bus = [station for station in stations if station_classes.get(station) in {1, 2, 3}]
+    class_3 = [station for station in stations if station_classes.get(station) == 3]
+
+    add_line("Core Tram", "Class Access", "tram", class_1 + class_1_and_2[::3], DEFAULT_HEADWAY_MIN + 1)
+    add_line("Core Bus", "Class Access", "bus", all_bus, DEFAULT_HEADWAY_MIN + 2)
+    add_line("Local Bus", "Class Access", "bus", class_3 + class_1[:2], DEFAULT_HEADWAY_MIN + 3)
 
 
 def apply_line_fullness(lines, seed=None):
@@ -590,6 +684,8 @@ def station_fullness_percent(station, current_time_min):
 @lru_cache(maxsize=2048)
 def line_fullness_percent(line_name, current_time_min):
     """Return average line crowding based on the current station demand profile."""
+    if str(line_name).startswith("Walk "):
+        return MIN_LINE_FULLNESS_PERCENT
     stops = LINES[line_name]["stops"]
     if not stops:
         return MIN_LINE_FULLNESS_PERCENT
@@ -602,6 +698,8 @@ def line_fullness_percent(line_name, current_time_min):
 
 def segment_fullness_percent(line_name, station_a, station_b, current_time_min):
     """Return crowding for a traversed segment using local station and line load."""
+    if str(line_name).startswith("Walk "):
+        return MIN_LINE_FULLNESS_PERCENT
     values = [
         station_fullness_percent(station_a, current_time_min),
         station_fullness_percent(station_b, current_time_min),
@@ -618,6 +716,39 @@ def is_near_capacity(fullness_percent, threshold=NEAR_CAPACITY_THRESHOLD_PERCENT
 def capacity_status(fullness_percent, threshold=NEAR_CAPACITY_THRESHOLD_PERCENT):
     """Return the binary capacity label used for dialog and research outputs."""
     return "near capacity" if is_near_capacity(fullness_percent, threshold) else "not near capacity"
+
+
+def fullness_class(fullness_percent):
+    """Return the line-level fullness class."""
+    if int(fullness_percent or 0) >= 70:
+        return "high"
+    if int(fullness_percent or 0) >= 40:
+        return "moderate"
+    return "low"
+
+
+def line_delay_probability_class(line_name):
+    """Return a general delay-probability class for one line."""
+    data = LINES[line_name]
+    mode = data.get("mode", "bus")
+    fullness = fullness_class(data.get("fullness", line_fullness_percent(line_name, START_TIME_MIN)))
+    score = {"metro": 0, "tram": 1, "bus": 2, "walking": 0}.get(mode, 2)
+    if fullness == "high":
+        score += 1
+    if score >= 3:
+        return "high"
+    if score >= 1:
+        return "moderate"
+    return "low"
+
+
+def delay_class_probability(delay_class):
+    """Map a line delay class to the internal numeric risk proxy."""
+    return {
+        "low": 0.15,
+        "moderate": 0.32,
+        "high": 0.55,
+    }.get(delay_class, 0.32)
 
 
 def station_transfer_time_min(station):
@@ -657,8 +788,31 @@ def line_stop_pairs(line_name, data):
     return pairs
 
 
+def line_segment_key(line_name, station_a, station_b):
+    """Return the canonical key for line-specific segment data."""
+    a, b = sorted((station_a, station_b))
+    return line_name, a, b
+
+
+def map_distance(station_a, station_b):
+    """Return schematic map distance between two stations."""
+    ax, ay = STATION_POS[station_a]
+    bx, by = STATION_POS[station_b]
+    return math.hypot(ax - bx, ay - by)
+
+
+def travel_time_for_mode(mode, station_a, station_b, rng=None):
+    """Scale travel time by transport mode using a stable schematic distance."""
+    minutes_per_unit = TRANSPORT_TRAVEL_MINUTES_PER_MAP_UNIT.get(mode, TRANSPORT_TRAVEL_MINUTES_PER_MAP_UNIT["bus"])
+    jitter = (rng or random.Random(0)).uniform(-0.35, 0.35)
+    raw = map_distance(station_a, station_b) * minutes_per_unit + jitter
+    lower = TRANSPORT_MIN_TRAVEL_TIME_MIN.get(mode, MIN_TRAVEL_TIME_MIN)
+    upper = TRANSPORT_MAX_TRAVEL_TIME_MIN.get(mode, MAX_TRAVEL_TIME_MIN)
+    return max(lower, min(upper, int(round(raw))))
+
+
 def generate_travel_times(lines, seed=None):
-    """Generate travel times function for this module's MVC responsibility.
+    """Generate line-specific travel times scaled by transport mode.
     
     Args:
         lines: Input value used by `generate_travel_times`; see the function signature and caller context for the expected type.
@@ -672,15 +826,27 @@ def generate_travel_times(lines, seed=None):
 
     for line_name, data in lines.items():
         for a, b in line_stop_pairs(line_name, data):
-            key = tuple(sorted((a, b)))
-
+            key = line_segment_key(line_name, a, b)
             if key not in travel_times:
-                travel_times[key] = rng.randint(
-                    MIN_TRAVEL_TIME_MIN,
-                    MAX_TRAVEL_TIME_MIN,
-                )
+                travel_times[key] = travel_time_for_mode(data.get("mode", "bus"), a, b, rng)
 
     return travel_times
+
+
+def walking_line_name(station_a, station_b):
+    """Return a stable pseudo-line name for direct walking links."""
+    return "Walk " + " - ".join(sorted((station_a, station_b)))
+
+
+def walking_pairs(stations):
+    """Return local walking links that connect nearby stations."""
+    pairs = []
+    for index, station_a in enumerate(stations):
+        for station_b in stations[index + 1:]:
+            minutes = travel_time_for_mode("walking", station_a, station_b)
+            if minutes <= WALKING_LINK_MAX_MIN:
+                pairs.append((station_a, station_b, minutes))
+    return pairs
 
 
 def build_edges_and_adjacency(stations, lines, travel_times):
@@ -699,7 +865,7 @@ def build_edges_and_adjacency(stations, lines, travel_times):
 
     for line_name, data in lines.items():
         for a, b in line_stop_pairs(line_name, data):
-            key = tuple(sorted((a, b)))
+            key = line_segment_key(line_name, a, b)
             travel = travel_times.get(key, DEFAULT_TRAVEL_TIME_MIN)
 
             edges[(a, b, line_name)] = travel
@@ -707,6 +873,13 @@ def build_edges_and_adjacency(stations, lines, travel_times):
 
             adjacency[a].append((b, line_name, travel))
             adjacency[b].append((a, line_name, travel))
+
+    for a, b, travel in walking_pairs(stations):
+        line_name = walking_line_name(a, b)
+        edges[(a, b, line_name)] = travel
+        edges[(b, a, line_name)] = travel
+        adjacency[a].append((b, line_name, travel))
+        adjacency[b].append((a, line_name, travel))
 
     return edges, adjacency
 
@@ -800,6 +973,7 @@ def assert_fully_connected():
 
 STATIONS = get_station_names(NUM_STATIONS)
 STATION_POS = generate_station_positions(STATIONS)
+STATION_CLASSES = build_station_classes(STATIONS)
 LINES = choose_lines(STATIONS, NETWORK_SEED)
 TRAVEL_TIMES = generate_travel_times(LINES, NETWORK_SEED)
 EDGES, ADJACENCY = build_edges_and_adjacency(STATIONS, LINES, TRAVEL_TIMES)
@@ -808,6 +982,8 @@ STATION_PROFILES = build_station_profiles(STATIONS, LINES, STATION_DEMAND_SEED)
 
 for line_name in LINES:
     LINES[line_name]["fullness"] = line_fullness_percent(line_name, START_TIME_MIN)
+    LINES[line_name]["fullness_class"] = fullness_class(LINES[line_name]["fullness"])
+    LINES[line_name]["delay_probability_class"] = line_delay_probability_class(line_name)
 
 assert_fully_connected()
 
@@ -822,7 +998,7 @@ def line_segment_text(line_name):
         The computed value or side effect documented by the implementation.
     """
     return "; ".join(
-        f"{a} to {b}: {TRAVEL_TIMES.get(tuple(sorted((a, b))), DEFAULT_TRAVEL_TIME_MIN)} minutes"
+        f"{a} to {b}: {TRAVEL_TIMES.get(line_segment_key(line_name, a, b), DEFAULT_TRAVEL_TIME_MIN)} minutes"
         for a, b in line_stop_pairs(line_name, LINES[line_name])
     )
 
@@ -857,7 +1033,9 @@ def compact_station_transfer_text(limit=10):
 def compact_line_fullness_text(current_time_min=START_TIME_MIN):
     """Compact current line crowding text for prompts."""
     return " ".join(
-        f"{line}: {capacity_status(line_fullness_percent(line, current_time_min))}."
+        f"{line}: {fullness_class(line_fullness_percent(line, current_time_min))} fullness, "
+        f"{capacity_status(line_fullness_percent(line, current_time_min))}, "
+        f"{LINES[line].get('delay_probability_class', 'moderate')} delay risk."
         for line in LINES
     )
 
@@ -874,6 +1052,21 @@ def compact_station_crowding_text(current_time_min=START_TIME_MIN, limit=8):
         reverse=True,
     )[:limit]
     return " ".join(f"{station}: {capacity_status(fullness)}." for station, fullness in busiest)
+
+
+@lru_cache(maxsize=1)
+def compact_station_class_text():
+    """Return compact station class and access-mode context for prompts."""
+    groups = {}
+    for station in STATIONS:
+        groups.setdefault(STATION_CLASSES[station], []).append(station)
+    return " ".join(
+        (
+            f"Class {station_class} stations ({', '.join(STATION_CLASS_ACCESS_MODES[station_class])}): "
+            f"{', '.join(groups.get(station_class, []))}."
+        )
+        for station_class in sorted(groups)
+    )
 
 
 def line_stop_sequence_text(line_name, data):
@@ -900,6 +1093,6 @@ def compact_travel_time_text():
         The computed value or side effect documented by the implementation.
     """
     return " ".join(
-        f"{a} to {b}: {minutes} minutes."
-        for (a, b), minutes in sorted(TRAVEL_TIMES.items())
+        f"{line} {a} to {b}: {minutes} minutes."
+        for (line, a, b), minutes in sorted(TRAVEL_TIMES.items())
     )

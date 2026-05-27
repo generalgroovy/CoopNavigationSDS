@@ -4,6 +4,7 @@ import os
 MODEL = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 TOKEN = os.environ.get("HF_TOKEN")
 DEVICE = os.environ.get("MINILLAMA_DEVICE", "cpu").lower()
+ALLOW_MODEL_DOWNLOAD = os.environ.get("MINILLAMA_ALLOW_MODEL_DOWNLOAD", "0").lower() in {"1", "true", "on", "yes"}
 
 # MODEL_PROVIDER:
 # - "transformers": local Hugging Face causal model
@@ -26,6 +27,25 @@ DEFAULT_HEADWAY_MIN = 5
 DEFAULT_TRAVEL_TIME_MIN = 4
 MIN_TRAVEL_TIME_MIN = 2
 MAX_TRAVEL_TIME_MIN = 6
+TRANSPORT_TRAVEL_MINUTES_PER_MAP_UNIT = {
+    "metro": 0.024,
+    "tram": 0.034,
+    "bus": 0.048,
+    "walking": 0.075,
+}
+TRANSPORT_MIN_TRAVEL_TIME_MIN = {
+    "metro": 2,
+    "tram": 3,
+    "bus": 4,
+    "walking": 2,
+}
+TRANSPORT_MAX_TRAVEL_TIME_MIN = {
+    "metro": 8,
+    "tram": 10,
+    "bus": 14,
+    "walking": 18,
+}
+WALKING_LINK_MAX_MIN = 10
 
 NETWORK_SEED = 42
 LINE_FULLNESS_SEED = 84
@@ -68,12 +88,22 @@ LINE_KIND_BONUS = 2
 LINE_LENGTH_SCORE_DIVISOR = 10
 LINE_STOP_OVERRIDES = {}
 BUS_ONLY_STATIONS = ("Oscar", "Kilo")
+STATION_CLASS_RATIOS = {
+    1: 0.20,
+    2: 0.50,
+    3: 0.30,
+}
+STATION_CLASS_ACCESS_MODES = {
+    1: ("metro", "tram", "bus", "walking"),
+    2: ("tram", "bus", "walking"),
+    3: ("bus", "walking"),
+}
 
 TRANSFER_TIME_MIN = 2
 MIN_STATION_TRANSFER_TIME_MIN = 1
 MAX_STATION_TRANSFER_TIME_MIN = 8
 STATION_TRANSFER_SEED = 168
-DEFAULT_ALLOWED_MODES = ("metro", "tram", "bus")
+DEFAULT_ALLOWED_MODES = ("metro", "tram", "bus", "walking")
 TRANSPORT_MODE_BY_KIND = {
     "Ring": "metro",
     "East-West": "metro",

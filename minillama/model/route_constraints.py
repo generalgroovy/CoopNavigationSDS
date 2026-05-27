@@ -14,6 +14,39 @@ from minillama.model.route_planner import (
 )
 
 
+OBJECTIVE_VALID_ROUTE = "only_valid_route"
+OBJECTIVE_SHORTEST_ROUTE = "shortest_valid_route"
+OBJECTIVE_SHORTEST_WITH_CONSTRAINTS = "shortest_valid_route_with_constraints"
+OBJECTIVE_MODES = (
+    OBJECTIVE_VALID_ROUTE,
+    OBJECTIVE_SHORTEST_ROUTE,
+    OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+)
+OBJECTIVE_MODE_LABELS = {
+    OBJECTIVE_VALID_ROUTE: "Only valid route",
+    OBJECTIVE_SHORTEST_ROUTE: "Shortest valid route",
+    OBJECTIVE_SHORTEST_WITH_CONSTRAINTS: "Shortest valid route with 1-3 constraints",
+}
+
+
+def normalize_objective_mode(value):
+    """Return a supported Agent A objective mode."""
+    normalized = str(value or OBJECTIVE_SHORTEST_WITH_CONSTRAINTS).strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "valid": OBJECTIVE_VALID_ROUTE,
+        "only_valid": OBJECTIVE_VALID_ROUTE,
+        "only_valid_route": OBJECTIVE_VALID_ROUTE,
+        "shortest": OBJECTIVE_SHORTEST_ROUTE,
+        "shortest_route": OBJECTIVE_SHORTEST_ROUTE,
+        "shortest_valid": OBJECTIVE_SHORTEST_ROUTE,
+        "shortest_valid_route": OBJECTIVE_SHORTEST_ROUTE,
+        "constraints": OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+        "shortest_with_constraints": OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+        "shortest_valid_route_with_constraints": OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+    }
+    return aliases.get(normalized, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)
+
+
 @dataclass(frozen=True)
 class RouteConstraintProfile:
     """Normalized persona route preferences used for scoring candidate routes."""
@@ -171,7 +204,8 @@ def route_risk_viability(steps, profile):
         "max_transfer_miss_risk_class": probability_class(profile.max_transfer_miss_probability),
         "delay_risk_unviable": not delay_allowed,
         "transfer_miss_risk_unviable": not transfer_allowed,
-        "risk_unviable": not (delay_allowed and transfer_allowed),
+        "walking_unviable": not route_within_walking_limit(steps, profile),
+        "risk_unviable": not (delay_allowed and transfer_allowed and route_within_walking_limit(steps, profile)),
     }
 
 
@@ -222,12 +256,39 @@ def route_mode_sequence(steps):
     return sequence
 
 
-def constraint_sort_key(duration_min, steps, profile):
+def route_walking_minutes(steps):
+    """Return walking minutes used by a route."""
+    return sum(step.get("travel", 0) for step in steps if step.get("mode") == "walking")
+
+
+def route_within_walking_limit(steps, profile):
+    """Return whether route walking stays inside persona limit."""
+    return profile.max_walking_min is None or route_walking_minutes(steps) <= profile.max_walking_min
+
+
+def constraint_sort_key(duration_min, steps, profile, objective_mode=OBJECTIVE_SHORTEST_WITH_CONSTRAINTS):
     line_changes = route_line_change_count(steps)
     average_fullness = route_average_fullness(steps)
     near_capacity_count = route_near_capacity_count(steps)
     delay_probability = route_delay_probability(steps)
     transfer_miss_probability = route_transfer_miss_probability(steps)
+    objective_mode = normalize_objective_mode(objective_mode)
+    if objective_mode == OBJECTIVE_VALID_ROUTE:
+        return (
+            int(not route_within_walking_limit(steps, profile)),
+            len(steps),
+            line_changes,
+            duration_min,
+            average_fullness,
+        )
+    if objective_mode == OBJECTIVE_SHORTEST_ROUTE:
+        return (
+            int(not route_within_walking_limit(steps, profile)),
+            duration_min,
+            line_changes,
+            len(steps),
+            average_fullness,
+        )
     key = []
     key.append(duration_min if profile.prefer_fast else round(duration_min * 0.25))
     if profile.prefer_fewer_changes:
@@ -237,6 +298,7 @@ def constraint_sort_key(duration_min, steps, profile):
     if profile.prefer_low_delay:
         key.append(delay_probability)
     key.extend([
+        int(not route_within_walking_limit(steps, profile)),
         int(not probability_class_allowed(delay_probability, profile.max_delay_probability)),
         int(not probability_class_allowed(transfer_miss_probability, profile.max_transfer_miss_probability)),
         duration_min,
@@ -249,9 +311,10 @@ def constraint_sort_key(duration_min, steps, profile):
     return tuple(key)
 
 
-def optimal_constraint_route(scenario, persona, limit=50):
+def optimal_constraint_route(scenario, persona, limit=50, objective_mode=None):
     """Compute the best startup baseline route under persona constraints."""
     profile = RouteConstraintProfile.from_persona(persona, scenario)
+    objective_mode = normalize_objective_mode(objective_mode or scenario.get("agent_a_objective_mode"))
     candidates = candidate_time_routes(
         scenario["start_station"],
         scenario["destination_station"],
@@ -267,7 +330,7 @@ def optimal_constraint_route(scenario, persona, limit=50):
 
     duration_min, route, steps = min(
         candidates,
-        key=lambda item: constraint_sort_key(item[0], item[2], profile),
+        key=lambda item: constraint_sort_key(item[0], item[2], profile, objective_mode),
     )
     return ConstraintRoute(
         route=route,
@@ -281,7 +344,7 @@ def optimal_constraint_route(scenario, persona, limit=50):
         delay_probability=route_delay_probability(steps),
         transfer_miss_probability=route_transfer_miss_probability(steps),
         mode_sequence=route_mode_sequence(steps),
-        score=constraint_sort_key(duration_min, steps, profile),
+        score=constraint_sort_key(duration_min, steps, profile, objective_mode),
         label=profile.label,
         max_delay_probability=profile.max_delay_probability,
         max_transfer_miss_probability=profile.max_transfer_miss_probability,
@@ -289,9 +352,10 @@ def optimal_constraint_route(scenario, persona, limit=50):
     )
 
 
-def ranked_constraint_routes(scenario, persona, limit=6):
+def ranked_constraint_routes(scenario, persona, limit=6, objective_mode=None):
     """Return valid routes sorted by the persona's scientific comparison profile."""
     profile = RouteConstraintProfile.from_persona(persona, scenario)
+    objective_mode = normalize_objective_mode(objective_mode or scenario.get("agent_a_objective_mode"))
     candidates = candidate_time_routes(
         scenario["start_station"],
         scenario["destination_station"],
@@ -302,7 +366,7 @@ def ranked_constraint_routes(scenario, persona, limit=6):
         max_paths=20000,
         allowed_modes=profile.allowed_modes,
     )
-    ranked = sorted(candidates, key=lambda item: constraint_sort_key(item[0], item[2], profile))
+    ranked = sorted(candidates, key=lambda item: constraint_sort_key(item[0], item[2], profile, objective_mode))
     out = []
     for duration_min, route, steps in ranked[:limit]:
         out.append(
@@ -318,7 +382,7 @@ def ranked_constraint_routes(scenario, persona, limit=6):
                 delay_probability=route_delay_probability(steps),
                 transfer_miss_probability=route_transfer_miss_probability(steps),
                 mode_sequence=route_mode_sequence(steps),
-                score=constraint_sort_key(duration_min, steps, profile),
+                score=constraint_sort_key(duration_min, steps, profile, objective_mode),
                 label=profile.label,
                 max_delay_probability=profile.max_delay_probability,
                 max_transfer_miss_probability=profile.max_transfer_miss_probability,

@@ -20,6 +20,7 @@ from minillama.model.route_planner import (
     route_station_sequence,
 )
 from minillama.model.route_constraints import (
+    OBJECTIVE_MODE_LABELS,
     optimal_constraint_route,
     probability_class,
     route_allowed_modes,
@@ -27,6 +28,7 @@ from minillama.model.route_constraints import (
     route_has_near_capacity,
     route_near_capacity_count,
     route_transfer_miss_probability,
+    normalize_objective_mode,
 )
 from minillama.agent_b.speech_io import SpeechTransport
 
@@ -110,6 +112,7 @@ class DialogManager:
         metric_snapshot_interval=1,
         max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
         metric_config=None,
+        agent_a_objective_mode=None,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -140,6 +143,7 @@ class DialogManager:
             max(1.0, float(max_turn_elapsed_sec or DEFAULT_MAX_TURN_ELAPSED_SEC)),
         )
         self.metric_config = dict(metric_config or {})
+        self.agent_a_objective_mode = normalize_objective_mode(agent_a_objective_mode)
 
     def run(self, event_queue):
         """Run method for this module's MVC responsibility.
@@ -407,10 +411,11 @@ class DialogManager:
                 }
             return summaries
 
-        scenario = self.test_case.scenario
+        scenario = dict(self.test_case.scenario)
+        scenario["agent_a_objective_mode"] = self.agent_a_objective_mode
         persona = self.test_case.persona
         planning_allowed_modes = route_allowed_modes(scenario, persona)
-        constraint_route = optimal_constraint_route(scenario, persona)
+        constraint_route = optimal_constraint_route(scenario, persona, objective_mode=self.agent_a_objective_mode)
         start_wall = None
         route_memory = RouteProposalMemory()
         best_route = []
@@ -445,8 +450,19 @@ class DialogManager:
         event_queue.put(("system", f"Test case: {self.test_case.name}"))
         event_queue.put(("system", f"Persona: {persona['name']}"))
         event_queue.put(("system", f"Scenario: {scenario['name']}"))
+        event_queue.put(("system", f"Objective mode: {OBJECTIVE_MODE_LABELS[self.agent_a_objective_mode]}"))
         event_queue.put(("system", f"Speech transport: {self.speech_transport.description}"))
         if constraint_route:
+            baseline_metrics = (
+                f"Constraint route:      {' -> '.join(constraint_route.route)}\n"
+                f"Constraint line sequence: {' -> '.join(constraint_route.line_sequence) if constraint_route.line_sequence else 'None'}\n"
+                f"Constraint line changes: {constraint_route.line_change_count}\n"
+                f"Constraint duration:   {constraint_route.duration_min} minutes\n"
+                f"Constraint capacity:   {'near capacity' if constraint_route.has_near_capacity else 'not near capacity'}\n"
+                f"Allowed modes:         {', '.join(planning_allowed_modes)}\n"
+                f"Transfer miss risk:    {probability_class(constraint_route.transfer_miss_probability)}\n"
+            )
+            event_queue.put(("metrics", baseline_metrics))
             event_queue.put(
                 (
                     "system",
@@ -483,7 +499,13 @@ class DialogManager:
         route_round = 0
         while len(conversation) < self.num_turns:
             route_round += 1
-            state = DialogState(self.test_case, conversation, route_round - 1)
+            state = DialogState(
+                self.test_case,
+                conversation,
+                route_round - 1,
+                scenario_override=scenario,
+                persona_override=persona,
+            )
             generation_started_at = time.time()
             reply_b = self.agent_b_plugin.run_agent_b(state)
             generation_sec = time.time() - generation_started_at
@@ -749,6 +771,7 @@ class DialogManager:
                 "speech_transport": self.speech_transport.description,
                 "agent_a_responder": self.agent_a_responder.name,
                 "agent_b_plugin": getattr(self.agent_b_plugin, "name", type(self.agent_b_plugin).__name__),
+                "agent_a_objective_mode": self.agent_a_objective_mode,
                 "messages": len(conversation),
                 "candidate_routes": len(route_memory.candidates),
                 "route_revisions": route_revision_count,

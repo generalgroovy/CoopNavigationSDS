@@ -3,6 +3,7 @@
 from minillama.agent_a.config import AGENT_RULES, ROUTE_TASK
 from minillama.model.metro_data import (
     compact_line_fullness_text,
+    compact_station_class_text,
     compact_station_crowding_text,
     compact_station_transfer_text,
     compact_transport_mode_text,
@@ -34,6 +35,7 @@ def compact_prompt_context(scenario, persona=None):
         f"Walking range: {persona_walk_text(persona)}. "
         f"{ROUTE_TASK} "
         f"Route candidates: {compact_route_candidate_text(scenario, persona)} "
+        f"Station classes: {compact_station_class_text()} "
         f"Modes: {compact_transport_mode_text()} "
         f"Long transfers: {compact_station_transfer_text()} "
         f"Walking links: {compact_walking_link_text()} "

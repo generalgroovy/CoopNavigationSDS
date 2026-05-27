@@ -3,7 +3,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from minillama.model.config import DEVICE, MODEL, MODEL_PROVIDER, TOKEN
+from minillama.model.config import ALLOW_MODEL_DOWNLOAD, DEVICE, MODEL, MODEL_PROVIDER, TOKEN
 from minillama.model.model_adapters import OpenAICompatibleChatAdapter, TransformersModelAdapter
 
 
@@ -74,6 +74,11 @@ def _load_tokenizer(model_name: str, token: str | None):
     try:
         return AutoTokenizer.from_pretrained(model_name, token=token, local_files_only=True)
     except OSError:
+        if not ALLOW_MODEL_DOWNLOAD:
+            raise RuntimeError(
+                f"Tokenizer weights for {model_name} are not available locally. "
+                "Set MINILLAMA_ALLOW_MODEL_DOWNLOAD=1 to download them, or use the simple Agent B plugin."
+            )
         return AutoTokenizer.from_pretrained(model_name, token=token)
 
 
@@ -102,4 +107,9 @@ def _load_model(model_name: str, token: str | None, device: str):
             **model_kwargs,
         )
     except OSError:
+        if not ALLOW_MODEL_DOWNLOAD:
+            raise RuntimeError(
+                f"Model weights for {model_name} are not available locally. "
+                "Set MINILLAMA_ALLOW_MODEL_DOWNLOAD=1 to download them, or use the simple Agent B plugin."
+            )
         return AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)

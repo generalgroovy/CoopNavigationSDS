@@ -95,13 +95,17 @@ GUI_NETWORK_LINE_COLUMNS = [
     ("kind", "Kind", 74, "w", False),
     ("mode", "Mode", 70, "center", False),
     ("headway", "Headway", 72, "center", False),
-    ("fullness", "Capacity", 112, "center", False),
+    ("fullness", "Fullness", 86, "center", False),
+    ("delay", "Delay", 74, "center", False),
+    ("capacity", "Capacity", 112, "center", False),
     ("stops", "Stops", 54, "center", False),
     ("route", "Route", 250, "w", True),
     ("segments", "Segments", 260, "w", True),
 ]
 GUI_NETWORK_STATION_COLUMNS = [
     ("name", "Station", 110, "w", False),
+    ("class", "Class", 54, "center", False),
+    ("access", "Access", 146, "w", False),
     ("fullness", "Capacity", 112, "center", False),
     ("transfer", "Transfer", 78, "center", False),
     ("lines", "Lines", 190, "w", False),

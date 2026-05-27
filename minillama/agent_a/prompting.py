@@ -8,6 +8,13 @@ and model execution.
 from minillama.agent_a.config import AGENT_RULES
 from minillama.agent_a.personas import preference_text
 from minillama.agent_a.prompt_data import compact_prompt_context
+from minillama.model.route_constraints import (
+    OBJECTIVE_MODE_LABELS,
+    OBJECTIVE_SHORTEST_ROUTE,
+    OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+    OBJECTIVE_VALID_ROUTE,
+    normalize_objective_mode,
+)
 
 
 AGENT_A_ROUTE_TEMPLATES = {
@@ -111,13 +118,22 @@ AGENT_A_ROUTE_TEMPLATES = {
 
 
 def build_agent_a_system(persona, scenario):
+    objective_mode = normalize_objective_mode(scenario.get("agent_a_objective_mode"))
+    objective_text = OBJECTIVE_MODE_LABELS[objective_mode].lower()
+    if objective_mode == OBJECTIVE_VALID_ROUTE:
+        objective_instruction = "Get one valid connected route, then choose it and end naturally. "
+    elif objective_mode == OBJECTIVE_SHORTEST_ROUTE:
+        objective_instruction = "Get a valid route first, then ask for one faster route before choosing. "
+    else:
+        objective_instruction = "Get a valid route first, then ask for one faster route; mention 1-3 other constraints only after valid options exist. "
     return (
         "You are Agent A, a caller on a transit hotline. "
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
+        f"Objective: {objective_text}. "
         "First state start time, start station, and destination. "
-        "Get a valid route first. Then ask for one faster route. Mention other constraints only after valid options exist. End naturally when you choose a route. "
+        f"{objective_instruction}End naturally when you choose a route. "
         f"{compact_prompt_context(scenario, persona)}"
     )
 
@@ -192,6 +208,7 @@ def generate_agent_a_template(turn, persona, scenario, conversation=None):
 
 def agent_a_route_reaction(turn, persona, scenario, conversation):
     """Return a concise caller reaction based on Agent B's latest route reply."""
+    objective_mode = normalize_objective_mode(scenario.get("agent_a_objective_mode"))
     last_agent_b = next((text for speaker, text in reversed(conversation) if speaker == "Agent B"), "")
     if not last_agent_b:
         return ""
@@ -254,7 +271,11 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         route_summary = "That sounds connected"
 
     prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
-    secondary_request = agent_a_secondary_constraint_request(persona)
+    secondary_request = (
+        agent_a_secondary_constraint_request(persona)
+        if objective_mode == OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
+        else ""
+    )
     secondary_asked = secondary_constraints_already_asked(conversation)
     prior_valid_routes = valid_agent_b_route_count(conversation, scenario, allowed_modes)
     if steps and secondary_asked:
@@ -280,12 +301,16 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         if secondary_asked:
             return (
                 f"That is slower than the earlier {prior_best_duration}-minute route. "
-                "I would choose the earlier route."
+                "Thanks, I would choose the earlier route."
             )
         return (
             f"slower than the earlier {prior_best_duration}-minute route. "
             "Keep that unless there is a faster valid one."
         )
+
+    if objective_mode == OBJECTIVE_VALID_ROUTE:
+        station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
+        return f"{route_summary}. Thanks, that is valid. I'll take {station_order}. Please confirm the total time."
 
     if turn >= 3 or (secondary_asked and prior_valid_routes >= 2):
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
@@ -293,6 +318,10 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
 
     if prior_valid_routes <= 1:
         return f"{route_summary}. Compare one faster valid route."
+
+    if objective_mode == OBJECTIVE_SHORTEST_ROUTE:
+        station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
+        return f"{route_summary}. I would choose the shortest valid option, {station_order}. Confirm total time."
 
     if secondary_request:
         return f"{route_summary}. Now compare {secondary_request}."

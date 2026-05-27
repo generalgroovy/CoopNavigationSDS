@@ -1,6 +1,9 @@
 import queue
+import sys
 import threading
+import types
 import unittest
+from unittest.mock import patch
 
 from minillama.controller.main import BroadcastQueue, conversation_worker, default_run_config, normalize_run_config, select_run_config, start_gui_thread, start_gui_threads
 
@@ -98,6 +101,35 @@ class MainControllerTests(unittest.TestCase):
         warnings = [event for event in event_queue.events if event[0] == "warning"]
         self.assertTrue(any("Speech pipeline failed" in event[1] for event in warnings))
         self.assertTrue(any("Troubleshooting" in event[1] for event in warnings))
+
+    def test_main_falls_back_to_simple_agent_b_when_weights_are_missing(self):
+        import minillama.controller.main as controller_main
+
+        captured = {}
+        fake_model_runtime = types.ModuleType("minillama.model.model_runtime")
+        fake_model_runtime.create_model_adapter = lambda: (_ for _ in ()).throw(RuntimeError("missing weights"))
+        original_gui_enabled = controller_main.GUI_ENABLED
+        original_session_profile = controller_main.SESSION_LOG_PROFILE
+        try:
+            controller_main.GUI_ENABLED = False
+            controller_main.SESSION_LOG_PROFILE = "off"
+
+            def capture_worker(_event_queue, model_adapter, run_config):
+                captured["model_adapter"] = model_adapter
+                captured["agent_b_plugin"] = run_config["agent_b_plugin"]
+                captured["llm_agent_a"] = run_config["llm_agent_a"]
+
+            with patch.dict(sys.modules, {"minillama.model.model_runtime": fake_model_runtime}):
+                with patch.object(controller_main, "write_network_research_artifacts"):
+                    with patch.object(controller_main, "conversation_worker", side_effect=capture_worker):
+                        controller_main.main()
+        finally:
+            controller_main.GUI_ENABLED = original_gui_enabled
+            controller_main.SESSION_LOG_PROFILE = original_session_profile
+
+        self.assertIsNone(captured["model_adapter"])
+        self.assertEqual(captured["agent_b_plugin"], "simple")
+        self.assertFalse(captured["llm_agent_a"])
 
     def test_start_gui_thread_runs_dialog_runner_independently(self):
         caller_thread = threading.get_ident()

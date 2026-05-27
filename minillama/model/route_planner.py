@@ -8,6 +8,8 @@ from minillama.model.metro_data import (
     LINES,
     ADJACENCY,
     TRAVEL_TIMES,
+    delay_class_probability,
+    line_segment_key,
     segment_fullness_percent,
     station_fullness_percent,
     station_transfer_time_min,
@@ -39,11 +41,15 @@ def normalize_allowed_modes(allowed_modes=None):
 
 def line_mode(line_name):
     """Return the transport mode for a line."""
+    if line_name and str(line_name).startswith("Walk "):
+        return "walking"
     return LINES[line_name].get("mode", "bus")
 
 
 def line_allowed(line_name, allowed_modes=None):
     """Return whether a line can be used by the current ticket constraint."""
+    if line_mode(line_name) == "walking":
+        return True
     modes = normalize_allowed_modes(allowed_modes)
     return modes is None or line_mode(line_name) in modes
 
@@ -52,12 +58,16 @@ def transfer_time_at_station(station, previous_line, next_line, default_transfer
     """Return transfer time only when the route changes lines."""
     if not previous_line or previous_line == next_line:
         return 0
+    if line_mode(previous_line) == "walking" or line_mode(next_line) == "walking":
+        return 0
     return max(int(default_transfer_time_min), station_transfer_time_min(station))
 
 
 def transfer_miss_probability(station, next_line, transfer, wait, current_time_min):
     """Estimate the risk of missing a connection after a line change."""
     if transfer <= 0:
+        return 0.0
+    if line_mode(next_line) == "walking":
         return 0.0
     station_time = station_transfer_time_min(station)
     buffer = max(0, wait)
@@ -93,6 +103,8 @@ def line_direction_sequences(line_name: str):
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    if line_mode(line_name) == "walking":
+        return []
     stops = LINES[line_name]["stops"]
     if LINES[line_name].get("kind") == "Ring":
         reversed_stops = list(reversed(stops))
@@ -117,7 +129,26 @@ def segment_travel(a: str, b: str) -> int:
     Returns:
         The computed value or side effect documented by the implementation.
     """
-    return TRAVEL_TIMES[tuple(sorted((a, b)))]
+    values = [
+        minutes
+        for (_line, station_a, station_b), minutes in TRAVEL_TIMES.items()
+        if {station_a, station_b} == {a, b}
+    ]
+    if values:
+        return min(values)
+    walking_values = [travel for nxt, line, travel in ADJACENCY.get(a, []) if nxt == b and line_mode(line) == "walking"]
+    if walking_values:
+        return min(walking_values)
+    raise KeyError(tuple(sorted((a, b))))
+
+
+def segment_travel_on_line(line_name: str, a: str, b: str) -> int:
+    """Return travel time for a specific line segment."""
+    if line_mode(line_name) == "walking":
+        for nxt, line, travel in ADJACENCY.get(a, []):
+            if nxt == b and line == line_name:
+                return travel
+    return TRAVEL_TIMES[line_segment_key(line_name, a, b)]
 
 
 def line_direction_key(line_name: str, station: str, nxt: str) -> str | None:
@@ -131,6 +162,8 @@ def line_direction_key(line_name: str, station: str, nxt: str) -> str | None:
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    if line_mode(line_name) == "walking":
+        return f"{line_name}:0"
     for direction_index, sequence in enumerate(line_direction_sequences(line_name)):
         for a, b in zip(sequence, sequence[1:]):
             if a == station and b == nxt:
@@ -154,7 +187,7 @@ def line_departure_offset(line_name: str, station: str, nxt: str) -> int | None:
         for a, b in zip(sequence, sequence[1:]):
             if a == station and b == nxt:
                 return elapsed
-            elapsed += segment_travel(a, b)
+            elapsed += segment_travel_on_line(line_name, a, b)
     return None
 
 
@@ -170,6 +203,8 @@ def next_train_departure(current_time_min: int, line_name: str, station: str, nx
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    if line_mode(line_name) == "walking":
+        return current_time_min
     offset = line_departure_offset(line_name, station, nxt)
     if offset is None:
         return next_departure(current_time_min, line_name)
@@ -186,10 +221,13 @@ def next_train_departure(current_time_min: int, line_name: str, station: str, nx
 
 def segment_delay_probability(line_name: str, station_a: str, station_b: str, depart_min: int) -> float:
     """Estimate operational delay risk for one traversed segment."""
+    if line_mode(line_name) == "walking":
+        return 0.01
     headway = LINES[line_name]["headway"]
     fullness = segment_fullness_percent(line_name, station_a, station_b, depart_min)
-    travel = segment_travel(station_a, station_b)
-    risk = 0.03 + (headway / 100.0) + (fullness / 300.0) + (travel / 250.0)
+    travel = segment_travel_on_line(line_name, station_a, station_b)
+    class_base = delay_class_probability(LINES[line_name].get("delay_probability_class", "moderate"))
+    risk = class_base + (headway / 180.0) + (fullness / 600.0) + (travel / 500.0)
     return round(min(0.75, max(0.01, risk)), 4)
 
 
@@ -340,7 +378,8 @@ def route_text_from_steps(steps):
     change_count = len(rides) - 1
     change_text = "no line changes" if change_count == 0 else f"{change_count} line changes"
     if len(rides) == 1:
-        return f"Take {line_route} from {start} to {destination}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
+        station_route = " to ".join(route_station_sequence(steps))
+        return f"Take {line_route}. Stations: {station_route}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
     return f"Boarding: {compact_boarding_route}. Lines: {compact_line_route}. Total {total} minutes."
 
 
@@ -492,6 +531,16 @@ def estimate_route_time(stations, start_time_min, transfer_time_min, allowed_mod
 
     for a, b in zip(stations, stations[1:]):
         options = [(line, travel) for nxt, line, travel in ADJACENCY[a] if nxt == b and line_allowed(line, allowed_modes)]
+        public_options = [(line, travel) for line, travel in options if line_mode(line) != "walking"]
+        if public_options:
+            options = public_options
+        continuing_options = [
+            (line, travel)
+            for line, travel in options
+            if current_line == line and line_direction_key(line, a, b) == current_service
+        ]
+        if continuing_options:
+            options = continuing_options
         best_step = None
 
         for line, travel in options:

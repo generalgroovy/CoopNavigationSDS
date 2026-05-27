@@ -3,6 +3,7 @@ import logging
 import queue
 import threading
 import inspect
+from contextlib import nullcontext
 
 try:
     from huggingface_hub.utils import logging as hf_logging
@@ -49,6 +50,7 @@ from minillama.controller.session_logging import MonitoringEventQueue, SessionLo
 from minillama.evaluation.metrics import DEFAULT_METRIC_CONFIG, metric_config_with_defaults
 from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
 from minillama.model.config import GENERATION_MAX_TIME_SEC, MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
+from minillama.model.route_constraints import OBJECTIVE_MODES, normalize_objective_mode
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 
@@ -119,18 +121,27 @@ def build_dialog_runtime(event_queue, model_adapter, run_config):
         num_turns,
         speech_transport=speech_transport,
         agent_a_responder=build_agent_a_responder(model_adapter, bool(run_config.get("llm_agent_a", LLM_AGENT_A))),
-        monitor=event_queue,
+        monitor=event_queue if hasattr(event_queue, "log_step") else None,
         invalid_route_limit=int(run_config["invalid_route_limit"]),
         constraint_miss_limit=int(run_config["constraint_miss_limit"]),
         transfer_tolerance=int(run_config["agent_a_transfer_tolerance"]),
         metric_snapshot_interval=int(run_config["metric_snapshot_interval"]),
         max_turn_elapsed_sec=float(run_config.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC)),
         metric_config=run_config.get("metric_config"),
+        agent_a_objective_mode=run_config.get("agent_a_objective_mode"),
     )
     model_name = getattr(model_adapter, "name", "no-model")
     model_provider = MODEL_PROVIDER if model_adapter is not None else "none"
     device = getattr(model_adapter, "device", "not available")
     return run_config, test_case, agent_b_plugin, speech_transport, manager, num_turns, model_name, model_provider, device
+
+
+def event_queue_segment(event_queue, name, **payload):
+    """Return a structured logging segment when available."""
+    segment = getattr(event_queue, "segment", None)
+    if callable(segment):
+        return segment(name, **payload)
+    return nullcontext()
 
 
 def conversation_worker(event_queue, model_adapter, run_config):
@@ -147,7 +158,8 @@ def conversation_worker(event_queue, model_adapter, run_config):
             model_provider,
             device,
         ) = build_dialog_runtime(event_queue, model_adapter, run_config)
-        with event_queue.segment(
+        with event_queue_segment(
+            event_queue,
             "dialog.run",
             model=model_name,
             provider=model_provider,
@@ -198,7 +210,9 @@ def conversation_worker(event_queue, model_adapter, run_config):
         event_queue.put(("warning", f"Conversation stopped: {exc}"))
         event_queue.put(("done",))
     finally:
-        event_queue.close()
+        close = getattr(event_queue, "close", None)
+        if callable(close):
+            close()
 
 
 def default_run_config():
@@ -213,6 +227,7 @@ def default_run_config():
         "invalid_route_limit": INVALID_ROUTE_LIMIT,
         "constraint_miss_limit": CONSTRAINT_MISS_LIMIT,
         "agent_a_transfer_tolerance": AGENT_A_TRANSFER_TOLERANCE,
+        "agent_a_objective_mode": "shortest_valid_route_with_constraints",
         "metric_snapshot_interval": METRIC_SNAPSHOT_INTERVAL,
         "max_turn_elapsed_sec": DEFAULT_MAX_TURN_ELAPSED_SEC,
         "calculation_max_time_sec": GENERATION_MAX_TIME_SEC,
@@ -273,6 +288,7 @@ def normalize_run_config(config):
         max(1.0, float(normalized.get("calculation_max_time_sec", GENERATION_MAX_TIME_SEC) or GENERATION_MAX_TIME_SEC)),
     )
     normalized["metric_config"] = metric_config_with_defaults(normalized.get("metric_config"))
+    normalized["agent_a_objective_mode"] = normalize_objective_mode(normalized.get("agent_a_objective_mode"))
     return normalized
 
 
@@ -334,6 +350,7 @@ def select_run_config():
         "asr_engines": ["sapi", "file", "patterned", "loopback"],
         "speech_scopes": ["both", "agent_a", "agent_b", "none"],
         "gui_modes": ["conversation", "full"],
+        "agent_a_objective_modes": list(OBJECTIVE_MODES),
     }
     try:
         from minillama.view.gui import StartupConfigDialog
@@ -482,10 +499,19 @@ def main():
     if not agent_b_config.needs_model and not run_config.get("llm_agent_a", LLM_AGENT_A):
         model_adapter = None
     else:
-        from minillama.model.model_runtime import create_model_adapter
+        event_queue.put(("system", f"Loading model weights for {MODEL} from local cache."))
+        try:
+            from minillama.model.model_runtime import create_model_adapter
 
-        with event_queue.segment("model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):
-            model_adapter = create_model_adapter()
+            with event_queue_segment(event_queue, "model.load", model_provider=MODEL_PROVIDER, model_name=MODEL):
+                model_adapter = create_model_adapter()
+        except Exception as exc:
+            logging.exception("Model loading failed")
+            event_queue.put(("warning", f"Model loading failed: {exc}"))
+            event_queue.put(("warning", "Falling back to deterministic Agent B so the conversation can run."))
+            run_config["agent_b_plugin"] = "simple"
+            run_config["llm_agent_a"] = False
+            model_adapter = None
 
     conversation_worker(event_queue, model_adapter, run_config)
     for gui_thread in gui_threads:

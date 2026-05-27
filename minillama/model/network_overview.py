@@ -5,13 +5,17 @@ from minillama.model.metro_data import (
     ADJACENCY,
     LINES,
     STATION_POS,
+    STATION_CLASSES,
     line_fullness_percent,
     line_stop_pairs,
+    fullness_class,
+    line_delay_probability_class,
     station_fullness_percent,
     capacity_status,
     station_transfer_time_min,
+    station_access_modes,
 )
-from minillama.model.route_planner import segment_travel
+from minillama.model.route_planner import segment_travel_on_line
 
 
 @dataclass(frozen=True)
@@ -21,6 +25,8 @@ class NetworkLineRow:
     mode: str
     headway_min: int
     fullness_percent: int
+    fullness_class: str
+    delay_probability_class: str
     capacity_status: str
     stop_count: int
     route: str
@@ -30,6 +36,8 @@ class NetworkLineRow:
 @dataclass(frozen=True)
 class NetworkStationRow:
     name: str
+    station_class: int
+    access_modes: str
     fullness_percent: int
     capacity_status: str
     transfer_time_min: int
@@ -59,11 +67,13 @@ def build_network_overview(current_time_min) -> NetworkOverview:
                 mode=data.get("mode", "bus"),
                 headway_min=data["headway"],
                 fullness_percent=fullness_percent,
+                fullness_class=fullness_class(fullness_percent),
+                delay_probability_class=line_delay_probability_class(line_name),
                 capacity_status=capacity_status(fullness_percent),
                 stop_count=len(data["stops"]),
                 route=" to ".join(data["stops"]),
                 segments="; ".join(
-                    f"{a} to {b}: {segment_travel(a, b)} minutes"
+                    f"{a} to {b}: {segment_travel_on_line(line_name, a, b)} minutes"
                     for a, b in line_stop_pairs(line_name, data)
                 ),
             )
@@ -78,6 +88,8 @@ def build_network_overview(current_time_min) -> NetworkOverview:
         station_rows.append(
             NetworkStationRow(
                 name=station,
+                station_class=STATION_CLASSES[station],
+                access_modes=", ".join(station_access_modes(station)),
                 fullness_percent=fullness_percent,
                 capacity_status=capacity_status(fullness_percent),
                 transfer_time_min=station_transfer_time_min(station),

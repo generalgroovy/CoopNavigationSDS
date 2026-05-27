@@ -207,6 +207,7 @@ class StartupConfigDialog:
             "invalid_route_limit": tk.IntVar(value=defaults["invalid_route_limit"]),
             "constraint_miss_limit": tk.IntVar(value=defaults["constraint_miss_limit"]),
             "agent_a_transfer_tolerance": tk.IntVar(value=defaults["agent_a_transfer_tolerance"]),
+            "agent_a_objective_mode": tk.StringVar(value=defaults["agent_a_objective_mode"]),
             "metric_snapshot_interval": tk.IntVar(value=defaults["metric_snapshot_interval"]),
             "max_turn_elapsed_sec": tk.DoubleVar(value=defaults["max_turn_elapsed_sec"]),
             "calculation_max_time_sec": tk.DoubleVar(value=defaults["calculation_max_time_sec"]),
@@ -376,6 +377,7 @@ class StartupConfigDialog:
         self.add_combo_row(experiment, 1, "Test case", "test_case_key", self.choices["test_case_keys"])
         self.add_combo_row(experiment, 2, "Persona", "persona_key", self.choices["persona_keys"])
         self.add_combo_row(experiment, 3, "Agent B", "agent_b_plugin", self.choices["agent_b_plugins"], editable=True)
+        self.add_combo_row(experiment, 4, "Agent A objective", "agent_a_objective_mode", self.choices["agent_a_objective_modes"])
 
         limits = self.build_config_card(content, "Conversation Limits", 0, 1)
         self.add_spinbox_row(limits, 0, "Maximum turns", "num_turns", 2, 24, 1)
@@ -1347,6 +1349,8 @@ class DialogWindow:
                     item.kind,
                     item.mode,
                     f"{item.headway_min} minutes",
+                    item.fullness_class,
+                    item.delay_probability_class,
                     item.capacity_status,
                     item.stop_count,
                     item.route,
@@ -1370,6 +1374,8 @@ class DialogWindow:
                 tk.END,
                 values=(
                     item.name,
+                    item.station_class,
+                    item.access_modes,
                     item.capacity_status,
                     f"{item.transfer_time_min} minutes",
                     item.lines,
@@ -1455,6 +1461,7 @@ class DialogWindow:
                 [
                     (("test_case", "Test"), ("persona", "Persona")),
                     (("scenario", "Scenario"), ("speech", "Speech")),
+                    (("objective", "Objective"), ("", "")),
                 ],
             ),
             (
@@ -3843,6 +3850,7 @@ class DialogWindow:
             "Persona": "persona",
             "Scenario": "scenario",
             "Speech transport": "speech",
+            "Objective mode": "objective",
             "Model": "model",
             "Device": "device",
             "Agent A": "agent_a",

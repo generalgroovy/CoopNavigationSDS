@@ -146,7 +146,7 @@ class PromptingTests(unittest.TestCase):
             1,
             self.persona,
             self.real_scenario,
-            [("Agent B", "Boarding: Bravo to Golf to Ivy to Harbor. Lines: Ring to Diagonal-SE-6 to Ring. Total 28 minutes, 2 line changes.")],
+            [("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes, no line changes.")],
         )
 
         self.assertLessEqual(len(text.split()), 22)
@@ -168,9 +168,9 @@ class PromptingTests(unittest.TestCase):
             self.persona,
             self.real_scenario,
             [
-                ("Agent B", "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo to Golf to Ivy to Harbor. Total 28 minutes."),
+                ("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes, no line changes."),
                 ("Agent A", "Now compare one faster valid route."),
-                ("Agent B", "Take Ring from Bravo to Mike. Change at Mike to East-West-3 to November. Change at November to Diagonal-SE-6 to Ivy. Change at Ivy to Ring to Harbor. Boarding: Bravo to Mike to November to Ivy to Harbor. Total 38 minutes."),
+                ("Agent B", "Take Ring. Stations: Bravo to Alpha to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 19 minutes, no line changes."),
             ],
         )
 
@@ -194,10 +194,18 @@ class PromptingTests(unittest.TestCase):
 
     def test_interpreter_expands_boarding_route_mentions(self):
         interpreter = NaturalRouteInterpreter()
-        text = "Take Ring from Bravo to Golf. Change at Golf to Diagonal-SE-6 from Golf to Ivy. Boarding: Bravo to Golf to Ivy to Harbor. Total 31 minutes."
+        text = "Take Core Tram. Stations: Bravo to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 24 minutes."
 
         route = interpreter.interpret_reply(text, self.real_scenario)
 
         self.assertEqual(route[0], self.real_scenario["start_station"])
         self.assertEqual(route[-1], self.real_scenario["destination_station"])
         self.assertGreater(len(route), 4)
+
+    def test_interpreter_ignores_duplicate_summary_mentions(self):
+        interpreter = NaturalRouteInterpreter()
+        text = "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes."
+
+        route = interpreter.interpret_reply(text, self.real_scenario)
+
+        self.assertEqual(route, ["Bravo", "Ivy", "Harbor"])

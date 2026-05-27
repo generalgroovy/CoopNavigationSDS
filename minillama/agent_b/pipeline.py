@@ -16,6 +16,8 @@ class DialogState:
     test_case: object
     conversation: list
     turn: int = 0
+    scenario_override: dict | None = None
+    persona_override: dict | None = None
 
     @property
     def scenario(self):
@@ -24,7 +26,7 @@ class DialogState:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        return self.test_case.scenario
+        return self.scenario_override or self.test_case.scenario
 
     @property
     def persona(self):
@@ -33,7 +35,7 @@ class DialogState:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        return self.test_case.persona
+        return self.persona_override or self.test_case.persona
 
 
 class VerbalTransformationPipeline:
