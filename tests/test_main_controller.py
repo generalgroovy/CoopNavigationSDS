@@ -14,6 +14,7 @@ class MainControllerTests(unittest.TestCase):
 
         self.assertIn("gui_enabled", config)
         self.assertIsInstance(config["gui_enabled"], bool)
+        self.assertFalse(config["gui_enabled"])
         self.assertEqual(config["num_turns"], 7)
         self.assertEqual(config["run_mode"], "speech")
         self.assertTrue(config["speech_incoming_enabled"])

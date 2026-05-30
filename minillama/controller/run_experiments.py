@@ -9,6 +9,7 @@ from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
 from minillama.evaluation.research_artifacts import write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from minillama.model.route_constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 
@@ -53,6 +54,8 @@ def main():
     parser.add_argument("--speech-scope", default=SPEECH_SCOPE, choices=("both", "agent_a", "agenta", "agent_b", "agentb", "none"))
     parser.add_argument("--speech-enabled", action="store_true", help="Shortcut: enable incoming and outgoing speech for both agents.")
     parser.add_argument("--model-params", default="greedy")
+    parser.add_argument("--objective-modes", default=OBJECTIVE_SHORTEST_WITH_CONSTRAINTS, help="Comma-separated Agent A objective modes or all.")
+    parser.add_argument("--llm-agent-a", action="store_true", help="Use the configured model adapter for Agent A as well as Agent B.")
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--num-turns", type=int, default=NUM_TURNS)
     parser.add_argument("--agent-a-transfer-tolerance", type=int, default=AGENT_A_TRANSFER_TOLERANCE, choices=(0, 1, 2), help="Extra line changes Agent A accepts over the constraint-aware startup route.")
@@ -84,16 +87,21 @@ def main():
         persona_keys=parse_csv_arg(args.personas, PERSONAS),
         speech_pattern_keys=parse_csv_arg(args.speech_patterns, ["clean", "hesitant", "compressed", "noisy_station"]),
         model_param_keys=parse_csv_arg(args.model_params),
+        objective_modes=parse_csv_arg(args.objective_modes, OBJECTIVE_MODES),
         iterations=args.iterations,
     ))
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
-    if agent_b_config.needs_model:
-        from minillama.model.model_runtime import create_model_adapter
+    model_adapter = None
+    if agent_b_config.needs_model or args.llm_agent_a:
+        try:
+            from minillama.model.model_runtime import create_model_adapter
 
-        model_adapter = create_model_adapter(args.model_provider) if args.model_provider else create_model_adapter()
-    else:
-        model_adapter = None
+            model_adapter = create_model_adapter(args.model_provider) if args.model_provider else create_model_adapter()
+        except Exception as exc:
+            print(f"model loading failed; falling back to deterministic Agent B: {exc}", flush=True)
+            args.agent_b_plugin = "simple"
+            args.llm_agent_a = False
     runner = ExperimentRunner(
         model_adapter,
         args.num_turns,
@@ -109,6 +117,7 @@ def main():
         speech_playback_enabled=args.speech_playback,
         speech_realtime_enabled=args.speech_real_time,
         transfer_tolerance=args.agent_a_transfer_tolerance,
+        llm_agent_a=args.llm_agent_a,
         log_profile=args.log_profile,
         log_dir=args.log_dir,
     )

@@ -13,7 +13,12 @@ from minillama.model.route_constraints import (
     OBJECTIVE_SHORTEST_ROUTE,
     OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
     OBJECTIVE_VALID_ROUTE,
+    available_agent_a_constraints,
+    constraint_request_text,
     normalize_objective_mode,
+    route_constraint_status,
+    stated_constraint_keys,
+    unsatisfied_constraint_keys,
 )
 
 
@@ -125,7 +130,7 @@ def build_agent_a_system(persona, scenario):
     elif objective_mode == OBJECTIVE_SHORTEST_ROUTE:
         objective_instruction = "Get a valid route first, then ask for one faster route before choosing. "
     else:
-        objective_instruction = "Get a valid route first, then ask for one faster route; mention 1-3 other constraints only after valid options exist. "
+        objective_instruction = "Get a valid route first, then reveal one personal constraint at a time; choose when the proposal satisfies the stated constraints. "
     return (
         "You are Agent A, a caller on a transit hotline. "
         f"Persona: {persona['name']}. {persona['description']} "
@@ -220,12 +225,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         route_station_sequence,
     )
     from minillama.model.route_constraints import (
-        RouteConstraintProfile,
-        probability_class,
-        probability_class_allowed,
         route_allowed_modes,
-        route_delay_probability,
-        route_transfer_miss_probability,
     )
 
     interpreter = NaturalRouteInterpreter()
@@ -270,64 +270,54 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         duration = None
         route_summary = "That sounds connected"
 
-    prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
-    secondary_request = (
-        agent_a_secondary_constraint_request(persona)
-        if objective_mode == OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
-        else ""
-    )
-    secondary_asked = secondary_constraints_already_asked(conversation)
-    prior_valid_routes = valid_agent_b_route_count(conversation, scenario, allowed_modes)
-    if steps and secondary_asked:
-        profile = RouteConstraintProfile.from_persona(persona, scenario)
-        delay_risk = route_delay_probability(steps)
-        transfer_risk = route_transfer_miss_probability(steps)
-        if not probability_class_allowed(delay_risk, profile.max_delay_probability):
-            return (
-                f"That delay risk sounds {probability_class(delay_risk)}, so it is not a good fit. "
-                "Can you give me another valid route?"
-            )
-        if not probability_class_allowed(transfer_risk, profile.max_transfer_miss_probability):
-            return (
-                f"That transfer risk sounds {probability_class(transfer_risk)}, so I would avoid it. "
-                "Can you give me another valid route?"
-            )
-    if duration is not None and prior_best_duration is not None and duration > prior_best_duration:
-        if secondary_request and not secondary_asked:
-            return (
-                f"That is slower than the earlier {prior_best_duration}-minute route. "
-                f"Now compare {secondary_request}."
-            )
-        if secondary_asked:
-            return (
-                f"That is slower than the earlier {prior_best_duration}-minute route. "
-                "Thanks, I would choose the earlier route."
-            )
-        return (
-            f"slower than the earlier {prior_best_duration}-minute route. "
-            "Keep that unless there is a faster valid one."
-        )
-
     if objective_mode == OBJECTIVE_VALID_ROUTE:
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
         return f"{route_summary}. Thanks, that is valid. I'll take {station_order}. Please confirm the total time."
 
-    if turn >= 3 or (secondary_asked and prior_valid_routes >= 2):
-        station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
-        return f"{route_summary}. Thanks, I'll take {station_order}. Please confirm the total time."
-
-    if prior_valid_routes <= 1:
-        return f"{route_summary}. Compare one faster valid route."
-
     if objective_mode == OBJECTIVE_SHORTEST_ROUTE:
+        prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
+        if prior_best_duration is None:
+            return f"{route_summary}. Compare one faster valid route."
+        if duration is not None and duration > prior_best_duration:
+            return (
+                f"That is slower than the earlier {prior_best_duration}-minute route. "
+                "Keep the earlier option unless there is a faster valid one."
+            )
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
         return f"{route_summary}. I would choose the shortest valid option, {station_order}. Confirm total time."
 
-    if secondary_request:
-        return f"{route_summary}. Now compare {secondary_request}."
+    stated_keys = stated_constraint_keys(conversation)
+    statuses = route_constraint_status(steps, persona, scenario, stated_keys)
+    unsatisfied = unsatisfied_constraint_keys(statuses)
+    if unsatisfied:
+        key = unsatisfied[0]
+        detail = statuses[key]
+        if key == "delay":
+            return f"That delay risk is {detail['actual']}; I need {detail['limit']} or lower. Do you have another route?"
+        if key == "transfer_miss":
+            return f"That transfer timing risk is {detail['actual']}; I need {detail['limit']} or lower. Another option?"
+        if key == "transfers":
+            return f"That has {detail['actual']} changes; I can handle about {detail['limit']}. Try another route?"
+        if key == "fullness":
+            return "That uses a near-capacity train. Can you find one that is not near capacity?"
+        if key == "walking":
+            return f"That walk is {detail['actual']} minutes; I can do about {detail['limit']}. Another route?"
+        if key == "ticket":
+            return f"That uses {', '.join(detail['actual'])}; I only have {', '.join(detail['limit'])}. Another route?"
+
+    available_constraints = available_agent_a_constraints(persona, scenario)
+    next_constraint = next((key for key in available_constraints if key not in stated_keys), None)
+    if len(stated_keys) >= 2 or next_constraint is None:
+        prior_best_duration = best_prior_route_duration(conversation[:-1], scenario)
+        if prior_best_duration is not None and duration is not None and prior_best_duration < duration:
+            return f"The earlier {prior_best_duration}-minute route also fits. Thanks, I'll take that."
+        station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
+        return f"{route_summary}. Thanks, that satisfies what I asked for. I'll take {station_order}."
+    if next_constraint:
+        return f"{route_summary}. Now can you make it {constraint_request_text(next_constraint, persona, scenario)}?"
 
     station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
-    return f"{route_summary}. I would choose {station_order}. Confirm total time."
+    return f"{route_summary}. Thanks, that satisfies what I asked for. I'll take {station_order}."
 
 
 def agent_a_alternative_request(persona):

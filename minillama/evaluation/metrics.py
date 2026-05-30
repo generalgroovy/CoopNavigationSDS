@@ -238,6 +238,9 @@ class MetricRecord:
     model_temperature: float | None
     model_top_p: float | None
     success: bool
+    conversation_outcome: str
+    stated_constraints: str
+    unsatisfied_constraints: str
     route_valid: bool
     route_reaches_goal: bool
     route_duration_min: int | None
@@ -1115,6 +1118,9 @@ class MetricComputer:
             model_temperature=model_parameters.get("temperature"),
             model_top_p=model_parameters.get("top_p"),
             success=result.route_correct,
+            conversation_outcome=result.extra.get("conversation_outcome", "unknown"),
+            stated_constraints=", ".join(result.extra.get("stated_constraints", [])) if result.extra.get("stated_constraints") else "None",
+            unsatisfied_constraints=", ".join(result.extra.get("unsatisfied_constraints", [])) if result.extra.get("unsatisfied_constraints") else "None",
             route_valid=result.route_valid,
             route_reaches_goal=result.route_reaches_goal,
             route_duration_min=result.route_duration_min,

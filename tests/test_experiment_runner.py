@@ -314,7 +314,9 @@ class ExperimentRunnerTests(unittest.TestCase):
                     "Agent B": {"turn_count": 1, "mean_turn_elapsed_sec": 0.4},
                 },
                 "nlu_turns": [{"route_valid": True, "route_reaches_goal": True}],
-                "metric_snapshots": [{"turn": 1, "message_count": 2, "candidate_routes": 1}],
+                "runtime_events": [{"phase": "preflight", "event_type": "viability_check", "payload": {}}],
+                "preflight_viability": {"constraint_route_available": True},
+                "conversation_outcome": "satisfied",
             },
         )
 
@@ -329,7 +331,8 @@ class ExperimentRunnerTests(unittest.TestCase):
             agent_a_rows = paths["agent_a_segments"].read_text(encoding="utf-8").splitlines()
             agent_b_rows = paths["agent_b_segments"].read_text(encoding="utf-8").splitlines()
             agent_summary = json.loads(paths["agent_timing_summary"].read_text(encoding="utf-8"))
-            snapshot_rows = paths["metric_snapshots"].read_text(encoding="utf-8").splitlines()
+            runtime_rows = paths["runtime_events"].read_text(encoding="utf-8").splitlines()
+            retrospective_text = paths["retrospective_summary"].read_text(encoding="utf-8")
 
         self.assertTrue(batch_paths)
         self.assertEqual(summary["condition_id"], "Case One")
@@ -339,7 +342,8 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(len(agent_a_rows), 1)
         self.assertEqual(len(agent_b_rows), 1)
         self.assertEqual(agent_summary["Agent B"]["mean_turn_elapsed_sec"], 0.4)
-        self.assertEqual(len(snapshot_rows), 1)
+        self.assertEqual(len(runtime_rows), 1)
+        self.assertIn("Messages", retrospective_text)
 
     def test_single_run_research_outputs_compile_metrics_for_analysis(self):
         result = DialogResult(
@@ -383,7 +387,9 @@ class ExperimentRunnerTests(unittest.TestCase):
                 "speech_turns": [],
                 "timing_turns": [],
                 "nlu_turns": [],
-                "metric_snapshots": [{"turn": 1, "message_count": 2, "candidate_routes": 1}],
+                "runtime_events": [{"phase": "preflight", "event_type": "viability_check", "payload": {}}],
+                "preflight_viability": {"constraint_route_available": True},
+                "conversation_outcome": "satisfied",
             },
         )
         from minillama.test_cases import get_test_case
@@ -400,6 +406,8 @@ class ExperimentRunnerTests(unittest.TestCase):
 
             self.assertTrue(metrics_file.exists())
             self.assertTrue((phase_dir / "summary.jsonl").exists())
+            self.assertTrue((phase_dir / "metric_catalog.json").exists())
+            self.assertTrue(paths["retrospective_json"].exists())
 
 
 if __name__ == "__main__":

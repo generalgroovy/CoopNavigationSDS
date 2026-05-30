@@ -28,6 +28,24 @@ OBJECTIVE_MODE_LABELS = {
     OBJECTIVE_SHORTEST_WITH_CONSTRAINTS: "Shortest valid route with 1-3 constraints",
 }
 
+CONSTRAINT_LABELS = {
+    "ticket": "available transit tickets",
+    "transfers": "few line changes",
+    "fullness": "not near capacity",
+    "delay": "low delay risk",
+    "transfer_miss": "safe transfer timing",
+    "walking": "reasonable walking distance",
+}
+
+CONSTRAINT_KEYWORDS = {
+    "ticket": ("ticket", "tickets", "mode", "metro", "tram", "bus"),
+    "transfers": ("few line changes", "fewer line changes", "as few line changes", "transfer count", "avoid changes", "avoid line changes", "switching"),
+    "fullness": ("near-capacity", "capacity", "crowded", "packed", "full"),
+    "delay": ("delay", "reliable", "risk"),
+    "transfer_miss": ("transfer miss", "miss risk", "safe transfer", "safer transfer"),
+    "walking": ("walk", "walking"),
+}
+
 
 def normalize_objective_mode(value):
     """Return a supported Agent A objective mode."""
@@ -266,6 +284,128 @@ def route_within_walking_limit(steps, profile):
     return profile.max_walking_min is None or route_walking_minutes(steps) <= profile.max_walking_min
 
 
+def available_agent_a_constraints(persona, scenario):
+    """Return progressive Agent A constraints in the order they should be revealed."""
+    preferences = (persona or {}).get("preferences", {})
+    priority = str(preferences.get("priority", "")).lower()
+    switching = str(preferences.get("switching", "")).lower()
+    fullness = str(preferences.get("fullness", "")).lower()
+    reliability = str(preferences.get("reliability", "")).lower()
+    public_default_modes = tuple(mode for mode in DEFAULT_ALLOWED_MODES if mode != "walking")
+    scenario_modes = tuple(mode for mode in ((scenario or {}).get("allowed_modes") or DEFAULT_ALLOWED_MODES) if mode != "walking")
+    persona_modes = tuple(mode for mode in (preferences.get("allowed_modes") or ()) if mode != "walking")
+    constraints = []
+
+    def add(key):
+        if key not in constraints:
+            constraints.append(key)
+
+    if persona_modes and set(persona_modes) != set(public_default_modes):
+        add("ticket")
+    elif scenario_modes and set(scenario_modes) != set(public_default_modes):
+        add("ticket")
+    if any(term in switching for term in ("fewer", "avoid", "unnecessary", "only for meaningful")):
+        add("transfers")
+    if any(term in fullness for term in ("less crowded", "dislikes", "crowded", "full", "packed")) and "does not mind" not in fullness:
+        add("fullness")
+    if any(term in f"{priority} {reliability}" for term in ("delay", "reliable", "on time", "low risk")):
+        add("delay")
+    if preferences.get("max_transfer_miss_probability") is not None or (scenario or {}).get("max_transfer_miss_probability") is not None:
+        add("transfer_miss")
+    if preferences.get("max_walking_min") is not None or (scenario or {}).get("max_walking_min") is not None:
+        add("walking")
+
+    if "transfers" not in constraints:
+        constraints.append("transfers")
+    if len(constraints) < 2 and "walking" not in constraints:
+        constraints.append("walking")
+    if len(constraints) < 2 and "fullness" not in constraints:
+        constraints.append("fullness")
+    return constraints
+
+
+def stated_constraint_keys(conversation):
+    """Infer which constraints Agent A has explicitly stated so far."""
+    keys = []
+    for speaker, text in conversation:
+        if speaker != "Agent A":
+            continue
+        lower = text.lower()
+        for key, keywords in CONSTRAINT_KEYWORDS.items():
+            if key not in keys and any(keyword in lower for keyword in keywords):
+                keys.append(key)
+    return keys
+
+
+def route_constraint_status(steps, persona, scenario, stated_keys, transfer_tolerance=1, constraint_route=None):
+    """Evaluate a route against only the constraints Agent A has stated."""
+    profile = RouteConstraintProfile.from_persona(persona or {}, scenario or {})
+    allowed = set(route_allowed_modes(scenario or {}, persona or {}))
+    baseline_changes = constraint_route.line_change_count if constraint_route else 0
+    max_changes = baseline_changes + int(transfer_tolerance)
+    statuses = {}
+    for key in stated_keys:
+        if key == "ticket":
+            used_modes = {
+                step.get("mode") or line_mode(step.get("line"))
+                for step in steps
+                if (step.get("mode") or line_mode(step.get("line"))) != "walking"
+            }
+            ok = not used_modes or used_modes <= allowed
+            statuses[key] = {"satisfied": ok, "actual": sorted(used_modes), "limit": sorted(allowed)}
+        elif key == "transfers":
+            changes = route_line_change_count(steps)
+            statuses[key] = {"satisfied": changes <= max_changes, "actual": changes, "limit": max_changes}
+        elif key == "fullness":
+            count = route_near_capacity_count(steps)
+            statuses[key] = {"satisfied": count == 0, "actual": count, "limit": 0}
+        elif key == "delay":
+            risk = route_delay_probability(steps)
+            statuses[key] = {
+                "satisfied": probability_class_allowed(risk, profile.max_delay_probability),
+                "actual": probability_class(risk),
+                "limit": probability_class(profile.max_delay_probability),
+            }
+        elif key == "transfer_miss":
+            risk = route_transfer_miss_probability(steps)
+            statuses[key] = {
+                "satisfied": probability_class_allowed(risk, profile.max_transfer_miss_probability),
+                "actual": probability_class(risk),
+                "limit": probability_class(profile.max_transfer_miss_probability),
+            }
+        elif key == "walking":
+            walking = route_walking_minutes(steps)
+            limit = profile.max_walking_min if profile.max_walking_min is not None else 8
+            statuses[key] = {"satisfied": walking <= int(limit), "actual": walking, "limit": int(limit)}
+    return statuses
+
+
+def unsatisfied_constraint_keys(statuses):
+    """Return stated constraint keys whose status is not satisfied."""
+    return [key for key, status in statuses.items() if not status.get("satisfied", False)]
+
+
+def constraint_request_text(key, persona=None, scenario=None):
+    """Return one natural Agent A utterance fragment for a constraint key."""
+    preferences = (persona or {}).get("preferences", {})
+    modes = route_allowed_modes(scenario or {}, persona or {})
+    if key == "ticket":
+        public_modes = [mode for mode in modes if mode != "walking"]
+        return f"I only have tickets for {', '.join(public_modes)}"
+    if key == "transfers":
+        return "with as few line changes as reasonable"
+    if key == "fullness":
+        return "not near capacity"
+    if key == "delay":
+        return "with lower delay risk"
+    if key == "transfer_miss":
+        return "with safer transfer timing"
+    if key == "walking":
+        minutes = preferences.get("max_walking_min", (scenario or {}).get("max_walking_min", 8))
+        return f"with walking at most {minutes} minutes"
+    return CONSTRAINT_LABELS.get(key, key)
+
+
 def constraint_sort_key(duration_min, steps, profile, objective_mode=OBJECTIVE_SHORTEST_WITH_CONSTRAINTS):
     line_changes = route_line_change_count(steps)
     average_fullness = route_average_fullness(steps)
@@ -401,6 +541,7 @@ def route_constraint_gap(steps, duration_min, constraint_route):
     profile = RouteConstraintProfile(
         max_delay_probability=constraint_route.max_delay_probability,
         max_transfer_miss_probability=constraint_route.max_transfer_miss_probability,
+        max_walking_min=constraint_route.max_walking_min,
     )
     viability = route_risk_viability(steps, profile)
     return {

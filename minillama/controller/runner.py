@@ -5,7 +5,8 @@ from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from itertools import product
 
-from minillama.agent_a.config import DEFAULT_PERSONA
+from minillama.agent_a.agent_a_responder import LLMAgentAResponder, TemplateAgentAResponder
+from minillama.agent_a.config import DEFAULT_PERSONA, LLM_AGENT_A
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
@@ -19,6 +20,7 @@ from minillama.evaluation.research_artifacts import write_metrics_csv, write_met
 from minillama.controller.session_logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
 from minillama.model.config import GENERATION_MAX_TIME_SEC
+from minillama.model.route_constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 
 
 class DropQueue:
@@ -38,7 +40,8 @@ class ExperimentCondition:
     scenario_key: str
     speech_pattern_key: str
     model_param_key: str
-    iteration: int
+    objective_mode: str = OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
+    iteration: int = 0
 
 
 class ExperimentRunner:
@@ -62,6 +65,7 @@ class ExperimentRunner:
         transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE,
         max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
         calculation_max_time_sec=GENERATION_MAX_TIME_SEC,
+        llm_agent_a=LLM_AGENT_A,
         log_profile=LOG_PROFILE_OFF,
         log_dir=SESSION_LOG_DIR,
     ):
@@ -90,6 +94,7 @@ class ExperimentRunner:
         self.transfer_tolerance = transfer_tolerance
         self.max_turn_elapsed_sec = max_turn_elapsed_sec
         self.calculation_max_time_sec = calculation_max_time_sec
+        self.llm_agent_a = bool(llm_agent_a)
         self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
         self.log_dir = log_dir
         self.metric_computer = MetricComputer()
@@ -128,8 +133,10 @@ class ExperimentRunner:
             agent_b_plugin,
             self.num_turns,
             speech_transport=speech_transport,
+            agent_a_responder=self._agent_a_responder_for(model_adapter),
             transfer_tolerance=self.transfer_tolerance,
             max_turn_elapsed_sec=self.max_turn_elapsed_sec,
+            agent_a_objective_mode=condition.objective_mode,
         )
 
         started_perf = time.perf_counter()
@@ -153,6 +160,7 @@ class ExperimentRunner:
         result.condition_id = condition.condition_id
         result.speech_pattern_key = condition.speech_pattern_key
         result.extra["model_param_key"] = condition.model_param_key
+        result.extra["objective_mode"] = condition.objective_mode
         result.extra["iteration"] = condition.iteration
         result.extra["condition_runtime_sec"] = round(condition_runtime_sec, 6)
         model_parameters = getattr(model_adapter, "model_parameters", None)
@@ -179,6 +187,11 @@ class ExperimentRunner:
             model_adapter.max_time_sec = budget
         if hasattr(model_adapter, "timeout_sec"):
             model_adapter.timeout_sec = budget
+
+    def _agent_a_responder_for(self, model_adapter):
+        if self.llm_agent_a and model_adapter is not None:
+            return LLMAgentAResponder(model_adapter)
+        return TemplateAgentAResponder()
 
     def _model_adapter_for(self, condition: ExperimentCondition):
         """ model adapter for method for this module's MVC responsibility.
@@ -217,6 +230,7 @@ def build_condition_grid(
     persona_keys=None,
     speech_pattern_keys=None,
     model_param_keys=None,
+    objective_modes=None,
     iterations=1,
 ):
     """Build condition grid function for this module's MVC responsibility.
@@ -235,17 +249,19 @@ def build_condition_grid(
     persona_keys = persona_keys or [DEFAULT_PERSONA]
     speech_pattern_keys = speech_pattern_keys or [DEFAULT_SPEECH_PATTERN]
     model_param_keys = model_param_keys or [DEFAULT_MODEL_PARAM_KEY]
+    objective_modes = objective_modes or [OBJECTIVE_SHORTEST_WITH_CONSTRAINTS]
 
     test_case_cache = {}
-    for test_case_key, persona_key, speech_pattern_key, model_param_key, iteration in product(
+    for test_case_key, persona_key, speech_pattern_key, model_param_key, objective_mode, iteration in product(
         test_case_keys,
         persona_keys,
         speech_pattern_keys,
         model_param_keys,
+        objective_modes,
         range(iterations),
     ):
         condition_id = (
-            f"{test_case_key}__{persona_key}__{speech_pattern_key}__{model_param_key}__{iteration}"
+            f"{test_case_key}__{persona_key}__{speech_pattern_key}__{model_param_key}__{objective_mode}__{iteration}"
         )
         base_case = test_case_cache.get(test_case_key)
         if base_case is None:
@@ -258,5 +274,6 @@ def build_condition_grid(
             scenario_key=base_case.scenario_key,
             speech_pattern_key=speech_pattern_key,
             model_param_key=model_param_key,
+            objective_mode=objective_mode if objective_mode in OBJECTIVE_MODES else OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
             iteration=iteration,
         )

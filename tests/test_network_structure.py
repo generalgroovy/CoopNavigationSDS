@@ -3,7 +3,10 @@ from collections import Counter, defaultdict
 
 from minillama.model.config import STATION_CLASS_ACCESS_MODES, STATION_CLASS_RATIOS
 from minillama.model.metro_data import ADJACENCY, LINES, STATION_CLASSES, STATIONS, TRAVEL_TIMES, line_segment_key
+from minillama.model.route_constraints import optimal_constraint_route
 from minillama.model.route_planner import optimal_time_route
+from minillama.agent_a.config import PERSONAS
+from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
 
 
 class NetworkStructureTests(unittest.TestCase):
@@ -58,6 +61,26 @@ class NetworkStructureTests(unittest.TestCase):
         self.assertIn("bus", sampled)
         self.assertLessEqual(sampled["metro"], sampled["bus"])
         self.assertLessEqual(sampled["tram"], sampled["bus"])
+
+    def test_bus_lines_cover_more_stations_than_tram_and_metro(self):
+        by_mode = defaultdict(list)
+        for data in LINES.values():
+            by_mode[data.get("mode")].append(len(data["stops"]))
+
+        bus_average = sum(by_mode["bus"]) / len(by_mode["bus"])
+        tram_average = sum(by_mode["tram"]) / len(by_mode["tram"])
+        metro_average = sum(by_mode["metro"]) / len(by_mode["metro"])
+
+        self.assertGreater(bus_average, tram_average)
+        self.assertGreater(tram_average, metro_average)
+
+    def test_default_scenario_has_constraint_viable_routes_for_research_personas(self):
+        base_case = get_test_case(DEFAULT_TEST_CASE)
+        for persona_key in ("focused_commuter", "crowd_averse_rider", "delay_sensitive_traveler"):
+            route = optimal_constraint_route(base_case.scenario, PERSONAS[persona_key])
+            self.assertIsNotNone(route, persona_key)
+            self.assertEqual(route.route[0], base_case.scenario["start_station"])
+            self.assertEqual(route.route[-1], base_case.scenario["destination_station"])
 
 
 if __name__ == "__main__":

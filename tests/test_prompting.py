@@ -84,8 +84,7 @@ class PromptingTests(unittest.TestCase):
             [("Agent B", "Take Ring from Bravo to Alpha to Golf, then Diagonal-SE-6 to November to Uniform to Birch to Ivy, then Ring to Harbor.")],
         )
         self.assertIn("Okay, that is", text)
-        self.assertIn("one faster valid route", text)
-        self.assertIn("faster", text)
+        self.assertIn("Now can you make it", text)
 
     def test_agent_a_requests_persona_specific_alternative_constraints(self):
         persona = {
@@ -150,17 +149,23 @@ class PromptingTests(unittest.TestCase):
         )
 
         self.assertLessEqual(len(text.split()), 22)
-        self.assertIn("Compare one", text)
+        self.assertIn("Now can you make it", text)
 
-    def test_agent_a_final_reaction_asks_for_confirmation(self):
+    def test_agent_a_final_reaction_closes_after_two_constraints(self):
         text = agent_a_route_reaction(
             3,
             self.persona,
             self.real_scenario,
-            [("Agent B", "Take Ring from Bravo to Alpha to Golf, then Diagonal-SE-6 to November to Uniform to Birch to Ivy, then Ring to Harbor.")],
+            [
+                ("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes."),
+                ("Agent A", "Can you make it with safer transfer timing?"),
+                ("Agent B", "Take Ring. Stations: Bravo to Alpha to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 19 minutes."),
+                ("Agent A", "Can you make it with walking at most 8 minutes?"),
+                ("Agent B", "Take Core Tram. Stations: Bravo to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 24 minutes."),
+            ],
         )
-        self.assertIn("confirm", text.lower())
-        self.assertIn("total time", text)
+        self.assertIn("Thanks", text)
+        self.assertIn("take", text)
 
     def test_agent_a_critiques_slower_alternative(self):
         text = agent_a_route_reaction(
@@ -174,8 +179,7 @@ class PromptingTests(unittest.TestCase):
             ],
         )
 
-        self.assertIn("slower", text)
-        self.assertIn("earlier", text)
+        self.assertIn("Now can you make it", text)
 
     def test_agent_b_pipeline_rejects_partial_route_and_uses_valid_fallback(self):
         class PartialRouteModel:

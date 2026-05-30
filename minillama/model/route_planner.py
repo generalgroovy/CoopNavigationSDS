@@ -380,7 +380,8 @@ def route_text_from_steps(steps):
     if len(rides) == 1:
         station_route = " to ".join(route_station_sequence(steps))
         return f"Take {line_route}. Stations: {station_route}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
-    return f"Boarding: {compact_boarding_route}. Lines: {compact_line_route}. Total {total} minutes."
+    station_route = " to ".join(route_station_sequence(steps))
+    return f"Stations: {station_route}. Boarding: {compact_boarding_route}. Lines: {compact_line_route}. Total {total} minutes."
 
 
 def route_rides(steps):

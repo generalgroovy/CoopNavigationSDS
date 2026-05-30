@@ -53,7 +53,8 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertIn("Constraint route:", result.metrics_text)
             self.assertIsNotNone(result.extra["constraint_duration_min"])
             self.assertIn("constraint_duration_gap_min", result.extra)
-            self.assertTrue(result.extra["metric_snapshots"])
+            self.assertTrue(result.extra["runtime_events"])
+            self.assertTrue(result.extra["preflight_viability"]["constraint_route_available"])
             self.assertEqual(result.extra["speech_turns"][0]["mode"], "pure_text")
             self.assertTrue(result.extra["speech_turns"][0]["pipeline_ok"])
 
@@ -61,7 +62,6 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertEqual(len(jsonl_files), 1)
             rows = [json.loads(line) for line in jsonl_files[0].read_text(encoding="utf-8").splitlines()]
             self.assertTrue(any(row["kind"] == "conversation.step" for row in rows))
-            self.assertTrue(any(row["kind"] == "system" and row["name"] == "metric.snapshot" for row in rows))
             self.assertTrue(any(row["kind"] == "program.segment" for row in rows))
 
     def test_agent_a_elicits_multiple_compared_route_candidates(self):
@@ -84,8 +84,8 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertGreaterEqual(result.extra["route_revisions"], 1)
         self.assertIsNotNone(result.extra["constraint_duration_min"])
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
-        self.assertTrue(any("one" in text and "valid route" in text for text in agent_a_replies))
-        self.assertTrue(any("near-capacity" in text or "fewer line changes" in text for text in agent_a_replies))
+        self.assertGreaterEqual(len(result.extra["stated_constraints"]), 1)
+        self.assertTrue(any("Now can you make it" in text for text in agent_a_replies))
 
     def test_agent_b_defers_secondary_constraints_until_agent_a_asks(self):
         manager = DialogManager(
@@ -213,7 +213,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertEqual(result.extra["early_stop_reason"], "constraint_miss_limit")
         self.assertEqual(result.extra["constraint_miss_count"], 1)
         self.assertEqual(result.conversation[-1][0], "Agent A")
-        self.assertIn("constraints", result.conversation[-1][1])
+        self.assertIn("constraint", result.conversation[-1][1])
 
     def test_dialog_ends_when_agent_a_closes_call(self):
         manager = DialogManager(
@@ -341,4 +341,5 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         kinds = [event[0] for event in event_queue.events]
         self.assertIn("timer_start", kinds)
         self.assertLess(kinds.index("timer_start"), kinds.index("message"))
-        self.assertGreaterEqual(result.runtime_sec, result.extra["metric_snapshots"][0]["elapsed_sec"])
+        self.assertTrue(result.extra["runtime_events"])
+        self.assertGreaterEqual(result.runtime_sec, result.extra["runtime_events"][0]["elapsed_sec"])

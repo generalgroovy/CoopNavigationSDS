@@ -14,7 +14,13 @@ from minillama.model.route_planner import (
     route_line_change_count,
     route_text_from_steps,
 )
-from minillama.model.route_constraints import ranked_constraint_routes
+from minillama.model.route_constraints import (
+    optimal_constraint_route,
+    ranked_constraint_routes,
+    route_constraint_status,
+    stated_constraint_keys,
+    unsatisfied_constraint_keys,
+)
 
 
 STATION_NAMES = list(STATION_POS)
@@ -128,9 +134,44 @@ def fallback_reply(active_agent_name, scenario, route_index=0, persona=None, con
     destination = scenario["destination_station"]
 
     if active_agent_name == "Agent B":
-        ranked_routes = ranked_constraint_routes(scenario, persona or {}, limit=5)
-        if ranked_routes:
+        ranked_routes = ranked_constraint_routes(scenario, persona or {}, limit=8)
+        stated_keys = stated_constraint_keys(conversation or [])
+        constraint_route = optimal_constraint_route(scenario, persona or {})
+        prior_routes = set()
+        if conversation:
+            from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+
+            interpreter = NaturalRouteInterpreter()
+            for speaker, text in conversation:
+                if speaker != "Agent B":
+                    continue
+                route = interpreter.interpret_reply(text, scenario)
+                if route:
+                    prior_routes.add(tuple(route))
+        if stated_keys:
+            satisfying = [
+                route
+                for route in ranked_routes
+                if not unsatisfied_constraint_keys(
+                    route_constraint_status(
+                        route.steps,
+                        persona or {},
+                        scenario,
+                        stated_keys,
+                        constraint_route=constraint_route,
+                    )
+                )
+            ]
+            if satisfying:
+                ranked_routes = satisfying
+        fresh_routes = [route for route in ranked_routes if tuple(route.route) not in prior_routes]
+        if fresh_routes:
+            selected = fresh_routes[0]
+        elif ranked_routes:
             selected = ranked_routes[route_index % len(ranked_routes)]
+        else:
+            selected = None
+        if selected is not None:
             steps = selected.steps
             snippet = route_text_from_steps(steps)
         else:

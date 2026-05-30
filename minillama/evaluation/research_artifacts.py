@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 
 from minillama.evaluation.xlsx_export import write_metrics_xlsx
-from minillama.evaluation.metrics import MetricComputer
+from minillama.evaluation.metrics import METRIC_FAMILY_SPECS, MetricComputer, phase_key_from_title
 from minillama.model.network_overview import build_network_overview
 from minillama.model.network_picture import write_network_svg
 
@@ -73,6 +73,17 @@ def write_metric_phase_logs(metrics, output_dir):
                 row = record.as_dict()
                 row.pop("metric_families", None)
                 handle.write(json.dumps(row, ensure_ascii=True) + "\n")
+        catalog = {
+            phase_key_from_title(family["title"]): {
+                "title": family["title"],
+                "metrics": [
+                    {"key": key, "label": label}
+                    for key, label in family["metrics"]
+                ],
+            }
+            for family in METRIC_FAMILY_SPECS
+        }
+        (output_dir / "metric_catalog.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=True), encoding="utf-8")
     finally:
         for handle in handles.values():
             handle.close()
@@ -121,8 +132,19 @@ def write_conversation_protocol(result, output_dir):
     timing_turns = list(result.extra.get("timing_turns", []))
     nlu_turns = list(result.extra.get("nlu_turns", []))
     agent_turn_segments = list(result.extra.get("agent_turn_segments", []))
+    runtime_events = list(result.extra.get("runtime_events", []))
+    candidate_events = list(result.extra.get("candidate_events", []))
     agent_timing_summary = result.extra.get("agent_timing_summary", {})
-    verification = verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns, agent_turn_segments, agent_timing_summary)
+    verification = verify_conversation_protocol(
+        result,
+        turns,
+        speech_turns,
+        timing_turns,
+        nlu_turns,
+        agent_turn_segments,
+        agent_timing_summary,
+        runtime_events,
+    )
     summary = {
         "condition_id": result.condition_id,
         "test_case_key": result.test_case_key,
@@ -152,8 +174,9 @@ def write_conversation_protocol(result, output_dir):
         "agent_b_segments": condition_dir / "agent_b_turn_segments.jsonl",
         "agent_timing_summary": condition_dir / "agent_timing_summary.json",
         "semantic": condition_dir / "semantic_parsing.jsonl",
-        "metric_snapshots": condition_dir / "metric_snapshots.jsonl",
-        "metrics": condition_dir / "metrics.txt",
+        "runtime_events": condition_dir / "runtime_events.jsonl",
+        "candidate_routes": condition_dir / "candidate_routes.jsonl",
+        "retrospective_summary": condition_dir / "retrospective_summary.txt",
         "verification": condition_dir / "verification.json",
     }
     paths["summary"].write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
@@ -165,8 +188,9 @@ def write_conversation_protocol(result, output_dir):
     write_jsonl(paths["agent_b_segments"], [row for row in agent_turn_segments if row.get("speaker") == "Agent B"])
     paths["agent_timing_summary"].write_text(json.dumps(agent_timing_summary, indent=2, ensure_ascii=True), encoding="utf-8")
     write_jsonl(paths["semantic"], nlu_turns)
-    write_jsonl(paths["metric_snapshots"], result.extra.get("metric_snapshots", []))
-    paths["metrics"].write_text(result.metrics_text or "", encoding="utf-8")
+    write_jsonl(paths["runtime_events"], runtime_events)
+    write_jsonl(paths["candidate_routes"], candidate_events)
+    paths["retrospective_summary"].write_text(result.metrics_text or "", encoding="utf-8")
     paths["verification"].write_text(json.dumps(verification, indent=2, ensure_ascii=True), encoding="utf-8")
     return paths
 
@@ -180,12 +204,15 @@ def write_single_run_research_outputs(result, scenario, output_dir):
     compiled_dir = output_dir / safe_artifact_name(result.condition_id) / "compiled_metrics"
     metrics_file = compiled_dir / "metrics.xlsx"
     phase_log_dir = compiled_dir / "metrics_by_phase"
+    retrospective_json = compiled_dir / "retrospective_metrics.json"
     write_metrics_file([metric], metrics_file)
     write_metric_phase_logs([metric], phase_log_dir)
+    retrospective_json.write_text(json.dumps(metric.as_dict(), indent=2, ensure_ascii=True), encoding="utf-8")
     return {
         "protocol": protocol_paths,
         "metrics_file": metrics_file,
         "phase_log_dir": phase_log_dir,
+        "retrospective_json": retrospective_json,
     }
 
 
@@ -217,10 +244,11 @@ def write_jsonl(path, rows):
             handle.write(json.dumps(row, ensure_ascii=True) + "\n")
 
 
-def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns, agent_turn_segments=None, agent_timing_summary=None):
+def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns, agent_turn_segments=None, agent_timing_summary=None, runtime_events=None):
     """Return validation checks for research-grade protocol completeness."""
     agent_turn_segments = agent_turn_segments or []
     agent_timing_summary = agent_timing_summary or {}
+    runtime_events = runtime_events or []
     checks = {
         "conversation_has_turns": bool(turns),
         "message_count_matches_result": len(turns) == result.extra.get("messages", len(result.conversation)),
@@ -244,7 +272,9 @@ def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_
             for turn in agent_turn_segments
         ),
         "agent_timing_summary_present": bool(agent_timing_summary) if agent_turn_segments else True,
-        "metric_snapshots_present": bool(result.extra.get("metric_snapshots")),
+        "runtime_events_present": bool(runtime_events),
+        "preflight_viability_present": bool(result.extra.get("preflight_viability")),
+        "retrospective_outcome_present": result.extra.get("conversation_outcome") in {"satisfied", "semi_satisfied", "unsatisfied"},
     }
     return {
         "verified": all(checks.values()),
@@ -255,6 +285,7 @@ def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_
             "timing_turns": len(timing_turns),
             "semantic_turns": len(nlu_turns),
             "agent_turn_segments": len(agent_turn_segments),
+            "runtime_events": len(runtime_events),
         },
     }
 
@@ -283,6 +314,7 @@ def write_experiment_manifest(
             "tts_engine": tts_engine or speech_engine,
             "asr_engine": asr_engine or speech_engine,
             "model_param_key": condition.model_param_key,
+            "objective_mode": getattr(condition, "objective_mode", None),
             "iteration": condition.iteration,
         }
         for condition in conditions
@@ -302,6 +334,7 @@ def write_experiment_manifest(
             "tts_engine",
             "asr_engine",
             "model_param_key",
+            "objective_mode",
             "agent_b_plugin",
         ],
         "dependent_metrics": [
