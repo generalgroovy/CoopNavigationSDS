@@ -12,7 +12,7 @@ from minillama.agent_a.agents import fallback_reply
 from minillama.agent_a.config import PERSONAS
 from minillama.agent_b.pipeline import DialogState, VerbalTransformationPipeline
 from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
-from minillama.model.route_constraints import acceptable_duration_limit, optimal_constraint_route
+from minillama.model.route_constraints import acceptable_duration_limit, optimal_constraint_route, stage_viability_report
 from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
 from minillama.test_cases.scenarios import SCENARIOS
 
@@ -50,10 +50,31 @@ class PromptingTests(unittest.TestCase):
         self.assertNotIn("Station classes", prompt)
         self.assertNotIn("Transfer cost", prompt)
 
-    def test_acceptable_duration_limit_is_under_twenty_percent_over_optimal(self):
+    def test_acceptable_duration_limit_defaults_under_fifty_percent_over_optimal(self):
         limit = acceptable_duration_limit(self.real_scenario, self.persona)
 
+        self.assertEqual(limit, 17)
+
+    def test_acceptable_duration_limit_ratio_is_configurable(self):
+        scenario = dict(self.real_scenario)
+        scenario["acceptable_duration_ratio"] = 1.2
+
+        limit = acceptable_duration_limit(scenario, self.persona)
+
         self.assertEqual(limit, 14)
+
+    def test_stage_viability_report_verifies_suboptimal_options_per_stage(self):
+        default_report = stage_viability_report(get_test_case(DEFAULT_TEST_CASE).scenario, get_test_case(DEFAULT_TEST_CASE).persona)
+        self.assertTrue(default_report["all_stage_requirements_satisfied"])
+
+        test_case = get_test_case("midday_transfer").with_persona("distracted_multitasker")
+
+        report = stage_viability_report(test_case.scenario, test_case.persona)
+
+        self.assertTrue(report["all_stage_requirements_satisfied"])
+        self.assertEqual(report["acceptable_duration_ratio"], 1.5)
+        self.assertEqual(len(report["stages"]), 3)
+        self.assertTrue(all(stage["suboptimal_option_count"] >= 1 for stage in report["stages"]))
 
     def test_agent_b_phase_instruction_changes_by_turn(self):
         first = build_agent_b_phase_instruction(0, "Museum")
@@ -96,7 +117,7 @@ class PromptingTests(unittest.TestCase):
         )
         self.assertIn("reaches Harbor", text)
         self.assertIn("too long", text)
-        self.assertIn("14 minutes", text)
+        self.assertIn("17 minutes", text)
         self.assertNotIn("Now can you make it", text)
 
     def test_agent_a_requests_persona_specific_alternative_constraints(self):

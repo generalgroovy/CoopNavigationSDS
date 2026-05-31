@@ -29,6 +29,7 @@ from minillama.model.route_constraints import (
     route_constraint_status,
     route_has_near_capacity,
     route_near_capacity_count,
+    stage_viability_report,
     route_transfer_miss_probability,
     normalize_objective_mode,
     stated_constraint_keys,
@@ -400,6 +401,11 @@ class DialogManager:
         planning_allowed_modes = route_allowed_modes(scenario, persona)
         constraint_route = optimal_constraint_route(scenario, persona, objective_mode=self.agent_a_objective_mode)
         acceptable_time_limit = acceptable_duration_limit(scenario, persona, constraint_route=constraint_route)
+        stage_options = stage_viability_report(
+            scenario,
+            persona,
+            transfer_tolerance=self.transfer_tolerance,
+        )
         reference_arrival, reference_steps = optimal_time_route(
             scenario["start_station"],
             scenario["destination_station"],
@@ -418,6 +424,7 @@ class DialogManager:
             "constraint_duration_min": constraint_route.duration_min if constraint_route else None,
             "constraint_label": constraint_route.label if constraint_route else None,
             "acceptable_duration_limit_min": acceptable_time_limit,
+            "stage_option_viability": stage_options,
         }
         start_wall = None
         route_memory = RouteProposalMemory()
@@ -491,6 +498,11 @@ class DialogManager:
         event_queue.put(("system", f"Objective mode: {OBJECTIVE_MODE_LABELS[self.agent_a_objective_mode]}"))
         event_queue.put(("system", f"Speech transport: {self.speech_transport.description}"))
         record_runtime_event("preflight", "viability_check", preflight_viability)
+        if not stage_options["all_stage_requirements_satisfied"]:
+            event_queue.put((
+                "warning",
+                "Current scenario lacks the configured number of viable suboptimal alternatives for every conversation stage.",
+            ))
         if constraint_route:
             event_queue.put(
                 (
@@ -825,6 +837,7 @@ class DialogManager:
             f"Constraint delay risk: {constraint_delay_risk_class}\n"
             f"Constraint transfer risk: {constraint_transfer_risk_class}\n"
             f"Constraint gap:        {constraint_gap.get('duration_gap_min', 'None')} minutes, {constraint_gap.get('line_change_gap', 'None')} changes, {constraint_gap.get('near_capacity_gap', 'None')} near-capacity segments, risk viable {not constraint_gap.get('risk_unviable', False)}\n"
+            f"Stage option viability: {stage_options['all_stage_requirements_satisfied']} ({stage_options['required_suboptimal_option_count']} required suboptimal options)\n"
             f"Candidate routes:      {len(route_memory.candidates)}\n"
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
@@ -890,6 +903,7 @@ class DialogManager:
                 "acceptable_duration_limit_min": acceptable_time_limit,
                 "time_frame_satisfied": time_frame_satisfied,
                 "preflight_viability": preflight_viability,
+                "stage_option_viability": stage_options,
                 "reference_duration_min": reference_duration,
                 "displayed_line_sequence": displayed_line_sequence,
                 "displayed_line_changes": displayed_line_change_count,

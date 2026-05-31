@@ -2,8 +2,11 @@
 """
 from minillama.model.config import (
     DEFAULT_ALLOWED_MODES,
+    ACCEPTABLE_DURATION_RATIO,
     MAX_ROUTE_DELAY_PROBABILITY,
     MAX_TRANSFER_MISS_PROBABILITY,
+    MIN_STAGE_SUBOPTIMAL_OPTIONS,
+    REQUIRE_STAGE_SUBOPTIMAL_OPTIONS,
     START_TIME_MIN,
     TRANSFER_TIME_MIN,
 )
@@ -22,6 +25,9 @@ def make_scenario(
     max_transfer_miss_probability=MAX_TRANSFER_MISS_PROBABILITY,
     max_delay_probability=MAX_ROUTE_DELAY_PROBABILITY,
     max_walking_min=None,
+    acceptable_duration_ratio=ACCEPTABLE_DURATION_RATIO,
+    min_stage_suboptimal_options=MIN_STAGE_SUBOPTIMAL_OPTIONS,
+    require_stage_suboptimal_options=REQUIRE_STAGE_SUBOPTIMAL_OPTIONS,
     allow_unreachable=False,
 ):
     """Make scenario function for this module's MVC responsibility.
@@ -61,6 +67,9 @@ def make_scenario(
         "max_transfer_miss_probability": max_transfer_miss_probability,
         "max_delay_probability": max_delay_probability,
         "max_walking_min": max_walking_min,
+        "acceptable_duration_ratio": float(acceptable_duration_ratio),
+        "min_stage_suboptimal_options": int(min_stage_suboptimal_options),
+        "require_stage_suboptimal_options": bool(require_stage_suboptimal_options),
         "goal": "fastest_route",
         "allow_unreachable": allow_unreachable,
     }
@@ -88,6 +97,9 @@ SCENARIOS = {
         max_transfer_miss_probability=spec.get("max_transfer_miss_probability", MAX_TRANSFER_MISS_PROBABILITY),
         max_delay_probability=spec.get("max_delay_probability", MAX_ROUTE_DELAY_PROBABILITY),
         max_walking_min=spec.get("max_walking_min"),
+        acceptable_duration_ratio=spec.get("acceptable_duration_ratio", ACCEPTABLE_DURATION_RATIO),
+        min_stage_suboptimal_options=spec.get("min_stage_suboptimal_options", MIN_STAGE_SUBOPTIMAL_OPTIONS),
+        require_stage_suboptimal_options=spec.get("require_stage_suboptimal_options", REQUIRE_STAGE_SUBOPTIMAL_OPTIONS),
     )
     for key, spec in SCENARIO_SPECS.items()
 }

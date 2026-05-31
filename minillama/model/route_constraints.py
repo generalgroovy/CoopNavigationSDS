@@ -4,7 +4,14 @@ import math
 
 from minillama.model.metro_data import is_near_capacity
 from minillama.model.metro_data import ADJACENCY, STATION_POS
-from minillama.model.config import DEFAULT_ALLOWED_MODES, MAX_ROUTE_DELAY_PROBABILITY, MAX_TRANSFER_MISS_PROBABILITY
+from minillama.model.config import (
+    ACCEPTABLE_DURATION_RATIO,
+    DEFAULT_ALLOWED_MODES,
+    MAX_ROUTE_DELAY_PROBABILITY,
+    MAX_TRANSFER_MISS_PROBABILITY,
+    MIN_STAGE_SUBOPTIMAL_OPTIONS,
+    REQUIRE_STAGE_SUBOPTIMAL_OPTIONS,
+)
 from minillama.model.route_planner import (
     candidate_time_routes,
     line_mode,
@@ -386,13 +393,9 @@ def unsatisfied_constraint_keys(statuses):
     return [key for key, status in statuses.items() if not status.get("satisfied", False)]
 
 
-def acceptable_duration_limit(scenario, persona=None, constraint_route=None, slack_min=None):
-    """Return the maximum whole-minute duration under 20% over the optimal route."""
+def optimal_route_duration_min(scenario, persona=None):
+    """Return the fastest valid route duration for the scenario and persona modes."""
     scenario = scenario or {}
-    configured = scenario.get("acceptable_duration_min", scenario.get("acceptable_time_frame_min"))
-    if configured is not None:
-        return int(configured)
-
     arrival, _steps = optimal_time_route(
         scenario["start_station"],
         scenario["destination_station"],
@@ -400,15 +403,144 @@ def acceptable_duration_limit(scenario, persona=None, constraint_route=None, sla
         scenario["transfer_time_min"],
         allowed_modes=route_allowed_modes(scenario, persona),
     )
-    base_duration = arrival - scenario["start_time_min"] if arrival is not None else None
+    return arrival - scenario["start_time_min"] if arrival is not None else None
+
+
+def acceptable_duration_ratio(scenario):
+    """Return the configured strict duration ratio for stage-one acceptance."""
+    value = (scenario or {}).get("acceptable_duration_ratio", ACCEPTABLE_DURATION_RATIO)
+    return max(1.0, float(value or ACCEPTABLE_DURATION_RATIO))
+
+
+def acceptable_duration_limit(scenario, persona=None, constraint_route=None, slack_min=None):
+    """Return the maximum whole-minute duration under the configured optimal-route ratio."""
+    scenario = scenario or {}
+    configured = scenario.get("acceptable_duration_min", scenario.get("acceptable_time_frame_min"))
+    if configured is not None:
+        return int(configured)
+
+    base_duration = optimal_route_duration_min(scenario, persona)
     if base_duration is None:
         return None
 
     configured_slack = scenario.get("acceptable_duration_slack_min", slack_min)
     if configured_slack is not None:
         return int(math.floor(base_duration + int(configured_slack)))
-    strict_limit = float(base_duration) * 1.2
+    strict_limit = float(base_duration) * acceptable_duration_ratio(scenario)
     return int(math.ceil(strict_limit) - 1 if strict_limit.is_integer() else math.floor(strict_limit))
+
+
+def stage_suboptimal_options_required(scenario):
+    """Return whether each conversation stage must have suboptimal viable alternatives."""
+    if "require_stage_suboptimal_options" in (scenario or {}):
+        return bool(scenario.get("require_stage_suboptimal_options"))
+    return REQUIRE_STAGE_SUBOPTIMAL_OPTIONS
+
+
+def minimum_stage_suboptimal_options(scenario):
+    """Return the configured number of non-best viable alternatives required per stage."""
+    value = (scenario or {}).get("min_stage_suboptimal_options", MIN_STAGE_SUBOPTIMAL_OPTIONS)
+    return max(0, int(value or 0))
+
+
+def stage_route_options(scenario, persona, stated_keys=(), transfer_tolerance=1, limit=80):
+    """Return viable route options for one staged goal state."""
+    duration_limit = acceptable_duration_limit(scenario, persona)
+    constraint_route = optimal_constraint_route(scenario, persona)
+    profile = RouteConstraintProfile.from_persona(persona or {}, scenario or {})
+    candidates = candidate_time_routes(
+        scenario["start_station"],
+        scenario["destination_station"],
+        scenario["start_time_min"],
+        scenario["transfer_time_min"],
+        limit=max(limit, 20),
+        max_extra_stops=8,
+        max_paths=20000,
+        allowed_modes=profile.allowed_modes,
+    )
+    viable = []
+    for duration_min, route, steps in candidates:
+        if duration_limit is not None and duration_min > duration_limit:
+            continue
+        statuses = route_constraint_status(
+            steps,
+            persona,
+            scenario,
+            stated_keys,
+            transfer_tolerance=transfer_tolerance,
+            constraint_route=constraint_route,
+        )
+        if unsatisfied_constraint_keys(statuses):
+            continue
+        viable.append(
+            {
+                "duration_min": duration_min,
+                "route": route,
+                "line_sequence": route_line_sequence(steps),
+                "line_change_count": route_line_change_count(steps),
+                "near_capacity_count": route_near_capacity_count(steps),
+                "delay_risk_class": probability_class(route_delay_probability(steps)),
+                "transfer_miss_risk_class": probability_class(route_transfer_miss_probability(steps)),
+                "constraint_status": statuses,
+                "score": constraint_sort_key(duration_min, steps, profile),
+            }
+        )
+    viable.sort(key=lambda option: option["score"])
+    return viable
+
+
+def stage_viability_report(scenario, persona, transfer_tolerance=1, max_constraints=2):
+    """Return whether each staged conversation goal has required alternative routes."""
+    required_count = minimum_stage_suboptimal_options(scenario)
+    require_options = stage_suboptimal_options_required(scenario)
+    constraint_order = available_agent_a_constraints(persona or {}, scenario or {})[:max_constraints]
+    stages = []
+    for stage_index in range(max_constraints + 1):
+        stated_keys = constraint_order[:stage_index]
+        options = stage_route_options(
+            scenario,
+            persona,
+            stated_keys=stated_keys,
+            transfer_tolerance=transfer_tolerance,
+        )
+        best_route = options[0]["route"] if options else []
+        suboptimal = [
+            option for option in options
+            if tuple(option["route"]) != tuple(best_route)
+        ]
+        stages.append({
+            "stage": stage_index + 1,
+            "stated_constraints": stated_keys,
+            "viable_option_count": len(options),
+            "suboptimal_option_count": len(suboptimal),
+            "required_suboptimal_option_count": required_count,
+            "require_suboptimal_options": require_options,
+            "requirement_satisfied": (not require_options) or len(suboptimal) >= required_count,
+            "best_route": best_route,
+            "best_duration_min": options[0]["duration_min"] if options else None,
+            "suboptimal_options": [
+                {
+                    "route": option["route"],
+                    "duration_min": option["duration_min"],
+                    "line_sequence": option["line_sequence"],
+                    "line_change_count": option["line_change_count"],
+                    "near_capacity_count": option["near_capacity_count"],
+                    "delay_risk_class": option["delay_risk_class"],
+                    "transfer_miss_risk_class": option["transfer_miss_risk_class"],
+                }
+                for option in suboptimal[:required_count + 3]
+            ],
+        })
+    return {
+        "acceptable_duration_ratio": acceptable_duration_ratio(scenario),
+        "acceptable_duration_limit_min": acceptable_duration_limit(scenario, persona),
+        "optimal_duration_min": optimal_route_duration_min(scenario, persona),
+        "constraint_order": constraint_order,
+        "require_suboptimal_options": require_options,
+        "required_suboptimal_option_count": required_count,
+        "all_stage_requirements_satisfied": all(stage["requirement_satisfied"] for stage in stages),
+        "stages": stages,
+    }
 
 
 def constraint_request_text(key, persona=None, scenario=None):

@@ -48,6 +48,7 @@ from minillama.model.config import (
     LINE_KIND_BONUS,
     LINE_LENGTH_SCORE_DIVISOR,
     LINE_STOP_OVERRIDES,
+    TRAVEL_TIME_OVERRIDES,
     BUS_ONLY_STATIONS,
     STATION_CLASS_RATIOS,
     STATION_CLASS_ACCESS_MODES,
@@ -828,7 +829,11 @@ def generate_travel_times(lines, seed=None):
         for a, b in line_stop_pairs(line_name, data):
             key = line_segment_key(line_name, a, b)
             if key not in travel_times:
-                travel_times[key] = travel_time_for_mode(data.get("mode", "bus"), a, b, rng)
+                override_key = (line_name, *sorted((a, b)))
+                travel_times[key] = TRAVEL_TIME_OVERRIDES.get(
+                    override_key,
+                    travel_time_for_mode(data.get("mode", "bus"), a, b, rng),
+                )
 
     return travel_times
 

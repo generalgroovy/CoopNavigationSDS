@@ -155,6 +155,7 @@ def build_agent_b_system(scenario, persona=None):
         "You are Agent B, a transit hotline assistant. "
         "Speak naturally in one short spoken sentence when possible. "
         "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
+        "Keep alternative routes viable for the currently stated stage and avoid repeating routes. "
         "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
         "Do not mention ticket modes, walking range, near-capacity trains, line-change preference, delay risk, or transfer-miss risk until Agent A asks about them. "
         "Use only low, medium, or high for delay and transfer-miss risk; never give percentages. "
