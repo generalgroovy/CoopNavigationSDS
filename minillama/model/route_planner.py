@@ -372,16 +372,12 @@ def route_text_from_steps(steps):
     compact_boarding_route = ", ".join(boarding_points)
     line_route = " to ".join(ride["line"] for ride in rides)
     compact_line_route = ", ".join(ride["line"] for ride in rides)
-    start = rides[0]["from"]
-    destination = rides[-1]["to"]
     total = steps[-1]["arrive"] - (steps[0]["depart"] - steps[0]["wait"])
     change_count = len(rides) - 1
     change_text = "no line changes" if change_count == 0 else f"{change_count} line changes"
     if len(rides) == 1:
-        station_route = " to ".join(route_station_sequence(steps))
-        return f"Take {line_route}. Stations: {station_route}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
-    station_route = " to ".join(route_station_sequence(steps))
-    return f"Stations: {station_route}. Boarding: {compact_boarding_route}. Lines: {compact_line_route}. Total {total} minutes."
+        return f"Take {line_route}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
+    return f"Boarding: {compact_boarding_route}. Lines: {compact_line_route}. Total {total} minutes, {change_text}."
 
 
 def route_rides(steps):

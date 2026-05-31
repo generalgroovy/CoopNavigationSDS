@@ -26,8 +26,8 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertEqual(trace.incoming_transcript, trace.generated_text)
         self.assertFalse(trace.outgoing_enabled)
         self.assertFalse(trace.incoming_enabled)
-        self.assertGreaterEqual(trace.simulated_duration_sec, 0.35)
-        self.assertLessEqual(trace.simulated_duration_sec, 1.6)
+        self.assertGreaterEqual(trace.simulated_duration_sec, 0.25)
+        self.assertLessEqual(trace.simulated_duration_sec, 1.1)
         self.assertEqual(trace.mode, "pure_text")
         self.assertIn("pure_text", transport.description)
 

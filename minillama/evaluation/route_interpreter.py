@@ -57,6 +57,10 @@ class NaturalRouteInterpreter:
         if station_route and route_is_valid(station_route):
             if station_route[0] == scenario["start_station"] and station_route[-1] == scenario["destination_station"]:
                 return station_route
+        line_boarding_route = self._route_from_boarding_and_lines(text)
+        if line_boarding_route and route_is_valid(line_boarding_route):
+            if line_boarding_route[0] == scenario["start_station"] and line_boarding_route[-1] == scenario["destination_station"]:
+                return line_boarding_route
         boarding_route = self._route_from_labeled_station_sequence(text, "Boarding")
         if boarding_route and route_is_valid(boarding_route):
             if boarding_route[0] == scenario["start_station"] and boarding_route[-1] == scenario["destination_station"]:
@@ -236,6 +240,51 @@ class NaturalRouteInterpreter:
                 route.extend(bridge[1:])
                 route.extend(segment[1:])
         return route
+
+    def _route_from_boarding_and_lines(self, text):
+        """Expand compact 'Boarding' routes using the spoken line names."""
+        boarding_points = self._raw_labeled_station_mentions(text, "Boarding")
+        if len(boarding_points) < 2:
+            return []
+        line_names = self._line_mentions(text)
+        if not line_names:
+            return []
+        if len(line_names) == 1:
+            line_names = line_names * (len(boarding_points) - 1)
+        if len(line_names) < len(boarding_points) - 1:
+            return []
+
+        route = []
+        for index, (origin, target) in enumerate(zip(boarding_points, boarding_points[1:])):
+            segment = self._line_segment_path(line_names[index], origin, target)
+            if not segment:
+                return []
+            if not route:
+                route.extend(segment)
+            elif route[-1] == segment[0]:
+                route.extend(segment[1:])
+            else:
+                return []
+        return [] if len(route) != len(set(route)) else route
+
+    def _raw_labeled_station_mentions(self, text, label):
+        pattern = re.compile(rf"\b{re.escape(label)}\s*:\s*([^.!?]+)", flags=re.IGNORECASE)
+        match = pattern.search(text)
+        if not match:
+            return []
+        return self.station_mentions(match.group(1))
+
+    @staticmethod
+    def _line_mentions(text):
+        mentions = []
+        for line_name in sorted(LINES, key=len, reverse=True):
+            for match in re.finditer(rf"\b{re.escape(line_name)}\b", text, flags=re.IGNORECASE):
+                mentions.append((match.start(), line_name))
+        distinct = []
+        for _, line_name in sorted(mentions, key=lambda item: item[0]):
+            if not distinct or distinct[-1] != line_name:
+                distinct.append(line_name)
+        return distinct
 
     @staticmethod
     def _line_segment_path(line_name, origin, target):

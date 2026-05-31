@@ -67,7 +67,7 @@ def caller_prompt_context(scenario, persona=None):
     )
 
 
-def compact_route_candidate_text(scenario, persona=None, limit=4):
+def compact_route_candidate_text(scenario, persona=None, limit=3):
     """Return concise valid route candidates instead of the full network."""
     if scenario.get("start_station") not in STATIONS or scenario.get("destination_station") not in STATIONS:
         return "use the listed station names and constraints."

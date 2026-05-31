@@ -153,7 +153,8 @@ def build_agent_a_system(persona, scenario):
 def build_agent_b_system(scenario, persona=None):
     return (
         "You are Agent B, a transit hotline assistant. "
-        "Speak naturally in one short spoken sentence when possible. "
+        "Answer fast, naturally, and usually in one short spoken sentence. "
+        "Do not narrate thinking. "
         "Offer one route first; after Agent A reacts, compare a distinct valid alternative. "
         "Keep alternative routes viable for the currently stated stage and avoid repeating routes. "
         "Validity comes first: connected route, correct lines, waits, transfer time only at line changes. "
@@ -170,14 +171,14 @@ def build_agent_b_system(scenario, persona=None):
 def build_agent_b_phase_instruction(turn, destination):
     if turn == 0:
         return (
-            f"Give one valid candidate route to {destination}. "
-            "Use boarding stations only and state total time once."
+            f"Give one valid route to {destination}. "
+            "Say boarding stations, lines, and total time once."
         )
 
     if turn == 1:
         return (
-            "If there is a valid alternative, compare it against the current route. "
-            "Prefer a shorter or faster path. Do not discuss secondary constraints unless Agent A asked."
+            "Compare one distinct valid alternative if useful. "
+            "Prefer faster paths; ignore secondary constraints unless Agent A asked."
         )
 
     if turn == 2:
@@ -317,12 +318,12 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
                     station_order = " to ".join(route_station_sequence(prior_steps)) if prior_steps else " to ".join(prior_route)
                     return f"The earlier {prior_duration}-minute route fits. Thanks, I'll take {station_order}."
                 return (
-                    f"The earlier {prior_duration}-minute route fits that. "
-                    f"Now can you make it {constraint_request_text(next_constraint, persona, scenario)}?"
+                    f"The earlier {prior_duration}-minute route fits. "
+                    f"Can you make it {constraint_request_text(next_constraint, persona, scenario)}?"
                 )
             return (
                 f"That reaches {scenario['destination_station']}, but {duration} minutes is too long. "
-                f"Can you find about {duration_limit} minutes or less?"
+                f"Find {duration_limit} minutes or less?"
             )
 
     statuses = route_constraint_status(steps, persona, scenario, stated_keys, constraint_route=constraint_route)
@@ -331,15 +332,15 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         key = unsatisfied[0]
         detail = statuses[key]
         if key == "delay":
-            return f"That delay risk is {detail['actual']}; I need {detail['limit']} or lower. Do you have another route?"
+            return f"Delay risk is {detail['actual']}; I need {detail['limit']} or lower. Another route?"
         if key == "transfer_miss":
-            return f"That transfer timing risk is {detail['actual']}; I need {detail['limit']} or lower. Another option?"
+            return f"Transfer risk is {detail['actual']}; I need {detail['limit']} or lower. Another option?"
         if key == "transfers":
-            return f"That has {detail['actual']} changes; I can handle about {detail['limit']}. Try another route?"
+            return f"That has {detail['actual']} changes; I can handle {detail['limit']}. Another route?"
         if key == "fullness":
-            return "That uses a near-capacity train. Can you find one that is not near capacity?"
+            return "That uses a near-capacity train. Any less full option?"
         if key == "walking":
-            return f"That walk is {detail['actual']} minutes; I can do about {detail['limit']}. Another route?"
+            return f"That walk is {detail['actual']} minutes; I can do {detail['limit']}. Another route?"
         if key == "ticket":
             return f"That uses {', '.join(detail['actual'])}; I only have {', '.join(detail['limit'])}. Another route?"
 
@@ -352,7 +353,7 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
         return f"{route_summary}. Thanks, that satisfies what I asked for. I'll take {station_order}."
     if next_constraint:
-        return f"{route_summary}. Now can you make it {constraint_request_text(next_constraint, persona, scenario)}?"
+        return f"{route_summary}. Can you make it {constraint_request_text(next_constraint, persona, scenario)}?"
 
     station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
     return f"{route_summary}. Thanks, that satisfies what I asked for. I'll take {station_order}."

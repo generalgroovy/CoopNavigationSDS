@@ -37,7 +37,7 @@ from minillama.model.route_constraints import (
 )
 from minillama.agent_b.speech_io import SpeechTransport
 
-DEFAULT_MAX_TURN_ELAPSED_SEC = 3.0
+DEFAULT_MAX_TURN_ELAPSED_SEC = 2.0
 HARD_MAX_TURN_ELAPSED_SEC = 20.0
 
 

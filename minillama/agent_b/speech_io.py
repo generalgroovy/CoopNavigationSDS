@@ -60,10 +60,10 @@ class SpeechPipelineConfig:
     tts_engine: str = SPEECH_TTS_ENGINE
     asr_engine: str = SPEECH_ASR_ENGINE
     audio_dir: str = SPEECH_AUDIO_DIR
-    agent_a_words_per_minute: int = 185
-    agent_b_words_per_minute: int = 195
-    min_utterance_sec: float = 0.35
-    max_utterance_sec: float = 1.6
+    agent_a_words_per_minute: int = 210
+    agent_b_words_per_minute: int = 220
+    min_utterance_sec: float = 0.25
+    max_utterance_sec: float = 1.1
     playback_enabled: bool = SPEECH_PLAYBACK_ENABLED
     realtime_enabled: bool = SPEECH_REALTIME_ENABLED
 
@@ -214,9 +214,9 @@ class WaveFileTextToSpeech:
         sample_rate=8000,
         playback_enabled=False,
         realtime_enabled=False,
-        agent_a_words_per_minute=185,
-        agent_b_words_per_minute=195,
-        max_duration_sec=1.6,
+        agent_a_words_per_minute=210,
+        agent_b_words_per_minute=220,
+        max_duration_sec=1.1,
     ):
         self.audio_dir = Path(audio_dir)
         self.sample_rate = sample_rate

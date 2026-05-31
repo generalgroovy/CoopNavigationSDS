@@ -43,8 +43,8 @@ class RingLineTests(unittest.TestCase):
 
         proposal = route_text_from_steps(steps)
         self.assertEqual(proposal.count("Take Ring"), 1)
-        self.assertIn("Stations: Alpha to Bravo to Ivy", proposal)
         self.assertIn("Boarding: Alpha to Ivy", proposal)
+        self.assertIn("Total", proposal)
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):
         scenario = {

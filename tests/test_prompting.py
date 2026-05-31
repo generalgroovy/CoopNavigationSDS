@@ -183,7 +183,7 @@ class PromptingTests(unittest.TestCase):
         )
 
         self.assertLessEqual(len(text.split()), 22)
-        self.assertIn("Now can you make it", text)
+        self.assertIn("Can you make it", text)
 
     def test_agent_a_final_reaction_closes_after_two_constraints(self):
         text = agent_a_route_reaction(
@@ -248,3 +248,11 @@ class PromptingTests(unittest.TestCase):
         route = interpreter.interpret_reply(text, self.real_scenario)
 
         self.assertEqual(route, ["Bravo", "Ivy", "Harbor"])
+
+    def test_interpreter_uses_spoken_line_for_compact_boarding_route(self):
+        interpreter = NaturalRouteInterpreter()
+        text = "Take Core Tram. Boarding: Bravo to Harbor. Total 16 minutes, no line changes."
+
+        route = interpreter.interpret_reply(text, self.real_scenario)
+
+        self.assertEqual(route, ["Bravo", "Golf", "Mike", "Sierra", "Harbor"])

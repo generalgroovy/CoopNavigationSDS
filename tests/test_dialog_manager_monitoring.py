@@ -85,7 +85,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIsNotNone(result.extra["constraint_duration_min"])
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertGreaterEqual(len(result.extra["stated_constraints"]), 1)
-        self.assertTrue(any("Now can you make it" in text for text in agent_a_replies))
+        self.assertTrue(any("Can you make it" in text for text in agent_a_replies))
 
     def test_agent_b_defers_secondary_constraints_until_agent_a_asks(self):
         manager = DialogManager(
