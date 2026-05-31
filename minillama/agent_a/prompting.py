@@ -7,7 +7,7 @@ and model execution.
 
 from minillama.agent_a.config import AGENT_RULES
 from minillama.agent_a.personas import preference_text
-from minillama.agent_a.prompt_data import compact_prompt_context
+from minillama.agent_a.prompt_data import caller_prompt_context, compact_prompt_context
 from minillama.model.route_constraints import (
     OBJECTIVE_MODE_LABELS,
     OBJECTIVE_SHORTEST_ROUTE,
@@ -132,16 +132,21 @@ def build_agent_a_system(persona, scenario):
     elif objective_mode == OBJECTIVE_SHORTEST_ROUTE:
         objective_instruction = "Get a valid route first, then ask for one faster route before choosing. "
     else:
-        objective_instruction = "Get a valid route first, then reveal one personal constraint at a time; choose when the proposal satisfies the stated constraints. "
+        objective_instruction = (
+            "Stage 1: get a route from start to destination and check that its duration is acceptable. "
+            "Stage 2: only after stage 1 succeeds, reveal private constraint 1. "
+            "Stage 3: only after stage 2 succeeds, reveal private constraint 2. "
+        )
     return (
         "You are Agent A, a caller on a transit hotline. "
+        "You have no transit-network knowledge. "
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
         f"Objective: {objective_text}. "
         "First state start time, start station, and destination. "
         f"{objective_instruction}End naturally when you choose a route. "
-        f"{compact_prompt_context(scenario, persona)}"
+        f"{caller_prompt_context(scenario, persona)}"
     )
 
 

@@ -12,7 +12,7 @@ from minillama.agent_a.agents import fallback_reply
 from minillama.agent_a.config import PERSONAS
 from minillama.agent_b.pipeline import DialogState, VerbalTransformationPipeline
 from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
-from minillama.model.route_constraints import optimal_constraint_route
+from minillama.model.route_constraints import acceptable_duration_limit, optimal_constraint_route
 from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
 from minillama.test_cases.scenarios import SCENARIOS
 
@@ -40,9 +40,20 @@ class PromptingTests(unittest.TestCase):
     def test_agent_a_system_prompt_includes_persona_and_context(self):
         prompt = build_agent_a_system(self.persona, self.scenario)
         self.assertIn("Agent A", prompt)
+        self.assertIn("no transit-network knowledge", prompt)
         self.assertIn("Focused commuter", prompt)
         self.assertIn("Central", prompt)
         self.assertIn("Museum", prompt)
+        self.assertIn("Stage 1", prompt)
+        self.assertIn("Private constraints", prompt)
+        self.assertNotIn("Route candidates", prompt)
+        self.assertNotIn("Station classes", prompt)
+        self.assertNotIn("Transfer cost", prompt)
+
+    def test_acceptable_duration_limit_is_under_twenty_percent_over_optimal(self):
+        limit = acceptable_duration_limit(self.real_scenario, self.persona)
+
+        self.assertEqual(limit, 14)
 
     def test_agent_b_phase_instruction_changes_by_turn(self):
         first = build_agent_b_phase_instruction(0, "Museum")
@@ -85,6 +96,7 @@ class PromptingTests(unittest.TestCase):
         )
         self.assertIn("reaches Harbor", text)
         self.assertIn("too long", text)
+        self.assertIn("14 minutes", text)
         self.assertNotIn("Now can you make it", text)
 
     def test_agent_a_requests_persona_specific_alternative_constraints(self):

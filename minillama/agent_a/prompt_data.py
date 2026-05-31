@@ -9,7 +9,13 @@ from minillama.model.metro_data import (
     compact_transport_mode_text,
     STATIONS,
 )
-from minillama.model.route_constraints import nearby_walking_links, probability_class, ranked_constraint_routes
+from minillama.model.route_constraints import (
+    available_agent_a_constraints,
+    constraint_request_text,
+    nearby_walking_links,
+    probability_class,
+    ranked_constraint_routes,
+)
 from minillama.model.route_planner import route_text_from_steps
 
 
@@ -41,6 +47,23 @@ def compact_prompt_context(scenario, persona=None):
         f"Walking links: {compact_walking_link_text()} "
         f"Lines: {compact_line_fullness_text(scenario['start_time_min'])} "
         f"Hubs: {compact_station_crowding_text(scenario['start_time_min'])}"
+    )
+
+
+def caller_prompt_context(scenario, persona=None):
+    """Return only the information a hotline caller plausibly knows."""
+    destinations = scenario.get("destination_stations") or [scenario["destination_station"]]
+    destination_text = " to ".join(destinations) if len(destinations) > 1 else scenario["destination_station"]
+    constraints = [
+        constraint_request_text(key, persona, scenario)
+        for key in available_agent_a_constraints(persona or {}, scenario or {})[:2]
+    ]
+    constraint_text = "; ".join(constraints) if constraints else "none"
+    return (
+        f"Time: {scenario['start_time_min']} minutes after midnight. "
+        f"Start: {scenario['start_station']}. Destination: {destination_text}. "
+        "You do not know the transit network, lines, station classes, route candidates, delays, or transfer times. "
+        f"Private constraints to reveal only after the route and duration are acceptable: {constraint_text}."
     )
 
 

@@ -387,28 +387,28 @@ def unsatisfied_constraint_keys(statuses):
 
 
 def acceptable_duration_limit(scenario, persona=None, constraint_route=None, slack_min=None):
-    """Return the route duration Agent A accepts before revealing constraints."""
+    """Return the maximum whole-minute duration under 20% over the optimal route."""
     scenario = scenario or {}
     configured = scenario.get("acceptable_duration_min", scenario.get("acceptable_time_frame_min"))
     if configured is not None:
         return int(configured)
 
-    base_duration = constraint_route.duration_min if constraint_route else None
-    if base_duration is None:
-        arrival, _steps = optimal_time_route(
-            scenario["start_station"],
-            scenario["destination_station"],
-            scenario["start_time_min"],
-            scenario["transfer_time_min"],
-            allowed_modes=route_allowed_modes(scenario, persona),
-        )
-        base_duration = arrival - scenario["start_time_min"] if arrival is not None else None
+    arrival, _steps = optimal_time_route(
+        scenario["start_station"],
+        scenario["destination_station"],
+        scenario["start_time_min"],
+        scenario["transfer_time_min"],
+        allowed_modes=route_allowed_modes(scenario, persona),
+    )
+    base_duration = arrival - scenario["start_time_min"] if arrival is not None else None
     if base_duration is None:
         return None
 
     configured_slack = scenario.get("acceptable_duration_slack_min", slack_min)
-    slack = int(configured_slack) if configured_slack is not None else max(5, int(math.ceil(base_duration * 0.25)))
-    return int(math.ceil(base_duration + slack))
+    if configured_slack is not None:
+        return int(math.floor(base_duration + int(configured_slack)))
+    strict_limit = float(base_duration) * 1.2
+    return int(math.ceil(strict_limit) - 1 if strict_limit.is_integer() else math.floor(strict_limit))
 
 
 def constraint_request_text(key, persona=None, scenario=None):
