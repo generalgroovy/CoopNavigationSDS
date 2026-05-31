@@ -367,17 +367,15 @@ def route_text_from_steps(steps):
         return "No route found."
 
     rides = route_rides(steps)
-    boarding_points = route_boarding_route(steps)
-    boarding_route = " to ".join(boarding_points)
-    compact_boarding_route = ", ".join(boarding_points)
-    line_route = " to ".join(ride["line"] for ride in rides)
-    compact_line_route = ", ".join(ride["line"] for ride in rides)
     total = steps[-1]["arrive"] - (steps[0]["depart"] - steps[0]["wait"])
     change_count = len(rides) - 1
-    change_text = "no line changes" if change_count == 0 else f"{change_count} line changes"
-    if len(rides) == 1:
-        return f"Take {line_route}. Boarding: {boarding_route}. Total {total} minutes, {change_text}."
-    return f"Boarding: {compact_boarding_route}. Lines: {compact_line_route}. Total {total} minutes, {change_text}."
+    change_text = "no changes" if change_count == 0 else f"{change_count} changes"
+    ride_text = "; then ".join(
+        f"take {ride['line']} from {ride['from']} to {ride['to']}"
+        for ride in rides
+    )
+    spoken_route = ride_text[:1].upper() + ride_text[1:]
+    return f"{spoken_route}. It takes {total} minutes, with {change_text}."
 
 
 def route_rides(steps):

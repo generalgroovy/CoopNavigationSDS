@@ -161,7 +161,7 @@ def build_agent_b_system(scenario, persona=None):
         "Do not mention ticket modes, walking range, near-capacity trains, line-change preference, delay risk, or transfer-miss risk until Agent A asks about them. "
         "Use only low, medium, or high for delay and transfer-miss risk; never give percentages. "
         f"{preference_text(persona or {})} "
-        "Say boarding stations only: start, transfer boarding stations, destination. "
+        "Speak directions as line legs, for example: take Line from Start to Change, then Line from Change to Destination. "
         "State total time once. "
         f"{AGENT_RULES} "
         f"{compact_prompt_context(scenario, persona)}"
@@ -172,7 +172,7 @@ def build_agent_b_phase_instruction(turn, destination):
     if turn == 0:
         return (
             f"Give one valid route to {destination}. "
-            "Say boarding stations, lines, and total time once."
+            "Say line legs and total time once."
         )
 
     if turn == 1:
@@ -272,8 +272,8 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         arrival, steps = estimate
         duration = arrival - scenario["start_time_min"]
         changes = route_line_change_count(steps)
-        change_label = "change" if changes == 1 else "changes"
-        route_summary = f"Okay, that is {duration} minutes with {changes} {change_label}"
+        change_text = "no changes" if changes == 0 else "1 change" if changes == 1 else f"{changes} changes"
+        route_summary = f"Okay, that is {duration} minutes with {change_text}"
     else:
         steps = []
         duration = None

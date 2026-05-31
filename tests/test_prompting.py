@@ -96,7 +96,7 @@ class PromptingTests(unittest.TestCase):
     def test_agent_b_system_prioritizes_validity_over_constraints(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
         self.assertIn("Validity comes first", prompt)
-        self.assertIn("boarding stations", prompt)
+        self.assertIn("line legs", prompt)
 
     def test_agent_a_reacts_to_missing_route(self):
         text = agent_a_route_reaction(
@@ -171,8 +171,8 @@ class PromptingTests(unittest.TestCase):
         reply = fallback_reply("Agent B", test_case.scenario, route_index=0, persona=test_case.persona)
 
         self.assertLessEqual(len(reply.split()), 28)
-        self.assertIn("Boarding:", reply)
-        self.assertIn("Total", reply)
+        self.assertIn("take", reply.lower())
+        self.assertIn("It takes", reply)
 
     def test_agent_a_reaction_turns_are_concise_for_speech(self):
         text = agent_a_route_reaction(
@@ -228,7 +228,7 @@ class PromptingTests(unittest.TestCase):
         reply = VerbalTransformationPipeline(PartialRouteModel()).run_agent_b(state)
 
         self.assertIn("Harbor", reply)
-        self.assertIn("Boarding:", reply)
+        self.assertIn("take", reply.lower())
         self.assertLessEqual(len(reply.split()), 45)
 
     def test_interpreter_expands_boarding_route_mentions(self):
@@ -251,7 +251,7 @@ class PromptingTests(unittest.TestCase):
 
     def test_interpreter_uses_spoken_line_for_compact_boarding_route(self):
         interpreter = NaturalRouteInterpreter()
-        text = "Take Core Tram. Boarding: Bravo to Harbor. Total 16 minutes, no line changes."
+        text = "Take Core Tram from Bravo to Harbor. It takes 16 minutes, with no changes."
 
         route = interpreter.interpret_reply(text, self.real_scenario)
 
