@@ -21,6 +21,7 @@ from minillama.model.route_planner import (
 from minillama.model.route_constraints import (
     OBJECTIVE_MODE_LABELS,
     CONSTRAINT_LABELS,
+    acceptable_duration_limit,
     optimal_constraint_route,
     probability_class,
     route_allowed_modes,
@@ -398,6 +399,7 @@ class DialogManager:
         persona = self.test_case.persona
         planning_allowed_modes = route_allowed_modes(scenario, persona)
         constraint_route = optimal_constraint_route(scenario, persona, objective_mode=self.agent_a_objective_mode)
+        acceptable_time_limit = acceptable_duration_limit(scenario, persona, constraint_route=constraint_route)
         reference_arrival, reference_steps = optimal_time_route(
             scenario["start_station"],
             scenario["destination_station"],
@@ -415,6 +417,7 @@ class DialogManager:
             "constraint_route": constraint_route.route if constraint_route else [],
             "constraint_duration_min": constraint_route.duration_min if constraint_route else None,
             "constraint_label": constraint_route.label if constraint_route else None,
+            "acceptable_duration_limit_min": acceptable_time_limit,
         }
         start_wall = None
         route_memory = RouteProposalMemory()
@@ -425,16 +428,49 @@ class DialogManager:
         route_revision_count = 0
         invalid_route_count = 0
         constraint_miss_count = 0
+        time_frame_miss_count = 0
         early_stop_reason = None
 
         def early_stop_message(reason):
             if reason == "invalid_route_limit":
                 return "I will stop here; the route suggestions still are not connected from start to destination."
+            if reason == "time_frame_miss_limit":
+                return "I will stop here unsatisfied; the routes reached the destination but stayed too slow."
             if reason == "constraint_miss_limit":
                 return "I will stop here semi-satisfied; I have a route, but it still misses one of my constraints."
             if reason == "turn_limit":
                 return "I will stop here unsatisfied; we ran out of turns before settling the route."
             return "I will stop here."
+
+        def prior_route_satisfies_current_goals(stated_keys):
+            """Return whether an earlier candidate already satisfies validity, time, and stated constraints."""
+            for candidate in route_memory.candidates:
+                route = candidate.get("route")
+                duration = candidate.get("duration")
+                if not route or not route_reaches_goal(route, scenario):
+                    continue
+                if acceptable_time_limit is not None and (duration is None or duration > acceptable_time_limit):
+                    continue
+                estimate = estimate_route_time(
+                    route,
+                    scenario["start_time_min"],
+                    scenario["transfer_time_min"],
+                    allowed_modes=planning_allowed_modes,
+                )
+                if not estimate:
+                    continue
+                _arrival, prior_steps = estimate
+                statuses = route_constraint_status(
+                    prior_steps,
+                    persona,
+                    scenario,
+                    stated_keys,
+                    transfer_tolerance=self.transfer_tolerance,
+                    constraint_route=constraint_route,
+                )
+                if not unsatisfied_constraint_keys(statuses):
+                    return True
+            return False
 
         start_wall = time.time()
         event_queue.put(("timer_start", start_wall))
@@ -554,6 +590,11 @@ class DialogManager:
                         constraint_route=constraint_route,
                     )
                     active_constraint_misses = unsatisfied_constraint_keys(active_constraint_status)
+                    candidate_time_frame_satisfied = (
+                        acceptable_time_limit is None
+                        or duration <= acceptable_time_limit
+                    )
+                    prior_goal_match = prior_route_satisfies_current_goals(active_constraint_keys)
                     if route_memory.already_seen(parsed_route):
                         warning_count += 1
                         gap = route_constraint_gap(candidate_steps, duration, constraint_route)
@@ -569,6 +610,9 @@ class DialogManager:
                             "stated_constraints": active_constraint_keys,
                             "constraint_status": active_constraint_status,
                             "unsatisfied_constraints": active_constraint_misses,
+                            "acceptable_duration_limit_min": acceptable_time_limit,
+                            "time_frame_satisfied": candidate_time_frame_satisfied,
+                            "prior_route_satisfies_current_goals": prior_goal_match,
                             **gap,
                         }
                         candidate_events.append(candidate_event)
@@ -584,9 +628,19 @@ class DialogManager:
                                 "stated_constraints": active_constraint_keys,
                                 "constraint_status": active_constraint_status,
                                 "unsatisfied_constraints": active_constraint_misses,
+                                "acceptable_duration_limit_min": acceptable_time_limit,
+                                "time_frame_satisfied": candidate_time_frame_satisfied,
+                                "prior_route_satisfies_current_goals": prior_goal_match,
                                 **gap,
                             }
                         )
+                        if (
+                            candidate_reaches_goal
+                            and not candidate_time_frame_satisfied
+                            and not prior_goal_match
+                        ):
+                            time_frame_miss_count += 1
+                            event_queue.put(("warning", f"Route reaches the destination but exceeds {acceptable_time_limit} minutes."))
                         if (
                             active_constraint_keys
                             and candidate_reaches_goal
@@ -621,6 +675,8 @@ class DialogManager:
 
             if invalid_route_count >= self.invalid_route_limit:
                 early_stop_reason = "invalid_route_limit"
+            elif time_frame_miss_count >= self.invalid_route_limit:
+                early_stop_reason = "time_frame_miss_limit"
             elif constraint_miss_count >= self.constraint_miss_limit:
                 early_stop_reason = "constraint_miss_limit"
 
@@ -724,9 +780,13 @@ class DialogManager:
             constraint_route=constraint_route,
         )
         final_unsatisfied_constraints = unsatisfied_constraint_keys(final_constraint_status)
-        if early_stop_reason in {"invalid_route_limit", "turn_limit"} or not route_correct:
+        time_frame_satisfied = (
+            acceptable_time_limit is None
+            or (displayed_duration is not None and displayed_duration <= acceptable_time_limit)
+        )
+        if early_stop_reason in {"invalid_route_limit", "time_frame_miss_limit", "turn_limit"} or not route_correct:
             conversation_outcome = "unsatisfied"
-        elif final_unsatisfied_constraints:
+        elif not time_frame_satisfied or final_unsatisfied_constraints:
             conversation_outcome = "semi_satisfied"
         else:
             conversation_outcome = "satisfied"
@@ -744,6 +804,8 @@ class DialogManager:
             f"Displayed line changes: {displayed_line_change_count if displayed_line_sequence else 'None'}\n"
             f"Displayed arrival:     {fmt_time(displayed_arrival) if displayed_arrival else 'None'}\n"
             f"Displayed duration:    {str(displayed_duration) + ' minutes' if displayed_duration is not None else 'None'}\n"
+            f"Acceptable duration:   {str(acceptable_time_limit) + ' minutes' if acceptable_time_limit is not None else 'None'}\n"
+            f"Time frame satisfied:  {time_frame_satisfied}\n"
             f"Duration breakdown:    {route_duration_text(displayed_steps)}\n"
             f"Near capacity:         {'yes' if displayed_has_near_capacity else 'no'} ({displayed_near_capacity_count} segments)\n"
             f"Reference route:       {' to '.join(reference_route) if reference_route else 'None'}\n"
@@ -767,6 +829,7 @@ class DialogManager:
             f"Route revisions:       {route_revision_count}\n"
             f"Best candidate turn:   {best_turn if best_turn is not None else 'None'}\n"
             f"Invalid route count:   {invalid_route_count}\n"
+            f"Time frame miss count: {time_frame_miss_count}\n"
             f"Constraint miss count: {constraint_miss_count}\n"
             f"Early stop reason:     {early_stop_reason or 'None'}\n"
             f"Conversation outcome:  {conversation_outcome}\n"
@@ -817,12 +880,15 @@ class DialogManager:
                 "route_revisions": route_revision_count,
                 "best_candidate_turn": best_turn,
                 "invalid_route_count": invalid_route_count,
+                "time_frame_miss_count": time_frame_miss_count,
                 "constraint_miss_count": constraint_miss_count,
                 "early_stop_reason": early_stop_reason,
                 "conversation_outcome": conversation_outcome,
                 "stated_constraints": final_stated_constraints,
                 "constraint_status": final_constraint_status,
                 "unsatisfied_constraints": final_unsatisfied_constraints,
+                "acceptable_duration_limit_min": acceptable_time_limit,
+                "time_frame_satisfied": time_frame_satisfied,
                 "preflight_viability": preflight_viability,
                 "reference_duration_min": reference_duration,
                 "displayed_line_sequence": displayed_line_sequence,

@@ -185,9 +185,9 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertEqual(result.conversation[-1][0], "Agent A")
         self.assertIn("stop here", result.conversation[-1][1])
 
-    def test_agent_a_stops_early_when_constraints_keep_being_missed(self):
-        class ConstraintMissPlugin:
-            name = "constraint-miss-plugin"
+    def test_agent_a_stops_early_when_time_frame_keep_being_missed(self):
+        class TimeFrameMissPlugin:
+            name = "time-frame-miss-plugin"
 
             def __init__(self):
                 self.replies = [
@@ -201,7 +201,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
         manager = DialogManager(
             get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
-            ConstraintMissPlugin(),
+            TimeFrameMissPlugin(),
             num_turns=8,
             speech_transport=fast_text_transport(),
             agent_a_responder=TemplateAgentAResponder(),
@@ -210,10 +210,10 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
         result = manager.run(NullEventQueue())
 
-        self.assertEqual(result.extra["early_stop_reason"], "constraint_miss_limit")
-        self.assertEqual(result.extra["constraint_miss_count"], 1)
+        self.assertEqual(result.extra["early_stop_reason"], "time_frame_miss_limit")
+        self.assertEqual(result.extra["time_frame_miss_count"], 2)
         self.assertEqual(result.conversation[-1][0], "Agent A")
-        self.assertIn("constraint", result.conversation[-1][1])
+        self.assertIn("too slow", result.conversation[-1][1])
 
     def test_dialog_ends_when_agent_a_closes_call(self):
         manager = DialogManager(

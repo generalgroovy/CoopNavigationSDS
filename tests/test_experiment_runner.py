@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 from minillama.controller.dialog_result import DialogResult
 from minillama.controller.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from minillama.evaluation.research_artifacts import write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
+from minillama.evaluation.research_artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
 from minillama.model.model_adapters import ModelParameterSet
 
 
@@ -244,6 +244,14 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertGreater(network_data["station_count"], 0)
         self.assertIn("<svg", graph_text)
 
+    def test_create_execution_run_dir_uses_systematic_unique_labels(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            first = create_execution_run_dir(tmpdir, label="Single Case", timestamp="20260531_120000")
+            second = create_execution_run_dir(tmpdir, label="Single Case", timestamp="20260531_120000")
+
+        self.assertEqual(first.name, "20260531_120000_single_case")
+        self.assertEqual(second.name, "20260531_120000_single_case_02")
+
     def test_write_experiment_manifest_documents_scientific_design(self):
         condition = ExperimentCondition(
             condition_id="case__persona__clean__greedy__0",
@@ -404,10 +412,15 @@ class ExperimentRunnerTests(unittest.TestCase):
             metrics_file = paths["metrics_file"]
             phase_dir = paths["phase_log_dir"]
 
+            self.assertTrue(paths["run_dir"].exists())
+            self.assertTrue(paths["run_manifest"].exists())
+            self.assertEqual(paths["metrics_file"].parent.name, "compiled_metrics")
             self.assertTrue(metrics_file.exists())
             self.assertTrue((phase_dir / "summary.jsonl").exists())
             self.assertTrue((phase_dir / "metric_catalog.json").exists())
             self.assertTrue(paths["retrospective_json"].exists())
+            self.assertTrue(paths["network_json"].exists())
+            self.assertTrue(paths["network_graph"].exists())
 
 
 if __name__ == "__main__":

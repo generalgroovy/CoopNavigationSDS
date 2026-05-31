@@ -83,8 +83,9 @@ class PromptingTests(unittest.TestCase):
             self.real_scenario,
             [("Agent B", "Take Ring from Bravo to Alpha to Golf, then Diagonal-SE-6 to November to Uniform to Birch to Ivy, then Ring to Harbor.")],
         )
-        self.assertIn("Okay, that is", text)
-        self.assertIn("Now can you make it", text)
+        self.assertIn("reaches Harbor", text)
+        self.assertIn("too long", text)
+        self.assertNotIn("Now can you make it", text)
 
     def test_agent_a_requests_persona_specific_alternative_constraints(self):
         persona = {
@@ -161,7 +162,7 @@ class PromptingTests(unittest.TestCase):
                 ("Agent A", "Can you make it with safer transfer timing?"),
                 ("Agent B", "Take Ring. Stations: Bravo to Alpha to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 19 minutes."),
                 ("Agent A", "Can you make it with walking at most 8 minutes?"),
-                ("Agent B", "Take Core Tram. Stations: Bravo to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 24 minutes."),
+                ("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes."),
             ],
         )
         self.assertIn("Thanks", text)
@@ -179,7 +180,8 @@ class PromptingTests(unittest.TestCase):
             ],
         )
 
-        self.assertIn("Now can you make it", text)
+        self.assertIn("too long", text)
+        self.assertNotIn("Now can you make it", text)
 
     def test_agent_b_pipeline_rejects_partial_route_and_uses_valid_fallback(self):
         class PartialRouteModel:

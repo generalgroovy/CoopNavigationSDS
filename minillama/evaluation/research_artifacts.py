@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import csv
+from datetime import datetime
 import json
 from pathlib import Path
 import re
@@ -18,6 +19,39 @@ def safe_artifact_name(value):
     text = str(value or "run").strip().lower()
     text = re.sub(r"[^a-z0-9_.-]+", "_", text)
     return text.strip("._") or "run"
+
+
+def execution_run_id(label=None, timestamp=None):
+    """Return a systematic identifier for one complete program execution."""
+    if timestamp is None:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    elif hasattr(timestamp, "strftime"):
+        stamp = timestamp.strftime("%Y%m%d_%H%M%S")
+    else:
+        stamp = safe_artifact_name(timestamp)
+    return f"{stamp}_{safe_artifact_name(label or 'run')}"
+
+
+def create_execution_run_dir(base_dir, label=None, timestamp=None):
+    """Create and return a unique output folder for one execution run."""
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    run_id = execution_run_id(label, timestamp)
+    candidate = base_dir / run_id
+    suffix = 2
+    while candidate.exists():
+        candidate = base_dir / f"{run_id}_{suffix:02d}"
+        suffix += 1
+    candidate.mkdir(parents=True, exist_ok=False)
+    return candidate
+
+
+def run_scoped_path(run_dir, configured_path, default_name):
+    """Resolve relative output paths inside an execution run directory."""
+    if not configured_path:
+        return Path(run_dir) / default_name
+    path = Path(configured_path)
+    return path if path.is_absolute() else Path(run_dir) / path
 
 
 def write_metrics_csv(metrics, path):
@@ -195,24 +229,54 @@ def write_conversation_protocol(result, output_dir):
     return paths
 
 
-def write_single_run_research_outputs(result, scenario, output_dir):
+def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=None):
     """Write protocol files plus compiled metric files for one interactive run."""
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    protocol_paths = write_conversation_protocol(result, output_dir)
+    run_dir = Path(run_dir) if run_dir is not None else create_execution_run_dir(
+        output_dir,
+        label=f"single_{result.condition_id}",
+    )
+    run_dir.mkdir(parents=True, exist_ok=True)
+    protocol_root = run_dir / "conversation_protocol"
+    protocol_paths = write_conversation_protocol(result, protocol_root)
     metric = MetricComputer().compute(result, scenario)
-    compiled_dir = output_dir / safe_artifact_name(result.condition_id) / "compiled_metrics"
+    compiled_dir = run_dir / "compiled_metrics"
     metrics_file = compiled_dir / "metrics.xlsx"
     phase_log_dir = compiled_dir / "metrics_by_phase"
     retrospective_json = compiled_dir / "retrospective_metrics.json"
     write_metrics_file([metric], metrics_file)
     write_metric_phase_logs([metric], phase_log_dir)
+    network_paths = write_network_research_artifacts(
+        scenario["start_time_min"],
+        run_dir / "network",
+        picture_dir=run_dir / "network_graphs",
+    )
     retrospective_json.write_text(json.dumps(metric.as_dict(), indent=2, ensure_ascii=True), encoding="utf-8")
+    manifest = {
+        "run_id": run_dir.name,
+        "condition_id": result.condition_id,
+        "test_case_key": result.test_case_key,
+        "persona_key": result.persona_key,
+        "scenario_key": result.scenario_key,
+        "speech_pattern_key": result.speech_pattern_key,
+        "model_name": result.model_name,
+        "output_layout": {
+            "conversation_protocol": str(protocol_root),
+            "compiled_metrics": str(compiled_dir),
+            "network": str(network_paths["network_json"].parent),
+            "network_graphs": str(network_paths["network_graph"].parent),
+        },
+    }
+    run_manifest = run_dir / "run_manifest.json"
+    run_manifest.write_text(json.dumps(manifest, indent=2, ensure_ascii=True), encoding="utf-8")
     return {
+        "run_dir": run_dir,
+        "run_manifest": run_manifest,
         "protocol": protocol_paths,
         "metrics_file": metrics_file,
         "phase_log_dir": phase_log_dir,
         "retrospective_json": retrospective_json,
+        "network_json": network_paths["network_json"],
+        "network_graph": network_paths["network_graph"],
     }
 
 

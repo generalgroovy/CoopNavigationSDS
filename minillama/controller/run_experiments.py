@@ -6,9 +6,9 @@ from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
-from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NETWORK_PICTURE_DIR, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
+from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
-from minillama.evaluation.research_artifacts import write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import create_execution_run_dir, run_scoped_path, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.model.route_constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
@@ -63,7 +63,7 @@ def main():
     parser.add_argument("--metrics-log-dir", default=None, help="Directory for per-phase metric JSONL files.")
     parser.add_argument("--research-log-dir", default=RESEARCH_LOG_DIR, help="Directory for network/model research logs.")
     parser.add_argument("--protocol-log-dir", default=None, help="Directory for detailed conversation protocol artifacts. Empty uses a conversation_protocols folder inside --research-log-dir.")
-    parser.add_argument("--network-picture-dir", default=NETWORK_PICTURE_DIR, help="Directory for generated network graph SVG.")
+    parser.add_argument("--network-picture-dir", default=None, help="Directory for generated network graph SVG. Empty writes inside the execution run folder.")
     parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
     parser.add_argument("--log-dir", default=SESSION_LOG_DIR, help="Directory for optional batch JSONL/session logs.")
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
@@ -90,6 +90,14 @@ def main():
         objective_modes=parse_csv_arg(args.objective_modes, OBJECTIVE_MODES),
         iterations=args.iterations,
     ))
+    run_dir = create_execution_run_dir(
+        args.research_log_dir,
+        label=f"batch_{len(conditions)}_conditions",
+    )
+    metrics_output = run_scoped_path(run_dir, args.output, "automatic_eval_metrics.xlsx")
+    protocol_log_dir = run_scoped_path(run_dir, args.protocol_log_dir, "conversation_protocols")
+    phase_log_dir = run_scoped_path(run_dir, args.metrics_log_dir, "metrics_by_phase")
+    network_picture_dir = run_scoped_path(run_dir, args.network_picture_dir, "network_graphs")
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     model_adapter = None
@@ -129,20 +137,19 @@ def main():
         metrics.append(metric)
         if args.progress:
             print(f"completed {condition.condition_id}", flush=True)
-    write_metrics_file(metrics, args.output)
-    protocol_log_dir = args.protocol_log_dir or f"{args.research_log_dir}/conversation_protocols"
+    write_metrics_file(metrics, metrics_output)
     protocol_paths = write_conversation_protocols(results, protocol_log_dir)
 
     first_case_key = (test_case_keys or [DEFAULT_TEST_CASE])[0]
     first_case = get_test_case(first_case_key)
     artifacts = write_network_research_artifacts(
         first_case.scenario["start_time_min"],
-        args.research_log_dir,
-        picture_dir=args.network_picture_dir,
+        run_dir / "network",
+        picture_dir=network_picture_dir,
     )
     manifest_path = write_experiment_manifest(
         conditions,
-        args.research_log_dir,
+        run_dir,
         num_turns=args.num_turns,
         speech_engine=args.speech_engine,
         tts_engine=args.tts_engine or args.speech_engine,
@@ -150,10 +157,10 @@ def main():
         speech_scope=args.speech_scope,
         agent_b_plugin=args.agent_b_plugin,
     )
-    phase_log_dir = args.metrics_log_dir or f"{args.research_log_dir}/metrics_by_phase"
     write_metric_phase_logs(metrics, phase_log_dir)
 
-    print(f"wrote {len(metrics)} metric rows to {args.output}")
+    print(f"wrote execution run folder to {run_dir}")
+    print(f"wrote {len(metrics)} metric rows to {metrics_output}")
     print(f"wrote {len(protocol_paths)} conversation protocol folders to {protocol_log_dir}")
     print(f"wrote metric phase logs to {phase_log_dir}")
     print(f"wrote experiment manifest to {manifest_path}")

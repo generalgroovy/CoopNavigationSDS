@@ -9,6 +9,7 @@ from minillama.model.route_planner import (
     candidate_time_routes,
     line_mode,
     normalize_allowed_modes,
+    optimal_time_route,
     route_line_change_count,
     route_line_sequence,
 )
@@ -383,6 +384,31 @@ def route_constraint_status(steps, persona, scenario, stated_keys, transfer_tole
 def unsatisfied_constraint_keys(statuses):
     """Return stated constraint keys whose status is not satisfied."""
     return [key for key, status in statuses.items() if not status.get("satisfied", False)]
+
+
+def acceptable_duration_limit(scenario, persona=None, constraint_route=None, slack_min=None):
+    """Return the route duration Agent A accepts before revealing constraints."""
+    scenario = scenario or {}
+    configured = scenario.get("acceptable_duration_min", scenario.get("acceptable_time_frame_min"))
+    if configured is not None:
+        return int(configured)
+
+    base_duration = constraint_route.duration_min if constraint_route else None
+    if base_duration is None:
+        arrival, _steps = optimal_time_route(
+            scenario["start_station"],
+            scenario["destination_station"],
+            scenario["start_time_min"],
+            scenario["transfer_time_min"],
+            allowed_modes=route_allowed_modes(scenario, persona),
+        )
+        base_duration = arrival - scenario["start_time_min"] if arrival is not None else None
+    if base_duration is None:
+        return None
+
+    configured_slack = scenario.get("acceptable_duration_slack_min", slack_min)
+    slack = int(configured_slack) if configured_slack is not None else max(5, int(math.ceil(base_duration * 0.25)))
+    return int(math.ceil(base_duration + slack))
 
 
 def constraint_request_text(key, persona=None, scenario=None):

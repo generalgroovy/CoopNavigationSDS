@@ -13,9 +13,11 @@ from minillama.model.route_constraints import (
     OBJECTIVE_SHORTEST_ROUTE,
     OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
     OBJECTIVE_VALID_ROUTE,
+    acceptable_duration_limit,
     available_agent_a_constraints,
     constraint_request_text,
     normalize_objective_mode,
+    optimal_constraint_route,
     route_constraint_status,
     stated_constraint_keys,
     unsatisfied_constraint_keys,
@@ -286,8 +288,38 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
         station_order = " to ".join(route_station_sequence(steps)) if steps else " to ".join(route)
         return f"{route_summary}. I would choose the shortest valid option, {station_order}. Confirm total time."
 
+    constraint_route = optimal_constraint_route(scenario, persona, objective_mode=objective_mode)
+    duration_limit = acceptable_duration_limit(scenario, persona, constraint_route=constraint_route)
     stated_keys = stated_constraint_keys(conversation)
-    statuses = route_constraint_status(steps, persona, scenario, stated_keys)
+    if duration_limit is not None:
+        if duration is None:
+            return "That reaches the destination, but I need the total time before checking preferences."
+        if duration > duration_limit:
+            prior_match = best_prior_route_matching_constraints(
+                conversation[:-1],
+                scenario,
+                persona,
+                stated_keys,
+                duration_limit,
+                constraint_route,
+            )
+            if prior_match and stated_keys:
+                prior_duration, prior_route, prior_steps = prior_match
+                available_constraints = available_agent_a_constraints(persona, scenario)
+                next_constraint = next((key for key in available_constraints if key not in stated_keys), None)
+                if len(stated_keys) >= 2 or next_constraint is None:
+                    station_order = " to ".join(route_station_sequence(prior_steps)) if prior_steps else " to ".join(prior_route)
+                    return f"The earlier {prior_duration}-minute route fits. Thanks, I'll take {station_order}."
+                return (
+                    f"The earlier {prior_duration}-minute route fits that. "
+                    f"Now can you make it {constraint_request_text(next_constraint, persona, scenario)}?"
+                )
+            return (
+                f"That reaches {scenario['destination_station']}, but {duration} minutes is too long. "
+                f"Can you find about {duration_limit} minutes or less?"
+            )
+
+    statuses = route_constraint_status(steps, persona, scenario, stated_keys, constraint_route=constraint_route)
     unsatisfied = unsatisfied_constraint_keys(statuses)
     if unsatisfied:
         key = unsatisfied[0]
@@ -447,3 +479,37 @@ def best_prior_route_duration(conversation, scenario):
             arrival, _ = estimate
             durations.append(arrival - scenario["start_time_min"])
     return min(durations) if durations else None
+
+
+def best_prior_route_matching_constraints(conversation, scenario, persona, stated_keys, duration_limit, constraint_route=None):
+    """Return the best prior Agent B route satisfying the current revealed goals."""
+    from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
+    from minillama.model.route_constraints import route_allowed_modes
+    from minillama.model.route_planner import estimate_route_time
+
+    interpreter = NaturalRouteInterpreter()
+    allowed_modes = route_allowed_modes(scenario, persona)
+    matches = []
+    for speaker, text in conversation:
+        if speaker != "Agent B":
+            continue
+        route = interpreter.interpret_reply(text, scenario)
+        if not route:
+            continue
+        estimate = estimate_route_time(
+            route,
+            scenario["start_time_min"],
+            scenario["transfer_time_min"],
+            allowed_modes=allowed_modes,
+        )
+        if not estimate:
+            continue
+        arrival, steps = estimate
+        duration = arrival - scenario["start_time_min"]
+        if duration_limit is not None and duration > duration_limit:
+            continue
+        statuses = route_constraint_status(steps, persona, scenario, stated_keys, constraint_route=constraint_route)
+        if unsatisfied_constraint_keys(statuses):
+            continue
+        matches.append((duration, route, steps))
+    return min(matches, key=lambda item: item[0]) if matches else None
