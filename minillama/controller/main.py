@@ -4,6 +4,7 @@ import queue
 import threading
 import inspect
 from contextlib import nullcontext
+from pathlib import Path
 
 try:
     from huggingface_hub.utils import logging as hf_logging
@@ -48,7 +49,7 @@ from minillama.view.config import GUI_REFRESH_MS
 from minillama.controller.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, HARD_MAX_TURN_ELAPSED_SEC, DialogManager
 from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
 from minillama.evaluation.metrics import DEFAULT_METRIC_CONFIG, metric_config_with_defaults
-from minillama.evaluation.research_artifacts import write_single_run_research_outputs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import create_execution_run_dir, run_scoped_path, write_single_run_research_outputs, write_network_research_artifacts
 from minillama.model.config import GENERATION_MAX_TIME_SEC, MAX_INPUT_TOKENS, MAX_NEW_TOKENS, MODEL, MODEL_PROVIDER
 from minillama.model.route_constraints import OBJECTIVE_MODES, normalize_objective_mode
 from minillama.test_cases.config import DEFAULT_TEST_CASE
@@ -144,9 +145,28 @@ def event_queue_segment(event_queue, name, **payload):
     return nullcontext()
 
 
+def prepare_execution_run_config(run_config):
+    """Normalize config and create a single output folder before runtime starts."""
+    run_config = normalize_run_config(run_config)
+    protocol_dir = run_config.get("protocol_log_dir")
+    if protocol_dir and not run_config.get("execution_run_dir"):
+        execution_run_dir = create_execution_run_dir(
+            protocol_dir,
+            label=f"single_{run_config.get('test_case_key', 'case')}__{run_config.get('persona_key', 'persona')}",
+        )
+        run_config["execution_run_dir"] = str(execution_run_dir)
+        run_config["speech_audio_dir"] = str(run_scoped_path(
+            execution_run_dir,
+            run_config.get("speech_audio_dir"),
+            "speech_artifacts",
+        ))
+    return run_config
+
+
 def conversation_worker(event_queue, model_adapter, run_config):
     """Run one dialog and stream optional UI events."""
     try:
+        run_config = prepare_execution_run_config(run_config)
         (
             run_config,
             test_case,
@@ -196,7 +216,12 @@ def conversation_worker(event_queue, model_adapter, run_config):
             result = manager.run(event_queue)
             protocol_dir = run_config.get("protocol_log_dir")
             if protocol_dir:
-                research_paths = write_single_run_research_outputs(result, test_case.scenario, protocol_dir)
+                research_paths = write_single_run_research_outputs(
+                    result,
+                    test_case.scenario,
+                    protocol_dir,
+                    run_dir=run_config.get("execution_run_dir"),
+                )
                 event_queue.put(("system", f"Conversation protocol: {research_paths['protocol']['summary']}"))
                 event_queue.put(("system", f"Compiled metrics: {research_paths['metrics_file']}"))
                 event_queue.put(("system", f"Metric phase logs: {research_paths['phase_log_dir']}"))
@@ -470,13 +495,23 @@ def main():
     run_config = select_run_config()
     if run_config is None:
         return
-    run_config = normalize_run_config(run_config)
+    run_config = prepare_execution_run_config(run_config)
 
     scenario = get_test_case(run_config["test_case_key"]).with_persona(run_config.get("persona_key", DEFAULT_PERSONA)).scenario
+    network_output_dir = (
+        Path(run_config["execution_run_dir"]) / "network"
+        if run_config.get("execution_run_dir")
+        else RESEARCH_LOG_DIR
+    )
+    network_picture_dir = (
+        Path(run_config["execution_run_dir"]) / "network_graphs"
+        if run_config.get("execution_run_dir")
+        else NETWORK_PICTURE_DIR
+    )
     write_network_research_artifacts(
         scenario["start_time_min"],
-        RESEARCH_LOG_DIR,
-        picture_dir=NETWORK_PICTURE_DIR,
+        network_output_dir,
+        picture_dir=network_picture_dir,
     )
     ui_queue = queue.Queue()
     session_logger = None if SESSION_LOG_PROFILE == "off" else SessionLogger(

@@ -8,7 +8,7 @@ from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
-from minillama.evaluation.research_artifacts import create_execution_run_dir, run_scoped_path, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from minillama.evaluation.research_artifacts import create_execution_run_dir, run_scoped_path, safe_artifact_name, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.model.route_constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from minillama.test_cases.config import DEFAULT_TEST_CASE
 from minillama.test_cases.test_cases import TEST_CASES, get_test_case
@@ -98,6 +98,8 @@ def main():
     protocol_log_dir = run_scoped_path(run_dir, args.protocol_log_dir, "conversation_protocols")
     phase_log_dir = run_scoped_path(run_dir, args.metrics_log_dir, "metrics_by_phase")
     network_picture_dir = run_scoped_path(run_dir, args.network_picture_dir, "network_graphs")
+    speech_audio_dir = run_scoped_path(run_dir, args.speech_audio_dir, "speech_artifacts")
+    session_log_dir = run_scoped_path(run_dir, args.log_dir, "session_logs")
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     model_adapter = None
@@ -121,17 +123,18 @@ def main():
         speech_engine=args.speech_engine,
         tts_engine=args.tts_engine,
         asr_engine=args.asr_engine,
-        speech_audio_dir=args.speech_audio_dir,
+        speech_audio_dir=str(speech_audio_dir),
         speech_playback_enabled=args.speech_playback,
         speech_realtime_enabled=args.speech_real_time,
         transfer_tolerance=args.agent_a_transfer_tolerance,
         llm_agent_a=args.llm_agent_a,
         log_profile=args.log_profile,
-        log_dir=args.log_dir,
+        log_dir=str(session_log_dir),
     )
     results = []
     metrics = []
     for condition in conditions:
+        runner.speech_audio_dir = str(speech_audio_dir / safe_artifact_name(condition.condition_id))
         result, metric = runner.run_condition(condition)
         results.append(result)
         metrics.append(metric)
@@ -163,6 +166,8 @@ def main():
     print(f"wrote {len(metrics)} metric rows to {metrics_output}")
     print(f"wrote {len(protocol_paths)} conversation protocol folders to {protocol_log_dir}")
     print(f"wrote metric phase logs to {phase_log_dir}")
+    print(f"wrote speech turn audio to {speech_audio_dir}")
+    print(f"wrote session logs to {session_log_dir}")
     print(f"wrote experiment manifest to {manifest_path}")
     print(f"wrote network data to {artifacts['network_json']}")
     print(f"wrote network graph to {artifacts['network_graph']}")

@@ -5,12 +5,24 @@ from types import SimpleNamespace
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
+import wave
 from zipfile import ZipFile
 
 from minillama.controller.dialog_result import DialogResult
 from minillama.controller.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
 from minillama.evaluation.research_artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
 from minillama.model.model_adapters import ModelParameterSet
+
+
+def write_test_wav(path, frame_rate=8000, seconds=0.05):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame_count = int(frame_rate * seconds)
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(frame_rate)
+        handle.writeframes(b"\x00\x00" * frame_count)
 
 
 class FakeModelAdapter:
@@ -305,6 +317,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                 "messages": 2,
                 "speech_turns": [
                     {
+                        "speaker": "Agent A",
                         "generated_text": "Need Alpha to Echo.",
                         "outgoing_text": "Need Alpha to Echo.",
                         "incoming_transcript": "Need Alpha to Echo.",
@@ -329,10 +342,17 @@ class ExperimentRunnerTests(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
+            turn_audio_path = Path(tmpdir) / "turn_audio" / "agent_a.wav"
+            write_test_wav(turn_audio_path)
+            result.extra["speech_turns"][0]["audio"] = {"path": str(turn_audio_path)}
             paths = write_conversation_protocol(result, tmpdir)
             batch_paths = write_conversation_protocols([result], Path(tmpdir) / "batch")
 
             summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
+            combined_protocol = json.loads(paths["protocol"].read_text(encoding="utf-8"))
+            audio_manifest = json.loads(paths["audio_manifest"].read_text(encoding="utf-8"))
+            transcript_text = paths["transcript_txt"].read_text(encoding="utf-8")
+            conversation_wav_exists = paths["conversation_wav"].exists()
             verification = json.loads(paths["verification"].read_text(encoding="utf-8"))
             turn_rows = paths["turns"].read_text(encoding="utf-8").splitlines()
             agent_rows = paths["agent_turn_segments"].read_text(encoding="utf-8").splitlines()
@@ -344,6 +364,10 @@ class ExperimentRunnerTests(unittest.TestCase):
 
         self.assertTrue(batch_paths)
         self.assertEqual(summary["condition_id"], "Case One")
+        self.assertEqual(combined_protocol["summary"]["condition_id"], "Case One")
+        self.assertIn("Agent A", transcript_text)
+        self.assertTrue(audio_manifest["created"])
+        self.assertTrue(conversation_wav_exists)
         self.assertTrue(verification["verified"])
         self.assertEqual(len(turn_rows), 2)
         self.assertEqual(len(agent_rows), 2)
@@ -419,6 +443,9 @@ class ExperimentRunnerTests(unittest.TestCase):
             self.assertTrue((phase_dir / "summary.jsonl").exists())
             self.assertTrue((phase_dir / "metric_catalog.json").exists())
             self.assertTrue(paths["retrospective_json"].exists())
+            self.assertTrue(paths["protocol"]["protocol"].exists())
+            self.assertTrue(paths["protocol"]["transcript_txt"].exists())
+            self.assertTrue(paths["protocol"]["audio_manifest"].exists())
             self.assertTrue(paths["network_json"].exists())
             self.assertTrue(paths["network_graph"].exists())
 
