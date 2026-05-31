@@ -60,10 +60,10 @@ class SpeechPipelineConfig:
     tts_engine: str = SPEECH_TTS_ENGINE
     asr_engine: str = SPEECH_ASR_ENGINE
     audio_dir: str = SPEECH_AUDIO_DIR
-    agent_a_words_per_minute: int = 165
-    agent_b_words_per_minute: int = 175
-    min_utterance_sec: float = 0.6
-    max_utterance_sec: float = 3.0
+    agent_a_words_per_minute: int = 185
+    agent_b_words_per_minute: int = 195
+    min_utterance_sec: float = 0.35
+    max_utterance_sec: float = 1.6
     playback_enabled: bool = SPEECH_PLAYBACK_ENABLED
     realtime_enabled: bool = SPEECH_REALTIME_ENABLED
 
@@ -214,9 +214,9 @@ class WaveFileTextToSpeech:
         sample_rate=8000,
         playback_enabled=False,
         realtime_enabled=False,
-        agent_a_words_per_minute=165,
-        agent_b_words_per_minute=175,
-        max_duration_sec=3.0,
+        agent_a_words_per_minute=185,
+        agent_b_words_per_minute=195,
+        max_duration_sec=1.6,
     ):
         self.audio_dir = Path(audio_dir)
         self.sample_rate = sample_rate
@@ -261,7 +261,7 @@ class WaveFileTextToSpeech:
     def _write_wave(self, path: Path, speaker: str, text: str):
         words = re.findall(r"[A-Za-z0-9]+", text)
         rate = self.agent_b_words_per_minute if speaker.lower().replace(" ", "_") == "agent_b" else self.agent_a_words_per_minute
-        duration = min(max(len(words) * 60 / max(rate, 1), 0.45), self.max_duration_sec)
+        duration = min(max(len(words) * 60 / max(rate, 1), 0.35), self.max_duration_sec)
         samples = int(self.sample_rate * duration)
         base_frequency = 185 if speaker.lower().replace(" ", "_") == "agent_a" else 230
         amplitude = 7500
