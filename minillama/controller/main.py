@@ -26,6 +26,7 @@ from minillama.agent_b.config import (
     SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
     SPEECH_TTS_ENGINE,
+    speech_pattern_keys,
 )
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys, create_agent_b_plugin
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechTransport
@@ -155,9 +156,12 @@ def prepare_execution_run_config(run_config):
             label=f"single_{run_config.get('test_case_key', 'case')}__{run_config.get('persona_key', 'persona')}",
         )
         run_config["execution_run_dir"] = str(execution_run_dir)
+        configured_speech_audio_dir = run_config.get("speech_audio_dir")
+        if configured_speech_audio_dir == SPEECH_AUDIO_DIR:
+            configured_speech_audio_dir = None
         run_config["speech_audio_dir"] = str(run_scoped_path(
             execution_run_dir,
-            run_config.get("speech_audio_dir"),
+            configured_speech_audio_dir,
             "speech_artifacts",
         ))
     return run_config
@@ -369,7 +373,7 @@ def select_run_config():
         "test_case_keys": list(TEST_CASES),
         "persona_keys": list(PERSONAS),
         "agent_b_plugins": available_agent_b_plugin_keys(AGENT_B_PLUGIN),
-        "speech_patterns": ["clean", "hesitant", "compressed", "noisy_station"],
+        "speech_patterns": speech_pattern_keys(),
         "speech_engines": ["file", "sapi", "patterned"],
         "tts_engines": ["sapi", "file", "patterned", "loopback"],
         "asr_engines": ["sapi", "file", "patterned", "loopback"],

@@ -22,11 +22,11 @@ from minillama.agent_b.config import (
     SPEECH_ENGINE,
     SPEECH_INCOMING_ENABLED,
     SPEECH_OUTGOING_ENABLED,
-    SPEECH_PATTERNS,
     SPEECH_PLAYBACK_ENABLED,
     SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
     SPEECH_TTS_ENGINE,
+    speech_pattern_settings,
 )
 
 
@@ -194,12 +194,13 @@ class PatternedTextToSpeech:
         self.pattern_key = pattern_key
         self.name = f"patterned-tts:{pattern_key}"
         self.rng = random.Random(seed)
+        self.settings = speech_pattern_settings(pattern_key)
 
     def synthesize(self, speaker: str, text: str) -> SpeechSignal:
-        if self.pattern_key == "hesitant":
-            text = PatternedSpeechToText(self.pattern_key, seed=self.rng.randint(0, 10**6))._add_hesitations(text)
-        elif self.pattern_key == "compressed":
-            text = PatternedSpeechToText(self.pattern_key)._compress(text)
+        text = PatternedSpeechToText(
+            self.pattern_key,
+            seed=self.rng.randint(0, 10**6),
+        ).transform_text(text, include_recognition_errors=False)
         return SpeechSignal(speaker=speaker, text=text, audio=None)
 
 
@@ -210,13 +211,14 @@ class WaveFileTextToSpeech:
 
     def __init__(
         self,
-        audio_dir="speech_artifacts",
+        audio_dir=SPEECH_AUDIO_DIR,
         sample_rate=8000,
         playback_enabled=False,
         realtime_enabled=False,
         agent_a_words_per_minute=210,
         agent_b_words_per_minute=220,
         max_duration_sec=1.1,
+        pattern_key="clean",
     ):
         self.audio_dir = Path(audio_dir)
         self.sample_rate = sample_rate
@@ -225,17 +227,22 @@ class WaveFileTextToSpeech:
         self.agent_a_words_per_minute = agent_a_words_per_minute
         self.agent_b_words_per_minute = agent_b_words_per_minute
         self.max_duration_sec = max_duration_sec
+        self.pattern_key = pattern_key
         self._counter = 0
 
     def synthesize(self, speaker: str, text: str) -> SpeechSignal:
         self.audio_dir.mkdir(parents=True, exist_ok=True)
         self._counter += 1
-        digest = hashlib.sha1(f"{speaker}:{self._counter}:{text}".encode("utf-8")).hexdigest()[:10]
+        spoken_text = PatternedSpeechToText(
+            self.pattern_key,
+            seed=self._counter,
+        ).transform_text(text, include_recognition_errors=False)
+        digest = hashlib.sha1(f"{speaker}:{self._counter}:{spoken_text}".encode("utf-8")).hexdigest()[:10]
         stem = f"{self._counter:04d}-{speaker.lower().replace(' ', '-')}-{digest}"
         wav_path = self.audio_dir / f"{stem}.wav"
         transcript_path = self.audio_dir / f"{stem}.txt"
-        duration_sec = self._write_wave(wav_path, speaker, text)
-        transcript_path.write_text(text, encoding="utf-8")
+        duration_sec = self._write_wave(wav_path, speaker, spoken_text)
+        transcript_path.write_text(spoken_text, encoding="utf-8")
         played = (
             self._play_wave(wav_path, realtime=self.realtime_enabled, fallback_duration=duration_sec)
             if self.playback_enabled
@@ -244,7 +251,7 @@ class WaveFileTextToSpeech:
         waited = bool(self.playback_enabled and self.realtime_enabled)
         return SpeechSignal(
             speaker=speaker,
-            text=text,
+            text=spoken_text,
             audio={
                 "engine": "wavefile",
                 "path": str(wav_path),
@@ -261,7 +268,9 @@ class WaveFileTextToSpeech:
     def _write_wave(self, path: Path, speaker: str, text: str):
         words = re.findall(r"[A-Za-z0-9]+", text)
         rate = self.agent_b_words_per_minute if speaker.lower().replace(" ", "_") == "agent_b" else self.agent_a_words_per_minute
-        duration = min(max(len(words) * 60 / max(rate, 1), 0.35), self.max_duration_sec)
+        settings = speech_pattern_settings(self.pattern_key)
+        duration_multiplier = float(settings.get("duration_multiplier", 1.0) or 1.0)
+        duration = min(max(len(words) * 60 / max(rate, 1) * max(duration_multiplier, 0.1), 0.25), self.max_duration_sec)
         samples = int(self.sample_rate * duration)
         base_frequency = 185 if speaker.lower().replace(" ", "_") == "agent_a" else 230
         amplitude = 7500
@@ -314,25 +323,30 @@ class WindowsSapiTextToSpeech:
 
     name = "windows-sapi-tts"
 
-    def __init__(self, audio_dir="speech_artifacts", playback_enabled=False, realtime_enabled=False, voice_rate=5):
+    def __init__(self, audio_dir=SPEECH_AUDIO_DIR, playback_enabled=False, realtime_enabled=False, voice_rate=5, pattern_key="clean"):
         self.audio_dir = Path(audio_dir)
         self.playback_enabled = playback_enabled
         self.realtime_enabled = realtime_enabled
         self.voice_rate = max(-10, min(10, int(voice_rate)))
+        self.pattern_key = pattern_key
         self._counter = 0
 
     def synthesize(self, speaker: str, text: str) -> SpeechSignal:
         self.audio_dir.mkdir(parents=True, exist_ok=True)
         self._counter += 1
-        digest = hashlib.sha1(f"sapi:{speaker}:{self._counter}:{text}".encode("utf-8")).hexdigest()[:10]
+        spoken_text = PatternedSpeechToText(
+            self.pattern_key,
+            seed=self._counter,
+        ).transform_text(text, include_recognition_errors=False)
+        digest = hashlib.sha1(f"sapi:{speaker}:{self._counter}:{spoken_text}".encode("utf-8")).hexdigest()[:10]
         stem = f"{self._counter:04d}-{speaker.lower().replace(' ', '-')}-{digest}"
         wav_path = self.audio_dir / f"{stem}.wav"
         transcript_path = self.audio_dir / f"{stem}.txt"
-        transcript_path.write_text(text, encoding="utf-8")
+        transcript_path.write_text(spoken_text, encoding="utf-8")
         command = self._powershell_command(wav_path, self.voice_rate)
         completed = subprocess.run(
             command,
-            input=text,
+            input=spoken_text,
             text=True,
             capture_output=True,
             timeout=30,
@@ -365,7 +379,7 @@ class WindowsSapiTextToSpeech:
             )
         return SpeechSignal(
             speaker=speaker,
-            text=text,
+            text=spoken_text,
             audio={
                 "engine": "windows_sapi",
                 "path": str(wav_path),
@@ -534,6 +548,7 @@ class SpeechTransport:
                 self.config.audio_dir,
                 playback_enabled=self.config.playback_enabled,
                 realtime_enabled=self.config.realtime_enabled,
+                pattern_key=self.config.pattern_key,
             )
         if engine in {"file", "wav", "wave"}:
             return WaveFileTextToSpeech(
@@ -543,6 +558,7 @@ class SpeechTransport:
                 agent_a_words_per_minute=self.config.agent_a_words_per_minute,
                 agent_b_words_per_minute=self.config.agent_b_words_per_minute,
                 max_duration_sec=self.config.max_utterance_sec,
+                pattern_key=self.config.pattern_key,
             )
         if engine in {"loopback", "text", "off", "none"}:
             return LoopbackTextToSpeech()
@@ -712,13 +728,15 @@ class SpeechTransport:
             if speaker.lower().replace(" ", "_") == "agent_b"
             else self.config.agent_a_words_per_minute
         )
+        settings = speech_pattern_settings(self.config.pattern_key)
+        duration_multiplier = float(settings.get("duration_multiplier", 1.0) or 1.0)
         seconds = len(words) * 60 / max(rate, 1)
+        seconds *= max(duration_multiplier, 0.1)
         return round(min(max(seconds, self.config.min_utterance_sec), self.config.max_utterance_sec), 3)
 
 
 class PatternedSpeechToText:
-    """Configurable ASR simulator that injects clean, hesitant, compressed, or noisy transcript patterns.
-    """
+    """Configurable ASR simulator that injects configured transcript patterns."""
     def __init__(self, pattern_key="clean", seed=0):
         """  init   method for this module's MVC responsibility.
         
@@ -732,6 +750,7 @@ class PatternedSpeechToText:
         self.pattern_key = pattern_key
         self.name = f"patterned-asr:{pattern_key}"
         self.rng = random.Random(seed)
+        self.settings = speech_pattern_settings(pattern_key)
 
     def transcribe(self, signal: SpeechSignal) -> str:
         """Transcribe method for this module's MVC responsibility.
@@ -742,38 +761,86 @@ class PatternedSpeechToText:
         Returns:
             The computed value or side effect documented by the implementation.
         """
-        text = signal.text
+        return self.transform_text(signal.text, include_recognition_errors=True)
 
-        if self.pattern_key == "clean":
+    def transform_text(self, text: str, include_recognition_errors=True) -> str:
+        """Apply the configured speech-pattern transformations."""
+        if self.settings.get("compression_enabled"):
+            text = self._compress(text)
+        text = self._insert_tokens(
+            text,
+            probability=float(self.settings.get("hesitation_probability", 0.0) or 0.0),
+            tokens=self.settings.get("hesitation_tokens", ()),
+            sentence_start=True,
+        )
+        text = self._insert_tokens(
+            text,
+            probability=float(self.settings.get("filler_probability", 0.0) or 0.0),
+            tokens=self.settings.get("filler_tokens", ()),
+            sentence_start=False,
+        )
+        text = self._insert_tokens(
+            text,
+            probability=float(self.settings.get("pause_probability", 0.0) or 0.0),
+            tokens=self.settings.get("pause_tokens", ()),
+            sentence_start=False,
+        )
+        text = self._add_stutters(
+            text,
+            probability=float(self.settings.get("stutter_probability", 0.0) or 0.0),
+            max_words=int(self.settings.get("stutter_max_words", 1) or 1),
+        )
+        if include_recognition_errors:
+            text = self._substitute_words(
+                text,
+                probability=float(self.settings.get("substitution_probability", 0.0) or 0.0),
+                substitutions=self.settings.get("substitutions", {}),
+            )
+            text = self._drop_some_words(
+                text,
+                drop_probability=float(self.settings.get("drop_probability", 0.0) or 0.0),
+                protected_terms=self.settings.get("protected_terms", ()),
+            )
+        return re.sub(r"\s+", " ", text).strip()
+
+    def _insert_tokens(self, text: str, probability: float, tokens, sentence_start=False) -> str:
+        """Insert configured filler, pause, or hesitation tokens."""
+        tokens = list(tokens or [])
+        if probability <= 0.0 or not tokens:
             return text
-
-        if self.pattern_key == "hesitant":
-            return self._add_hesitations(text)
-
-        if self.pattern_key == "compressed":
-            return self._compress(text)
-
-        if self.pattern_key == "noisy_station":
-            return self._drop_some_words(text, drop_probability=SPEECH_PATTERNS["noisy_station_drop_probability"])
-
-        return text
-
-    def _add_hesitations(self, text: str) -> str:
-        """ add hesitations method for this module's MVC responsibility.
-        
-        Args:
-            text: Input value used by `_add_hesitations`; see the function signature and caller context for the expected type.
-        
-        Returns:
-            The computed value or side effect documented by the implementation.
-        """
         sentences = re.split(r"(?<=[.!?])\s+", text)
         out = []
         for sentence in sentences:
-            if sentence and self.rng.random() < SPEECH_PATTERNS["hesitation_probability"]:
-                out.append(self.rng.choice(SPEECH_PATTERNS["hesitation_tokens"]) + ", " + sentence)
-            else:
+            if not sentence or self.rng.random() >= probability:
                 out.append(sentence)
+                continue
+            token = self.rng.choice(tokens)
+            if sentence_start:
+                out.append(f"{token}, {sentence}")
+            else:
+                words = sentence.split()
+                if not words:
+                    out.append(sentence)
+                    continue
+                index = self.rng.randint(0, len(words))
+                words.insert(index, token)
+                out.append(" ".join(words))
+        return " ".join(out)
+
+    def _add_stutters(self, text: str, probability: float, max_words=1) -> str:
+        if probability <= 0.0:
+            return text
+        words = text.split()
+        if not words:
+            return text
+        changed = 0
+        out = []
+        for word in words:
+            if changed < max_words and re.match(r"^[A-Za-z]{3,}", word) and self.rng.random() < probability:
+                out.append(f"{word[0]}-{word}")
+                changed += 1
+            else:
+                out.append(word)
         return " ".join(out)
 
     def _compress(self, text: str) -> str:
@@ -789,7 +856,21 @@ class PatternedSpeechToText:
         text = re.sub(r"\bI would\b", "I'd", text)
         return re.sub(r"\s+", " ", text).strip()
 
-    def _drop_some_words(self, text: str, drop_probability: float) -> str:
+    def _substitute_words(self, text: str, probability: float, substitutions) -> str:
+        if probability <= 0.0 or not isinstance(substitutions, dict):
+            return text
+        words = text.split()
+        out = []
+        for word in words:
+            clean = re.sub(r"[^A-Za-z0-9]", "", word)
+            replacement = substitutions.get(clean)
+            if replacement and self.rng.random() < probability:
+                out.append(word.replace(clean, str(replacement)))
+            else:
+                out.append(word)
+        return " ".join(out)
+
+    def _drop_some_words(self, text: str, drop_probability: float, protected_terms=()) -> str:
         """ drop some words method for this module's MVC responsibility.
         
         Args:
@@ -799,10 +880,14 @@ class PatternedSpeechToText:
         Returns:
             The computed value or side effect documented by the implementation.
         """
+        if drop_probability <= 0.0:
+            return text
+        protected = {str(term).lower() for term in protected_terms or ()}
         words = text.split()
         kept = [
             word
             for word in words
-            if self.rng.random() >= drop_probability
+            if re.sub(r"[^A-Za-z0-9]", "", word).lower() in protected
+            or self.rng.random() >= drop_probability
         ]
         return " ".join(kept) if kept else text

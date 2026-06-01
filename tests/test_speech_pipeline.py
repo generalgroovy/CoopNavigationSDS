@@ -4,7 +4,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport, WindowsSapiSpeechToText
+from minillama.agent_b.config import speech_pattern_keys
+from minillama.agent_b.speech_io import PatternedSpeechToText, SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport, WindowsSapiSpeechToText
 
 
 class SpeechPipelineTests(unittest.TestCase):
@@ -85,12 +86,28 @@ class SpeechPipelineTests(unittest.TestCase):
 
         self.assertEqual(trace.tts_engine, "wavefile-tts")
         self.assertEqual(trace.asr_engine, "patterned-asr:compressed")
-        self.assertEqual(trace.outgoing_text, trace.generated_text)
+        self.assertNotEqual(trace.outgoing_text, trace.generated_text)
         self.assertEqual(
             trace.incoming_transcript,
             "I'd compare the fastest route and the fewest switches.",
         )
         self.assertIn("tts=file:asr=patterned", transport.description)
+
+    def test_configured_speech_patterns_include_natural_variants(self):
+        keys = speech_pattern_keys()
+
+        self.assertIn("mostly_clean", keys)
+        self.assertIn("long_pauses", keys)
+        self.assertIn("stutter_light", keys)
+        self.assertIn("misheard_station", keys)
+
+    def test_patterned_transcriber_uses_configured_stutter_and_pause_rules(self):
+        transcriber = PatternedSpeechToText("stutter_heavy", seed=2)
+
+        text = transcriber.transcribe(SpeechSignal("Agent A", "Please take Bravo to Harbor."))
+
+        self.assertNotEqual(text, "Please take Bravo to Harbor.")
+        self.assertTrue("-" in text or "sorry" in text or "uh" in text)
 
     def test_speech_mode_rejects_loopback_tts_or_asr(self):
         with self.assertRaises(SpeechPipelineError) as error:
@@ -138,6 +155,28 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertFalse(trace.audio["played"])
             self.assertFalse(trace.audio["realtime"])
             self.assertFalse(trace.audio["waited"])
+
+    def test_file_speech_engine_applies_configured_speech_pattern(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            transport = SpeechTransport(
+                config=SpeechPipelineConfig(
+                    incoming_enabled=True,
+                    outgoing_enabled=True,
+                    mode="speech",
+                    scope="both",
+                    engine="file",
+                    audio_dir=tmpdir,
+                    playback_enabled=False,
+                    realtime_enabled=False,
+                    pattern_key="stutter_heavy",
+                )
+            )
+
+            trace = transport.transmit_trace("Agent A", "Please take Bravo to Harbor now.")
+
+            self.assertNotEqual(trace.outgoing_text, trace.generated_text)
+            self.assertEqual(trace.incoming_transcript, trace.outgoing_text)
+            self.assertTrue(Path(trace.audio["path"]).exists())
 
     def test_speech_health_check_requires_audio_and_transcript_for_both_agents(self):
         with tempfile.TemporaryDirectory() as tmpdir:

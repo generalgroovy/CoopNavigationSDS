@@ -3,7 +3,7 @@ import argparse
 
 from minillama.agent_b.config import AGENT_B_PLUGIN
 from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
-from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
+from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE, speech_pattern_keys
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
 from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
@@ -85,7 +85,7 @@ def main():
     conditions = list(build_condition_grid(
         test_case_keys=test_case_keys,
         persona_keys=parse_csv_arg(args.personas, PERSONAS),
-        speech_pattern_keys=parse_csv_arg(args.speech_patterns, ["clean", "hesitant", "compressed", "noisy_station"]),
+        speech_pattern_keys=parse_csv_arg(args.speech_patterns, speech_pattern_keys()),
         model_param_keys=parse_csv_arg(args.model_params),
         objective_modes=parse_csv_arg(args.objective_modes, OBJECTIVE_MODES),
         iterations=args.iterations,
@@ -98,7 +98,8 @@ def main():
     protocol_log_dir = run_scoped_path(run_dir, args.protocol_log_dir, "conversation_protocols")
     phase_log_dir = run_scoped_path(run_dir, args.metrics_log_dir, "metrics_by_phase")
     network_picture_dir = run_scoped_path(run_dir, args.network_picture_dir, "network_graphs")
-    speech_audio_dir = run_scoped_path(run_dir, args.speech_audio_dir, "speech_artifacts")
+    configured_speech_audio_dir = None if args.speech_audio_dir == SPEECH_AUDIO_DIR else args.speech_audio_dir
+    speech_audio_dir = run_scoped_path(run_dir, configured_speech_audio_dir, "speech_artifacts")
     session_log_dir = run_scoped_path(run_dir, args.log_dir, "session_logs")
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)

@@ -146,7 +146,7 @@ Batch runs use the configured Agent B model adapter and the `--model-params` swe
 Useful speech-pipeline batch controls:
 
 ```powershell
-.venv\Scripts\python.exe -m minillama.controller.run_experiments --agent-b-plugin simple --run-mode speech --speech-patterns clean,hesitant --speech-incoming true --speech-outgoing true --speech-scope both
+.venv\Scripts\python.exe -m minillama.controller.run_experiments --agent-b-plugin simple --run-mode speech --speech-patterns clean,mostly_clean,long_pauses,stutter_light --speech-incoming true --speech-outgoing true --speech-scope both
 ```
 
 - `--run-mode pure_text|speech`: choose direct text exchange or a strict speech pipeline.
@@ -154,13 +154,24 @@ Useful speech-pipeline batch controls:
 - `--speech-outgoing true|false`: include the outgoing text-to-speech verbalization stage.
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
 - `--speech-engine file|sapi|patterned`: use generated wave artifacts, Windows speech application programming interface stages, or text-pattern diagnostics.
+- `--speech-patterns clean,mostly_clean,hesitant,long_pauses,stutter_light,stutter_heavy,filler_words,compressed,noisy_station,clipped_words,misheard_station`: choose speech transcript patterns for batch sweeps. Use `all` to run every configured pattern.
 - `--speech-audio-dir PATH`: subfolder for generated speech artifacts inside the run folder when `--speech-engine file` is active.
 - `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for graphical interface and batch runs.
+- `MINILLAMA_SPEECH_PATTERN_PRESETS_JSON` or `MINILLAMA_SPEECH_PATTERN_PRESETS_FILE` can replace or extend speech pattern presets without code changes.
 - `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.
 - `--agent-a-transfer-tolerance 0|1|2`: extra line changes Agent A accepts over the constraint-aware startup route.
 - `--results-dir PATH`: root folder that receives one subfolder per execution.
 - `--log-dir PATH`: subfolder for optional batch logs inside the run folder.
 - `--progress`: print each completed condition id during long batch runs.
+
+Convenience scripts:
+
+```powershell
+.venv\Scripts\python.exe scripts\run_with_config_dialog.py
+.venv\Scripts\python.exe scripts\run_from_script_config.py
+```
+
+The first script forces the startup configuration dialog. The second skips the dialog and runs from the `SCRIPT_CONFIG` values in the script.
 
 ## Metrics
 

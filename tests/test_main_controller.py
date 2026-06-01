@@ -2,6 +2,7 @@ import queue
 import sys
 import threading
 import types
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -9,6 +10,12 @@ from minillama.controller.main import BroadcastQueue, conversation_worker, defau
 
 
 class MainControllerTests(unittest.TestCase):
+    def test_run_scripts_exist_for_dialog_and_script_config_modes(self):
+        root = Path(__file__).resolve().parents[1]
+
+        self.assertTrue((root / "scripts" / "run_with_config_dialog.py").exists())
+        self.assertTrue((root / "scripts" / "run_from_script_config.py").exists())
+
     def test_default_config_is_speech_first_and_keeps_gui_optional(self):
         config = default_run_config()
 
