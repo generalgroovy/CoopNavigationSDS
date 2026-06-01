@@ -139,6 +139,8 @@ Batch metrics:
 .venv\Scripts\python.exe -m minillama.controller.run_experiments
 ```
 
+All generated run data is written under one results root. By default this is `results/`, and each execution creates one timestamped run folder inside it containing protocol files, metric spreadsheets, phase logs, session logs, network data, network graph output, and compiled conversation audio when speech is enabled. Change the root with `--results-dir PATH` or `MINILLAMA_RESULTS_DIR`.
+
 Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for graphical interface and batch runs. Batch runs default to `pure_text` for low overhead; use `--run-mode speech` or `--speech-enabled` for speech-stage runs.
 
 Useful speech-pipeline batch controls:
@@ -152,11 +154,12 @@ Useful speech-pipeline batch controls:
 - `--speech-outgoing true|false`: include the outgoing text-to-speech verbalization stage.
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
 - `--speech-engine file|sapi|patterned`: use generated wave artifacts, Windows speech application programming interface stages, or text-pattern diagnostics.
-- `--speech-audio-dir PATH`: directory for generated speech artifacts when `--speech-engine file` is active.
+- `--speech-audio-dir PATH`: subfolder for generated speech artifacts inside the run folder when `--speech-engine file` is active.
 - `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for graphical interface and batch runs.
 - `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.
 - `--agent-a-transfer-tolerance 0|1|2`: extra line changes Agent A accepts over the constraint-aware startup route.
-- `--log-dir PATH`: destination for optional batch logs.
+- `--results-dir PATH`: root folder that receives one subfolder per execution.
+- `--log-dir PATH`: subfolder for optional batch logs inside the run folder.
 - `--progress`: print each completed condition id during long batch runs.
 
 ## Metrics

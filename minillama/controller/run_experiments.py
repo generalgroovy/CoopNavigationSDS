@@ -6,7 +6,7 @@ from minillama.agent_b.config import DEFAULT_SPEECH_PATTERN
 from minillama.agent_b.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
 from minillama.agent_b.plugin_registry import AgentBPluginConfig
 from minillama.agent_a.config import PERSONAS
-from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NUM_TURNS, RESEARCH_LOG_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
+from minillama.controller.config import AGENT_A_TRANSFER_TOLERANCE, NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR, SESSION_LOG_PROFILE
 from minillama.controller.runner import ExperimentRunner, build_condition_grid, write_metrics_file
 from minillama.evaluation.research_artifacts import create_execution_run_dir, run_scoped_path, safe_artifact_name, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
 from minillama.model.route_constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
@@ -61,7 +61,7 @@ def main():
     parser.add_argument("--agent-a-transfer-tolerance", type=int, default=AGENT_A_TRANSFER_TOLERANCE, choices=(0, 1, 2), help="Extra line changes Agent A accepts over the constraint-aware startup route.")
     parser.add_argument("--output", default="automatic_eval_metrics.xlsx")
     parser.add_argument("--metrics-log-dir", default=None, help="Directory for per-phase metric JSONL files.")
-    parser.add_argument("--research-log-dir", default=RESEARCH_LOG_DIR, help="Directory for network/model research logs.")
+    parser.add_argument("--results-dir", "--research-log-dir", dest="results_dir", default=RESULTS_DIR, help="Root results directory. Each execution creates one run folder inside it.")
     parser.add_argument("--protocol-log-dir", default=None, help="Directory for detailed conversation protocol artifacts. Empty uses a conversation_protocols folder inside --research-log-dir.")
     parser.add_argument("--network-picture-dir", default=None, help="Directory for generated network graph SVG. Empty writes inside the execution run folder.")
     parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
@@ -91,7 +91,7 @@ def main():
         iterations=args.iterations,
     ))
     run_dir = create_execution_run_dir(
-        args.research_log_dir,
+        args.results_dir,
         label=f"batch_{len(conditions)}_conditions",
     )
     metrics_output = run_scoped_path(run_dir, args.output, "automatic_eval_metrics.xlsx")

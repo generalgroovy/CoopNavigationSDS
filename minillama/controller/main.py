@@ -514,9 +514,14 @@ def main():
         picture_dir=network_picture_dir,
     )
     ui_queue = queue.Queue()
+    session_log_dir = (
+        Path(run_config["execution_run_dir"]) / "session_logs"
+        if run_config.get("execution_run_dir")
+        else SESSION_LOG_DIR
+    )
     session_logger = None if SESSION_LOG_PROFILE == "off" else SessionLogger(
         SESSION_NAME,
-        SESSION_LOG_DIR,
+        session_log_dir,
         profile=SESSION_LOG_PROFILE,
     )
     gui_threads = []

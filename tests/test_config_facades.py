@@ -17,7 +17,7 @@ from minillama.agent_b.config import (
 )
 from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
 from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
-from minillama.controller.config import NUM_TURNS, SESSION_LOG_DIR
+from minillama.controller.config import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
 from minillama.model.config import DEVICE, MODEL
 from minillama.model.network_overview import build_network_overview
 from minillama.view.config import GUI_COLORS, GUI_WIDTH, MAP_ROUTE_LINE_WIDTH
@@ -38,6 +38,7 @@ class ConfigModuleTests(unittest.TestCase):
     def test_controller_config_exports_controller_values(self):
         self.assertTrue(NUM_TURNS)
         self.assertTrue(AGENT_B_PLUGIN)
+        self.assertEqual(RESULTS_DIR, "results")
         self.assertTrue(SESSION_LOG_DIR)
         self.assertFalse(LLM_AGENT_A)
 
