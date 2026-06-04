@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from minillama.controller.main import conversation_worker, default_run_config
-from minillama.controller.session_logging import MonitoringEventQueue
+from minillama.orchestration.main import conversation_worker, default_run_config
+from minillama.orchestration.session_logging import MonitoringEventQueue
 
 
 SCRIPT_CONFIG = {

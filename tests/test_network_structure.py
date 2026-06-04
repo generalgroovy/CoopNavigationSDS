@@ -1,12 +1,12 @@
 import unittest
 from collections import Counter, defaultdict
 
-from minillama.model.config import STATION_CLASS_ACCESS_MODES, STATION_CLASS_RATIOS
-from minillama.model.metro_data import ADJACENCY, LINES, STATION_CLASSES, STATIONS, TRAVEL_TIMES, line_segment_key
-from minillama.model.route_constraints import optimal_constraint_route
-from minillama.model.route_planner import optimal_time_route
-from minillama.agent_a.config import PERSONAS
-from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
+from minillama.network.config import STATION_CLASS_ACCESS_MODES, STATION_CLASS_RATIOS
+from minillama.network.metro_data import ADJACENCY, LINES, STATION_CLASSES, STATIONS, TRAVEL_TIMES, line_segment_key
+from minillama.network.route_constraints import optimal_constraint_route
+from minillama.network.route_planner import optimal_time_route
+from minillama.caller.config import PERSONAS
+from minillama.scenarios import DEFAULT_TEST_CASE, get_test_case
 
 
 class NetworkStructureTests(unittest.TestCase):

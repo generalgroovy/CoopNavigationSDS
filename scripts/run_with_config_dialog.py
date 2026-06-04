@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
 
 os.environ.setdefault("MINILLAMA_GUI_ENABLED", "true")
 
-from minillama.controller.main import main
+from minillama.orchestration.main import main
 
 
 if __name__ == "__main__":

@@ -10,31 +10,36 @@ Package root and module entrypoint.
 - `__init__.py`: package marker.
 - `__main__.py`: `python -m minillama` entrypoint.
 
-### `minillama/agent_a/`
-Agent A prompt logic and persona handling.
+### `minillama/caller/`
+Caller-side dialog behavior, persona handling, and route critique.
 
 - `__init__.py`: package marker.
-- `config.py`: Agent A defaults, personas, and prompt text constants.
-- `agents.py`: Agent A prompt builders, cleanup, and fallback replies.
-- `agent_a_responder.py`: template and large-language-model-backed Agent A responders.
+- `config.py`: caller defaults, personas, and prompt text constants.
+- `agents.py`: caller prompt builders, cleanup, and fallback replies.
+- `responder.py`: template and large-language-model-backed caller responders.
 - `personas.py`: persona lookup and preference formatting helpers.
-- `prompt_data.py`: shared prompt context for Agent A and Agent B.
+- `prompt_data.py`: shared route-planning prompt context.
 
-### `minillama/agent_b/`
-Agent B prompting, plugins, and speech transport.
-
-- `__init__.py`: package marker.
-- `config.py`: Agent B defaults and speech-pattern settings.
-- `plugin_registry.py`: built-in Agent B plugins, custom plugin loading, and plugin config.
-- `pipeline.py`: Agent B verbal transformation pipeline.
-- `speech_io.py`: pure-text and speech-mode transport with text-to-speech, automatic speech recognition, health checks, and diagnostics.
-
-### `minillama/controller/`
-Runtime orchestration, graphical interface startup, batch execution, and logging.
+### `minillama/assistant/`
+Route-assistant prompting and plugin loading.
 
 - `__init__.py`: package marker.
-- `config.py`: controller defaults and logging profile.
-- `dialog_manager.py`: one-dialog controller and route tracking.
+- `config.py`: route assistant defaults and speech-pattern settings.
+- `plugin_registry.py`: built-in assistant plugins, custom plugin loading, and plugin config.
+- `pipeline.py`: assistant verbal transformation pipeline.
+
+### `minillama/speech/`
+Speech pipeline stages.
+
+- `__init__.py`: package marker.
+- `io.py`: pure-text and speech-mode transport with text-to-speech, automatic speech recognition, health checks, and diagnostics.
+
+### `minillama/orchestration/`
+Runtime orchestration, dialog management, batch execution, and logging.
+
+- `__init__.py`: package marker.
+- `config.py`: runtime defaults and logging profile.
+- `dialog_manager.py`: one-dialog manager and route tracking.
 - `dialog_result.py`: dialog result data model and null queue.
 - `main.py`: interactive startup flow.
 - `route_memory.py`: route deduplication memory.
@@ -42,19 +47,19 @@ Runtime orchestration, graphical interface startup, batch execution, and logging
 - `runner.py`: batch grid execution and CSV export.
 - `session_logging.py`: configurable structured logging.
 
-### `minillama/evaluation/`
+### `minillama/analysis/`
 Metrics and route interpretation.
 
 - `__init__.py`: package marker.
-- `config.py`: evaluation weights and scoring constants.
+- `config.py`: analysis weights and scoring constants.
 - `metrics.py`: automatic metric computation.
 - `route_interpreter.py`: spoken-route parsing and scoring.
 
-### `minillama/model/`
-Transit network model and model-runtime helpers.
+### `minillama/network/`
+Transit network data, routing, and model-runtime helpers.
 
 - `__init__.py`: package marker.
-- `config.py`: model, network, and shared runtime settings.
+- `config.py`: network, large-language-model, and shared runtime settings.
 - `metro_data.py`: generated network, crowding, and prompt text helpers.
 - `model_adapters.py`: Hugging Face and OpenAI-compatible adapters.
 - `model_runtime.py`: model/tokenizer loading and adapter creation.
@@ -62,7 +67,7 @@ Transit network model and model-runtime helpers.
 - `route_planner.py`: route validation, timing, and schedule helpers.
 - `station_names.py`: station name generation.
 
-### `minillama/test_cases/`
+### `minillama/scenarios/`
 Scenarios and standardized evaluation cases.
 
 - `__init__.py`: package marker.
@@ -70,7 +75,7 @@ Scenarios and standardized evaluation cases.
 - `scenarios.py`: scenario construction and lookup.
 - `test_cases.py`: standardized test-case binding and opening utterances.
 
-### `minillama/view/`
+### `minillama/interface/`
 Graphical interface rendering and view-layer layout.
 
 - `__init__.py`: package marker.
@@ -136,17 +141,17 @@ The conversation state always stores the result of the last completed pipeline p
 Batch metrics:
 
 ```powershell
-.venv\Scripts\python.exe -m minillama.controller.run_experiments
+.venv\Scripts\python.exe -m minillama.orchestration.run_experiments
 ```
 
-All generated run data is written under one results root. By default this is `results/`, and each execution creates one timestamped run folder inside it containing protocol files, metric spreadsheets, phase logs, session logs, network data, network graph output, and compiled conversation audio when speech is enabled. Change the root with `--results-dir PATH` or `MINILLAMA_RESULTS_DIR`.
+All generated run data is written under one results root. By default this is `results/`, and each execution creates one timestamped run folder inside it. The run folder is flat: protocol files, metric spreadsheets, phase logs, session logs, network data, network graph output, and compiled conversation audio are written directly into that folder. Change the root with `--results-dir PATH` or `MINILLAMA_RESULTS_DIR`.
 
 Batch runs use the configured Agent B model adapter and the `--model-params` sweep maps to real generation presets. `--agent-b-plugin` is optional and defaults to `minillama`; use `simple` for the deterministic planner, `llm` as a compatibility alias, or `package.module:factory` for a custom plugin. `MINILLAMA_AGENT_B_PLUGIN` sets the same default for graphical interface and batch runs. Batch runs default to `pure_text` for low overhead; use `--run-mode speech` or `--speech-enabled` for speech-stage runs.
 
 Useful speech-pipeline batch controls:
 
 ```powershell
-.venv\Scripts\python.exe -m minillama.controller.run_experiments --agent-b-plugin simple --run-mode speech --speech-patterns clean,mostly_clean,long_pauses,stutter_light --speech-incoming true --speech-outgoing true --speech-scope both
+.venv\Scripts\python.exe -m minillama.orchestration.run_experiments --agent-b-plugin simple --run-mode speech --speech-patterns clean,mostly_clean,long_pauses,stutter_light --speech-incoming true --speech-outgoing true --speech-scope both
 ```
 
 - `--run-mode pure_text|speech`: choose direct text exchange or a strict speech pipeline.
@@ -155,13 +160,13 @@ Useful speech-pipeline batch controls:
 - `--speech-scope both|agent_a|agent_b|none`: choose whose turns pass through speech stages.
 - `--speech-engine file|sapi|patterned`: use generated wave artifacts, Windows speech application programming interface stages, or text-pattern diagnostics.
 - `--speech-patterns clean,mostly_clean,hesitant,long_pauses,stutter_light,stutter_heavy,filler_words,compressed,noisy_station,clipped_words,misheard_station`: choose speech transcript patterns for batch sweeps. Use `all` to run every configured pattern.
-- `--speech-audio-dir PATH`: subfolder for generated speech artifacts inside the run folder when `--speech-engine file` is active.
+- `--speech-audio-dir PATH`: optional folder for generated speech artifacts when `--speech-engine file` is active. Empty/default writes temporary turn audio directly in the run folder and removes it after the compiled conversation wave file is created.
 - `MINILLAMA_SPEECH_INCOMING`, `MINILLAMA_SPEECH_OUTGOING`, and `MINILLAMA_SPEECH_SCOPE` set the same defaults for graphical interface and batch runs.
 - `MINILLAMA_SPEECH_PATTERN_PRESETS_JSON` or `MINILLAMA_SPEECH_PATTERN_PRESETS_FILE` can replace or extend speech pattern presets without code changes.
 - `--log-profile off|startup|runtime|full`: optional structured JSONL logging for batch audits. The default is `off` for low runtime overhead.
 - `--agent-a-transfer-tolerance 0|1|2`: extra line changes Agent A accepts over the constraint-aware startup route.
 - `--results-dir PATH`: root folder that receives one subfolder per execution.
-- `--log-dir PATH`: subfolder for optional batch logs inside the run folder.
+- `--log-dir PATH`: optional folder for batch logs. Empty/default writes logs directly in the run folder.
 - `--progress`: print each completed condition id during long batch runs.
 
 Convenience scripts:
@@ -175,7 +180,7 @@ The first script forces the startup configuration dialog. The second skips the d
 
 ## Metrics
 
-The evaluation report exports a staged metric stack aligned with speech-dialog analysis. During runs, compact metric snapshots are emitted periodically to the live event stream and structured logs. After a conversation ends, the run writes protocol JSONL files, metric snapshots, an analysis-ready spreadsheet, and per-phase metric JSONL files. Pipeline metrics are derived from actual phase outputs: generated text, text-to-speech output, automatic speech recognition transcript, semantic parser input, route candidates, and final route state. Audio ingress, voice activity detection, and diarization fields are present when available; automatic speech recognition, spoken-language understanding and dialog-state tracking proxies, policy/tool metrics, natural-language generation, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
+The evaluation report exports a staged metric stack aligned with speech-dialog analysis. During runs, compact metric snapshots are emitted periodically to the live event stream and structured logs. After a conversation ends, the run writes protocol JSONL files, metric snapshots, an analysis-ready spreadsheet, and per-phase metric JSONL files directly into the execution run folder. Pipeline metrics are derived from actual phase outputs: generated text, text-to-speech output, automatic speech recognition transcript, semantic parser input, route candidates, and final route state. Audio ingress, voice activity detection, and diarization fields are present when available; automatic speech recognition, spoken-language understanding and dialog-state tracking proxies, policy/tool metrics, natural-language generation, runtime, end-to-end, and post-hoc aggregates are computed from the dialog trace.
 
 | Metric area | Primary phase output | Failure or success signal |
 | --- | --- | --- |

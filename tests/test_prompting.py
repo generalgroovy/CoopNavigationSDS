@@ -1,6 +1,6 @@
 import unittest
 
-from minillama.agent_a.prompting import (
+from minillama.caller.prompting import (
     agent_a_route_reaction,
     agent_a_alternative_request,
     build_agent_a_system,
@@ -8,13 +8,13 @@ from minillama.agent_a.prompting import (
     build_agent_b_system,
     generate_agent_a_template,
 )
-from minillama.agent_a.agents import fallback_reply
-from minillama.agent_a.config import PERSONAS
-from minillama.agent_b.pipeline import DialogState, VerbalTransformationPipeline
-from minillama.evaluation.route_interpreter import NaturalRouteInterpreter
-from minillama.model.route_constraints import acceptable_duration_limit, optimal_constraint_route, stage_viability_report
-from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
-from minillama.test_cases.scenarios import SCENARIOS
+from minillama.caller.agents import fallback_reply
+from minillama.caller.config import PERSONAS
+from minillama.assistant.pipeline import DialogState, VerbalTransformationPipeline
+from minillama.analysis.route_interpreter import NaturalRouteInterpreter
+from minillama.network.route_constraints import acceptable_duration_limit, optimal_constraint_route, stage_viability_report
+from minillama.scenarios import DEFAULT_TEST_CASE, get_test_case
+from minillama.scenarios.scenarios import SCENARIOS
 
 
 class PromptingTests(unittest.TestCase):

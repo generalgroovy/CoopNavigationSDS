@@ -1,7 +1,7 @@
 import unittest
 
-from minillama.model.metro_data import LINES, ADJACENCY, station_transfer_time_min
-from minillama.model.route_constraints import (
+from minillama.network.metro_data import LINES, ADJACENCY, station_transfer_time_min
+from minillama.network.route_constraints import (
     ConstraintRoute,
     nearby_walking_links,
     optimal_constraint_route,
@@ -10,7 +10,7 @@ from minillama.model.route_constraints import (
     route_constraint_gap,
     route_near_capacity_count,
 )
-from minillama.model.route_planner import (
+from minillama.network.route_planner import (
     estimate_route_time,
     line_direction_sequences,
     line_mode,

@@ -2,8 +2,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from minillama.agent_a.config import LLM_AGENT_A
-from minillama.agent_b.config import (
+from minillama.caller.config import LLM_AGENT_A
+from minillama.assistant.config import (
     AGENT_B_PLUGIN,
     RUN_MODE,
     SPEECH_AUDIO_DIR,
@@ -15,13 +15,13 @@ from minillama.agent_b.config import (
     SPEECH_REALTIME_ENABLED,
     SPEECH_SCOPE,
 )
-from minillama.agent_b.speech_io import SpeechPipelineConfig, SpeechTransport
-from minillama.agent_b.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
-from minillama.controller.config import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
-from minillama.model.config import DEVICE, MODEL
-from minillama.model.network_overview import build_network_overview
-from minillama.view.config import GUI_COLORS, GUI_WIDTH, MAP_ROUTE_LINE_WIDTH
-from minillama.view.gui import DialogWindow
+from minillama.speech.io import SpeechPipelineConfig, SpeechTransport
+from minillama.assistant.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
+from minillama.orchestration.config import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
+from minillama.network.config import DEVICE, MODEL
+from minillama.network.network_overview import build_network_overview
+from minillama.interface.config import GUI_COLORS, GUI_WIDTH, MAP_ROUTE_LINE_WIDTH
+from minillama.interface.gui import DialogWindow
 
 
 class ConfigModuleTests(unittest.TestCase):

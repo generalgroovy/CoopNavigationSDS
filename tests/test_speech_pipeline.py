@@ -4,8 +4,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from minillama.agent_b.config import speech_pattern_keys
-from minillama.agent_b.speech_io import PatternedSpeechToText, SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport, WindowsSapiSpeechToText
+from minillama.assistant.config import speech_pattern_keys
+from minillama.speech.io import PatternedSpeechToText, SpeechPipelineConfig, SpeechPipelineError, SpeechSignal, SpeechTransport, WindowsSapiSpeechToText
 
 
 class SpeechPipelineTests(unittest.TestCase):
@@ -218,7 +218,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 )
             )
 
-            with patch("minillama.agent_b.speech_io.WaveFileTextToSpeech._play_wave", return_value=True):
+            with patch("minillama.speech.io.WaveFileTextToSpeech._play_wave", return_value=True):
                 trace = transport.transmit_trace("Agent A", "Short audible turn.")
 
             self.assertEqual(trace.incoming_transcript, "Short audible turn.")
@@ -241,7 +241,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 )
             )
 
-            with patch("minillama.agent_b.speech_io.WaveFileTextToSpeech._play_wave", return_value=True) as play_wave:
+            with patch("minillama.speech.io.WaveFileTextToSpeech._play_wave", return_value=True) as play_wave:
                 trace = transport.transmit_trace("Agent B", "I can hear this after playback.")
 
             self.assertEqual(trace.incoming_transcript, "I can hear this after playback.")
@@ -267,7 +267,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 )
             )
 
-            with patch("minillama.agent_b.speech_io.time.sleep") as sleep:
+            with patch("minillama.speech.io.time.sleep") as sleep:
                 trace = transport.transmit_trace("Agent A", "Wait before the other agent hears this.")
 
             self.assertEqual(trace.incoming_transcript, "Wait before the other agent hears this.")
@@ -312,7 +312,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 diagnostics={},
             )
 
-            with patch("minillama.agent_b.speech_io.subprocess.run", return_value=SimpleNamespace(returncode=0, stdout="meet apple two ego", stderr="")):
+            with patch("minillama.speech.io.subprocess.run", return_value=SimpleNamespace(returncode=0, stdout="meet apple two ego", stderr="")):
                 transcript = WindowsSapiSpeechToText().transcribe(signal)
 
             self.assertEqual(transcript, "Need Alpha to Echo.")

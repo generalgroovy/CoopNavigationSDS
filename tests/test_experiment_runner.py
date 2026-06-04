@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch
 import wave
 from zipfile import ZipFile
 
-from minillama.controller.dialog_result import DialogResult
-from minillama.controller.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from minillama.evaluation.research_artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
-from minillama.model.model_adapters import ModelParameterSet
+from minillama.orchestration.dialog_result import DialogResult
+from minillama.orchestration.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
+from minillama.analysis.research_artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
+from minillama.network.model_adapters import ModelParameterSet
 
 
 def write_test_wav(path, frame_rate=8000, seconds=0.05):
@@ -49,9 +49,9 @@ class FakeModelAdapter:
 
 
 class ExperimentRunnerTests(unittest.TestCase):
-    @patch("minillama.controller.runner.create_agent_b_plugin")
-    @patch("minillama.controller.runner.DialogManager")
-    @patch("minillama.controller.runner.get_test_case")
+    @patch("minillama.orchestration.runner.create_agent_b_plugin")
+    @patch("minillama.orchestration.runner.DialogManager")
+    @patch("minillama.orchestration.runner.get_test_case")
     def test_run_condition_applies_model_params_and_records_audit_values(
         self,
         get_test_case,
@@ -116,9 +116,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.extra["model_parameters"]["do_sample"], True)
         self.assertEqual(result.extra["model_parameters"]["temperature"], 0.7)
 
-    @patch("minillama.controller.runner.create_agent_b_plugin")
-    @patch("minillama.controller.runner.DialogManager")
-    @patch("minillama.controller.runner.get_test_case")
+    @patch("minillama.orchestration.runner.create_agent_b_plugin")
+    @patch("minillama.orchestration.runner.DialogManager")
+    @patch("minillama.orchestration.runner.get_test_case")
     def test_run_condition_can_write_runtime_batch_logs(
         self,
         get_test_case,
@@ -167,13 +167,13 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertTrue(list(Path(runner.log_dir).glob("batch-*.jsonl")))
 
     def test_plugin_config_identifies_model_need(self):
-        from minillama.agent_b.plugin_registry import AgentBPluginConfig
+        from minillama.assistant.plugin_registry import AgentBPluginConfig
 
         self.assertTrue(AgentBPluginConfig("minillama").needs_model)
         self.assertTrue(AgentBPluginConfig("llm").needs_model)
         self.assertFalse(AgentBPluginConfig("simple").needs_model)
 
-    @patch("minillama.controller.runner.get_test_case")
+    @patch("minillama.orchestration.runner.get_test_case")
     def test_build_condition_grid_caches_test_case_lookups(self, get_test_case):
         get_test_case.side_effect = lambda key: SimpleNamespace(scenario_key=f"scenario:{key}")
 
@@ -228,7 +228,7 @@ class ExperimentRunnerTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             xlsx_path = Path(tmpdir) / "metrics.xlsx"
-            log_dir = Path(tmpdir) / "metrics_by_phase"
+            log_dir = Path(tmpdir)
             write_metrics_file([FakeMetric()], xlsx_path)
             write_metric_phase_logs([FakeMetric()], log_dir)
 
@@ -236,7 +236,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                 names = set(archive.namelist())
                 workbook_xml = archive.read("xl/workbook.xml").decode("utf-8")
 
-            runtime_rows = (log_dir / "runtime.jsonl").read_text(encoding="utf-8").splitlines()
+            runtime_rows = (log_dir / "metric_phase_runtime.jsonl").read_text(encoding="utf-8").splitlines()
             runtime_record = json.loads(runtime_rows[0])
 
         self.assertIn("xl/workbook.xml", names)
@@ -346,6 +346,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             write_test_wav(turn_audio_path)
             result.extra["speech_turns"][0]["audio"] = {"path": str(turn_audio_path)}
             paths = write_conversation_protocol(result, tmpdir)
+            protocol_children = [child for child in Path(tmpdir).iterdir() if child.is_dir() and child.name != "turn_audio"]
             batch_paths = write_conversation_protocols([result], Path(tmpdir) / "batch")
 
             summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
@@ -363,6 +364,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             retrospective_text = paths["retrospective_summary"].read_text(encoding="utf-8")
 
         self.assertTrue(batch_paths)
+        self.assertEqual(protocol_children, [])
         self.assertEqual(summary["condition_id"], "Case One")
         self.assertEqual(combined_protocol["summary"]["condition_id"], "Case One")
         self.assertIn("Agent A", transcript_text)
@@ -424,7 +426,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                 "conversation_outcome": "satisfied",
             },
         )
-        from minillama.test_cases import get_test_case
+        from minillama.scenarios import get_test_case
 
         with tempfile.TemporaryDirectory() as tmpdir:
             paths = write_single_run_research_outputs(
@@ -438,9 +440,10 @@ class ExperimentRunnerTests(unittest.TestCase):
 
             self.assertTrue(paths["run_dir"].exists())
             self.assertTrue(paths["run_manifest"].exists())
-            self.assertEqual(paths["metrics_file"].parent.name, "compiled_metrics")
+            self.assertEqual(paths["metrics_file"].parent, paths["run_dir"])
             self.assertTrue(metrics_file.exists())
-            self.assertTrue((phase_dir / "summary.jsonl").exists())
+            self.assertEqual(phase_dir, paths["run_dir"])
+            self.assertTrue((phase_dir / "metric_phase_summary.jsonl").exists())
             self.assertTrue((phase_dir / "metric_catalog.json").exists())
             self.assertTrue(paths["retrospective_json"].exists())
             self.assertTrue(paths["protocol"]["protocol"].exists())
@@ -448,6 +451,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             self.assertTrue(paths["protocol"]["audio_manifest"].exists())
             self.assertTrue(paths["network_json"].exists())
             self.assertTrue(paths["network_graph"].exists())
+            self.assertFalse(any(child.is_dir() for child in paths["run_dir"].iterdir()))
 
 
 if __name__ == "__main__":

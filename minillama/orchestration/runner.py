@@ -1,0 +1,279 @@
+"""Batch experiment controller that executes condition grids and serializes metric records.
+"""
+import time
+from contextlib import nullcontext
+from dataclasses import asdict, dataclass
+from itertools import product
+
+from minillama.caller.responder import LLMAgentAResponder, TemplateAgentAResponder
+from minillama.caller.config import DEFAULT_PERSONA, LLM_AGENT_A
+from minillama.assistant.config import AGENT_B_PLUGIN
+from minillama.assistant.config import DEFAULT_SPEECH_PATTERN
+from minillama.assistant.config import RUN_MODE, SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_ENGINE, SPEECH_INCOMING_ENABLED, SPEECH_OUTGOING_ENABLED, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_SCOPE, SPEECH_TTS_ENGINE
+from minillama.assistant.plugin_registry import create_agent_b_plugin
+from minillama.speech.io import SpeechPipelineConfig, SpeechTransport
+from minillama.orchestration.dialog_manager import DEFAULT_MAX_TURN_ELAPSED_SEC, DialogManager
+from minillama.orchestration.dialog_result import NullEventQueue
+from minillama.orchestration.config import AGENT_A_TRANSFER_TOLERANCE, DEFAULT_MODEL_PARAM_KEY, SESSION_LOG_DIR
+from minillama.analysis.metrics import MetricComputer
+from minillama.analysis.research_artifacts import write_metrics_csv, write_metrics_file
+from minillama.orchestration.session_logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
+from minillama.scenarios.test_cases import TEST_CASES, get_test_case
+from minillama.network.config import GENERATION_MAX_TIME_SEC
+from minillama.network.route_constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
+
+
+class DropQueue:
+    """Queue adapter for batch logging when no GUI consumes tuple events."""
+
+    def put(self, _event):
+        return None
+
+
+@dataclass(frozen=True)
+class ExperimentCondition:
+    """Data model for one batch experiment condition.
+    """
+    condition_id: str
+    test_case_key: str
+    persona_key: str
+    scenario_key: str
+    speech_pattern_key: str
+    model_param_key: str
+    objective_mode: str = OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
+    iteration: int = 0
+
+
+class ExperimentRunner:
+    """Batch controller for running one condition or a full condition grid.
+    """
+    def __init__(
+        self,
+        model_adapter,
+        num_turns,
+        agent_b_plugin_key=AGENT_B_PLUGIN,
+        run_mode=RUN_MODE,
+        speech_incoming_enabled=SPEECH_INCOMING_ENABLED,
+        speech_outgoing_enabled=SPEECH_OUTGOING_ENABLED,
+        speech_scope=SPEECH_SCOPE,
+        speech_engine=SPEECH_ENGINE,
+        tts_engine=SPEECH_TTS_ENGINE,
+        asr_engine=SPEECH_ASR_ENGINE,
+        speech_audio_dir=SPEECH_AUDIO_DIR,
+        speech_playback_enabled=SPEECH_PLAYBACK_ENABLED,
+        speech_realtime_enabled=SPEECH_REALTIME_ENABLED,
+        transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE,
+        max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
+        calculation_max_time_sec=GENERATION_MAX_TIME_SEC,
+        llm_agent_a=LLM_AGENT_A,
+        log_profile=LOG_PROFILE_OFF,
+        log_dir=SESSION_LOG_DIR,
+    ):
+        """  init   method for this module's MVC responsibility.
+        
+        Args:
+            model_adapter: Input value used by `__init__`; see the function signature and caller context for the expected type.
+            num_turns: Input value used by `__init__`; see the function signature and caller context for the expected type.
+        
+        Returns:
+            The computed value or side effect documented by the implementation.
+        """
+        self.model_adapter = model_adapter
+        self.num_turns = num_turns
+        self.agent_b_plugin_key = agent_b_plugin_key
+        self.run_mode = run_mode
+        self.speech_incoming_enabled = speech_incoming_enabled
+        self.speech_outgoing_enabled = speech_outgoing_enabled
+        self.speech_scope = speech_scope
+        self.speech_engine = speech_engine
+        self.tts_engine = tts_engine
+        self.asr_engine = asr_engine
+        self.speech_audio_dir = speech_audio_dir
+        self.speech_playback_enabled = speech_playback_enabled
+        self.speech_realtime_enabled = speech_realtime_enabled
+        self.transfer_tolerance = transfer_tolerance
+        self.max_turn_elapsed_sec = max_turn_elapsed_sec
+        self.calculation_max_time_sec = calculation_max_time_sec
+        self.llm_agent_a = bool(llm_agent_a)
+        self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
+        self.log_dir = log_dir
+        self.metric_computer = MetricComputer()
+
+    def run_condition(self, condition: ExperimentCondition):
+        """Run condition method for this module's MVC responsibility.
+        
+        Args:
+            condition: Input value used by `run_condition`; see the function signature and caller context for the expected type.
+        
+        Returns:
+            The computed value or side effect documented by the implementation.
+        """
+        base_case = get_test_case(condition.test_case_key)
+        test_case = base_case.with_persona(condition.persona_key)
+        model_adapter = self._model_adapter_for(condition)
+        self._configure_model_adapter_runtime(model_adapter)
+        speech_transport = SpeechTransport(
+            config=SpeechPipelineConfig(
+                mode=self.run_mode,
+                incoming_enabled=self.speech_incoming_enabled,
+                outgoing_enabled=self.speech_outgoing_enabled,
+                scope=self.speech_scope,
+                pattern_key=condition.speech_pattern_key,
+                engine=self.speech_engine,
+                tts_engine=self.tts_engine,
+                asr_engine=self.asr_engine,
+                audio_dir=self.speech_audio_dir,
+                playback_enabled=self.speech_playback_enabled,
+                realtime_enabled=self.speech_realtime_enabled,
+            )
+        )
+        agent_b_plugin = create_agent_b_plugin(self.agent_b_plugin_key, model_adapter)
+        manager = DialogManager(
+            test_case,
+            agent_b_plugin,
+            self.num_turns,
+            speech_transport=speech_transport,
+            agent_a_responder=self._agent_a_responder_for(model_adapter),
+            transfer_tolerance=self.transfer_tolerance,
+            max_turn_elapsed_sec=self.max_turn_elapsed_sec,
+            agent_a_objective_mode=condition.objective_mode,
+        )
+
+        started_perf = time.perf_counter()
+        event_queue = self._event_queue_for(condition)
+        try:
+            segment = event_queue.segment if hasattr(event_queue, "segment") else lambda *_args, **_kwargs: nullcontext()
+            with segment(
+                "batch.condition",
+                condition_id=condition.condition_id,
+                test_case=condition.test_case_key,
+                persona=condition.persona_key,
+                speech_pattern=condition.speech_pattern_key,
+                model_param=condition.model_param_key,
+                calculation_max_time_sec=self.calculation_max_time_sec,
+            ):
+                result = manager.run(event_queue)
+        finally:
+            if hasattr(event_queue, "close"):
+                event_queue.close()
+        condition_runtime_sec = time.perf_counter() - started_perf
+        result.condition_id = condition.condition_id
+        result.speech_pattern_key = condition.speech_pattern_key
+        result.extra["model_param_key"] = condition.model_param_key
+        result.extra["objective_mode"] = condition.objective_mode
+        result.extra["iteration"] = condition.iteration
+        result.extra["condition_runtime_sec"] = round(condition_runtime_sec, 6)
+        model_parameters = getattr(model_adapter, "model_parameters", None)
+        if model_parameters is not None:
+            result.extra["model_parameters"] = asdict(model_parameters)
+        return result, self.metric_computer.compute(result, test_case.scenario)
+
+    def _event_queue_for(self, condition: ExperimentCondition):
+        """Return a no-op queue by default, or a structured logger for batch audits."""
+        if self.log_profile == LOG_PROFILE_OFF:
+            return NullEventQueue()
+        logger = SessionLogger(
+            f"batch-{condition.condition_id}",
+            self.log_dir,
+            profile=self.log_profile,
+        )
+        return MonitoringEventQueue(DropQueue(), logger)
+
+    def _configure_model_adapter_runtime(self, model_adapter):
+        if model_adapter is None:
+            return
+        budget = max(1.0, float(self.calculation_max_time_sec or GENERATION_MAX_TIME_SEC))
+        if hasattr(model_adapter, "max_time_sec"):
+            model_adapter.max_time_sec = budget
+        if hasattr(model_adapter, "timeout_sec"):
+            model_adapter.timeout_sec = budget
+
+    def _agent_a_responder_for(self, model_adapter):
+        if self.llm_agent_a and model_adapter is not None:
+            return LLMAgentAResponder(model_adapter)
+        return TemplateAgentAResponder()
+
+    def _model_adapter_for(self, condition: ExperimentCondition):
+        """ model adapter for method for this module's MVC responsibility.
+        
+        Args:
+            condition: Input value used by `_model_adapter_for`; see the function signature and caller context for the expected type.
+        
+        Returns:
+            The computed value or side effect documented by the implementation.
+        """
+        if hasattr(self.model_adapter, "with_model_params"):
+            return self.model_adapter.with_model_params(condition.model_param_key)
+        return self.model_adapter
+
+    def run_grid(self, conditions, collect_results=True):
+        """Run grid method for this module's MVC responsibility.
+        
+        Args:
+            conditions: Input value used by `run_grid`; see the function signature and caller context for the expected type.
+        
+        Returns:
+            The computed value or side effect documented by the implementation.
+        """
+        results = [] if collect_results else None
+        metrics = []
+        for condition in conditions:
+            result, metric = self.run_condition(condition)
+            if collect_results:
+                results.append(result)
+            metrics.append(metric)
+        return (results if results is not None else []), metrics
+
+
+def build_condition_grid(
+    test_case_keys=None,
+    persona_keys=None,
+    speech_pattern_keys=None,
+    model_param_keys=None,
+    objective_modes=None,
+    iterations=1,
+):
+    """Build condition grid function for this module's MVC responsibility.
+    
+    Args:
+        test_case_keys: Input value used by `build_condition_grid`; see the function signature and caller context for the expected type.
+        persona_keys: Input value used by `build_condition_grid`; see the function signature and caller context for the expected type.
+        speech_pattern_keys: Input value used by `build_condition_grid`; see the function signature and caller context for the expected type.
+        model_param_keys: Input value used by `build_condition_grid`; see the function signature and caller context for the expected type.
+        iterations: Input value used by `build_condition_grid`; see the function signature and caller context for the expected type.
+    
+    Returns:
+        The computed value or side effect documented by the implementation.
+    """
+    test_case_keys = test_case_keys or list(TEST_CASES)
+    persona_keys = persona_keys or [DEFAULT_PERSONA]
+    speech_pattern_keys = speech_pattern_keys or [DEFAULT_SPEECH_PATTERN]
+    model_param_keys = model_param_keys or [DEFAULT_MODEL_PARAM_KEY]
+    objective_modes = objective_modes or [OBJECTIVE_SHORTEST_WITH_CONSTRAINTS]
+
+    test_case_cache = {}
+    for test_case_key, persona_key, speech_pattern_key, model_param_key, objective_mode, iteration in product(
+        test_case_keys,
+        persona_keys,
+        speech_pattern_keys,
+        model_param_keys,
+        objective_modes,
+        range(iterations),
+    ):
+        condition_id = (
+            f"{test_case_key}__{persona_key}__{speech_pattern_key}__{model_param_key}__{objective_mode}__{iteration}"
+        )
+        base_case = test_case_cache.get(test_case_key)
+        if base_case is None:
+            base_case = get_test_case(test_case_key)
+            test_case_cache[test_case_key] = base_case
+        yield ExperimentCondition(
+            condition_id=condition_id,
+            test_case_key=test_case_key,
+            persona_key=persona_key,
+            scenario_key=base_case.scenario_key,
+            speech_pattern_key=speech_pattern_key,
+            model_param_key=model_param_key,
+            objective_mode=objective_mode if objective_mode in OBJECTIVE_MODES else OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+            iteration=iteration,
+        )

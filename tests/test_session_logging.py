@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
+from minillama.orchestration.session_logging import MonitoringEventQueue, SessionLogger
 
 
 class SessionLoggingTests(unittest.TestCase):

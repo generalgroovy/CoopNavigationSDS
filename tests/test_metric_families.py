@@ -1,15 +1,15 @@
 import unittest
 
-from minillama.controller.dialog_result import DialogResult
-from minillama.evaluation.metrics import METRIC_FAMILY_SPECS, MetricComputer
-from minillama.model.route_planner import (
+from minillama.orchestration.dialog_result import DialogResult
+from minillama.analysis.metrics import METRIC_FAMILY_SPECS, MetricComputer
+from minillama.network.route_planner import (
     optimal_time_route,
     route_line_change_count,
     route_line_sequence,
     route_station_sequence,
     route_text_from_steps,
 )
-from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
+from minillama.scenarios import DEFAULT_TEST_CASE, get_test_case
 
 
 class MetricFamilyTests(unittest.TestCase):

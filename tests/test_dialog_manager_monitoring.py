@@ -4,14 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from minillama.agent_a.agent_a_responder import TemplateAgentAResponder
-from minillama.agent_b.plugin_registry import SimplePlannerAgentBPlugin
-from minillama.agent_b.speech_io import SpeechPipelineTrace, SpeechSignal, SpeechTransport
-from minillama.agent_b.speech_io import SpeechPipelineConfig
-from minillama.controller.dialog_manager import DialogManager, constraint_gap_missed
-from minillama.controller.dialog_result import NullEventQueue
-from minillama.controller.session_logging import MonitoringEventQueue, SessionLogger
-from minillama.test_cases import DEFAULT_TEST_CASE, get_test_case
+from minillama.caller.responder import TemplateAgentAResponder
+from minillama.assistant.plugin_registry import SimplePlannerAgentBPlugin
+from minillama.speech.io import SpeechPipelineTrace, SpeechSignal, SpeechTransport
+from minillama.speech.io import SpeechPipelineConfig
+from minillama.orchestration.dialog_manager import DialogManager, constraint_gap_missed
+from minillama.orchestration.dialog_result import NullEventQueue
+from minillama.orchestration.session_logging import MonitoringEventQueue, SessionLogger
+from minillama.scenarios import DEFAULT_TEST_CASE, get_test_case
 
 
 def fast_text_transport():
