@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "windows_agent_a_tinyllama_speech_llm_matrix",
+  "description": "Windows paired speech matrix using the staged TinyLlama-compatible caller and locally installed Ollama models.",
+  "iterations": 1,
+  "config": {
+    "agent_a_type": "tinyllama",
+    "agent_b_plugin": "llm",
+    "model_provider": "ollama",
+    "model_base_url": "http://127.0.0.1:11434/api",
+    "model_timeout_sec": 180,
+    "paired_audio_text_runs": true,
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "asr_end_silence_ms": 2500,
+    "asr_ambiguous_end_silence_ms": 4500
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city", "midday_transfer"],
+    "personas": ["focused_commuter"],
+    "agent_a_audio_personas": ["high_clarity_caller"],
+    "agent_b_audio_personas": ["high_clarity_operator"],
+    "speech_patterns": ["clean"],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"],
+    "tts_engines": ["sapi", "chattts", "piper"],
+    "asr_engines": ["sapi", "faster_whisper", "vosk"],
+    "agent_b_models": ["llama3.2:latest", "llama4:latest", "phi4-mini:latest"]
+  }
+}

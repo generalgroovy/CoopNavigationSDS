@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "multimodal_access",
+  "description": "Cross ticket access and walking tolerance while incrementing the network seed.",
+  "iterations": 2,
+  "config": {
+    "agent_b_plugin": "simple",
+    "tts_engine": "file",
+    "asr_engine": "file",
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "num_turns": 7
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter", "accessibility_rider"],
+    "agent_a_audio_personas": ["neutral_caller"],
+    "agent_b_audio_personas": ["clear_operator"],
+    "speech_patterns": ["clean"],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"]
+  },
+  "parameter_values": {
+    "ticket_modes": [["metro", "tram"], ["tram", "bus"], ["metro", "bus"]],
+    "network_seed": [43]
+  },
+  "parameter_ranges": {
+    "max_walking_min": {"start": 5, "stop": 10, "step": 5}
+  }
+}

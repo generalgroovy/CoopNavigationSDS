@@ -1,0 +1,43 @@
+"""Public automatic speech recognition component API."""
+
+from coop_navigation_sds.DialogManagement.speech_pipeline import (
+    ASR_ENGINE_SPECS,
+    FasterWhisperSpeechToText,
+    ParakeetSpeechToText,
+    PatternedSpeechToText,
+    Qwen3SpeechToText,
+    SpeechEngineSpec,
+    SpeechPipelineConfig,
+    SpeechPipelineError,
+    SpeechSignal,
+    SpeechToTextEngine,
+    VoskSpeechToText,
+    SherpaOnnxSpeechToText,
+    WaveFileSpeechToText,
+    WhisperCppSpeechToText,
+    WindowsSapiSpeechToText,
+    available_asr_engine_keys,
+    platform_default_asr_engine,
+    speech_engine_description,
+)
+
+__all__ = [
+    "ASR_ENGINE_SPECS",
+    "FasterWhisperSpeechToText",
+    "ParakeetSpeechToText",
+    "PatternedSpeechToText",
+    "Qwen3SpeechToText",
+    "SpeechEngineSpec",
+    "SpeechPipelineConfig",
+    "SpeechPipelineError",
+    "SpeechSignal",
+    "SpeechToTextEngine",
+    "VoskSpeechToText",
+    "SherpaOnnxSpeechToText",
+    "WaveFileSpeechToText",
+    "WhisperCppSpeechToText",
+    "WindowsSapiSpeechToText",
+    "available_asr_engine_keys",
+    "platform_default_asr_engine",
+    "speech_engine_description",
+]

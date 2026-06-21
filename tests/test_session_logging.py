@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from minillama.orchestration.session_logging import MonitoringEventQueue, SessionLogger
+from coop_navigation_sds.ResultsAndArtifacts.logging import MonitoringEventQueue, SessionLogger
 
 
 class SessionLoggingTests(unittest.TestCase):
@@ -45,14 +45,27 @@ class SessionLoggingTests(unittest.TestCase):
             event_queue.put(("message", "Agent A", "hello"))
             event_queue.put(("metric_snapshot", {"turn": 1, "message_count": 1}))
             event_queue.put(("warning", "check route"))
+            event_queue.put(("telemetry", "phase_timing", {
+                "turn": 1,
+                "speaker": "Agent A",
+                "natural_language_generation_sec": 0.1,
+                "text_to_speech_processing_sec": 0.2,
+                "audio_duration_sec": 1.0,
+                "automatic_speech_recognition_processing_sec": 0.3,
+                "natural_language_understanding_sec": None,
+                "dialogue_management_sec": None,
+                "speech_pipeline_wall_sec": 1.5,
+                "observed_turn_sec": 1.6,
+            }))
             event_queue.put(("done",))
             event_queue.close()
 
-            forwarded = [ui_queue.get_nowait(), ui_queue.get_nowait(), ui_queue.get_nowait(), ui_queue.get_nowait()]
+            forwarded = [ui_queue.get_nowait() for _ in range(5)]
             self.assertEqual(forwarded[0][0], "message")
             self.assertEqual(forwarded[1][0], "metric_snapshot")
             self.assertEqual(forwarded[2][0], "warning")
-            self.assertEqual(forwarded[3][0], "done")
+            self.assertEqual(forwarded[3][0], "telemetry")
+            self.assertEqual(forwarded[4][0], "done")
 
             jsonl_files = list(Path(tmpdir).glob("unit-*.jsonl"))
             rows = [json.loads(line) for line in jsonl_files[0].read_text(encoding="utf-8").splitlines()]
@@ -61,3 +74,4 @@ class SessionLoggingTests(unittest.TestCase):
             self.assertIn("system", kinds)
             self.assertTrue(any(row["kind"] == "system" and row["name"] == "metric.snapshot" for row in rows))
             self.assertTrue(any(row["kind"] == "system" and row["name"] == "session.end" for row in rows))
+            self.assertTrue(any(row["kind"] == "system" and row["name"] == "telemetry.phase_timing" for row in rows))

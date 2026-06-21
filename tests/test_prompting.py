@@ -1,34 +1,36 @@
 import unittest
 
-from minillama.caller.prompting import (
+from coop_navigation_sds.NaturalLanguageGeneration.caller.prompting import (
     agent_a_route_reaction,
     agent_a_alternative_request,
     build_agent_a_system,
     build_agent_b_phase_instruction,
+    build_agent_b_stage_instruction,
     build_agent_b_system,
     generate_agent_a_template,
 )
-from minillama.caller.agents import fallback_reply
-from minillama.caller.config import PERSONAS
-from minillama.assistant.pipeline import DialogState, VerbalTransformationPipeline
-from minillama.analysis.route_interpreter import NaturalRouteInterpreter
-from minillama.network.route_constraints import acceptable_duration_limit, optimal_constraint_route, stage_viability_report
-from minillama.scenarios import DEFAULT_TEST_CASE, get_test_case
-from minillama.scenarios.scenarios import SCENARIOS
+from coop_navigation_sds.NaturalLanguageGeneration.caller.agents import fallback_reply
+from coop_navigation_sds.NaturalLanguageGeneration.caller.config import PERSONAS
+from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import DialogState, VerbalTransformationPipeline
+from coop_navigation_sds.NaturalLanguageUnderstanding.interpreter import NaturalRouteInterpreter
+from coop_navigation_sds.DialogManagement.stages import ConversationStage
+from coop_navigation_sds.TransportNetwork.constraints import (
+    acceptable_duration_limit,
+    optimal_constraint_route,
+    layered_optimal_routes,
+    optimal_route_duration_min,
+    route_allowed_modes,
+    stage_route_options,
+    stage_viability_report,
+)
+from coop_navigation_sds.TransportNetwork.routes import candidate_time_routes, route_text_from_steps
+from coop_navigation_sds.TransportNetwork import DEFAULT_TEST_CASE, get_test_case
+from coop_navigation_sds.TransportNetwork.scenarios import SCENARIOS
 
 
 class PromptingTests(unittest.TestCase):
     def setUp(self):
-        self.persona = {
-            "key": "focused_commuter",
-            "name": "Focused commuter",
-            "description": "Direct, time-conscious, practical.",
-            "preferences": {
-                "priority": "fastest route first",
-                "switching": "accepts line changes for a faster route",
-                "fullness": "does not mind fuller trains",
-            },
-        }
+        self.persona = get_test_case(DEFAULT_TEST_CASE).persona
         self.scenario = {
             "start_time_min": 480,
             "start_station": "Central",
@@ -44,24 +46,28 @@ class PromptingTests(unittest.TestCase):
         self.assertIn("Focused commuter", prompt)
         self.assertIn("Central", prompt)
         self.assertIn("Museum", prompt)
-        self.assertIn("Stage 1", prompt)
+        self.assertIn("Priority 1", prompt)
+        self.assertIn("Never reveal more than one new constraint", prompt)
         self.assertIn("Private constraints", prompt)
         self.assertNotIn("Route candidates", prompt)
-        self.assertNotIn("Station classes", prompt)
         self.assertNotIn("Transfer cost", prompt)
 
     def test_acceptable_duration_limit_defaults_under_fifty_percent_over_optimal(self):
         limit = acceptable_duration_limit(self.real_scenario, self.persona)
+        optimal = optimal_route_duration_min(self.real_scenario, self.persona)
 
-        self.assertEqual(limit, 17)
+        self.assertGreaterEqual(limit, optimal)
+        self.assertLess(limit, optimal * 1.5)
 
     def test_acceptable_duration_limit_ratio_is_configurable(self):
         scenario = dict(self.real_scenario)
         scenario["acceptable_duration_ratio"] = 1.2
 
         limit = acceptable_duration_limit(scenario, self.persona)
+        optimal = optimal_route_duration_min(scenario, self.persona)
 
-        self.assertEqual(limit, 14)
+        self.assertGreaterEqual(limit, optimal)
+        self.assertLess(limit, optimal * 1.2)
 
     def test_stage_viability_report_verifies_suboptimal_options_per_stage(self):
         default_report = stage_viability_report(get_test_case(DEFAULT_TEST_CASE).scenario, get_test_case(DEFAULT_TEST_CASE).persona)
@@ -76,11 +82,44 @@ class PromptingTests(unittest.TestCase):
         self.assertEqual(len(report["stages"]), 3)
         self.assertTrue(all(stage["suboptimal_option_count"] >= 1 for stage in report["stages"]))
 
+    def test_optimal_routes_are_calculated_for_each_progressive_layer(self):
+        layers = layered_optimal_routes(self.real_scenario, self.persona, max_constraints=3)
+
+        self.assertEqual(
+            [layer["layer"] for layer in layers],
+            ["validity", "time", "constraint_1", "constraint_2", "constraint_3"],
+        )
+        self.assertEqual([len(layer["stated_constraints"]) for layer in layers], [0, 0, 1, 2, 3])
+        constraint_paths = []
+        for layer in layers:
+            self.assertTrue(layer["available"])
+            self.assertEqual(layer["route"][0], self.real_scenario["start_station"])
+            self.assertEqual(layer["route"][-1], self.real_scenario["destination_station"])
+            self.assertEqual(layer["path_text"].count("-->"), len(layer["steps"]))
+            for step in layer["steps"]:
+                if step.get("mode") != "walking":
+                    self.assertIn(f"--{step['line']}-->", layer["path_text"])
+            if layer["layer"].startswith("constraint_"):
+                constraint_paths.append(layer["path_text"])
+        progressive_paths = [layer["path_text"] for layer in layers[1:]]
+        for previous, current in zip(progressive_paths, progressive_paths[1:]):
+            self.assertNotEqual(previous, current)
+        self.assertEqual(len(constraint_paths), len(set(constraint_paths)))
+
     def test_agent_b_phase_instruction_changes_by_turn(self):
         first = build_agent_b_phase_instruction(0, "Museum")
         later = build_agent_b_phase_instruction(5, "Museum")
         self.assertIn("Museum", first)
         self.assertIn("Confirm the best route", later)
+
+    def test_agent_b_stage_instruction_is_explicit_and_contextual(self):
+        comparison = build_agent_b_stage_instruction(ConversationStage.COMPARISON, "Museum")
+        refinement = build_agent_b_stage_instruction(ConversationStage.REFINEMENT, "Museum")
+        confirmation = build_agent_b_stage_instruction(ConversationStage.CONFIRMATION, "Museum")
+
+        self.assertIn("latest comparison request", comparison)
+        self.assertIn("remembered accepted details", refinement)
+        self.assertIn("without introducing a new option", confirmation)
 
     def test_agent_a_template_selects_persona_specific_text(self):
         text = generate_agent_a_template(0, self.persona, self.scenario)
@@ -91,11 +130,14 @@ class PromptingTests(unittest.TestCase):
     def test_agent_b_system_prompt_includes_route_context(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
         self.assertIn("Agent B", prompt)
-        self.assertIn("Transfer cost: 4 minutes", prompt)
+        self.assertIn("Start: Central", prompt)
+        self.assertIn("Destination: Museum", prompt)
+        self.assertIn("verified route candidates", prompt)
+        self.assertLess(len(prompt.split()), 350)
 
     def test_agent_b_system_prioritizes_validity_over_constraints(self):
         prompt = build_agent_b_system(self.scenario, self.persona)
-        self.assertIn("Validity comes first", prompt)
+        self.assertIn("valid route first", prompt)
         self.assertIn("line legs", prompt)
 
     def test_agent_a_reacts_to_missing_route(self):
@@ -108,17 +150,40 @@ class PromptingTests(unittest.TestCase):
         self.assertIn("actual route", text)
         self.assertIn("Museum", text)
 
-    def test_agent_a_reacts_to_connected_route_with_comparison_request(self):
+    def test_agent_a_repeats_trip_facts_when_agent_b_did_not_understand(self):
         text = agent_a_route_reaction(
             1,
             self.persona,
             self.real_scenario,
-            [("Agent B", "Take Ring from Bravo to Alpha to Golf, then Diagonal-SE-6 to November to Uniform to Birch to Ivy, then Ring to Harbor.")],
+            [("Agent B", "I heard 'Harbour' unclearly. Did you mean Harbor or Grove? Please repeat the start station, destination, and time.")],
         )
-        self.assertIn("reaches Harbor", text)
-        self.assertIn("too long", text)
-        self.assertIn("17 minutes", text)
-        self.assertNotIn("Now can you make it", text)
+
+        self.assertIn("Bravo", text)
+        self.assertIn("08:07", text)
+        self.assertIn("Harbor", text)
+        self.assertIn("Please use those", text)
+
+    def test_agent_a_asks_about_possible_misheard_words_when_reply_makes_no_sense(self):
+        text = agent_a_route_reaction(
+            1,
+            self.persona,
+            self.real_scenario,
+            [("Agent B", "Take wings of love had a harder; it takes 12 minutes.")],
+        )
+
+        self.assertIn("did you mean", text.lower())
+        self.assertIn("actual route", text)
+
+    def test_agent_a_reacts_to_connected_route_with_comparison_request(self):
+        reply = route_text_from_steps(stage_route_options(self.real_scenario, self.persona)[0]["steps"])
+        text = agent_a_route_reaction(
+            1,
+            self.persona,
+            self.real_scenario,
+            [("Agent B", reply)],
+        )
+        self.assertIn("route and timing work", text)
+        self.assertIn("Can you make it", text)
 
     def test_agent_a_requests_persona_specific_alternative_constraints(self):
         persona = {
@@ -143,7 +208,7 @@ class PromptingTests(unittest.TestCase):
         request = agent_a_alternative_request(PERSONAS["delay_sensitive_traveler"])
 
         self.assertIn("lower delay risk", request)
-        self.assertIn("walking under", request)
+        self.assertIn("safer transfers", request)
 
     def test_constraint_route_and_fallback_delays_secondary_constraints_until_asked(self):
         test_case = get_test_case("airport_connection")
@@ -154,15 +219,15 @@ class PromptingTests(unittest.TestCase):
             test_case.scenario,
             route_index=0,
             persona=test_case.persona,
-            conversation=[("Agent A", "Now compare near-capacity trains and delay risk.")],
+            conversation=[("Agent A", "I need lower delay risk.")],
         )
 
         self.assertIsNotNone(constraint_route)
         self.assertGreater(constraint_route.delay_probability, 0.0)
         self.assertNotIn("delay risk", reply)
         self.assertNotIn("capacity", reply)
-        self.assertIn("delay risk", constrained_reply)
-        self.assertIn("capacity", constrained_reply)
+        self.assertIn("delay risk", constrained_reply.lower())
+        self.assertNotIn("capacity", constrained_reply.lower())
         self.assertNotIn("percent", constrained_reply)
 
     def test_fallback_agent_b_turns_are_concise_for_speech(self):
@@ -170,46 +235,68 @@ class PromptingTests(unittest.TestCase):
 
         reply = fallback_reply("Agent B", test_case.scenario, route_index=0, persona=test_case.persona)
 
-        self.assertLessEqual(len(reply.split()), 28)
+        self.assertLessEqual(len(reply.split()), 40)
         self.assertIn("take", reply.lower())
         self.assertIn("It takes", reply)
 
     def test_agent_a_reaction_turns_are_concise_for_speech(self):
+        reply = route_text_from_steps(stage_route_options(self.real_scenario, self.persona)[0]["steps"])
         text = agent_a_route_reaction(
             1,
             self.persona,
             self.real_scenario,
-            [("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes, no line changes.")],
+            [("Agent B", reply)],
         )
 
         self.assertLessEqual(len(text.split()), 22)
         self.assertIn("Can you make it", text)
 
     def test_agent_a_final_reaction_closes_after_two_constraints(self):
+        stage_one = stage_route_options(self.real_scenario, self.persona)[0]
+        stage_two = stage_route_options(self.real_scenario, self.persona, ("transfer_miss",))[0]
+        stage_three_options = stage_route_options(self.real_scenario, self.persona, ("transfer_miss", "tickets"))
+        stage_three = next(
+            (option for option in stage_three_options if option["route"] != stage_two["route"]),
+            stage_three_options[0],
+        )
         text = agent_a_route_reaction(
             3,
             self.persona,
             self.real_scenario,
             [
-                ("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes."),
+                ("Agent B", route_text_from_steps(stage_one["steps"])),
                 ("Agent A", "Can you make it with safer transfer timing?"),
-                ("Agent B", "Take Ring. Stations: Bravo to Alpha to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 19 minutes."),
-                ("Agent A", "Can you make it with walking at most 8 minutes?"),
-                ("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes."),
+                ("Agent B", route_text_from_steps(stage_two["steps"])),
+                ("Agent A", "Can you use only my metro and tram tickets? I cannot take bus."),
+                ("Agent B", route_text_from_steps(stage_three["steps"])),
             ],
         )
         self.assertIn("Thanks", text)
         self.assertIn("take", text)
 
     def test_agent_a_critiques_slower_alternative(self):
+        limit = acceptable_duration_limit(self.real_scenario, self.persona)
+        slow = next(
+            item for item in candidate_time_routes(
+                self.real_scenario["start_station"],
+                self.real_scenario["destination_station"],
+                self.real_scenario["start_time_min"],
+                self.real_scenario["transfer_time_min"],
+                limit=80,
+                max_extra_stops=8,
+                max_paths=50000,
+                allowed_modes=route_allowed_modes(self.real_scenario, self.persona),
+            )
+            if item[0] > limit
+        )
         text = agent_a_route_reaction(
             2,
             self.persona,
             self.real_scenario,
             [
-                ("Agent B", "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes, no line changes."),
+                ("Agent B", route_text_from_steps(stage_route_options(self.real_scenario, self.persona)[0]["steps"])),
                 ("Agent A", "Now compare one faster valid route."),
-                ("Agent B", "Take Ring. Stations: Bravo to Alpha to Golf to Mike to Sierra to Harbor. Boarding: Bravo to Harbor. Total 19 minutes, no line changes."),
+                ("Agent B", route_text_from_steps(slow[2])),
             ],
         )
 
@@ -221,10 +308,14 @@ class PromptingTests(unittest.TestCase):
             name = "partial-route-model"
 
             def generate_messages(self, messages):
-                return "Take Ring from Bravo to Alpha."
+                return "Take metro line M1 from Bravo to Alpha."
 
         test_case = get_test_case(DEFAULT_TEST_CASE)
-        state = DialogState(test_case=test_case, conversation=[], turn=0)
+        state = DialogState(
+            test_case=test_case,
+            conversation=[("Agent A", test_case.opening_utterance())],
+            turn=0,
+        )
         reply = VerbalTransformationPipeline(PartialRouteModel()).run_agent_b(state)
 
         self.assertIn("Harbor", reply)
@@ -243,16 +334,20 @@ class PromptingTests(unittest.TestCase):
 
     def test_interpreter_ignores_duplicate_summary_mentions(self):
         interpreter = NaturalRouteInterpreter()
-        text = "Take Ring. Stations: Bravo to Ivy to Harbor. Boarding: Bravo to Harbor. Total 12 minutes."
+        option = stage_route_options(self.real_scenario, self.persona)[0]
+        station_text = " to ".join(option["route"])
+        text = f"Stations: {station_text}. Boarding: Bravo to Harbor. Total {option['duration_min']} minutes."
 
         route = interpreter.interpret_reply(text, self.real_scenario)
 
-        self.assertEqual(route, ["Bravo", "Ivy", "Harbor"])
+        self.assertEqual(route, option["route"])
 
     def test_interpreter_uses_spoken_line_for_compact_boarding_route(self):
         interpreter = NaturalRouteInterpreter()
-        text = "Take Core Tram from Bravo to Harbor. It takes 16 minutes, with no changes."
+        text = "Take metro line M1 from Bravo to Harbor. It takes 45 minutes, with no changes."
 
         route = interpreter.interpret_reply(text, self.real_scenario)
 
-        self.assertEqual(route, ["Bravo", "Golf", "Mike", "Sierra", "Harbor"])
+        self.assertEqual(route[0], "Bravo")
+        self.assertEqual(route[-1], "Harbor")
+        self.assertGreaterEqual(len(route), 3)

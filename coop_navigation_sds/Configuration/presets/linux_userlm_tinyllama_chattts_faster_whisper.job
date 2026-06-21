@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "name": "linux_userlm_tinyllama_chattts_faster_whisper",
+  "description": "Linux CLI batch preset with paired text and audio conditions.",
+  "config": {
+    "agent_a_type": "userlm",
+    "agent_b_plugin": "llm",
+    "model_provider": "transformers",
+    "model_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "tts_engine": "chattts",
+    "tts_model": ".speech-providers/models/chattts",
+    "asr_engine": "faster_whisper",
+    "asr_model": ".speech-providers/models/faster-whisper",
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "paired_audio_text_runs": true
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter"],
+    "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"],
+    "tts_engines": ["chattts"],
+    "asr_engines": ["faster_whisper"]
+  },
+  "iterations": 1
+}

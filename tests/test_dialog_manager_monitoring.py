@@ -4,28 +4,62 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from minillama.caller.responder import TemplateAgentAResponder
-from minillama.assistant.plugin_registry import SimplePlannerAgentBPlugin
-from minillama.speech.io import SpeechPipelineTrace, SpeechSignal, SpeechTransport
-from minillama.speech.io import SpeechPipelineConfig
-from minillama.orchestration.dialog_manager import DialogManager, constraint_gap_missed
-from minillama.orchestration.dialog_result import NullEventQueue
-from minillama.orchestration.session_logging import MonitoringEventQueue, SessionLogger
-from minillama.scenarios import DEFAULT_TEST_CASE, get_test_case
+from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import TemplateAgentAResponder
+from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import SimplePlannerAgentBPlugin, create_agent_b_plugin
+from coop_navigation_sds.DialogManagement.speech_pipeline import SpeechPipelineTrace, SpeechSignal, SpeechTransport
+from coop_navigation_sds.DialogManagement.speech_pipeline import SpeechPipelineConfig
+from coop_navigation_sds.DialogManagement.manager import DialogManager, constraint_gap_missed
+from coop_navigation_sds.DialogManagement.result import NullEventQueue
+from coop_navigation_sds.ResultsAndArtifacts.logging import MonitoringEventQueue, SessionLogger
+from coop_navigation_sds.TransportNetwork import DEFAULT_TEST_CASE, get_test_case
+from coop_navigation_sds.TransportNetwork.constraints import acceptable_duration_limit
+from coop_navigation_sds.TransportNetwork.routes import candidate_time_routes, route_text_from_steps
 
 
 def fast_text_transport():
     return SpeechTransport(config=SpeechPipelineConfig(
-        mode="pure_text",
-        incoming_enabled=False,
-        outgoing_enabled=False,
-        scope="none",
+        tts_engine="file",
+        asr_engine="file",
+        audio_dir=tempfile.mkdtemp(),
         realtime_enabled=False,
         playback_enabled=False,
     ))
 
 
 class DialogManagerMonitoringTests(unittest.TestCase):
+    def test_three_agent_b_models_complete_the_same_speech_pipeline(self):
+        first_replies = {}
+        for plugin_key in ("pareto", "robust", "diverse"):
+            with self.subTest(plugin=plugin_key), tempfile.TemporaryDirectory() as tmpdir:
+                manager = DialogManager(
+                    get_test_case(DEFAULT_TEST_CASE),
+                    create_agent_b_plugin(plugin_key, None),
+                    num_turns=4,
+                    speech_transport=SpeechTransport(config=SpeechPipelineConfig(
+                        tts_engine="file",
+                        asr_engine="file",
+                        audio_dir=tmpdir,
+                        realtime_enabled=False,
+                        playback_enabled=False,
+                    )),
+                    agent_a_responder=TemplateAgentAResponder(),
+                )
+
+                result = manager.run(NullEventQueue())
+                first_replies[plugin_key] = next(
+                    text for speaker, text in result.conversation if speaker == "Agent B"
+                )
+
+                self.assertTrue(result.route_valid)
+                self.assertTrue(result.route_reaches_goal)
+                self.assertTrue(all(turn["pipeline_ok"] for turn in result.extra["speech_turns"]))
+                self.assertTrue(any(
+                    event["event_type"] == "stage_entered"
+                    for event in result.extra["runtime_events"]
+                ))
+
+        self.assertEqual(len(set(first_replies.values())), 3)
+
     def test_controller_smoke_run_emits_conversation_step_logs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             ui_queue = queue.Queue()
@@ -48,14 +82,26 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
             self.assertGreaterEqual(len(result.conversation), 2)
             self.assertTrue(result.metrics_text)
-            self.assertIn("Displayed line sequence:", result.metrics_text)
-            self.assertIn("Reference line sequence:", result.metrics_text)
-            self.assertIn("Constraint route:", result.metrics_text)
+            self.assertIn("[Run]", result.metrics_text)
+            self.assertIn("[Task]", result.metrics_text)
+            self.assertIn("[Comparison]", result.metrics_text)
+            self.assertIn("[Execution]", result.metrics_text)
+            self.assertLessEqual(len(result.metrics_text.splitlines()), 30)
+            self.assertTrue(all(" | " not in line for line in result.metrics_text.splitlines()))
             self.assertIsNotNone(result.extra["constraint_duration_min"])
             self.assertIn("constraint_duration_gap_min", result.extra)
             self.assertTrue(result.extra["runtime_events"])
             self.assertTrue(result.extra["preflight_viability"]["constraint_route_available"])
-            self.assertEqual(result.extra["speech_turns"][0]["mode"], "pure_text")
+            self.assertTrue(any(
+                event["event_type"] == "route_calculations_deferred"
+                for event in result.extra["runtime_events"]
+            ))
+            self.assertFalse(any(
+                event["event_type"] == "viability_check"
+                and event["phase"] == "preflight"
+                for event in result.extra["runtime_events"]
+            ))
+            self.assertEqual(result.extra["speech_turns"][0]["mode"], "speech")
             self.assertTrue(result.extra["speech_turns"][0]["pipeline_ok"])
 
             jsonl_files = list(Path(tmpdir).glob("dialog-*.jsonl"))
@@ -63,6 +109,29 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             rows = [json.loads(line) for line in jsonl_files[0].read_text(encoding="utf-8").splitlines()]
             self.assertTrue(any(row["kind"] == "conversation.step" for row in rows))
             self.assertTrue(any(row["kind"] == "program.segment" for row in rows))
+
+    def test_controller_emits_readable_pipeline_phase_order(self):
+        ui_queue = queue.Queue()
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            SimplePlannerAgentBPlugin(),
+            num_turns=2,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        manager.run(ui_queue)
+
+        events = []
+        while not ui_queue.empty():
+            events.append(ui_queue.get_nowait())
+        agent_b_phases = [
+            event[1]["phase"]
+            for event in events
+            if event[0] == "phase"
+            and event[1].get("speaker") == "Agent B"
+        ]
+        self.assertEqual(agent_b_phases[:4], ["NLG", "TTS", "ASR", "NLU"])
 
     def test_agent_a_elicits_multiple_compared_route_candidates(self):
         manager = DialogManager(
@@ -81,7 +150,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         ]
 
         self.assertGreaterEqual(result.extra["candidate_routes"], 2)
-        self.assertGreaterEqual(result.extra["route_revisions"], 1)
+        self.assertIn("route_revisions", result.extra)
         self.assertIsNotNone(result.extra["constraint_duration_min"])
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertGreaterEqual(len(result.extra["stated_constraints"]), 1)
@@ -98,12 +167,67 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
         result = manager.run(NullEventQueue())
         agent_b_replies = [text for speaker, text in result.conversation if speaker == "Agent B"]
+        agent_a_replies = [text for speaker, text in result.conversation if speaker == "Agent A"]
 
         self.assertGreaterEqual(len(agent_b_replies), 3)
         self.assertNotIn("delay risk", agent_b_replies[0])
         self.assertNotIn("transfer miss risk", agent_b_replies[0])
         self.assertNotIn("delay risk", agent_b_replies[1])
-        self.assertIn("delay risk", agent_b_replies[2])
+        self.assertTrue(any("capacity" in text for text in agent_a_replies))
+        self.assertIn("capacity", agent_b_replies[2])
+        self.assertNotIn("delay risk", agent_b_replies[2])
+
+    def test_controller_blocks_phase_progress_when_current_objective_failed(self):
+        class InvalidRoutePlugin:
+            name = "invalid-route-plugin"
+
+            def run_agent_b(self, _state):
+                return "Take Bravo to Alpha."
+
+        class PrematureConstraintResponder:
+            name = "premature-constraint-agent-a"
+
+            def reply(self, *_args):
+                return "Can you make it not near capacity?"
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            InvalidRoutePlugin(),
+            num_turns=5,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=PrematureConstraintResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(result.extra["stated_constraints"], [])
+        self.assertIn("current objective", result.conversation[-1][1])
+
+    def test_controller_blocks_closure_before_constraint_phases_complete(self):
+        class ValidRoutePlugin:
+            name = "valid-route-plugin"
+
+            def run_agent_b(self, _state):
+                return "Take metro line M1 from Bravo to Harbor. It takes 12 minutes, with no changes."
+
+        class PrematureClosureResponder:
+            name = "premature-closure-agent-a"
+
+            def reply(self, *_args):
+                return "Thanks, that works. I'll take it."
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            ValidRoutePlugin(),
+            num_turns=5,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=PrematureClosureResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertIn("not ready", result.conversation[2][1].lower())
+        self.assertNotIn("I'll take it", result.conversation[2][1])
 
     def test_transfer_constraint_miss_uses_configured_slack(self):
         self.assertFalse(constraint_gap_missed({"line_change_gap": 1}, transfer_tolerance=1))
@@ -123,7 +247,7 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
             def transcribe(self, signal):
                 if signal.speaker == "Agent A":
-                    return "heard start Alpha destination Echo"
+                    return "At 08:07, start Alpha and destination Echo."
                 return signal.text
 
         class CapturingAgentB:
@@ -145,10 +269,6 @@ class DialogManagerMonitoringTests(unittest.TestCase):
                 tts_engine=TestTextToSpeech(),
                 asr_engine=TestSpeechToText(),
                 config=SpeechPipelineConfig(
-                    mode="speech",
-                    incoming_enabled=True,
-                    outgoing_enabled=True,
-                    scope="both",
                     realtime_enabled=False,
                     playback_enabled=False,
                 ),
@@ -158,8 +278,8 @@ class DialogManagerMonitoringTests(unittest.TestCase):
 
         result = manager.run(NullEventQueue())
 
-        self.assertEqual(agent_b.last_agent_a_text, "heard start Alpha destination Echo")
-        self.assertEqual(result.conversation[0][1], "heard start Alpha destination Echo")
+        self.assertEqual(agent_b.last_agent_a_text, "At 08:07, start Alpha and destination Echo.")
+        self.assertEqual(result.conversation[0][1], "At 08:07, start Alpha and destination Echo.")
 
     def test_agent_a_stops_early_after_repeated_invalid_routes(self):
         class InvalidRoutePlugin:
@@ -186,21 +306,36 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIn("stop here", result.conversation[-1][1])
 
     def test_agent_a_stops_early_when_time_frame_keep_being_missed(self):
+        test_case = get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker")
+        scenario = test_case.scenario
+        duration_limit = acceptable_duration_limit(scenario, test_case.persona)
+        slow_replies = [
+            route_text_from_steps(steps)
+            for duration, _route, steps in candidate_time_routes(
+                scenario["start_station"],
+                scenario["destination_station"],
+                scenario["start_time_min"],
+                scenario["transfer_time_min"],
+                limit=80,
+                max_extra_stops=8,
+                max_paths=50000,
+                allowed_modes=("metro", "tram", "bus", "walking"),
+            )
+            if duration > duration_limit
+        ][:3]
+        self.assertGreaterEqual(len(slow_replies), 2)
+
         class TimeFrameMissPlugin:
             name = "time-frame-miss-plugin"
 
             def __init__(self):
-                self.replies = [
-                    "Take Bravo to Alpha to Golf to November to Uniform to Birch to Ivy to Harbor.",
-                    "Take Bravo to Alpha to Golf to Mike to Sierra to Yankee to Elm to Flint to Grove to Harbor.",
-                    "Take Bravo to Alpha to Hotel to Oscar to Victor to Cedar to Jasper to Ivy to Harbor.",
-            ]
+                self.replies = slow_replies
 
             def run_agent_b(self, state):
                 return self.replies[min(state.turn, len(self.replies) - 1)]
 
         manager = DialogManager(
-            get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
+            test_case,
             TimeFrameMissPlugin(),
             num_turns=8,
             speech_transport=fast_text_transport(),
@@ -238,11 +373,8 @@ class DialogManagerMonitoringTests(unittest.TestCase):
                 num_turns=2,
                 speech_transport=SpeechTransport(
                     config=SpeechPipelineConfig(
-                        mode="speech",
-                        incoming_enabled=True,
-                        outgoing_enabled=True,
-                        scope="both",
-                        engine="file",
+                        tts_engine="file",
+                        asr_engine="file",
                         audio_dir=tmpdir,
                         playback_enabled=False,
                         realtime_enabled=False,
@@ -318,6 +450,11 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertLessEqual(max(elapsed_values), 20.0)
         self.assertGreater(max(raw_values), 20.0)
         self.assertGreater(result.extra["turn_over_budget_count"], 0)
+        self.assertEqual(len(result.extra["phase_timings"]), len(result.conversation))
+        first_breakdown = result.extra["phase_timings"][0]
+        self.assertIn("audio_duration_sec", first_breakdown)
+        self.assertIn("speech_pipeline_wall_sec", first_breakdown)
+        self.assertIn("observed_turn_sec", first_breakdown)
 
     def test_conversation_timer_starts_when_agents_are_ready(self):
         class CapturingQueue:

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "models": {
+    "tinyllama": {
+      "component": "language_model",
+      "kind": "huggingface_snapshot",
+      "source": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+      "destination": ".speech-providers/models/huggingface/TinyLlama--TinyLlama-1.1B-Chat-v1.0",
+      "required": ["config.json", "*.safetensors"]
+    },
+    "chattts": {
+      "component": "text_to_speech",
+      "kind": "huggingface_snapshot",
+      "source": "2Noise/ChatTTS",
+      "destination": ".speech-providers/models/chattts",
+      "patterns": ["*.yaml", "*.json", "*.safetensors"],
+      "required": ["config", "asset"]
+    },
+    "piper": {
+      "component": "text_to_speech",
+      "kind": "piper_voice",
+      "source": "en_US-lessac-medium",
+      "destination": ".speech-providers/models/piper",
+      "required": ["en_US-lessac-medium.onnx", "en_US-lessac-medium.onnx.json"]
+    },
+    "coqui": {
+      "component": "text_to_speech",
+      "kind": "archive",
+      "source": "https://github.com/coqui-ai/TTS/releases/download/v0.6.1_models/tts_models--en--ljspeech--tacotron2-DDC.zip",
+      "destination": ".speech-providers/models/coqui",
+      "required": ["config.json", "model_file.pth"]
+    },
+    "faster_whisper": {
+      "component": "automatic_speech_recognition",
+      "kind": "faster_whisper",
+      "source": "small.en",
+      "destination": ".speech-providers/models/faster-whisper",
+      "required": ["model.bin"]
+    },
+    "vosk": {
+      "component": "automatic_speech_recognition",
+      "kind": "archive",
+      "source": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
+      "destination": ".speech-providers/models/vosk/vosk-model-small-en-us-0.15",
+      "required": ["conf", "am"]
+    },
+    "whisper_cpp": {
+      "component": "automatic_speech_recognition",
+      "kind": "huggingface_file",
+      "source": "ggerganov/whisper.cpp",
+      "filename": "ggml-base.en.bin",
+      "destination": ".speech-providers/models/whisper.cpp",
+      "required": ["ggml-base.en.bin"]
+    },
+    "qwen3_asr": {
+      "component": "automatic_speech_recognition",
+      "kind": "huggingface_snapshot",
+      "source": "Qwen/Qwen3-ASR-0.6B",
+      "destination": ".speech-providers/models/qwen3-asr",
+      "required": ["config.json", "*.safetensors"]
+    },
+    "sherpa_onnx": {
+      "component": "automatic_speech_recognition",
+      "kind": "archive",
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-whisper-tiny.en.tar.bz2",
+      "destination": ".speech-providers/models/sherpa-onnx",
+      "required": ["*tokens*.txt", "*encoder*.onnx", "*decoder*.onnx"]
+    }
+  },
+  "executables": {
+    "whisper_cpp_windows": {
+      "component": "automatic_speech_recognition",
+      "platforms": ["Windows"],
+      "kind": "github_release_archive",
+      "source": "ggml-org/whisper.cpp",
+      "asset": "whisper-bin-x64.zip",
+      "destination": ".speech-providers/whisper_cpp/bin",
+      "required": ["whisper-cli.exe"]
+    },
+    "whisper_cpp_linux": {
+      "component": "automatic_speech_recognition",
+      "platforms": ["Linux"],
+      "kind": "github_release_archive",
+      "source": "ggml-org/whisper.cpp",
+      "asset": "whisper-bin-ubuntu-x64.tar.gz",
+      "destination": ".speech-providers/whisper_cpp/bin",
+      "required": ["whisper-cli"]
+    }
+  }
+}

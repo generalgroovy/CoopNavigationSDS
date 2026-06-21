@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch
 import wave
 from zipfile import ZipFile
 
-from minillama.orchestration.dialog_result import DialogResult
-from minillama.orchestration.runner import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from minillama.analysis.research_artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
-from minillama.network.model_adapters import ModelParameterSet
+from coop_navigation_sds.DialogManagement.result import DialogResult
+from coop_navigation_sds.experiments import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
+from coop_navigation_sds.ResultsAndArtifacts.artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
+from coop_navigation_sds.NaturalLanguageGeneration.models import ModelParameterSet
 
 
 def write_test_wav(path, frame_rate=8000, seconds=0.05):
@@ -49,9 +49,9 @@ class FakeModelAdapter:
 
 
 class ExperimentRunnerTests(unittest.TestCase):
-    @patch("minillama.orchestration.runner.create_agent_b_plugin")
-    @patch("minillama.orchestration.runner.DialogManager")
-    @patch("minillama.orchestration.runner.get_test_case")
+    @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
+    @patch("coop_navigation_sds.experiments.DialogManager")
+    @patch("coop_navigation_sds.experiments.get_test_case")
     def test_run_condition_applies_model_params_and_records_audit_values(
         self,
         get_test_case,
@@ -79,7 +79,10 @@ class ExperimentRunnerTests(unittest.TestCase):
             model_adapter,
             num_turns=3,
             agent_b_plugin_key="simple",
-            run_mode="pure_text",
+            tts_engine="file",
+            asr_engine="file",
+            speech_playback_enabled=False,
+            speech_realtime_enabled=False,
             max_turn_elapsed_sec=4.0,
             calculation_max_time_sec=4.5,
         )
@@ -116,9 +119,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.extra["model_parameters"]["do_sample"], True)
         self.assertEqual(result.extra["model_parameters"]["temperature"], 0.7)
 
-    @patch("minillama.orchestration.runner.create_agent_b_plugin")
-    @patch("minillama.orchestration.runner.DialogManager")
-    @patch("minillama.orchestration.runner.get_test_case")
+    @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
+    @patch("coop_navigation_sds.experiments.DialogManager")
+    @patch("coop_navigation_sds.experiments.get_test_case")
     def test_run_condition_can_write_runtime_batch_logs(
         self,
         get_test_case,
@@ -145,7 +148,10 @@ class ExperimentRunnerTests(unittest.TestCase):
             FakeModelAdapter(),
             num_turns=1,
             agent_b_plugin_key="simple",
-            run_mode="pure_text",
+            tts_engine="file",
+            asr_engine="file",
+            speech_playback_enabled=False,
+            speech_realtime_enabled=False,
             log_profile="runtime",
             log_dir=tempfile.mkdtemp(),
         )
@@ -167,13 +173,13 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertTrue(list(Path(runner.log_dir).glob("batch-*.jsonl")))
 
     def test_plugin_config_identifies_model_need(self):
-        from minillama.assistant.plugin_registry import AgentBPluginConfig
+        from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import AgentBPluginConfig
 
         self.assertTrue(AgentBPluginConfig("minillama").needs_model)
         self.assertTrue(AgentBPluginConfig("llm").needs_model)
         self.assertFalse(AgentBPluginConfig("simple").needs_model)
 
-    @patch("minillama.orchestration.runner.get_test_case")
+    @patch("coop_navigation_sds.experiments.get_test_case")
     def test_build_condition_grid_caches_test_case_lookups(self, get_test_case):
         get_test_case.side_effect = lambda key: SimpleNamespace(scenario_key=f"scenario:{key}")
 
@@ -290,6 +296,8 @@ class ExperimentRunnerTests(unittest.TestCase):
 
         self.assertIn("hypotheses", manifest)
         self.assertIn("independent_variables", manifest)
+        self.assertIn("agent_a_audio_persona", manifest["independent_variables"])
+        self.assertIn("agent_b_audio_persona", manifest["independent_variables"])
         self.assertEqual(manifest["conditions"][0]["condition_id"], condition.condition_id)
         self.assertEqual(manifest["conditions"][0]["asr_engine"], "loopback")
         self.assertEqual(manifest["controls"]["speech_engine"], "file")
@@ -321,11 +329,24 @@ class ExperimentRunnerTests(unittest.TestCase):
                         "generated_text": "Need Alpha to Echo.",
                         "outgoing_text": "Need Alpha to Echo.",
                         "incoming_transcript": "Need Alpha to Echo.",
-                        "mode": "pure_text",
+                        "mode": "speech",
                         "pipeline_ok": True,
                     }
                 ],
                 "timing_turns": [{"turn_latency_sec": 0.4}],
+                "phase_timings": [{
+                    "turn": 1,
+                    "speaker": "Agent A",
+                    "natural_language_generation_sec": 0.1,
+                    "text_to_speech_processing_sec": 0.1,
+                    "audio_duration_sec": 0.2,
+                    "automatic_speech_recognition_processing_sec": 0.1,
+                    "natural_language_understanding_sec": None,
+                    "dialogue_management_sec": None,
+                    "speech_pipeline_wall_sec": 0.3,
+                    "observed_turn_sec": 0.4,
+                    "accounted_processing_sec": 0.4,
+                }],
                 "agent_turn_segments": [
                     {"turn": 1, "speaker": "Agent A", "turn_elapsed_sec": 0.1},
                     {"turn": 2, "speaker": "Agent B", "turn_elapsed_sec": 0.4},
@@ -361,6 +382,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             agent_b_rows = paths["agent_b_segments"].read_text(encoding="utf-8").splitlines()
             agent_summary = json.loads(paths["agent_timing_summary"].read_text(encoding="utf-8"))
             runtime_rows = paths["runtime_events"].read_text(encoding="utf-8").splitlines()
+            phase_timing_rows = paths["phase_timing"].read_text(encoding="utf-8").splitlines()
             retrospective_text = paths["retrospective_summary"].read_text(encoding="utf-8")
 
         self.assertTrue(batch_paths)
@@ -377,6 +399,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(len(agent_b_rows), 1)
         self.assertEqual(agent_summary["Agent B"]["mean_turn_elapsed_sec"], 0.4)
         self.assertEqual(len(runtime_rows), 1)
+        self.assertEqual(len(phase_timing_rows), 1)
+        self.assertEqual(len(combined_protocol["phase_timing"]), 1)
+        self.assertIn("processing seconds", transcript_text)
         self.assertIn("Messages", retrospective_text)
 
     def test_single_run_research_outputs_compile_metrics_for_analysis(self):
@@ -426,7 +451,7 @@ class ExperimentRunnerTests(unittest.TestCase):
                 "conversation_outcome": "satisfied",
             },
         )
-        from minillama.scenarios import get_test_case
+        from coop_navigation_sds.TransportNetwork import get_test_case
 
         with tempfile.TemporaryDirectory() as tmpdir:
             paths = write_single_run_research_outputs(

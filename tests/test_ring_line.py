@@ -1,50 +1,87 @@
 import unittest
+import re
 
-from minillama.network.metro_data import LINES, ADJACENCY, station_transfer_time_min
-from minillama.network.route_constraints import (
+from coop_navigation_sds.TransportNetwork.network import (
+    LINES,
+    ADJACENCY,
+    station_transfer_time_min,
+)
+from coop_navigation_sds.TransportNetwork.constraints import (
     ConstraintRoute,
-    nearby_walking_links,
     optimal_constraint_route,
     probability_class,
     probability_class_allowed,
     route_constraint_gap,
     route_near_capacity_count,
 )
-from minillama.network.route_planner import (
+from coop_navigation_sds.TransportNetwork.routes import (
     estimate_route_time,
     line_direction_sequences,
+    line_allowed,
     line_mode,
     route_duration_breakdown,
+    route_path_text_from_steps,
+    route_step_details,
     route_text_from_steps,
+    transfer_miss_probability,
+    transfer_time_at_station,
 )
 
 
 class RingLineTests(unittest.TestCase):
-    def test_ring_line_uses_one_canonical_sequence(self):
-        ring_name = next((name for name, data in LINES.items() if data.get("kind") == "Ring"), None)
-        self.assertIsNotNone(ring_name)
+    def test_metro_m1_ring_uses_two_opposing_directions(self):
+        ring_name = "M1"
+        self.assertEqual(LINES[ring_name]["mode"], "metro")
 
         sequences = line_direction_sequences(ring_name)
         self.assertEqual(len(sequences), 2)
         self.assertGreaterEqual(len(sequences[0]), 3)
         self.assertEqual(sequences[0][0], sequences[0][-1])
-        self.assertEqual(sequences[1][0], sequences[1][-1])
+        self.assertEqual(sequences[0][:-1], list(reversed(sequences[1][:-1])))
 
     def test_same_line_through_station_has_no_intermediate_wait_or_transfer(self):
-        estimate = estimate_route_time(["Alpha", "Bravo", "Ivy"], 480, 4)
+        self.assertEqual(transfer_time_at_station("Golf", "M1", "M1", 4), 0)
+        self.assertEqual(transfer_time_at_station("Golf", None, "M1", 4), 0)
+
+        ring_stops = LINES["M1"]["stops"]
+        estimate = estimate_route_time(ring_stops[:3], 480, 4, allowed_modes=("metro",))
         self.assertIsNotNone(estimate)
         _, steps = estimate
+        for previous, current in zip(steps, steps[1:]):
+            if previous["line"] == current["line"]:
+                self.assertEqual(current["transfer"], 0)
+                self.assertEqual(current["wait"], 0)
+        proposal = route_text_from_steps(steps)
+        complete_path = route_path_text_from_steps(steps)
+        self.assertRegex(proposal, r"metro line M\d+ from \w+ to \w+")
+        self.assertIn("It takes", proposal)
+        self.assertEqual(complete_path.count("-->"), len(steps))
+        for step in steps:
+            self.assertIn(f"--{step['line']}--> {step['to']}", complete_path)
+        for step in route_step_details(steps):
+            self.assertEqual(
+                set(step),
+                {"step_index", "from_station", "to_station", "line", "transport_type"},
+            )
+            self.assertTrue(step["from_station"])
+            self.assertTrue(step["to_station"])
+            self.assertTrue(step["line"])
+            self.assertIn(step["transport_type"], {"metro", "tram", "bus", "walking"})
 
-        self.assertEqual([step["line"] for step in steps], ["Ring", "Ring"])
-        self.assertEqual(steps[1]["depart"], steps[0]["arrive"])
-        self.assertEqual(steps[1]["wait"], 0)
-        self.assertEqual(steps[1]["transfer"], 0)
-        self.assertEqual(route_duration_breakdown(steps)["transfer"], 0)
+    def test_walking_leg_uses_minutes_and_named_stations_without_a_line(self):
+        steps = [{
+            "from": "Alpha", "to": "Bravo", "line": "Walking", "mode": "walking",
+            "depart": 480, "arrive": 485, "wait": 0,
+        }]
 
         proposal = route_text_from_steps(steps)
-        self.assertEqual(proposal.count("Take Ring"), 1)
-        self.assertIn("Take Ring from Alpha to Ivy", proposal)
-        self.assertIn("It takes", proposal)
+        complete_path = route_path_text_from_steps(steps)
+        details = route_step_details(steps)
+
+        self.assertIn("Walk 5 minutes from Alpha to Bravo", proposal)
+        self.assertEqual(complete_path, "Alpha --walk 5 min--> Bravo")
+        self.assertIsNone(details[0]["line"])
+        self.assertEqual(details[0]["transport_type"], "walking")
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):
         scenario = {
@@ -86,7 +123,6 @@ class RingLineTests(unittest.TestCase):
             has_near_capacity=False,
             delay_probability=0.0,
             transfer_miss_probability=0.0,
-            mode_sequence=["metro"],
             score=(),
             label="avoid near capacity",
         )
@@ -100,20 +136,19 @@ class RingLineTests(unittest.TestCase):
         self.assertEqual(gap["near_capacity_gap"], 1)
         self.assertEqual(gap["fullness_gap"], 1)
 
-    def test_lines_have_transport_modes_for_ticket_constraints(self):
-        modes = {data.get("mode") for data in LINES.values()}
+    def test_all_required_transport_modes_are_present(self):
+        service_labels = {data.get("mode") for data in LINES.values()}
 
-        self.assertIn("metro", modes)
-        self.assertIn("tram", modes)
-        self.assertIn("bus", modes)
+        self.assertEqual(service_labels, {"metro", "tram", "bus", "walking"})
 
-    def test_ticket_mode_filter_blocks_disallowed_mode(self):
-        estimate = estimate_route_time(["Alpha", "Hotel"], 480, 2, allowed_modes=("metro",))
+    def test_ticket_filter_blocks_unavailable_transport_modes(self):
+        bus_line = next(name for name, data in LINES.items() if data["mode"] == "bus")
 
-        self.assertIsNone(estimate)
-        self.assertEqual(line_mode("Diagonal-SE-1"), "bus")
+        self.assertFalse(line_allowed(bus_line, ("tram", "metro")))
+        self.assertTrue(line_allowed(bus_line, ("tram", "bus")))
+        self.assertEqual(line_mode(bus_line), "bus")
 
-    def test_network_contains_bus_only_stations(self):
+    def test_network_contains_no_pseudo_edges(self):
         station_modes = {}
         for station in ADJACENCY:
             station_modes[station] = {
@@ -121,9 +156,9 @@ class RingLineTests(unittest.TestCase):
                 for _next_station, line, _travel in ADJACENCY[station]
             }
 
-        bus_only = [station for station, modes in station_modes.items() if modes - {"walking"} == {"bus"}]
-
-        self.assertTrue(bus_only)
+        self.assertTrue(station_modes)
+        self.assertTrue(all(modes.issubset({"metro", "tram", "bus", "walking"}) for modes in station_modes.values()))
+        self.assertTrue(all("walking" in modes for modes in station_modes.values()))
 
     def test_risk_is_reported_as_general_class(self):
         self.assertEqual(probability_class(0.1), "low")
@@ -132,17 +167,14 @@ class RingLineTests(unittest.TestCase):
         self.assertTrue(probability_class_allowed(0.3, 0.32))
         self.assertFalse(probability_class_allowed(0.6, 0.32))
 
-    def test_walking_links_are_available_for_persona_constraints(self):
-        links = nearby_walking_links(max_minutes=8, limit=4)
-
-        self.assertTrue(links)
-        self.assertLessEqual(max(link[0] for link in links), 8)
-
     def test_station_specific_transfer_time_and_risk_apply_on_line_change(self):
-        estimate = estimate_route_time(["Alpha", "Golf", "November"], 480, 2)
-        self.assertIsNotNone(estimate)
-        _, steps = estimate
-
-        self.assertEqual(steps[1]["transfer"], station_transfer_time_min("Golf"))
-        self.assertGreater(steps[1]["transfer_miss_probability"], 0.0)
-        self.assertEqual(steps[0]["transfer_miss_probability"], 0.0)
+        station_lines = [
+            line_name for line_name, data in LINES.items()
+            if line_name != "Walking" and "Golf" in data["stops"]
+        ]
+        self.assertGreaterEqual(len(station_lines), 2)
+        previous_line, next_line = station_lines[:2]
+        transfer = transfer_time_at_station("Golf", previous_line, next_line, 2)
+        self.assertEqual(transfer, station_transfer_time_min("Golf"))
+        self.assertGreater(transfer_miss_probability("Golf", next_line, transfer, 0, 480), 0.0)
+        self.assertEqual(transfer_miss_probability("Golf", previous_line, 0, 0, 480), 0.0)

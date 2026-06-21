@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "name": "audio_persona_matrix",
+  "description": "Cross selected caller behavior, caller audio, and operator audio conditions.",
+  "iterations": 3,
+  "config": {
+    "agent_b_plugin": "simple",
+    "tts_engine": "file",
+    "asr_engine": "file",
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "num_turns": 7
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city", "midday_transfer"],
+    "personas": ["focused_commuter", "risk_averse_novice"],
+    "agent_a_audio_personas": ["neutral_caller", "hurried_caller", "hesitant_caller"],
+    "agent_b_audio_personas": ["clear_operator", "brisk_operator", "deliberate_operator"],
+    "speech_patterns": ["clean", "mostly_clean"],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"]
+  }
+}

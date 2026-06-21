@@ -2,63 +2,40 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from minillama.caller.config import LLM_AGENT_A
-from minillama.assistant.config import (
+from coop_navigation_sds.Configuration.runtime import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
+from coop_navigation_sds.Configuration.speech import (
     AGENT_B_PLUGIN,
-    RUN_MODE,
     SPEECH_AUDIO_DIR,
-    SPEECH_ENGINE,
-    SPEECH_INCOMING_ENABLED,
-    SPEECH_OUTGOING_ENABLED,
     SPEECH_PATTERNS,
     SPEECH_PLAYBACK_ENABLED,
     SPEECH_REALTIME_ENABLED,
-    SPEECH_SCOPE,
 )
-from minillama.speech.io import SpeechPipelineConfig, SpeechTransport
-from minillama.assistant.plugin_registry import AgentBPluginConfig, available_agent_b_plugin_keys
-from minillama.orchestration.config import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
-from minillama.network.config import DEVICE, MODEL
-from minillama.network.network_overview import build_network_overview
-from minillama.interface.config import GUI_COLORS, GUI_WIDTH, MAP_ROUTE_LINE_WIDTH
-from minillama.interface.gui import DialogWindow
+from coop_navigation_sds.Configuration.travel import DEVICE, MODEL
+from coop_navigation_sds.NaturalLanguageGeneration.caller.config import LLM_AGENT_A
+from coop_navigation_sds.DialogManagement.speech_pipeline import SpeechPipelineConfig, SpeechTransport
 
 
 class ConfigModuleTests(unittest.TestCase):
-    def test_model_config_exports_model_values(self):
+    def test_configuration_exports_core_values(self):
         self.assertTrue(MODEL)
         self.assertTrue(DEVICE)
         self.assertTrue(SPEECH_PATTERNS)
-
-    def test_view_config_exports_gui_values(self):
-        self.assertTrue(GUI_WIDTH)
-        self.assertTrue(GUI_COLORS)
-        self.assertTrue(MAP_ROUTE_LINE_WIDTH)
-
-    def test_controller_config_exports_controller_values(self):
         self.assertTrue(NUM_TURNS)
         self.assertTrue(AGENT_B_PLUGIN)
         self.assertEqual(RESULTS_DIR, "results")
         self.assertTrue(SESSION_LOG_DIR)
         self.assertFalse(LLM_AGENT_A)
 
-    def test_default_speech_pipeline_plays_and_listens(self):
-        self.assertEqual(RUN_MODE, "speech")
-        self.assertTrue(SPEECH_INCOMING_ENABLED)
-        self.assertTrue(SPEECH_OUTGOING_ENABLED)
+    def test_default_speech_settings_play_and_wait(self):
         self.assertTrue(SPEECH_PLAYBACK_ENABLED)
         self.assertTrue(SPEECH_REALTIME_ENABLED)
-        self.assertEqual(SPEECH_SCOPE, "both")
-        self.assertEqual(SPEECH_ENGINE, "file")
         self.assertTrue(SPEECH_AUDIO_DIR)
 
+    def test_file_pipeline_produces_audio_and_transcript(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             transport = SpeechTransport(config=SpeechPipelineConfig(
-                mode="speech",
-                incoming_enabled=True,
-                outgoing_enabled=True,
-                scope="both",
-                engine="file",
+                tts_engine="file",
+                asr_engine="file",
                 audio_dir=tmpdir,
                 playback_enabled=False,
                 realtime_enabled=False,
@@ -67,41 +44,10 @@ class ConfigModuleTests(unittest.TestCase):
             self.assertTrue(Path(trace.audio["path"]).exists())
 
         self.assertEqual(trace.incoming_transcript, "Need Alpha to Echo.")
-        self.assertEqual(trace.outgoing_text, "Need Alpha to Echo.")
         self.assertTrue(trace.incoming_enabled)
         self.assertTrue(trace.outgoing_enabled)
-        self.assertEqual(trace.tts_engine, "wavefile-tts")
-        self.assertEqual(trace.asr_engine, "wavefile-asr")
-        self.assertIn("outgoing+incoming:clean:both", transport.description)
+        self.assertIn("tts=file:asr=file", transport.description)
 
-    def test_gui_only_expands_speech_trace_when_pipeline_changes_message(self):
-        self.assertFalse(DialogWindow.should_show_speech_trace(None))
-        self.assertFalse(DialogWindow.should_show_speech_trace({
-            "outgoing_enabled": False,
-            "incoming_enabled": False,
-            "outgoing_text": "Need Alpha to Echo.",
-            "incoming_transcript": "Need Alpha to Echo.",
-        }))
-        self.assertTrue(DialogWindow.should_show_speech_trace({
-            "outgoing_enabled": True,
-            "incoming_enabled": True,
-            "outgoing_text": "Take Red to Echo.",
-            "incoming_transcript": "Take red to Echo.",
-        }))
 
-    def test_agent_b_plugin_config_exposes_registry(self):
-        self.assertIn("minillama", available_agent_b_plugin_keys())
-        self.assertIn("simple", available_agent_b_plugin_keys())
-        self.assertTrue(AgentBPluginConfig("minillama").needs_model)
-        self.assertTrue(AgentBPluginConfig("llm").needs_model)
-        self.assertFalse(AgentBPluginConfig("simple").needs_model)
-
-    def test_network_overview_exposes_complete_tables(self):
-        overview = build_network_overview(480)
-
-        self.assertGreater(overview.line_count, 0)
-        self.assertGreater(overview.station_count, 0)
-        self.assertEqual(overview.line_count, len(overview.lines))
-        self.assertEqual(overview.station_count, len(overview.stations))
-        self.assertTrue(overview.lines[0].route)
-        self.assertTrue(overview.stations[0].neighbors)
+if __name__ == "__main__":
+    unittest.main()
