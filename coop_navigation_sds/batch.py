@@ -4,7 +4,7 @@ from pathlib import Path
 
 from coop_navigation_sds.Configuration.speech import AGENT_B_PLUGIN
 from coop_navigation_sds.Configuration.speech import DEFAULT_SPEECH_PATTERN
-from coop_navigation_sds.Configuration.speech import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_TTS_ENGINE, speech_pattern_keys
+from coop_navigation_sds.Configuration.speech import SPEECH_ASR_ENGINE, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_TTS_ENGINE, speech_pattern_keys
 from coop_navigation_sds.Configuration.experimental_defaults import (
     DEFAULT_ASR_AMBIGUOUS_END_SILENCE_MS,
     DEFAULT_ASR_BABBLE_TIMEOUT_SEC,
@@ -19,6 +19,7 @@ from coop_navigation_sds.NaturalLanguageGeneration.caller.config import PERSONAS
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
     AGENT_A_MINILLAMA,
     AGENT_A_USERLM,
+    agent_a_uses_model,
     available_agent_a_types,
     normalize_agent_a_type,
 )
@@ -33,6 +34,8 @@ from coop_navigation_sds.Configuration.runtime import (
     RESULTS_DIR,
     SESSION_LOG_PROFILE,
 )
+from coop_navigation_sds.Configuration.schema import resolve_results_root
+from coop_navigation_sds.Configuration.run_identity import batch_run_label
 from coop_navigation_sds.Configuration.travel import (
     ACCEPTABLE_DURATION_RATIO,
     ALLOW_MODEL_DOWNLOAD,
@@ -46,15 +49,29 @@ from coop_navigation_sds.Configuration.travel import (
     MODEL_PROVIDER,
     REQUIRE_STAGE_SUBOPTIMAL_OPTIONS,
 )
-from coop_navigation_sds.NaturalLanguageGeneration.models import available_model_provider_keys
+from coop_navigation_sds.NaturalLanguageGeneration.models import available_model_provider_keys, model_profile_defaults
 from coop_navigation_sds.DialogManagement.manager import DEFAULT_MAX_TURN_ELAPSED_SEC
 from coop_navigation_sds.experiments import ExperimentRunner, build_condition_grid, write_metrics_file
 from coop_navigation_sds.EvaluationMetrics.metrics import apply_cross_run_metrics, apply_paired_run_metrics
-from coop_navigation_sds.ResultsAndArtifacts.artifacts import create_execution_run_dir, run_scoped_path, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts
+from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
+    calculate_batch_metrics_from_inputs,
+    create_execution_run_dir,
+    write_conversation_protocols,
+    write_experiment_manifest,
+    write_failure_indicator_report,
+    write_batch_metric_inputs,
+    write_metric_phase_logs,
+    write_network_research_artifacts,
+)
 from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from coop_navigation_sds.Configuration.scenarios import DEFAULT_TEST_CASE
 from coop_navigation_sds.Configuration.settings import default_settings_path, load_run_settings
-from coop_navigation_sds.Configuration.jobs import job_grid_value, job_parameter_grid, load_experiment_job
+from coop_navigation_sds.Configuration.jobs import (
+    job_grid_value,
+    job_parameter_grid,
+    job_parameter_profiles,
+    load_experiment_job,
+)
 from coop_navigation_sds.Configuration.pipeline import component_status, serializable_metric_dependency_report
 from coop_navigation_sds.Configuration.component_catalog import apply_speech_engine_profiles
 from coop_navigation_sds.TransportNetwork.test_cases import TEST_CASES, get_test_case
@@ -121,6 +138,7 @@ def main():
     parser.add_argument("--model-timeout-sec", type=float, default=float(configured.get("model_timeout_sec", CHAT_TIMEOUT_SEC)))
     parser.add_argument("--model-max-new-tokens", type=int, default=int(configured.get("model_max_new_tokens", MAX_NEW_TOKENS)))
     parser.add_argument("--model-max-input-tokens", type=int, default=int(configured.get("model_max_input_tokens", MAX_INPUT_TOKENS)))
+    parser.add_argument("--allow-model-download", type=parse_bool_flag, default=bool(configured.get("allow_model_download", ALLOW_MODEL_DOWNLOAD)), help="Allow Transformers to download missing model files during this batch.")
     parser.add_argument("--test-cases", default=job_grid_value(job, "test_cases", configured.get("test_case_key", "morning_peak_cross_city,midday_transfer,evening_outbound,late_event")))
     parser.add_argument("--personas", default=job_grid_value(job, "personas", configured.get("persona_key", "focused_commuter")))
     parser.add_argument("--agent-a-audio-personas", default=job_grid_value(job, "agent_a_audio_personas", configured.get("agent_a_audio_persona", DEFAULT_AGENT_A_AUDIO_PERSONA)))
@@ -132,7 +150,6 @@ def main():
     parser.add_argument("--asr-engines", default=job_grid_value(job, "asr_engines", configured.get("asr_engine", SPEECH_ASR_ENGINE or platform_default_asr_engine())), help="Comma-separated ASR engine grid.")
     parser.add_argument("--agent-b-models", default=job_grid_value(job, "agent_b_models", configured.get("model_name", MODEL)), help="Comma-separated Agent B model grid.")
     parser.add_argument("--paired-audio-text", type=parse_bool_flag, default=bool(configured.get("paired_audio_text_runs", True)), help="Generate a deterministic text-only control for every audio condition.")
-    parser.add_argument("--speech-audio-dir", default=configured.get("speech_audio_dir", SPEECH_AUDIO_DIR or None), help="Directory for generated speech wave files and transcript artifacts.")
     parser.add_argument("--speech-playback", type=parse_bool_flag, default=configured.get("speech_playback_enabled", SPEECH_PLAYBACK_ENABLED), help="Play generated wave files during file-engine runs.")
     parser.add_argument("--no-speech-playback", dest="speech_playback", action="store_false", default=argparse.SUPPRESS, help="Disable generated-audio playback.")
     parser.add_argument("--speech-real-time", type=parse_bool_flag, default=configured.get("speech_realtime_enabled", SPEECH_REALTIME_ENABLED), help="Wait for each spoken turn before automatic speech recognition transcript delivery.")
@@ -184,13 +201,14 @@ def main():
         configured.get("agent_a_type"),
         configured.get("llm_agent_a", False),
     )
-    parser.add_argument("--agent-a-type", default=configured_agent_a_type, choices=available_agent_a_types(), help="Agent A implementation: staged or userlm.")
+    parser.add_argument("--agent-a-type", default=configured_agent_a_type, choices=available_agent_a_types(), help="Agent A implementation: staged, tinyllama, or userlm.")
     parser.add_argument("--llm-agent-a", action=argparse.BooleanOptionalAction, default=None, help="Deprecated compatibility alias; --llm-agent-a selects UserLM.")
     parser.add_argument("--iterations", type=int, default=int(job.get("iterations", 1)))
     parser.add_argument("--num-turns", type=int, default=int(configured.get("num_turns", NUM_TURNS)))
     parser.add_argument("--invalid-route-limit", type=int, default=int(configured.get("invalid_route_limit", INVALID_ROUTE_LIMIT)))
     parser.add_argument("--constraint-miss-limit", type=int, default=int(configured.get("constraint_miss_limit", CONSTRAINT_MISS_LIMIT)))
     parser.add_argument("--clarification-max-attempts", type=int, default=int(configured.get("clarification_max_attempts", 2)), help="Targeted repair turns before a structured trip-detail reset.")
+    parser.add_argument("--dialogue-stagnation-limit", type=int, default=int(configured.get("dialogue_stagnation_limit", 2)), help="Consecutive dialogue rounds without a new route, constraint, repair resolution, or closure before Agent A stops the run.")
     parser.add_argument("--agent-a-transfer-tolerance", type=int, default=int(configured.get("agent_a_transfer_tolerance", AGENT_A_TRANSFER_TOLERANCE)), choices=(0, 1, 2), help="Extra line changes Agent A accepts over the constraint-aware startup route.")
     parser.add_argument("--agent-a-ticket-modes", default=configured.get("agent_a_ticket_modes", "metro,tram"), choices=("metro,tram", "metro,bus", "tram,bus"), help="Exactly two public transport tickets available to Agent A.")
     parser.add_argument("--agent-a-max-walking-min", type=int, default=int(configured.get("agent_a_max_walking_min", 10)), help="Maximum cumulative walking minutes accepted by Agent A.")
@@ -205,17 +223,32 @@ def main():
     parser.add_argument("--require-stage-suboptimal-options", type=parse_bool_flag, default=bool(configured.get("require_stage_suboptimal_options", REQUIRE_STAGE_SUBOPTIMAL_OPTIONS)))
     parser.add_argument("--max-turn-elapsed-sec", type=float, default=float(configured.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC)))
     parser.add_argument("--calculation-max-time-sec", type=float, default=float(configured.get("calculation_max_time_sec", GENERATION_MAX_TIME_SEC)))
-    parser.add_argument("--output", default="automatic_eval_metrics.xlsx")
-    parser.add_argument("--metrics-log-dir", default=None, help="Directory for per-phase metric JSONL files.")
-    parser.add_argument("--results-dir", "--research-log-dir", dest="results_dir", default=configured.get("protocol_log_dir", RESULTS_DIR), help="Root results directory. Each execution creates one run folder inside it.")
-    parser.add_argument("--protocol-log-dir", default=None, help="Directory for detailed conversation protocol artifacts. Empty writes directly inside the execution run folder.")
-    parser.add_argument("--network-picture-dir", default=None, help="Directory for generated network graph SVG. Empty writes directly inside the execution run folder.")
+    parser.add_argument("--output", default="automatic_eval_metrics.xlsx", help="Metrics workbook filename inside the run folder.")
+    parser.add_argument("--results-dir", dest="results_dir", default=configured.get("results_root", configured.get("protocol_log_dir", RESULTS_DIR)), help="Single results root. Every execution writes one flat run folder inside it.")
     parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
-    parser.add_argument("--log-dir", default=None, help="Directory for optional batch JSONL/session logs. Empty writes directly inside the execution run folder.")
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
     args = parser.parse_args()
+    args.results_dir = resolve_results_root(args.results_dir)
+    resolved_speech_assets = apply_speech_engine_profiles({
+        "tts_engine": args.tts_engine,
+        "tts_model": args.tts_model,
+        "tts_executable": args.tts_executable,
+        "tts_python_executable": args.tts_python_executable,
+        "asr_engine": args.asr_engine,
+        "asr_model": args.asr_model,
+        "asr_executable": args.asr_executable,
+        "asr_python_executable": args.asr_python_executable,
+        "asr_vad_model": args.asr_vad_model,
+    })
+    args.tts_model = resolved_speech_assets["tts_model"]
+    args.asr_model = resolved_speech_assets["asr_model"]
     if args.llm_agent_a is not None:
         args.agent_a_type = AGENT_A_USERLM if args.llm_agent_a else AGENT_A_MINILLAMA
+    if args.agent_a_type == "tinyllama":
+        tinyllama_defaults = model_profile_defaults("tinyllama_1b_transformers")
+        args.model_provider = tinyllama_defaults["model_provider"]
+        args.model_name = tinyllama_defaults["model_name"]
+        args.model_base_url = tinyllama_defaults.get("model_base_url", args.model_base_url)
 
     test_case_keys = parse_csv_arg(args.test_cases, TEST_CASES)
     conditions = list(build_condition_grid(
@@ -231,6 +264,7 @@ def main():
         agent_b_model_keys=parse_csv_arg(args.agent_b_models),
         iterations=args.iterations,
         parameter_grid=job_parameter_grid(job),
+        parameter_profiles=job_parameter_profiles(job),
         pair_audio_with_text=args.paired_audio_text,
     ))
     preflight_config = {
@@ -256,25 +290,34 @@ def main():
         raise SystemExit("Preflight failed:\n  " + "\n  ".join(preflight_failures))
     run_dir = create_execution_run_dir(
         args.results_dir,
-        label=f"batch_{len(conditions)}_conditions",
+        label=batch_run_label(len(conditions)),
     )
     if args.job_file:
         (run_dir / "experiment_job.json").write_text(
             Path(args.job_file).read_text(encoding="utf-8"),
             encoding="utf-8",
         )
-    metrics_output = run_scoped_path(run_dir, args.output, "automatic_eval_metrics.xlsx")
-    protocol_log_dir = run_scoped_path(run_dir, args.protocol_log_dir, "")
-    phase_log_dir = run_scoped_path(run_dir, args.metrics_log_dir, "")
-    network_picture_dir = run_scoped_path(run_dir, args.network_picture_dir, "")
-    configured_speech_audio_dir = None if args.speech_audio_dir == SPEECH_AUDIO_DIR else args.speech_audio_dir
-    speech_audio_dir = run_scoped_path(run_dir, configured_speech_audio_dir, "")
-    session_log_dir = run_scoped_path(run_dir, args.log_dir, "")
+    metrics_output = run_dir / Path(args.output).name
+    protocol_dir = run_dir
+    phase_log_dir = run_dir
+    network_picture_dir = run_dir
+    speech_audio_dir = run_dir
+    session_log_dir = run_dir
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     model_adapter = None
     model_adapter_factory = None
-    if agent_b_config.needs_model or args.agent_a_type == AGENT_A_USERLM:
+    if agent_b_config.needs_model or agent_a_uses_model(args.agent_a_type):
+        roles = []
+        if agent_a_uses_model(args.agent_a_type):
+            roles.append(f"Agent A {args.agent_a_type}")
+        if agent_b_config.needs_model:
+            roles.append("Agent B")
+        print(
+            "Loading language model for "
+            f"{', '.join(roles)}: {args.model_name} through {args.model_provider}.",
+            flush=True,
+        )
         if args.model_provider == "openai_compatible" and not args.model_api_key:
             raise SystemExit(
                 "ChatGPT/OpenAI-compatible batch runs require an API key. "
@@ -292,7 +335,7 @@ def main():
                 device=args.model_device,
                 max_new_tokens=args.model_max_new_tokens,
                 max_input_tokens=args.model_max_input_tokens,
-                allow_model_download=False,
+                allow_model_download=args.allow_model_download,
             )
             def model_adapter_factory(model_name):
                 return create_model_adapter(
@@ -304,7 +347,7 @@ def main():
                     device=args.model_device,
                     max_new_tokens=args.model_max_new_tokens,
                     max_input_tokens=args.model_max_input_tokens,
-                    allow_model_download=False,
+                    allow_model_download=args.allow_model_download,
                 )
         except Exception as exc:
             raise SystemExit(f"Preflight failed: Agent model assets are unavailable: {exc}") from exc
@@ -352,16 +395,16 @@ def main():
         transfer_tolerance=args.agent_a_transfer_tolerance,
         invalid_route_limit=args.invalid_route_limit,
         constraint_miss_limit=args.constraint_miss_limit,
+        stagnation_limit=args.dialogue_stagnation_limit,
         max_turn_elapsed_sec=args.max_turn_elapsed_sec,
         calculation_max_time_sec=args.calculation_max_time_sec,
         agent_a_type=args.agent_a_type,
         log_profile=args.log_profile,
         log_dir=str(session_log_dir),
-        metric_config=configured.get("metric_config"),
-        metric_tiers=configured.get("metric_tiers"),
         scenario_overrides={
             "network_seed": args.network_seed,
             "clarification_max_attempts": args.clarification_max_attempts,
+            "dialogue_stagnation_limit": args.dialogue_stagnation_limit,
             "ticket_modes": tuple(args.agent_a_ticket_modes.split(",")),
             "max_walking_min": max(0, args.agent_a_max_walking_min),
             "max_delay_probability": {"low": 0.24, "medium": 0.44, "high": 1.0}[args.agent_a_max_delay_risk],
@@ -382,18 +425,25 @@ def main():
         model_adapter_factory=model_adapter_factory,
     )
     results = []
-    metrics = []
     for condition in conditions:
         runner.speech_audio_dir = str(speech_audio_dir)
-        result, metric = runner.run_condition(condition)
+        result, _metric = runner.run_condition(condition, compute_metrics=False)
         results.append(result)
-        metrics.append(metric)
         if args.progress:
             print(f"completed {condition.condition_id}", flush=True)
+    batch_metric_inputs = write_batch_metric_inputs(
+        results,
+        run_dir / "metric_inputs.json",
+    )
+    metrics = calculate_batch_metrics_from_inputs(batch_metric_inputs)
     apply_cross_run_metrics(metrics)
     apply_paired_run_metrics(metrics)
     write_metrics_file(metrics, metrics_output)
-    protocol_paths = write_conversation_protocols(results, protocol_log_dir)
+    failure_indicator_path = write_failure_indicator_report(
+        metrics,
+        run_dir / "failure_indicators.json",
+    )
+    protocol_paths = write_conversation_protocols(results, protocol_dir)
 
     first_case_key = (test_case_keys or [DEFAULT_TEST_CASE])[0]
     first_case = get_test_case(first_case_key)
@@ -409,6 +459,7 @@ def main():
         speech_engine="full_speech",
         tts_engine=args.tts_engine,
         asr_engine=args.asr_engine,
+        metrics_filename=metrics_output.name,
         speech_scope="both",
         agent_b_plugin=args.agent_b_plugin,
         configuration={
@@ -424,6 +475,7 @@ def main():
             "iterations": args.iterations,
             "invalid_route_limit": args.invalid_route_limit,
             "constraint_miss_limit": args.constraint_miss_limit,
+            "dialogue_stagnation_limit": args.dialogue_stagnation_limit,
             "max_turn_elapsed_sec": args.max_turn_elapsed_sec,
             "calculation_max_time_sec": args.calculation_max_time_sec,
             "agent_a_type": args.agent_a_type,
@@ -434,6 +486,7 @@ def main():
             "model_timeout_sec": args.model_timeout_sec,
             "model_max_new_tokens": args.model_max_new_tokens,
             "model_max_input_tokens": args.model_max_input_tokens,
+            "allow_model_download": args.allow_model_download,
             "maximum_progressive_constraints": args.maximum_progressive_constraints,
             "minimum_compared_routes": args.minimum_compared_routes,
             "require_constraint_retention": args.require_constraint_retention,
@@ -446,9 +499,11 @@ def main():
 
     print(f"Run folder: {run_dir}")
     print(f"Metrics: {len(metrics)} rows -> {metrics_output}")
-    print(f"Protocols: {len(protocol_paths)} files -> {protocol_log_dir}")
+    print(f"Metric inputs: {batch_metric_inputs}")
+    print(f"Failure indicators: {failure_indicator_path}")
+    print(f"Protocols: {len(protocol_paths)} files -> {protocol_dir}")
     print(f"Artifacts: manifest={manifest_path}; network={artifacts['network_json']}; graph={artifacts['network_graph']}")
-    print(f"Logs: phases={phase_log_dir}; sessions={session_log_dir}; audio={speech_audio_dir}")
+    print(f"All artifacts: {run_dir}")
 
 
 if __name__ == "__main__":

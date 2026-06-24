@@ -54,10 +54,12 @@ class RingLineTests(unittest.TestCase):
         proposal = route_text_from_steps(steps)
         complete_path = route_path_text_from_steps(steps)
         self.assertRegex(proposal, r"metro line M\d+ from \w+ to \w+")
-        self.assertIn("It takes", proposal)
-        self.assertEqual(complete_path.count("-->"), len(steps))
-        for step in steps:
-            self.assertIn(f"--{step['line']}--> {step['to']}", complete_path)
+        self.assertIn("minutes", proposal)
+        self.assertEqual(complete_path.count("-->"), 1)
+        self.assertIn(f"--{steps[0]['mode']} {steps[0]['line']}", complete_path)
+        self.assertTrue(complete_path.endswith(steps[-1]["to"]))
+        if len(steps) > 1:
+            self.assertIn(steps[0]["to"], complete_path)
         for step in route_step_details(steps):
             self.assertEqual(
                 set(step),
@@ -82,6 +84,18 @@ class RingLineTests(unittest.TestCase):
         self.assertEqual(complete_path, "Alpha --walk 5 min--> Bravo")
         self.assertIsNone(details[0]["line"])
         self.assertEqual(details[0]["transport_type"], "walking")
+
+    def test_complete_path_condenses_intermediate_stations_on_same_line(self):
+        steps = [
+            {"from": "Bravo", "to": "Charlie", "line": "T1", "mode": "tram", "depart": 480, "arrive": 484, "wait": 0},
+            {"from": "Charlie", "to": "Delta", "line": "T1", "mode": "tram", "depart": 484, "arrive": 488, "wait": 0},
+            {"from": "Delta", "to": "Gamma", "line": "T1", "mode": "tram", "depart": 488, "arrive": 492, "wait": 0},
+        ]
+
+        self.assertEqual(
+            route_path_text_from_steps(steps),
+            "Bravo --tram T1 (Charlie, Delta)--> Gamma",
+        )
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):
         scenario = {

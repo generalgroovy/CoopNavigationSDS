@@ -36,6 +36,7 @@ from coop_navigation_sds.DialogManagement.speech_pipeline import (
     normalize_text_for_speech,
     platform_default_asr_engine,
     platform_default_tts_engine,
+    punctuation_pause_duration_sec,
     synthesis_controls,
 )
 
@@ -206,6 +207,34 @@ class SpeechPipelineTests(unittest.TestCase):
             custom_path=str(model_path),
             compile=False,
         )
+
+    def test_chattts_uses_cached_uncompressed_speaker_tensor(self):
+        class FakeTensor:
+            def detach(self):
+                return self
+
+            def to(self, **_kwargs):
+                return self
+
+        tensor = FakeTensor()
+        sample_tensor = unittest.mock.Mock(return_value=tensor)
+        encoded_sampler = unittest.mock.Mock(side_effect=MemoryError("LZMA allocation"))
+        chat = SimpleNamespace(
+            speaker=SimpleNamespace(_sample_random=sample_tensor),
+            sample_random_speaker=encoded_sampler,
+        )
+        torch = SimpleNamespace(manual_seed=unittest.mock.Mock())
+        engine = ChatTTSTextToSpeech(SpeechPipelineConfig())
+
+        first, first_strategy = engine._speaker_embedding(chat, torch, 11)
+        second, second_strategy = engine._speaker_embedding(chat, torch, 11)
+
+        self.assertIs(first, tensor)
+        self.assertIs(second, tensor)
+        self.assertEqual(first_strategy, "uncompressed_tensor")
+        self.assertEqual(second_strategy, "cached_tensor")
+        sample_tensor.assert_called_once_with()
+        encoded_sampler.assert_not_called()
 
     def test_chattts_never_downloads_when_download_is_disabled(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -494,7 +523,7 @@ class SpeechPipelineTests(unittest.TestCase):
     def test_clock_notation_is_normalized_for_clean_speech(self):
         self.assertEqual(
             normalize_text_for_speech("Leave at 08:07 and return at 18:30."),
-            "Leave at eight seven and return at eighteen thirty.",
+            "Leave at eight oh seven and return at eighteen thirty.",
         )
 
     def test_both_agents_always_pass_through_tts_and_asr(self):
@@ -551,6 +580,24 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertIn("pitch='+2st'", script)
         self.assertIn('140ms', script)
         self.assertIn("emphasis level='moderate'", script)
+        self.assertIn('77ms', script)
+        self.assertIn('161ms', script)
+
+    def test_punctuation_pauses_follow_natural_cadence(self):
+        comma = punctuation_pause_duration_sec(",", 200)
+        period = punctuation_pause_duration_sec(".", 200)
+        question = punctuation_pause_duration_sec("?", 200)
+        ellipsis = punctuation_pause_duration_sec("...", 200)
+
+        self.assertLess(comma, period)
+        self.assertLess(period, question)
+        self.assertEqual(ellipsis, period)
+
+    def test_speech_text_gets_clean_spacing_and_terminal_punctuation(self):
+        self.assertEqual(
+            normalize_text_for_speech("Take M1 , then T2"),
+            "Take M1, then T2.",
+        )
 
     def test_sapi_named_audio_persona_does_not_pass_audit_metadata_to_command(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -606,7 +653,7 @@ class SpeechPipelineTests(unittest.TestCase):
             self.assertTrue(all(check["audio_ok"] for check in health["checks"]))
             self.assertTrue(all(check["transcript_ok"] for check in health["checks"]))
 
-    def test_health_check_records_asr_quality_without_blocking_operational_pipeline(self):
+    def test_health_check_records_clean_asr_entity_misses_without_blocking(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             audio_path = Path(tmpdir) / "probe.wav"
             audio_path.write_bytes(b"RIFF")
@@ -624,9 +671,11 @@ class SpeechPipelineTests(unittest.TestCase):
             health = transport.health_check()
 
         self.assertTrue(health["ok"])
+        self.assertTrue(health["operational_ok"])
         self.assertFalse(health["quality_ok"])
         self.assertTrue(all(check["pipeline_ok"] for check in health["checks"]))
         self.assertFalse(any(check["quality_ok"] for check in health["checks"]))
+        self.assertTrue(all(check["missing_entity_groups"] for check in health["checks"]))
 
     def test_realtime_without_playback_waits_before_recognition(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -13,6 +13,7 @@ from coop_navigation_sds.app import (
     validate_run_config_for_start,
 )
 from coop_navigation_sds.Configuration.settings import load_run_settings, save_run_settings
+from coop_navigation_sds.Configuration.schema import CONFIG_SCHEMA_VERSION
 
 
 class RunSettingsTests(unittest.TestCase):
@@ -77,8 +78,9 @@ class RunSettingsTests(unittest.TestCase):
         self.assertTrue(Path(normalized["tts_model"]).is_dir())
         self.assertTrue(Path(normalized["asr_model"]).is_dir())
 
-    def test_runtime_model_downloads_are_disabled(self):
-        self.assertNotIn("allow_model_download", default_run_config())
+    def test_runtime_model_downloads_are_explicitly_configurable(self):
+        self.assertIn("allow_model_download", default_run_config())
+        self.assertFalse(default_run_config()["allow_model_download"])
         self.assertNotIn("allow_tts_model_download", default_run_config())
 
     def test_save_and_load_wrapped_settings(self):
@@ -96,7 +98,7 @@ class RunSettingsTests(unittest.TestCase):
             loaded = load_run_settings({"num_turns": 5, "asr_engine": "sapi"}, path)
 
         self.assertEqual(saved_path, path)
-        self.assertEqual(document["schema_version"], 3)
+        self.assertEqual(document["schema_version"], CONFIG_SCHEMA_VERSION)
         self.assertNotIn("execution_run_dir", document["config"])
         self.assertEqual(loaded["num_turns"], 9)
         self.assertEqual(loaded["asr_engine"], "sapi")
@@ -207,28 +209,22 @@ class RunSettingsTests(unittest.TestCase):
         self.assertNotIn("agent_a_reference_audio", saved)
         self.assertNotIn("agent_a_custom_audio", saved)
 
-    def test_saved_metric_settings_are_compacted_to_deviations(self):
+    def test_legacy_metric_settings_are_not_persisted(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "settings.json"
             save_run_settings(
                 {
                     "metric_config": {
                         "asr_wer": True,
-                        "audio_missing_rate": True,
-                    },
-                    "metric_tiers": {
-                        "asr_wer": "core",
-                        "audio_missing_rate": "core",
+                        "audio_missing_rate": False,
                     },
                 },
                 path,
             )
             saved = json.loads(path.read_text(encoding="utf-8"))["config"]
 
-        self.assertNotIn("asr_wer", saved.get("metric_config", {}))
-        self.assertEqual(saved["metric_config"]["audio_missing_rate"], True)
-        self.assertNotIn("asr_wer", saved.get("metric_tiers", {}))
-        self.assertEqual(saved["metric_tiers"]["audio_missing_rate"], "core")
+        self.assertNotIn("metric_config", saved)
+        self.assertNotIn("metric_tiers", saved)
 
     def test_normalization_replaces_whisper_model_default_for_vosk(self):
         config = default_run_config()
@@ -253,7 +249,10 @@ class RunSettingsTests(unittest.TestCase):
         })
         with tempfile.TemporaryDirectory() as tmpdir:
             config["protocol_log_dir"] = tmpdir
-            with patch("importlib.util.find_spec", return_value=None):
+            with patch("importlib.util.find_spec", return_value=None), patch(
+                "coop_navigation_sds.app.subprocess.run",
+                return_value=Mock(returncode=1),
+            ):
                 with self.assertRaisesRegex(ValueError, "provider (cannot initialize|process cannot start)"):
                     validate_run_config_for_start(config)
 
@@ -272,7 +271,10 @@ class RunSettingsTests(unittest.TestCase):
                         "asr_python_executable": sys.executable,
                     })
                     config["protocol_log_dir"] = tmpdir
-                    with patch("importlib.util.find_spec", return_value=None):
+                    with patch("importlib.util.find_spec", return_value=None), patch(
+                        "coop_navigation_sds.app.subprocess.run",
+                        return_value=Mock(returncode=1),
+                    ):
                         with self.assertRaisesRegex(ValueError, "provider (cannot initialize|process cannot start)"):
                             validate_run_config_for_start(config)
 
@@ -360,7 +362,6 @@ class RunSettingsTests(unittest.TestCase):
         dialog = StartupConfigDialog.__new__(StartupConfigDialog)
         dialog.vars = {"value": Mock(get=lambda: "invalid")}
         dialog.metric_vars = {}
-        dialog.metric_tier_vars = {}
         dialog.validator = Mock(side_effect=ValueError("invalid provider"))
         dialog.root = Mock()
         dialog.result = "old"

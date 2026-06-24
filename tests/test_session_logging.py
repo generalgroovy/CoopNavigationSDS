@@ -8,6 +8,18 @@ from coop_navigation_sds.ResultsAndArtifacts.logging import MonitoringEventQueue
 
 
 class SessionLoggingTests(unittest.TestCase):
+    def test_session_logger_sanitizes_long_model_condition_names(self):
+        raw_name = "batch-condition-TinyLlama/TinyLlama-1.1B-Chat-v1.0" + "-long" * 30
+        with tempfile.TemporaryDirectory() as tmpdir:
+            logger = SessionLogger(raw_name, tmpdir)
+            logger.close()
+            files = list(Path(tmpdir).iterdir())
+
+        self.assertTrue(files)
+        self.assertTrue(all(path.parent == Path(tmpdir) for path in files))
+        self.assertTrue(all("/" not in path.name and "\\" not in path.name for path in files))
+        self.assertTrue(all(len(path.name) < 130 for path in files))
+
     def test_session_logger_writes_structured_session_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             logger = SessionLogger("unit", tmpdir)

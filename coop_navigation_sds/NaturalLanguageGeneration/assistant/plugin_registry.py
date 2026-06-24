@@ -6,7 +6,6 @@ import os
 from coop_navigation_sds.NaturalLanguageGeneration.caller.agents import fallback_reply
 from coop_navigation_sds.NaturalLanguageGeneration.caller.agents import agent_a_requested_secondary_constraints
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import VerbalTransformationPipeline
-from coop_navigation_sds.NaturalLanguageUnderstanding.clarification import clarification_question
 from coop_navigation_sds.NaturalLanguageUnderstanding.interpreter import NaturalRouteInterpreter
 from coop_navigation_sds.TransportNetwork.constraints import stage_route_options, stated_constraint_keys
 from coop_navigation_sds.TransportNetwork.routes import route_text_from_steps
@@ -115,10 +114,7 @@ class SimplePlannerAgentBPlugin:
 
     def run_agent_b(self, state):
         if state.assistant_scenario is None:
-            return clarification_question(
-                state.latest_agent_a_text,
-                "Please repeat the start station, destination, and time.",
-            )
+            return state.trip_clarification_prompt()
         return fallback_reply(
             "Agent B",
             state.assistant_scenario,
@@ -138,10 +134,7 @@ class ResearchPlannerAgentBPlugin:
     def run_agent_b(self, state):
         scenario = state.assistant_scenario
         if scenario is None:
-            return clarification_question(
-                state.latest_agent_a_text,
-                "Please repeat the start station, destination, and time.",
-            )
+            return state.trip_clarification_prompt()
         stated_keys = stated_constraint_keys(state.conversation)
         options = stage_route_options(
             scenario,

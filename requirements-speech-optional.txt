@@ -6,6 +6,11 @@ qwen-asr==0.0.6
 sherpa-onnx==1.13.3
 vosk==0.3.45
 
+# Retrospective intrusive quality metrics. These are optional because they
+# require aligned clean-reference WAV files; unavailable metrics remain null.
+pesq==0.0.4
+pystoi==0.4.1
+
 # System package: eSpeak NG (`espeak-ng` executable).
 # Coqui uses `coqui-tts==0.27.5` in the isolated Python 3.11 provider created
 # by `scripts/setup_speech_providers.py`; do not install it in Python 3.14.

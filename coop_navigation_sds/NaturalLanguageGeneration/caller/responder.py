@@ -9,11 +9,17 @@ from coop_navigation_sds.NaturalLanguageGeneration.caller.agents import (
     generate_agent_a_template,
 )
 from coop_navigation_sds.TransportNetwork.constraints import stated_constraint_keys
+from coop_navigation_sds.NaturalLanguageUnderstanding.clarification import (
+    last_substantive_agent_b_utterance,
+)
+from coop_navigation_sds.DialogManagement.stages import agent_memory_view
 
 
 AGENT_A_MINILLAMA = "staged"
+AGENT_A_TINYLLAMA = "tinyllama"
 AGENT_A_USERLM = "userlm"
-AGENT_A_TYPES = (AGENT_A_MINILLAMA, AGENT_A_USERLM)
+MODEL_BACKED_AGENT_A_TYPES = (AGENT_A_TINYLLAMA, AGENT_A_USERLM)
+AGENT_A_TYPES = (AGENT_A_MINILLAMA, AGENT_A_TINYLLAMA, AGENT_A_USERLM)
 
 
 def normalize_agent_a_type(value=None, legacy_llm_agent_a=False):
@@ -25,7 +31,7 @@ def normalize_agent_a_type(value=None, legacy_llm_agent_a=False):
     normalized = str(value).strip().lower().replace("-", "").replace("_", "")
     aliases = {
         "minillama": AGENT_A_MINILLAMA,
-        "tinyllama": AGENT_A_MINILLAMA,
+        "tinyllama": AGENT_A_TINYLLAMA,
         "staged": AGENT_A_MINILLAMA,
         "template": AGENT_A_MINILLAMA,
         "deterministic": AGENT_A_MINILLAMA,
@@ -40,6 +46,11 @@ def normalize_agent_a_type(value=None, legacy_llm_agent_a=False):
 
 def available_agent_a_types():
     return AGENT_A_TYPES
+
+
+def agent_a_uses_model(agent_a_type):
+    """Return whether the Agent A implementation requires a language model."""
+    return normalize_agent_a_type(agent_a_type) in MODEL_BACKED_AGENT_A_TYPES
 
 
 class TemplateAgentAResponder:
@@ -96,10 +107,7 @@ class LLMAgentAResponder:
             scenario,
             conversation,
         )
-        latest_agent_b = next(
-            (text for speaker, text in reversed(conversation) if speaker == "Agent B"),
-            "",
-        )
+        latest_agent_b = last_substantive_agent_b_utterance(conversation)
         if latest_agent_b:
             from coop_navigation_sds.NaturalLanguageUnderstanding.interpreter import NaturalRouteInterpreter
 
@@ -114,7 +122,13 @@ class LLMAgentAResponder:
             ):
                 return template_reply
 
-        system_prompt = build_agent_a_system(persona, scenario)
+        memory = agent_memory_view(
+            "Agent A",
+            conversation,
+            scenario=scenario,
+            persona=persona,
+        )
+        system_prompt = f"{build_agent_a_system(persona, scenario)} {memory.prompt_summary()}"
         messages = build_messages("Agent A", system_prompt, conversation)
         if hasattr(self.model_adapter, "generate_messages"):
             raw_reply = self.model_adapter.generate_messages(messages)

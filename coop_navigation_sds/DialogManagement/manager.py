@@ -5,12 +5,24 @@ It coordinates turns, route interpretation, trace events, and final results.
 import time
 
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import TemplateAgentAResponder
+from coop_navigation_sds.NaturalLanguageGeneration.caller.agents import fallback_reply
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import DialogState
 from coop_navigation_sds.DialogManagement.result import DialogResult
 from coop_navigation_sds.DialogManagement.memory import RouteProposalMemory
 from coop_navigation_sds.EvaluationMetrics.metrics import TASK_TERMS, COMPARISON_TERMS, COOPERATION_TERMS
 from coop_navigation_sds.NaturalLanguageUnderstanding.interpreter import NaturalRouteInterpreter
-from coop_navigation_sds.DialogManagement.stages import ConversationStage
+from coop_navigation_sds.NaturalLanguageUnderstanding.clarification import (
+    clarification_signature,
+    clarification_target,
+    clarification_confirmation,
+    is_clarification_request,
+    transcript_repair_question,
+)
+from coop_navigation_sds.DialogManagement.stages import (
+    ConversationStage,
+    agent_memory_view,
+    dialog_context,
+)
 from coop_navigation_sds.TransportNetwork.routes import (
     estimate_route_time,
     fmt_time,
@@ -104,7 +116,31 @@ def constraint_gap_missed(gap, transfer_tolerance=1):
 def agent_a_ended_conversation(text):
     """Return whether Agent A has naturally closed the call."""
     lower = (text or "").lower()
-    return "thanks" in lower and any(term in lower for term in ("i'll take", "i will take", "choose", "that works"))
+    return (
+        "goodbye" in lower
+        or "end this call" in lower
+        or (
+            "thanks" in lower
+            and any(term in lower for term in ("i'll take", "i will take", "choose", "that works"))
+        )
+    )
+
+
+def agent_b_attempted_closure(text):
+    """Return whether Agent B tried to terminate instead of helping."""
+    lower = str(text or "").casefold()
+    return any(
+        phrase in lower
+        for phrase in (
+            "end this call",
+            "goodbye",
+            "i cannot help",
+            "i can't help",
+            "cannot help with",
+            "can't continue",
+            "cannot continue",
+        )
+    )
 
 
 class DialogManager:
@@ -121,11 +157,10 @@ class DialogManager:
         monitor=None,
         invalid_route_limit=2,
         constraint_miss_limit=2,
+        stagnation_limit=2,
         transfer_tolerance=1,
         metric_snapshot_interval=1,
         max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
-        metric_config=None,
-        metric_tiers=None,
         agent_a_objective_mode=None,
     ):
         """  init   method for this module's MVC responsibility.
@@ -150,14 +185,13 @@ class DialogManager:
         self.monitor = monitor
         self.invalid_route_limit = invalid_route_limit
         self.constraint_miss_limit = constraint_miss_limit
+        self.stagnation_limit = max(1, int(stagnation_limit or 2))
         self.transfer_tolerance = max(0, int(transfer_tolerance))
         self.metric_snapshot_interval = max(1, int(metric_snapshot_interval or 1))
         self.max_turn_elapsed_sec = min(
             HARD_MAX_TURN_ELAPSED_SEC,
             max(1.0, float(max_turn_elapsed_sec or DEFAULT_MAX_TURN_ELAPSED_SEC)),
         )
-        self.metric_config = dict(metric_config or {})
-        self.metric_tiers = dict(metric_tiers or {})
         self.agent_a_objective_mode = normalize_objective_mode(agent_a_objective_mode)
 
     def run(self, event_queue):
@@ -222,6 +256,7 @@ class DialogManager:
             timing = cap_turn_timing(generation_sec, speech_sec)
             parsed_route_valid = route_is_valid(parsed_route, allowed_modes=planning_allowed_modes) if parsed_route else False
             parsed_route_goal = route_reaches_goal(parsed_route, scenario) if parsed_route_valid else False
+            context = dialog_context(conversation)
             payload = {
                 "turn": turn_number,
                 "speaker": speaker,
@@ -249,6 +284,12 @@ class DialogManager:
                 "best_duration": best_duration,
                 "warnings": warning_count,
                 "route_status": "Correct" if parsed_route_goal else "Partial" if parsed_route_valid else "Invalid",
+                "phase": context.stage.value,
+                "detected_intent": context.response_focus,
+                "detected_constraints": stated_constraint_keys(conversation),
+                "clarification_requested": is_clarification_request(utterance),
+                "repair_count": route_revision_count,
+                "failed_assumptions": [],
             }
             self.monitor.log_step(
                 turn=turn_number,
@@ -268,6 +309,68 @@ class DialogManager:
                     "payload": dict(payload or {}),
                 }
             )
+
+        previous_memory_snapshot = None
+
+        def memory_snapshot_for(agent, memory_turns):
+            """Return a serializable task-memory view for one agent."""
+            view = agent_memory_view(
+                agent,
+                memory_turns,
+                scenario=scenario,
+                persona=persona,
+            )
+            return {
+                "latest_spoken": view.latest_spoken,
+                "latest_heard": view.latest_heard,
+                "pending_focus": view.pending_focus,
+                "task_variables": dict(view.task_variables),
+                "missing_task_variables": list(view.missing_task_variables),
+                "active_constraints": list(view.active_constraints),
+                "active_constraint_details": dict(view.active_constraint_details),
+                "current_route": list(view.current_route),
+                "current_route_summary": view.current_route_summary,
+                "current_route_duration_min": view.current_route_duration_min,
+                "clarification_request_count": len(view.clarification_requests),
+            }
+
+        def memory_additions(previous, current):
+            """Return only meaningful additions since the previous memory event."""
+            if not previous:
+                return current
+            additions = {}
+            for agent, snapshot in current.items():
+                earlier = previous.get(agent, {})
+                agent_additions = {}
+                for key, value in snapshot.items():
+                    old = earlier.get(key)
+                    if key in {"active_constraints", "current_route"}:
+                        added = [item for item in value if item not in (old or [])]
+                        if added:
+                            agent_additions[key] = added
+                    elif value not in (None, "") and value != [] and value != old:
+                        agent_additions[key] = value
+                if agent_additions:
+                    additions[agent] = agent_additions
+            return additions
+
+        def emit_memory_telemetry(turn_number, reason):
+            """Emit and record both agents' current task memory."""
+            nonlocal previous_memory_snapshot
+            snapshots = {
+                "Agent A": memory_snapshot_for("Agent A", agent_a_memory),
+                "Agent B": memory_snapshot_for("Agent B", agent_b_memory),
+            }
+            additions = memory_additions(previous_memory_snapshot, snapshots)
+            payload = {
+                "turn": turn_number,
+                "reason": reason,
+                "snapshots": snapshots,
+                "additions": additions,
+            }
+            event_queue.put(("telemetry", "memory", payload))
+            record_runtime_event("dialogue_state_tracking", "agent_memory_snapshot", payload)
+            previous_memory_snapshot = snapshots
 
         def emit_phase(turn_number, speaker, phase, **payload):
             """Emit one concise console-facing pipeline phase event."""
@@ -343,6 +446,13 @@ class DialogManager:
                     "transcript_corrections", []
                 ),
                 "agent_input_transcript": trace.incoming_transcript,
+                "agent_input_source": "asr_pipeline_transcript",
+                "agent_input_matches_pipeline_output": (
+                    trace.incoming_transcript
+                    == (trace.diagnostics or {}).get(
+                        "agent_input_transcript", trace.incoming_transcript
+                    )
+                ),
                 "source_text": trace.outgoing_text,
                 "transcript": trace.incoming_transcript,
                 "latency_sec": latency_sec,
@@ -622,6 +732,11 @@ class DialogManager:
         invalid_route_count = 0
         constraint_miss_count = 0
         time_frame_miss_count = 0
+        stagnation_count = 0
+        requested_transcript_repairs = set()
+        dialogue_repair_signatures = set()
+        agent_a_memory = []
+        agent_b_memory = []
         early_stop_reason = None
 
         def early_stop_message(reason):
@@ -631,6 +746,8 @@ class DialogManager:
                 return "I will stop here unsatisfied; the routes reached the destination but stayed too slow."
             if reason == "constraint_miss_limit":
                 return "I will stop here semi-satisfied; I have a route, but it still misses one of my constraints."
+            if reason == "stagnation_limit":
+                return "I will stop here; we are repeating the same information without improving the route."
             if reason == "turn_limit":
                 return "I will stop here unsatisfied; we ran out of turns before settling the route."
             return "I will stop here."
@@ -796,7 +913,10 @@ class DialogManager:
             turn_number=1,
         )
         conversation = [("Agent A", opening_transcript)]
+        agent_a_memory.append(("Agent A", opening_trace.generated_text))
+        agent_b_memory.append(("Agent A", opening_transcript))
         ingest_conversation_text(opening_transcript)
+        emit_memory_telemetry(len(conversation), "opening")
 
         record_runtime_event("startup", "route_calculations_deferred", {
             "reference_route": "deferred_until_final_metrics",
@@ -822,18 +942,34 @@ class DialogManager:
         record_runtime_event("opening", "agent_a_opening", {"turn": len(conversation), "text": conversation[0][1]})
 
         route_round = 0
+        last_agent_b_spoken = ""
         while len(conversation) < self.num_turns:
             route_round += 1
+            round_progress = False
             active_keys_before_b = stated_constraint_keys(conversation)
             state = DialogState(
                 self.test_case,
-                conversation,
+                agent_b_memory,
                 route_round - 1,
                 scenario_override=scenario,
                 persona_override=persona,
                 stage_override=authoritative_stage(active_keys_before_b),
             )
             event_queue.put(("stage", state.stage))
+            heard_trip_state = state.heard_trip_state
+            record_runtime_event(
+                "dialogue_state_tracking",
+                "heard_trip_state",
+                {
+                    "turn": len(conversation) + 1,
+                    "stage": state.stage.value,
+                    "facts": dict(heard_trip_state.get("facts") or {}),
+                    "evidence": dict(heard_trip_state.get("evidence") or {}),
+                    "missing_slots": list(heard_trip_state.get("missing_slots") or []),
+                    "missing_labels": list(heard_trip_state.get("missing_labels") or []),
+                    "completeness": heard_trip_state.get("completeness"),
+                },
+            )
             record_runtime_event(
                 "dialogue_management",
                 "stage_entered",
@@ -844,7 +980,33 @@ class DialogManager:
                 },
             )
             generation_started_at = time.time()
-            reply_b = self.agent_b_plugin.run_agent_b(state)
+            repair_confirmation = clarification_confirmation(agent_b_memory, last_agent_b_spoken)
+            reply_b = repair_confirmation or self.agent_b_plugin.run_agent_b(state)
+            if agent_b_attempted_closure(reply_b):
+                record_runtime_event(
+                    "dialogue_management",
+                    "agent_b_closure_suppressed",
+                    {
+                        "turn": len(conversation) + 1,
+                        "original_reply": reply_b,
+                        "stage": state.stage.value,
+                    },
+                )
+                reply_b = (
+                    state.trip_clarification_prompt()
+                    if state.assistant_scenario is None
+                    else fallback_reply(
+                        "Agent B",
+                        state.assistant_scenario,
+                        route_index=route_round - 1,
+                        persona=persona,
+                        conversation=state.conversation,
+                    )
+                )
+            if repair_confirmation:
+                round_progress = True
+            if not repair_confirmation:
+                last_agent_b_spoken = reply_b
             generation_sec = time.time() - generation_started_at
             speech_started_at = time.time()
             reply_trace = self.speech_transport.transmit_trace("Agent B", reply_b)
@@ -858,21 +1020,56 @@ class DialogManager:
             )
             emit_timing_telemetry("Agent B", generation_sec, speech_sec, turn_number=len(conversation) + 1)
             conversation.append(("Agent B", reply_transcript))
+            agent_b_memory.append(("Agent B", reply_b))
+            agent_a_memory.append(("Agent B", reply_transcript))
+            emit_memory_telemetry(len(conversation), "agent_b_reply")
+            repair_signature = clarification_signature(reply_transcript)
+            if repair_signature and ("Agent B", repair_signature) not in dialogue_repair_signatures:
+                dialogue_repair_signatures.add(("Agent B", repair_signature))
+                round_progress = True
             ingest_conversation_text(reply_transcript)
             event_queue.put(("message", "Agent B", reply_transcript))
 
             nlu_started_at = time.perf_counter()
-            parsed_route = self.route_interpreter.interpret_reply(reply_transcript, scenario)
-            has_station_mentions = self.route_interpreter.has_station_mentions(reply_transcript)
-            nlu_latency_sec = time.perf_counter() - nlu_started_at
-            emit_nlu_telemetry(
-                "Agent B",
-                reply_transcript,
-                parsed_route,
-                has_station_mentions,
-                latency_sec=round(nlu_latency_sec, 6),
-                turn_number=len(conversation),
+            parsed_route = (
+                []
+                if repair_confirmation
+                else self.route_interpreter.interpret_reply(reply_transcript, scenario)
             )
+            has_station_mentions = (
+                False
+                if repair_confirmation
+                else self.route_interpreter.has_station_mentions(reply_transcript)
+            )
+            nlu_latency_sec = time.perf_counter() - nlu_started_at
+            if repair_confirmation:
+                emit_phase(
+                    len(conversation),
+                    "Agent B",
+                    "NLU",
+                    text=reply_transcript,
+                    dialogue_act="repair_confirmation",
+                    latency_sec=round(nlu_latency_sec, 6),
+                )
+                record_runtime_event(
+                    "dialogue_management",
+                    "clarification_resolved",
+                    {
+                        "turn": len(conversation),
+                        "heard_request": conversation[-2][1],
+                        "repair_target": clarification_target(conversation[-2][1]),
+                        "response": reply_transcript,
+                    },
+                )
+            else:
+                emit_nlu_telemetry(
+                    "Agent B",
+                    reply_transcript,
+                    parsed_route,
+                    has_station_mentions,
+                    latency_sec=round(nlu_latency_sec, 6),
+                    turn_number=len(conversation),
+                )
             dialogue_management_started_at = time.perf_counter()
             log_conversation_step(
                 "Agent B",
@@ -885,7 +1082,7 @@ class DialogManager:
             )
             record_runtime_event(
                 "agent_b_reply",
-                "route_parse",
+                "repair_confirmation" if repair_confirmation else "route_parse",
                 {
                     "turn": len(conversation),
                     "dialog_stage": state.stage.value,
@@ -928,6 +1125,7 @@ class DialogManager:
                         event_queue.put(("warning", "Repeated route proposal ignored; compare a different route."))
                         candidate_event = {
                             "turn": route_round,
+                            "dialogue_turn": len(conversation),
                             "route": parsed_route,
                             "path": route_path_text_from_steps(candidate_steps),
                             "route_steps": route_step_details(candidate_steps),
@@ -947,10 +1145,12 @@ class DialogManager:
                         candidate_events.append(candidate_event)
                         event_queue.put(("candidate", candidate_event))
                     else:
+                        round_progress = True
                         candidate = route_memory.record(route_round, parsed_route, duration, best_duration)
                         gap = route_constraint_gap(candidate_steps, duration, constraint_route)
                         candidate.update(
                             {
+                                "dialogue_turn": len(conversation),
                                 "route_steps": route_step_details(candidate_steps),
                                 "path": route_path_text_from_steps(candidate_steps),
                                 "constraint_duration": constraint_route.duration_min if constraint_route else None,
@@ -1024,16 +1224,80 @@ class DialogManager:
 
             if len(conversation) < self.num_turns:
                 generation_started_at = time.time()
-                reply_a = (
-                    early_stop_message(early_stop_reason)
-                    if early_stop_reason
-                    else self.agent_a_responder.reply(route_round - 1, persona, scenario, conversation)
+                transcript_repair = (
+                    None
+                    if repair_confirmation
+                    else transcript_repair_question(
+                        (reply_trace.diagnostics or {}).get("transcript_corrections", [])
+                    )
                 )
+                if transcript_repair:
+                    repair_signature = " ".join(transcript_repair.casefold().split())
+                    if repair_signature in requested_transcript_repairs:
+                        record_runtime_event(
+                            "dialogue_management",
+                            "duplicate_transcript_repair_suppressed",
+                            {
+                                "turn": len(conversation) + 1,
+                                "question": transcript_repair,
+                                "repair_target": clarification_target(transcript_repair),
+                            },
+                        )
+                        transcript_repair = None
+                    else:
+                        requested_transcript_repairs.add(repair_signature)
+                        round_progress = True
+                if early_stop_reason:
+                    reply_a = early_stop_message(early_stop_reason)
+                elif transcript_repair:
+                    reply_a = transcript_repair
+                    record_runtime_event(
+                        "dialogue_management",
+                        "explicit_transcript_repair_requested",
+                        {
+                            "turn": len(conversation) + 1,
+                            "question": transcript_repair,
+                            "repair_target": clarification_target(transcript_repair),
+                        },
+                    )
+                else:
+                    reply_a = self.agent_a_responder.reply(
+                        route_round - 1, persona, scenario, agent_a_memory
+                    )
                 if not early_stop_reason:
                     reply_a = guard_agent_a_progress(
                         reply_a,
                         stated_constraint_keys(conversation),
                     )
+                agent_a_repair_signature = clarification_signature(reply_a)
+                if (
+                    agent_a_repair_signature
+                    and ("Agent A", agent_a_repair_signature) not in dialogue_repair_signatures
+                ):
+                    dialogue_repair_signatures.add(("Agent A", agent_a_repair_signature))
+                    round_progress = True
+                projected_keys = stated_constraint_keys([*conversation, ("Agent A", reply_a)])
+                if projected_keys != stated_constraint_keys(conversation):
+                    round_progress = True
+                if agent_a_ended_conversation(reply_a):
+                    round_progress = True
+                if not early_stop_reason:
+                    if round_progress:
+                        stagnation_count = 0
+                    else:
+                        stagnation_count += 1
+                        record_runtime_event(
+                            "dialogue_management",
+                            "dialogue_stagnation",
+                            {
+                                "turn": len(conversation) + 1,
+                                "consecutive_rounds": stagnation_count,
+                                "limit": self.stagnation_limit,
+                            },
+                        )
+                        if stagnation_count >= self.stagnation_limit:
+                            early_stop_reason = "stagnation_limit"
+                            reply_a = early_stop_message(early_stop_reason)
                 generation_sec = time.time() - generation_started_at
                 speech_started_at = time.time()
                 reply_trace = self.speech_transport.transmit_trace("Agent A", reply_a)
@@ -1054,6 +1318,9 @@ class DialogManager:
                     speech_sec,
                 )
                 conversation.append(("Agent A", reply_transcript))
+                agent_a_memory.append(("Agent A", reply_a))
+                agent_b_memory.append(("Agent A", reply_transcript))
+                emit_memory_telemetry(len(conversation), "agent_a_reply")
                 ingest_conversation_text(reply_transcript)
                 event_queue.put(("message", "Agent A", reply_transcript))
                 previous_route = list(best_route)
@@ -1156,7 +1423,7 @@ class DialogManager:
             acceptable_time_limit is None
             or (displayed_duration is not None and displayed_duration <= acceptable_time_limit)
         )
-        if early_stop_reason in {"invalid_route_limit", "time_frame_miss_limit", "turn_limit"} or not route_correct:
+        if early_stop_reason in {"invalid_route_limit", "time_frame_miss_limit", "stagnation_limit", "turn_limit"} or not route_correct:
             conversation_outcome = "unsatisfied"
         elif not time_frame_satisfied or final_unsatisfied_constraints:
             conversation_outcome = "semi_satisfied"
@@ -1172,32 +1439,52 @@ class DialogManager:
             if timing_turns
             else None
         )
+        selected_route_text = (
+            route_path_text_from_steps(displayed_steps) if displayed_steps else "none"
+        )
+        optimal_route_text = (
+            route_path_text_from_steps(reference_steps) if reference_steps else "none"
+        )
+        duration_gap = (
+            displayed_duration - reference_duration
+            if displayed_duration is not None and reference_duration is not None
+            else None
+        )
+        constraint_satisfaction = (
+            f"{len(final_stated_constraints) - len(final_unsatisfied_constraints)}/"
+            f"{len(final_stated_constraints)} met"
+            if final_stated_constraints
+            else "none stated"
+        )
         metrics = (
             "[Run]\n"
             f"Case: {self.test_case.scenario_key}\n"
             f"Persona: {persona['name']}\n"
             f"Outcome: {conversation_outcome}\n"
-            f"Messages: {len(conversation)}\n"
+            f"Task success: {conversation_outcome == 'satisfied'}\n"
+            f"Stop reason: {early_stop_reason or 'none'}\n"
             "[Task]\n"
-            f"Journey: {scenario['start_station']} {fmt_time(scenario['start_time_min'])} -> {scenario['destination_station']}\n"
-            f"Route: {' -> '.join(best_route) if best_route else 'none'}\n"
+            f"Request: {scenario['start_station']} at {fmt_time(scenario['start_time_min'])} to {scenario['destination_station']}\n"
+            f"Selected route: {selected_route_text}\n"
+            f"Route valid: {route_valid}\n"
+            f"Destination reached: {reaches_goal}\n"
+            f"Arrival: {fmt_time(displayed_arrival) if displayed_arrival is not None else 'none'}\n"
             f"Duration: {displayed_duration if displayed_duration is not None else 'none'} min\n"
             f"Duration limit: {acceptable_time_limit if acceptable_time_limit is not None else 'none'} min\n"
-            f"Arrival: {fmt_time(displayed_arrival) if displayed_arrival is not None else 'none'}\n"
-            f"Valid: {route_correct}\n"
-            f"Constraints: {', '.join(final_stated_constraints) if final_stated_constraints else 'none'}\n"
+            f"Constraints satisfied: {constraint_satisfaction}\n"
             f"Unmet constraints: {', '.join(final_unsatisfied_constraints) if final_unsatisfied_constraints else 'none'}\n"
+            f"Conditions: near capacity={'yes' if displayed_has_near_capacity else 'no'}; delay risk={displayed_delay_risk_class}; transfer risk={displayed_transfer_risk_class}\n"
             "[Comparison]\n"
+            f"Optimal route: {optimal_route_text}\n"
             f"Optimal duration: {reference_duration if reference_duration is not None else 'none'} min\n"
-            f"Candidates: {len(route_memory.candidates)}\n"
+            f"Duration gap: {duration_gap if duration_gap is not None else 'none'} min\n"
+            f"Candidates compared: {len(route_memory.candidates)}\n"
             f"Revisions: {route_revision_count}\n"
-            f"Near capacity: {'yes' if displayed_has_near_capacity else 'no'}\n"
-            f"Delay risk: {displayed_delay_risk_class}\n"
             "[Execution]\n"
+            f"Turns: {len(conversation)}\n"
             f"Invalid proposals: {invalid_route_count}\n"
             f"Slow proposals: {time_frame_miss_count}\n"
-            f"Constraint misses: {constraint_miss_count}\n"
-            f"Stop reason: {early_stop_reason or 'none'}\n"
+            f"Constraint misses / stagnant rounds: {constraint_miss_count} / {stagnation_count}\n"
             f"Mean turn: {mean_turn_elapsed if mean_turn_elapsed is not None else 'none'} s\n"
             f"Runtime: {runtime_sec:.2f} s\n"
         )
@@ -1244,6 +1531,20 @@ class DialogManager:
                 "invalid_route_count": invalid_route_count,
                 "time_frame_miss_count": time_frame_miss_count,
                 "constraint_miss_count": constraint_miss_count,
+                "stagnation_count": stagnation_count,
+                "stagnation_limit": self.stagnation_limit,
+                "transcript_repair_questions": len(requested_transcript_repairs),
+                "distinct_clarification_requests": len(dialogue_repair_signatures),
+                "agent_memories": {
+                    "Agent A": [
+                        {"speaker": speaker, "text": text}
+                        for speaker, text in agent_a_memory
+                    ],
+                    "Agent B": [
+                        {"speaker": speaker, "text": text}
+                        for speaker, text in agent_b_memory
+                    ],
+                },
                 "early_stop_reason": early_stop_reason,
                 "conversation_outcome": conversation_outcome,
                 "stated_constraints": final_stated_constraints,
@@ -1302,7 +1603,5 @@ class DialogManager:
                 "phase_timings": phase_timings,
                 "nlu_turns": nlu_turns,
                 "runtime_events": runtime_events,
-                "metric_config": self.metric_config,
-                "metric_tiers": self.metric_tiers,
             },
         )

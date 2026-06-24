@@ -6,22 +6,42 @@ import csv
 from datetime import datetime
 import json
 from pathlib import Path
-import re
 import wave
 
+from coop_navigation_sds.Configuration.schema import (
+    RAW_TRACE_COLLECTIONS,
+    RESULT_SCHEMA_VERSION,
+    TRACE_SCHEMA_VERSION,
+    RunArtifactPaths,
+    safe_artifact_name,
+)
+from coop_navigation_sds.Configuration.run_identity import naming_scheme_document, write_naming_scheme
 from coop_navigation_sds.ResultsAndArtifacts.xlsx import write_metrics_xlsx
-from coop_navigation_sds.EvaluationMetrics.metrics import METRIC_FAMILY_SPECS, MetricComputer
-from coop_navigation_sds.EvaluationMetrics.catalog import global_metric_key, metric_metadata, phase_key
+from coop_navigation_sds.ResultsAndArtifacts.metric_tables import write_metric_long_exports
+from coop_navigation_sds.EvaluationMetrics.metrics import (
+    METRIC_FAMILY_SPECS,
+    MetricComputer,
+    failure_indicator_analysis,
+)
+from coop_navigation_sds.EvaluationMetrics.catalog import (
+    global_metric_key,
+    metric_local_name,
+    metric_metadata,
+    phase_key,
+)
 from coop_navigation_sds.TransportNetwork.overview import build_network_overview
 from coop_navigation_sds.TransportNetwork.picture import write_network_svg
 from coop_navigation_sds.TransportNetwork.routes import route_path_text_from_steps, route_step_details
 
 
-def safe_artifact_name(value):
-    """Return a stable filesystem name for research artifacts."""
-    text = str(value or "run").strip().lower()
-    text = re.sub(r"[^a-z0-9_.-]+", "_", text)
-    return text.strip("._") or "run"
+def _json_default(value):
+    if isinstance(value, Path):
+        return str(value)
+    if hasattr(value, "__dataclass_fields__"):
+        return asdict(value)
+    if isinstance(value, (set, frozenset)):
+        return sorted(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
 def execution_run_id(label=None, timestamp=None):
@@ -39,6 +59,7 @@ def create_execution_run_dir(base_dir, label=None, timestamp=None):
     """Create and return a unique output folder for one execution run."""
     base_dir = Path(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
+    write_naming_scheme(base_dir)
     run_id = execution_run_id(label, timestamp)
     candidate = base_dir / run_id
     suffix = 2
@@ -47,14 +68,6 @@ def create_execution_run_dir(base_dir, label=None, timestamp=None):
         suffix += 1
     candidate.mkdir(parents=True, exist_ok=False)
     return candidate
-
-
-def run_scoped_path(run_dir, configured_path, default_name):
-    """Resolve relative output paths inside an execution run directory."""
-    if not configured_path:
-        return Path(run_dir) / default_name if default_name else Path(run_dir)
-    path = Path(configured_path)
-    return path if path.is_absolute() else Path(run_dir) / path
 
 
 def write_metrics_csv(metrics, path):
@@ -83,12 +96,13 @@ def write_metrics_file(metrics, path):
 
 
 def write_metric_phase_logs(metrics, output_dir):
-    """Write one JSONL file per metric phase for parsable analysis pipelines."""
+    """Write calculated phase metrics to one JSONL file and a matching catalog."""
     records = list(metrics)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    handles = {}
-    try:
+    metric_path = output_dir / "metrics_by_phase.jsonl"
+    emitted_by_phase = {}
+    with metric_path.open("w", encoding="utf-8") as handle:
         for record in records:
             identifiers = {
                 "condition_id": record.condition_id,
@@ -109,16 +123,12 @@ def write_metric_phase_logs(metrics, output_dir):
             ]
             for phase in ordered_phases:
                 phase_metrics = record.metric_families[phase]
-                handle = handles.get(phase)
-                if handle is None:
-                    handle = (output_dir / f"metric_phase_{phase}.jsonl").open("w", encoding="utf-8")
-                    handles[phase] = handle
+                if not phase_metrics:
+                    continue
+                emitted_by_phase.setdefault(phase, set()).update(phase_metrics)
                 calculations = {
                     name: getattr(record, "metric_calculations", {}).get(global_metric_key(phase, name), {})
                     for name in phase_metrics
-                    if name not in {
-                        "available", "coverage_rate", "available_metric_count", "configured_metric_count",
-                    }
                 }
                 handle.write(json.dumps({
                     **identifiers,
@@ -126,14 +136,8 @@ def write_metric_phase_logs(metrics, output_dir):
                     "metrics": phase_metrics,
                     "calculations": calculations,
                 }, ensure_ascii=True) + "\n")
-        summary_path = output_dir / "metric_phase_summary.jsonl"
-        with summary_path.open("w", encoding="utf-8") as handle:
-            for record in records:
-                row = record.as_dict()
-                row.pop("metric_families", None)
-                handle.write(json.dumps(row, ensure_ascii=True) + "\n")
-        catalog = {
-            phase_key(family): {
+    catalog = {
+        phase_key(family): {
                 "order": family["order"],
                 "title": family["title"],
                 "description": family["description"],
@@ -143,14 +147,19 @@ def write_metric_phase_logs(metrics, output_dir):
                         "label": label,
                     }
                     for key, label in family["metrics"]
+                    if metric_local_name(key) in emitted_by_phase.get(phase_key(family), set())
                 ],
             }
             for family in METRIC_FAMILY_SPECS
+            if emitted_by_phase.get(phase_key(family))
         }
-        (output_dir / "metric_catalog.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=True), encoding="utf-8")
-    finally:
-        for handle in handles.values():
-            handle.close()
+    catalog_path = output_dir / "metric_catalog.json"
+    catalog_path.write_text(json.dumps(catalog, indent=2, ensure_ascii=True), encoding="utf-8")
+    return {
+        "phase_metrics": metric_path,
+        "catalog": catalog_path,
+        **write_metric_long_exports(records, output_dir),
+    }
 
 
 def write_network_research_artifacts(current_time_min, output_dir, picture_dir=None):
@@ -426,8 +435,11 @@ def remove_empty_parent_dirs(start, roots):
 def build_combined_protocol(result, summary, turns, speech_turns, timing_turns, phase_timings, nlu_turns, agent_turn_segments, agent_timing_summary, runtime_events, candidate_events, verification, audio_manifest):
     """Return a single JSON document containing all protocol data for one run."""
     return {
+        "schema_version": TRACE_SCHEMA_VERSION,
+        "trace_collections": list(RAW_TRACE_COLLECTIONS),
         "summary": summary,
         "conversation": turns,
+        "agent_memories": dict(result.extra.get("agent_memories", {})),
         "speech_pipeline": speech_turns,
         "timing": timing_turns,
         "phase_timing": phase_timings,
@@ -440,6 +452,106 @@ def build_combined_protocol(result, summary, turns, speech_turns, timing_turns, 
         "verification": verification,
         "audio_manifest": audio_manifest,
     }
+
+
+def build_metric_input_document(result, scenario):
+    """Build the immutable evidence document used by retrospective metrics."""
+    return {
+        "schema_version": TRACE_SCHEMA_VERSION,
+        "result_schema_version": RESULT_SCHEMA_VERSION,
+        "captured_before_metric_calculation": True,
+        "condition_id": result.condition_id,
+        "scenario": scenario,
+        "result": asdict(result),
+        "trace_collections": {
+            "conversation": list(result.conversation),
+            "agent_memories": dict(result.extra.get("agent_memories", {})),
+            "speech_pipeline": list(result.extra.get("speech_turns", [])),
+            "timing": list(result.extra.get("timing_turns", [])),
+            "phase_timing": list(result.extra.get("phase_timings", [])),
+            "semantic_parsing": list(result.extra.get("nlu_turns", [])),
+            "runtime_events": list(result.extra.get("runtime_events", [])),
+            "candidate_routes": list(result.extra.get("candidate_events", [])),
+        },
+    }
+
+
+def write_metric_inputs(result, scenario, path):
+    """Persist raw run evidence before any derived metric is calculated."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            build_metric_input_document(result, scenario),
+            indent=2,
+            ensure_ascii=True,
+            default=_json_default,
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def calculate_metrics_from_inputs(path):
+    """Recalculate one metric record entirely from a stored evidence document."""
+    from coop_navigation_sds.DialogManagement.result import DialogResult
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("schema_version") != TRACE_SCHEMA_VERSION:
+        raise ValueError(
+            f"Unsupported metric-input schema {payload.get('schema_version')!r}; "
+            f"expected {TRACE_SCHEMA_VERSION}."
+        )
+    result = DialogResult(**payload["result"])
+    return MetricComputer().compute(result, payload["scenario"])
+
+
+def write_batch_metric_inputs(results, path):
+    """Persist every completed condition before calculating batch metrics."""
+    documents = [
+        build_metric_input_document(
+            result,
+            result.extra.get("resolved_scenario", {}),
+        )
+        for result in results
+    ]
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": TRACE_SCHEMA_VERSION,
+                "captured_before_metric_calculation": True,
+                "condition_count": len(documents),
+                "conditions": documents,
+            },
+            indent=2,
+            ensure_ascii=True,
+            default=_json_default,
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def calculate_batch_metrics_from_inputs(path):
+    """Reconstruct batch metrics solely from persisted immutable evidence."""
+    from coop_navigation_sds.DialogManagement.result import DialogResult
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("schema_version") != TRACE_SCHEMA_VERSION:
+        raise ValueError(
+            f"Unsupported batch metric-input schema {payload.get('schema_version')!r}; "
+            f"expected {TRACE_SCHEMA_VERSION}."
+        )
+    records = []
+    for document in payload.get("conditions", []):
+        result = DialogResult(**document["result"])
+        record = MetricComputer().compute(result, document["scenario"])
+        record.pair_id = str(result.extra.get("pair_id", ""))
+        record.run_type = str(result.extra.get("run_type", "audio_variant"))
+        records.append(record)
+    return records
 
 
 def write_conversation_protocol(result, output_dir):
@@ -480,26 +592,7 @@ def write_conversation_protocol(result, output_dir):
         agent_timing_summary,
         runtime_events,
     )
-    paths = {
-        "protocol": output_dir / f"{artifact_prefix}_protocol.json",
-        "transcript_txt": output_dir / f"{artifact_prefix}_conversation_transcript.txt",
-        "conversation_wav": output_dir / f"{artifact_prefix}_conversation.wav",
-        "audio_manifest": output_dir / f"{artifact_prefix}_audio_manifest.json",
-        "summary": output_dir / f"{artifact_prefix}_summary.json",
-        "turns": output_dir / f"{artifact_prefix}_turns.jsonl",
-        "speech": output_dir / f"{artifact_prefix}_speech_pipeline.jsonl",
-        "timing": output_dir / f"{artifact_prefix}_timing.jsonl",
-        "phase_timing": output_dir / f"{artifact_prefix}_phase_timing.jsonl",
-        "agent_turn_segments": output_dir / f"{artifact_prefix}_agent_turn_segments.jsonl",
-        "agent_a_segments": output_dir / f"{artifact_prefix}_agent_a_turn_segments.jsonl",
-        "agent_b_segments": output_dir / f"{artifact_prefix}_agent_b_turn_segments.jsonl",
-        "agent_timing_summary": output_dir / f"{artifact_prefix}_agent_timing_summary.json",
-        "semantic": output_dir / f"{artifact_prefix}_semantic_parsing.jsonl",
-        "runtime_events": output_dir / f"{artifact_prefix}_runtime_events.jsonl",
-        "candidate_routes": output_dir / f"{artifact_prefix}_candidate_routes.jsonl",
-        "retrospective_summary": output_dir / f"{artifact_prefix}_retrospective_summary.txt",
-        "verification": output_dir / f"{artifact_prefix}_verification.json",
-    }
+    paths = RunArtifactPaths(output_dir, artifact_prefix).as_dict()
     write_conversation_transcript(
         paths["transcript_txt"],
         result,
@@ -513,7 +606,6 @@ def write_conversation_protocol(result, output_dir):
         audio_manifest,
         [output_dir],
     )
-    paths["audio_manifest"].write_text(json.dumps(audio_manifest, indent=2, ensure_ascii=True), encoding="utf-8")
     summary = {
         "condition_id": result.condition_id,
         "test_case_key": result.test_case_key,
@@ -539,11 +631,9 @@ def write_conversation_protocol(result, output_dir):
             "protocol_json": str(paths["protocol"]),
             "conversation_transcript_txt": str(paths["transcript_txt"]),
             "conversation_wav": str(paths["conversation_wav"]) if audio_manifest.get("created") else None,
-            "audio_manifest": str(paths["audio_manifest"]),
         },
     }
 
-    paths["summary"].write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
     paths["protocol"].write_text(
         json.dumps(
             build_combined_protocol(
@@ -563,22 +653,10 @@ def write_conversation_protocol(result, output_dir):
             ),
             indent=2,
             ensure_ascii=True,
+            default=_json_default,
         ),
         encoding="utf-8",
     )
-    write_jsonl(paths["turns"], turns)
-    write_jsonl(paths["speech"], speech_turns)
-    write_jsonl(paths["timing"], timing_turns)
-    write_jsonl(paths["phase_timing"], phase_timings)
-    write_jsonl(paths["agent_turn_segments"], agent_turn_segments)
-    write_jsonl(paths["agent_a_segments"], [row for row in agent_turn_segments if row.get("speaker") == "Agent A"])
-    write_jsonl(paths["agent_b_segments"], [row for row in agent_turn_segments if row.get("speaker") == "Agent B"])
-    paths["agent_timing_summary"].write_text(json.dumps(agent_timing_summary, indent=2, ensure_ascii=True), encoding="utf-8")
-    write_jsonl(paths["semantic"], nlu_turns)
-    write_jsonl(paths["runtime_events"], runtime_events)
-    write_jsonl(paths["candidate_routes"], candidate_events)
-    paths["retrospective_summary"].write_text(result.metrics_text or "", encoding="utf-8")
-    paths["verification"].write_text(json.dumps(verification, indent=2, ensure_ascii=True), encoding="utf-8")
     return paths
 
 
@@ -589,27 +667,39 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         label=f"single_{result.condition_id}",
     )
     run_dir.mkdir(parents=True, exist_ok=True)
+    artifact_prefix = safe_artifact_name(result.condition_id)
+    canonical_paths = RunArtifactPaths(run_dir, artifact_prefix).as_dict()
+    metric_inputs = write_metric_inputs(result, scenario, canonical_paths["metric_inputs"])
     metric = MetricComputer().compute(result, scenario)
     protocol_paths = write_conversation_protocol(result, run_dir)
     metrics_file = run_dir / "metrics.xlsx"
     phase_log_dir = run_dir
     retrospective_json = run_dir / "retrospective_metrics.json"
     write_metrics_file([metric], metrics_file)
-    write_metric_phase_logs([metric], phase_log_dir)
+    metric_exports = write_metric_phase_logs([metric], phase_log_dir)
     network_paths = write_network_research_artifacts(
         scenario["start_time_min"],
         run_dir,
         picture_dir=run_dir,
     )
-    retrospective_payload = metric.as_dict()
-    retrospective_payload["calculation_evidence"] = metric.metric_calculations
-    retrospective_payload["input_inventory"] = result.extra.get("metric_input_inventory", {})
+    retrospective_payload = {
+        "condition_id": metric.condition_id,
+        "test_case_key": metric.test_case_key,
+        "scenario_key": metric.scenario_key,
+        "model_name": metric.model_name,
+        "metrics_by_phase": metric.metric_families,
+        "calculation_evidence": metric.metric_calculations,
+        "input_inventory": result.extra.get("metric_input_inventory", {}),
+    }
     retrospective_json.write_text(
         json.dumps(retrospective_payload, indent=2, ensure_ascii=True),
         encoding="utf-8",
     )
     manifest = {
+        "schema_version": RESULT_SCHEMA_VERSION,
+        "trace_schema_version": TRACE_SCHEMA_VERSION,
         "run_id": run_dir.name,
+        "naming_scheme": naming_scheme_document(),
         "condition_id": result.condition_id,
         "test_case_key": result.test_case_key,
         "persona_key": result.persona_key,
@@ -619,8 +709,24 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         "agent_b_audio_persona": result.extra.get("agent_b_audio_persona"),
         "resolved_audio_personas": result.extra.get("resolved_audio_personas", {}),
         "model_name": result.model_name,
+        "model_backend": result.extra.get("model_backend", {}),
+        "configuration": result.extra.get("resolved_run_config", {}),
+        "runtime_environment": result.extra.get("runtime_environment", {}),
+        "random_seed": result.extra.get("resolved_run_config", {}).get("network_seed"),
+        "artifacts": {
+            "metric_inputs": str(metric_inputs),
+            "protocol": str(protocol_paths["protocol"]),
+            "transcript": str(protocol_paths["transcript_txt"]),
+            "metrics": str(metrics_file),
+            "metrics_by_phase": str(run_dir / "metrics_by_phase.jsonl"),
+            "metric_catalog": str(run_dir / "metric_catalog.json"),
+            "metrics_long_csv": str(metric_exports["metric_long_csv"]),
+            "metrics_long_jsonl": str(metric_exports["metric_long_jsonl"]),
+            "retrospective_metrics": str(retrospective_json),
+        },
         "output_layout": {
             "layout": "flat",
+            "naming_scheme": str(run_dir.parent / "naming_scheme.json"),
             "run_folder": str(run_dir),
             "network": str(network_paths["network_json"].parent),
             "network_graph": str(network_paths["network_graph"]),
@@ -632,6 +738,7 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         "run_dir": run_dir,
         "metric": metric,
         "run_manifest": run_manifest,
+        "metric_inputs": metric_inputs,
         "protocol": protocol_paths,
         "metrics_file": metrics_file,
         "phase_log_dir": phase_log_dir,
@@ -669,6 +776,21 @@ def write_jsonl(path, rows):
     with Path(path).open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=True) + "\n")
+
+
+def write_failure_indicator_report(metrics, path, minimum_per_outcome=3):
+    """Persist leakage-controlled exploratory failure thresholds for a batch."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    report = failure_indicator_analysis(
+        metrics,
+        minimum_per_outcome=minimum_per_outcome,
+    )
+    path.write_text(
+        json.dumps(report, indent=2, ensure_ascii=True, default=_json_default),
+        encoding="utf-8",
+    )
+    return path
 
 
 def verify_conversation_protocol(result, turns, speech_turns, timing_turns, nlu_turns, agent_turn_segments=None, agent_timing_summary=None, runtime_events=None):
@@ -731,11 +853,13 @@ def write_experiment_manifest(
     agent_b_plugin,
     tts_engine=None,
     asr_engine=None,
+    metrics_filename="metrics.xlsx",
     configuration=None,
 ):
     """Write a scientific-method manifest describing the experiment design."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    write_naming_scheme(output_dir)
     rows = [
         {
             "condition_id": condition.condition_id,
@@ -753,10 +877,13 @@ def write_experiment_manifest(
             "model_param_key": condition.model_param_key,
             "objective_mode": getattr(condition, "objective_mode", None),
             "iteration": condition.iteration,
+            "parameter_values": dict(getattr(condition, "parameter_values", {}) or {}),
         }
         for condition in conditions
     ]
     manifest = {
+        "schema_version": RESULT_SCHEMA_VERSION,
+        "naming_scheme": naming_scheme_document(),
         "research_objective": "Measure whether two cooperative route-planning agents converge on valid, constraint-fitting routes through natural speech dialog.",
         "hypotheses": [
             "Valid route proposals should appear before secondary optimization.",
@@ -775,6 +902,7 @@ def write_experiment_manifest(
             "model_param_key",
             "objective_mode",
             "agent_b_plugin",
+            "parameter_values.profile_key",
         ],
         "dependent_metrics": [
             "route_valid",
@@ -794,6 +922,15 @@ def write_experiment_manifest(
             "speech_scope": speech_scope,
             "agent_b_plugin": agent_b_plugin,
             "configuration": dict(configuration or {}),
+        },
+        "analysis_artifacts": {
+            "wide_workbook": metrics_filename,
+            "phase_jsonl": "metrics_by_phase.jsonl",
+            "long_csv": "metrics_long.csv",
+            "long_jsonl": "metrics_long.jsonl",
+            "metric_catalog": "metric_catalog.json",
+            "raw_metric_inputs": "metric_inputs.json",
+            "failure_indicators": "failure_indicators.json",
         },
         "conditions": rows,
     }

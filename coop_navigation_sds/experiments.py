@@ -6,18 +6,20 @@ from contextlib import nullcontext
 from dataclasses import asdict, dataclass, field
 from itertools import product
 from coop_navigation_sds.Configuration.component_catalog import apply_speech_engine_profiles
+from coop_navigation_sds.Configuration.run_identity import compact_code
 
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
-    AGENT_A_USERLM,
     LLMAgentAResponder,
     TemplateAgentAResponder,
+    agent_a_uses_model,
     normalize_agent_a_type,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.caller.config import DEFAULT_PERSONA, LLM_AGENT_A
 from coop_navigation_sds.Configuration.speech import AGENT_B_PLUGIN
 from coop_navigation_sds.Configuration.speech import DEFAULT_SPEECH_PATTERN
 from coop_navigation_sds.Configuration.speech import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_TTS_ENGINE
-from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import create_agent_b_plugin
+from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import AgentBPluginConfig, create_agent_b_plugin
+from coop_navigation_sds.NaturalLanguageGeneration.models import model_adapter_runtime_metadata
 from coop_navigation_sds.DialogManagement.speech_pipeline import (
     SpeechPipelineConfig,
     SpeechTransport,
@@ -92,14 +94,13 @@ class ExperimentRunner:
         transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE,
         invalid_route_limit=INVALID_ROUTE_LIMIT,
         constraint_miss_limit=CONSTRAINT_MISS_LIMIT,
+        stagnation_limit=2,
         max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC,
         calculation_max_time_sec=GENERATION_MAX_TIME_SEC,
         llm_agent_a=LLM_AGENT_A,
         agent_a_type=None,
         log_profile=LOG_PROFILE_OFF,
         log_dir=SESSION_LOG_DIR,
-        metric_config=None,
-        metric_tiers=None,
         scenario_overrides=None,
         model_adapter_factory=None,
     ):
@@ -130,18 +131,17 @@ class ExperimentRunner:
         self.transfer_tolerance = transfer_tolerance
         self.invalid_route_limit = invalid_route_limit
         self.constraint_miss_limit = constraint_miss_limit
+        self.stagnation_limit = max(1, int(stagnation_limit or 2))
         self.max_turn_elapsed_sec = max_turn_elapsed_sec
         self.calculation_max_time_sec = calculation_max_time_sec
         self.agent_a_type = normalize_agent_a_type(agent_a_type, llm_agent_a)
-        self.llm_agent_a = self.agent_a_type == AGENT_A_USERLM
+        self.llm_agent_a = agent_a_uses_model(self.agent_a_type)
         self.log_profile = (log_profile or LOG_PROFILE_OFF).lower()
         self.log_dir = log_dir
-        self.metric_config = dict(metric_config or {})
-        self.metric_tiers = dict(metric_tiers or {})
         self.scenario_overrides = dict(scenario_overrides or {})
         self.metric_computer = MetricComputer()
 
-    def run_condition(self, condition: ExperimentCondition):
+    def run_condition(self, condition: ExperimentCondition, *, compute_metrics=True):
         """Run condition method for this module's MVC responsibility.
         
         Args:
@@ -161,6 +161,7 @@ class ExperimentRunner:
         transfer_tolerance = max(0, int(parameters.get("transfer_tolerance", self.transfer_tolerance)))
         invalid_route_limit = max(1, int(parameters.get("invalid_route_limit", self.invalid_route_limit)))
         constraint_miss_limit = max(0, int(parameters.get("constraint_miss_limit", self.constraint_miss_limit)))
+        stagnation_limit = max(1, int(parameters.get("dialogue_stagnation_limit", self.stagnation_limit)))
         max_turn_elapsed_sec = max(0.1, float(parameters.get("max_turn_elapsed_sec", self.max_turn_elapsed_sec)))
         calculation_max_time_sec = max(
             0.1,
@@ -168,7 +169,8 @@ class ExperimentRunner:
         )
         runtime_parameter_keys = {
             "network_seed", "num_turns", "transfer_tolerance", "invalid_route_limit",
-            "constraint_miss_limit", "max_turn_elapsed_sec", "calculation_max_time_sec",
+            "constraint_miss_limit", "dialogue_stagnation_limit", "max_turn_elapsed_sec",
+            "calculation_max_time_sec", "profile_key",
         }
         speech_parameter_keys = set(SpeechPipelineConfig.__dataclass_fields__)
         with_overrides = getattr(test_case, "with_scenario_overrides", None)
@@ -236,10 +238,9 @@ class ExperimentRunner:
             transfer_tolerance=transfer_tolerance,
             invalid_route_limit=invalid_route_limit,
             constraint_miss_limit=constraint_miss_limit,
+            stagnation_limit=stagnation_limit,
             max_turn_elapsed_sec=max_turn_elapsed_sec,
             agent_a_objective_mode=condition.objective_mode,
-            metric_config=self.metric_config,
-            metric_tiers=self.metric_tiers,
         )
 
         started_perf = time.perf_counter()
@@ -274,19 +275,30 @@ class ExperimentRunner:
         result.extra["tts_engine"] = speech_config["tts_engine"]
         result.extra["asr_engine"] = speech_config["asr_engine"]
         result.extra["agent_b_model"] = condition.agent_b_model
+        result.extra["agent_a_type"] = self.agent_a_type
+        result.extra["agent_b_plugin"] = self.agent_b_plugin_key
         result.extra["resolved_audio_personas"] = {
             "agent_a": speech_transport.config.prosody_for("Agent A"),
             "agent_b": speech_transport.config.prosody_for("Agent B"),
         }
         result.extra["condition_runtime_sec"] = round(condition_runtime_sec, 6)
+        result.extra["resolved_scenario"] = dict(test_case.scenario)
+        model_roles = []
+        if AgentBPluginConfig(self.agent_b_plugin_key).needs_model:
+            model_roles.append("agent_b")
+        if agent_a_uses_model(self.agent_a_type):
+            model_roles.append("agent_a")
+        result.extra["model_backend"] = model_adapter_runtime_metadata(
+            model_adapter,
+            roles=model_roles,
+        )
         model_parameters = getattr(model_adapter, "model_parameters", None)
         if model_parameters is not None:
             result.extra["model_parameters"] = asdict(model_parameters)
-        metric = self.metric_computer.compute(result, test_case.scenario)
-        if hasattr(metric, "pair_id"):
-            if hasattr(metric, "pair_id"):
-                metric.pair_id = condition.pair_id
-                metric.run_type = condition.run_type
+        metric = self.metric_computer.compute(result, test_case.scenario) if compute_metrics else None
+        if metric is not None and hasattr(metric, "pair_id"):
+            metric.pair_id = condition.pair_id
+            metric.run_type = condition.run_type
         return result, metric
 
     def _event_queue_for(self, condition: ExperimentCondition):
@@ -308,7 +320,7 @@ class ExperimentRunner:
             model_adapter.max_time_sec = budget
 
     def _agent_a_responder_for(self, model_adapter):
-        if self.agent_a_type == AGENT_A_USERLM and model_adapter is not None:
+        if agent_a_uses_model(self.agent_a_type) and model_adapter is not None:
             return LLMAgentAResponder(model_adapter)
         return TemplateAgentAResponder()
 
@@ -323,10 +335,14 @@ class ExperimentRunner:
         """
         adapter = self.model_adapter
         if condition.agent_b_model and self.model_adapter_factory is not None:
-            adapter = self._model_adapter_cache.get(condition.agent_b_model)
-            if adapter is None:
-                adapter = self.model_adapter_factory(condition.agent_b_model)
-                self._model_adapter_cache[condition.agent_b_model] = adapter
+            base_name = str(getattr(self.model_adapter, "name", "") or "")
+            if base_name == condition.agent_b_model:
+                adapter = self.model_adapter
+            else:
+                adapter = self._model_adapter_cache.get(condition.agent_b_model)
+                if adapter is None:
+                    adapter = self.model_adapter_factory(condition.agent_b_model)
+                    self._model_adapter_cache[condition.agent_b_model] = adapter
         if hasattr(adapter, "with_model_params"):
             return adapter.with_model_params(condition.model_param_key)
         return adapter
@@ -367,6 +383,7 @@ def build_condition_grid(
     agent_b_model_keys=None,
     iterations=1,
     parameter_grid=None,
+    parameter_profiles=None,
     pair_audio_with_text=False,
 ):
     """Build condition grid function for this module's MVC responsibility.
@@ -394,6 +411,7 @@ def build_condition_grid(
     parameter_grid = dict(parameter_grid or {})
     parameter_names = tuple(sorted(parameter_grid))
     parameter_combinations = list(product(*(parameter_grid[name] for name in parameter_names))) if parameter_names else [()]
+    parameter_profiles = list(parameter_profiles or [{"profile_key": "default"}])
 
     test_case_cache = {}
     for (
@@ -409,6 +427,7 @@ def build_condition_grid(
         agent_b_model,
         iteration,
         parameter_combination,
+        parameter_profile,
     ) in product(
         test_case_keys,
         persona_keys,
@@ -422,8 +441,13 @@ def build_condition_grid(
         agent_b_model_keys,
         range(iterations),
         parameter_combinations,
+        parameter_profiles,
     ):
-        parameter_values = dict(zip(parameter_names, parameter_combination))
+        parameter_values = {
+            **dict(zip(parameter_names, parameter_combination)),
+            **dict(parameter_profile),
+        }
+        profile_key = str(parameter_values.get("profile_key", "default"))
         parameter_label = "__".join(f"{key}-{value}" for key, value in parameter_values.items())
         base_id = (
             f"{test_case_key}__{persona_key}__{agent_a_audio_persona}__{agent_b_audio_persona}__"
@@ -431,7 +455,20 @@ def build_condition_grid(
             f"{asr_engine or 'default_asr'}__{agent_b_model or 'default_model'}__{iteration}"
             f"{('__' + parameter_label) if parameter_label else ''}"
         )
-        pair_id = "pair_" + hashlib.sha256(base_id.encode("utf-8")).hexdigest()[:12]
+        digest = hashlib.sha256(base_id.encode("utf-8")).hexdigest()[:10]
+        pair_id = f"P-{digest}"
+        condition_code = "-".join((
+            "C",
+            compact_code(test_case_key),
+            compact_code(persona_key),
+            compact_code(speech_pattern_key),
+            compact_code(tts_engine or "default_tts"),
+            compact_code(asr_engine or "default_asr"),
+            compact_code(agent_b_model or "default_model"),
+            compact_code(profile_key),
+            f"I{iteration}",
+            digest,
+        ))
         base_case = test_case_cache.get(test_case_key)
         if base_case is None:
             base_case = get_test_case(test_case_key)
@@ -447,5 +484,5 @@ def build_condition_grid(
             parameter_values=parameter_values,
         )
         if pair_audio_with_text:
-            yield ExperimentCondition(condition_id=f"{base_id}__text", run_type="text_only", **common)
-        yield ExperimentCondition(condition_id=f"{base_id}__audio", run_type="audio_variant", **common)
+            yield ExperimentCondition(condition_id=f"{condition_code}-T", run_type="text_only", **common)
+        yield ExperimentCondition(condition_id=f"{condition_code}-A", run_type="audio_variant", **common)

@@ -12,7 +12,7 @@ complete pipeline traces, retrospective metrics, and analysis-ready outputs.
 
 | Component | Responsibility |
 | --- | --- |
-| `Configuration` | Defaults, persistent settings, job files, startup GUI |
+| `Configuration` | Shared schemas, defaults, persistent settings, jobs, startup GUI |
 | `NaturalLanguageGeneration` | Agent policies, prompts, utterance generation, LLM adapters |
 | `TextToSpeech` | TTS engines, synthesis controls, audio personas |
 | `AutomaticSpeechRecognition` | ASR engine API and provider selection |
@@ -31,17 +31,39 @@ only after provider selection.
 1. Every utterance passes through NLG, TTS, audio, ASR, and NLU.
 2. The receiving agent reacts only to recognized text and committed state.
 3. TTS or ASR failure stops the run and records diagnostics.
-4. Transfer time is added only when the transport line changes.
-5. Agent B proposals must be connected and grounded in the network.
-6. Duplicate route proposals are rejected and recorded.
-7. Agent A reveals at most one new private constraint per turn.
-8. A new constraint is revealed only after the current objective is met.
-9. A replacement route is eligible only when it retains all stated
+4. Agent A knows valid station and line names but not line stops, connectivity,
+   schedules, route candidates, or service attributes.
+5. Transfer time is added only when the transport line changes.
+6. Agent B proposals must be connected and grounded in the network.
+7. Duplicate route proposals are rejected and recorded.
+8. Agent A reveals at most one new private constraint per turn.
+9. A new constraint is revealed only after the current objective is met.
+10. A replacement route is eligible only when it retains all stated
    constraints and remains within the acceptable duration threshold.
-10. At the turn limit, Agent A chooses the best currently viable retained
+11. At the turn limit, Agent A chooses the best currently viable retained
     candidate.
-11. Metrics are computed retrospectively from captured evidence.
-12. Missing metric evidence is represented as `null`, never fabricated zero.
+12. Metrics are computed retrospectively from captured evidence.
+13. Missing metric evidence is represented as `null`, never fabricated zero.
+14. Raw `metric_inputs.json` evidence is persisted before derived metrics run.
+15. Credentials are never persisted in settings or result metadata.
+16. A deterministic smoke condition traverses orchestration and artifact
+    generation without model downloads or external services.
+17. `results_root` is the only output root; every artifact for an execution is
+    written to its single flat run folder.
+18. Each agent retains its own intended utterances and only the other agent's
+    recognized pipeline transcript; source text is never substituted for ASR.
+19. Clarification targets one missing slot or term, is not repeated after
+    confirmation, and ends explicitly when its configured budget is exhausted.
+20. Clock notation is synthesized in recognizer-friendly form, including
+    explicit minute zeroes such as `08:07` -> `eight oh seven`.
+21. Spoken or ASR-rendered compact clock variants such as `8-7`, `8, 7`,
+    `8 7`, `eight seven`, and `eight oh seven` may update the departure-time
+    semantic slot only when the utterance is a departure-time expression or a
+    focused time-repair answer; the raw ASR transcript remains unchanged.
+22. Batch execution writes all raw condition evidence before calculating
+    metrics and cross-run validity reports.
+23. First-deviation, task-focus, correction-burden, and constraint-count
+    metrics must be trace-derived and reproducible from stored evidence.
 
 ## Conversation Phases
 
@@ -91,13 +113,18 @@ and destination station for each ride leg. Public lines are named `M1`-`M20`,
 `T1`-`T25`, or `B1`-`B30`. Walking is expressed as minutes between named
 stations and has no line code.
 
-Structured and displayed complete paths use one labelled edge per network
-step: `Foxtrot --T1--> Bravo --M2--> Zulu`. Walking uses
+Structured edge records retain every network step. Human-readable paths
+condense consecutive edges on one line while preserving intermediate stops:
+`Foxtrot --tram T1 (Bravo, Charlie)--> Delta --metro M2--> Zulu`. Walking uses
 `Foxtrot --walk 5 min--> Bravo`. A station-only array is explicitly a station
 sequence and must not be presented as a complete route. The validity, time,
 and each progressive constraint optimum are emitted on separate lines. Each
 added constraint must differ from the preceding qualifying path; otherwise its
 layer is explicitly unavailable in configuration and protocol output.
+
+Standard experiment scenarios must pass preflight with a distinct optimum for
+every progressive constraint stage and at least one viable comparison route.
+The protocol records both optima and the route-change result for every stage.
 
 ## Configuration Contract
 
@@ -111,12 +138,11 @@ All experiment variables have defaults and can be overridden by:
 
 Legacy `MINILLAMA_*` variables and keys remain read-compatible only.
 
-The startup GUI is maximized, contains separate Experiment and Metrics cards,
-uses scrollable compact groups, and closes before execution. Provider-specific
-fields are created only for the selected language-model, TTS, or ASR
-implementation. Named audio personas are the primary reproducible speech
-condition; only controls that materially affect the selected provider are
-shown. There is no runtime GUI.
+The startup GUI is maximized and combines configuration plus relevant metrics
+inside chronological phase cards. Provider-specific fields are created only for
+the selected language-model, TTS, or ASR implementation. Named audio personas
+are the primary reproducible speech condition; only controls that materially
+affect the selected provider are shown. There is no runtime GUI.
 
 Before the GUI closes, preflight validates provider packages, platform support,
 model paths, local model cache availability, executables, required credentials,
@@ -124,11 +150,12 @@ and result storage. A validation failure leaves the GUI open and reports a
 corrective action.
 
 Saved JSON contains only fundamental experiment factors, selected
-implementation settings, output location, and metric selection. Legacy
+implementation settings, and output location. Legacy
 custom-prosody, laugh, and reference-audio fields remain readable in historical
 records but are not exposed or persisted by new runs.
-Every metric has two persisted settings: `enabled` and `tier`. Core metrics
-are forced on for the run; supplementary metrics are optional.
+Metrics are obligatory catalog entries rather than configuration settings.
+Each is calculated retrospectively when its evidence exists, or recorded as
+`null` with an explicit missing-evidence reason.
 
 ## Provider Contract
 
@@ -142,7 +169,8 @@ The common adapter supports provider-neutral message generation.
 - Ollama: native local chat API.
 
 Provider settings include model, endpoint, credentials, device, request
-timeout, output tokens, input budget, and model-download policy.
+timeout, output tokens, input budget, and the explicit
+`allow_model_download` switch for Transformers.
 
 ### Speech
 
@@ -198,12 +226,10 @@ The 12 canonical metric families are:
 10. whole dialogue;
 11. metric validity.
 
-Each metric has two controls: enabled on/off, and core/supplementary tier.
-Core metrics are forced on. Supplementary metrics are calculated only when
-enabled. Every metric declares:
+Metrics have no enable/disable or tier controls. Every catalog metric is part
+of every run's retrospective evaluation contract. Every metric declares:
 
 - stable key and phase;
-- core or supplementary tier;
 - deterministic, reference, or learned evidence class;
 - unit;
 - required trace fields;
@@ -218,9 +244,14 @@ and calculation methods. JSON and XLSX exports retain stable keys.
 Every run receives one timestamped folder directly under the configured result
 root. It contains:
 
+- a root-level `naming_scheme.json` whose keys are compact abbreviations used
+  in result folder and condition names and whose values describe the
+  corresponding configuration setting; this file is refreshed when the naming
+  scheme changes and is also embedded in run and batch manifests;
 - exact configuration snapshot;
 - generated speech, raw ASR transcript, token misinterpretations, transcript
   corrections, and the exact heard-text input consumed by the listener;
+- perspective-specific Agent A and Agent B memory histories;
 - speech phase events and audio;
 - candidate routes and selection evidence;
 - network data and graph;
@@ -250,5 +281,5 @@ A release is acceptable when:
 - Agent A reveals constraints sequentially;
 - earlier constraints remain satisfied after revisions;
 - final-turn selection produces a natural spoken closure;
-- every metric family has at least seven core metrics;
+- every metric family has at least seven obligatory metrics;
 - the console prints calculation steps without duplicate summaries.

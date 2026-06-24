@@ -26,7 +26,7 @@ def test_pipeline_order_and_optimal_preview():
     assert [layer["layer"] for layer in preview["layers"]] == [
         "validity", "time", "constraint_1", "constraint_2", "constraint_3",
     ]
-    assert all(re.search(r"--(?:[MTB]\d+|walk \d+ min)-->", line) for line in lines)
+    assert all(re.search(r"--(?:(?:metro|tram|bus) [MTB]\d+(?: \([^)]*\))?|walk \d+ min)-->", line) for line in lines)
     progressive_paths = [layer["path_text"] for layer in preview["layers"][1:]]
     assert all(
         previous != current
@@ -46,7 +46,8 @@ def test_gui_assigns_each_metric_family_to_exactly_one_program_phase():
 def test_metric_dependencies_mark_missing_learned_audio_evidence():
     report = metric_dependency_report(default_run_config())
     nisqa = report["metrics"]["tts_nisqa"]
-    assert nisqa["enabled"]
+    assert nisqa["obligatory"]
+    assert not nisqa["enabled"]
     assert not nisqa["available"]
     assert "nisqa_model" in nisqa["missing_fields"]
 

@@ -21,8 +21,8 @@ SCENARIO_SPECS = {
     },
     "evening_outbound": {
         "name": "Evening outbound evaluation",
-        "start_station_index": "middle",
-        "destination_station_index": 2,
+        "start_station_index": 4,
+        "destination_station_index": 25,
         "start_time_min": 17 * 60 + 42,
     },
     "late_event": {
@@ -33,23 +33,25 @@ SCENARIO_SPECS = {
     },
     "airport_connection": {
         "name": "Airport-style low-delay connection evaluation",
-        "start_station_index": 0,
-        "destination_station_index": -2,
+        "start_station_index": 1,
+        "destination_station_index": 33,
         "start_time_min": 6 * 60 + 35,
-        "max_delay_probability": 0.32,
+        "max_delay_probability": 0.60,
         "max_transfer_miss_probability": 0.20,
+        "acceptable_duration_ratio": 2.0,
     },
     "hospital_appointment": {
         "name": "Appointment reliability and low-transfer evaluation",
-        "start_station_index": 7,
-        "destination_station_index": 28,
+        "start_station_index": 0,
+        "destination_station_index": 34,
         "start_time_min": 9 * 60 + 12,
         "max_transfer_miss_probability": 0.18,
+        "acceptable_duration_ratio": 2.0,
     },
     "crowded_event_exit": {
         "name": "Crowded event exit comfort evaluation",
-        "start_station_index": -1,
-        "destination_station_index": 5,
+        "start_station_index": 18,
+        "destination_station_index": 2,
         "start_time_min": 22 * 60 + 18,
     },
     "multi_destination_errands": {
@@ -58,6 +60,7 @@ SCENARIO_SPECS = {
         "destination_station_index": 16,
         "destination_station_indices": [16, 24, -4],
         "start_time_min": 14 * 60 + 5,
+        "acceptable_duration_ratio": 2.5,
     },
 }
 

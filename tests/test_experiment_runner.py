@@ -9,6 +9,7 @@ import wave
 from zipfile import ZipFile
 
 from coop_navigation_sds.DialogManagement.result import DialogResult
+from coop_navigation_sds.EvaluationMetrics.catalog import metric_local_name
 from coop_navigation_sds.experiments import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
 from coop_navigation_sds.NaturalLanguageGeneration.models import ModelParameterSet
@@ -49,6 +50,29 @@ class FakeModelAdapter:
 
 
 class ExperimentRunnerTests(unittest.TestCase):
+    def test_shared_tinyllama_condition_reuses_loaded_adapter(self):
+        adapter = FakeModelAdapter(name="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+        factory = MagicMock()
+        runner = ExperimentRunner(
+            adapter,
+            num_turns=3,
+            model_adapter_factory=factory,
+        )
+        condition = ExperimentCondition(
+            condition_id="shared-model",
+            test_case_key="morning_peak_cross_city",
+            persona_key="focused_commuter",
+            scenario_key="morning_peak_cross_city",
+            speech_pattern_key="clean",
+            model_param_key="greedy",
+            agent_b_model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        )
+
+        selected = runner._model_adapter_for(condition)
+
+        factory.assert_not_called()
+        self.assertEqual(selected.name, adapter.name)
+
     @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
     @patch("coop_navigation_sds.experiments.DialogManager")
     @patch("coop_navigation_sds.experiments.get_test_case")
@@ -242,14 +266,22 @@ class ExperimentRunnerTests(unittest.TestCase):
                 names = set(archive.namelist())
                 workbook_xml = archive.read("xl/workbook.xml").decode("utf-8")
 
-            runtime_rows = (log_dir / "metric_phase_runtime.jsonl").read_text(encoding="utf-8").splitlines()
-            runtime_record = json.loads(runtime_rows[0])
+            phase_rows = (log_dir / "metrics_by_phase.jsonl").read_text(encoding="utf-8").splitlines()
+            long_rows = list(csv.DictReader((log_dir / "metrics_long.csv").open(encoding="utf-8")))
+            long_jsonl_exists = (log_dir / "metrics_long.jsonl").exists()
+            runtime_record = next(
+                json.loads(row) for row in phase_rows
+                if json.loads(row)["phase"] == "runtime"
+            )
 
         self.assertIn("xl/workbook.xml", names)
         self.assertIn('name="summary"', workbook_xml)
+        self.assertIn('name="metric_long"', workbook_xml)
         self.assertIn('name="runtime"', workbook_xml)
         self.assertEqual(runtime_record["phase"], "runtime")
         self.assertEqual(runtime_record["metrics"]["response_latency_sec"], 0.12)
+        self.assertEqual({row["phase"] for row in long_rows}, {"runtime", "asr"})
+        self.assertTrue(long_jsonl_exists)
 
     def test_write_network_research_artifacts(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -370,39 +402,28 @@ class ExperimentRunnerTests(unittest.TestCase):
             protocol_children = [child for child in Path(tmpdir).iterdir() if child.is_dir() and child.name != "turn_audio"]
             batch_paths = write_conversation_protocols([result], Path(tmpdir) / "batch")
 
-            summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
             combined_protocol = json.loads(paths["protocol"].read_text(encoding="utf-8"))
-            audio_manifest = json.loads(paths["audio_manifest"].read_text(encoding="utf-8"))
             transcript_text = paths["transcript_txt"].read_text(encoding="utf-8")
             conversation_wav_exists = paths["conversation_wav"].exists()
-            verification = json.loads(paths["verification"].read_text(encoding="utf-8"))
-            turn_rows = paths["turns"].read_text(encoding="utf-8").splitlines()
-            agent_rows = paths["agent_turn_segments"].read_text(encoding="utf-8").splitlines()
-            agent_a_rows = paths["agent_a_segments"].read_text(encoding="utf-8").splitlines()
-            agent_b_rows = paths["agent_b_segments"].read_text(encoding="utf-8").splitlines()
-            agent_summary = json.loads(paths["agent_timing_summary"].read_text(encoding="utf-8"))
-            runtime_rows = paths["runtime_events"].read_text(encoding="utf-8").splitlines()
-            phase_timing_rows = paths["phase_timing"].read_text(encoding="utf-8").splitlines()
-            retrospective_text = paths["retrospective_summary"].read_text(encoding="utf-8")
 
         self.assertTrue(batch_paths)
         self.assertEqual(protocol_children, [])
-        self.assertEqual(summary["condition_id"], "Case One")
         self.assertEqual(combined_protocol["summary"]["condition_id"], "Case One")
         self.assertIn("Agent A", transcript_text)
-        self.assertTrue(audio_manifest["created"])
+        self.assertTrue(combined_protocol["audio_manifest"]["created"])
         self.assertTrue(conversation_wav_exists)
-        self.assertTrue(verification["verified"])
-        self.assertEqual(len(turn_rows), 2)
-        self.assertEqual(len(agent_rows), 2)
-        self.assertEqual(len(agent_a_rows), 1)
-        self.assertEqual(len(agent_b_rows), 1)
-        self.assertEqual(agent_summary["Agent B"]["mean_turn_elapsed_sec"], 0.4)
-        self.assertEqual(len(runtime_rows), 1)
-        self.assertEqual(len(phase_timing_rows), 1)
+        self.assertTrue(combined_protocol["verification"]["verified"])
+        self.assertEqual(len(combined_protocol["conversation"]), 2)
+        self.assertEqual(len(combined_protocol["agent_turn_segments"]), 2)
+        self.assertEqual(
+            {row["speaker"] for row in combined_protocol["agent_turn_segments"]},
+            {"Agent A", "Agent B"},
+        )
+        self.assertEqual(combined_protocol["agent_timing_summary"]["Agent B"]["mean_turn_elapsed_sec"], 0.4)
+        self.assertEqual(len(combined_protocol["runtime_events"]), 1)
         self.assertEqual(len(combined_protocol["phase_timing"]), 1)
         self.assertIn("processing seconds", transcript_text)
-        self.assertIn("Messages", retrospective_text)
+        self.assertIn("Messages", combined_protocol["retrospective_summary"])
 
     def test_single_run_research_outputs_compile_metrics_for_analysis(self):
         result = DialogResult(
@@ -468,12 +489,55 @@ class ExperimentRunnerTests(unittest.TestCase):
             self.assertEqual(paths["metrics_file"].parent, paths["run_dir"])
             self.assertTrue(metrics_file.exists())
             self.assertEqual(phase_dir, paths["run_dir"])
-            self.assertTrue((phase_dir / "metric_phase_summary.jsonl").exists())
+            self.assertTrue((phase_dir / "metrics_by_phase.jsonl").exists())
+            self.assertTrue((phase_dir / "metrics_long.csv").exists())
+            self.assertTrue((phase_dir / "metrics_long.jsonl").exists())
+            self.assertFalse((phase_dir / "metric_phase_summary.jsonl").exists())
             self.assertTrue((phase_dir / "metric_catalog.json").exists())
             self.assertTrue(paths["retrospective_json"].exists())
+            retrospective = json.loads(paths["retrospective_json"].read_text(encoding="utf-8"))
+            phase_rows = [
+                json.loads(line)
+                for line in (phase_dir / "metrics_by_phase.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            catalog = json.loads((phase_dir / "metric_catalog.json").read_text(encoding="utf-8"))
+            long_rows = list(csv.DictReader((phase_dir / "metrics_long.csv").open(encoding="utf-8")))
+            emitted = {
+                (row["phase"], name)
+                for row in phase_rows
+                for name in row["metrics"]
+            }
+            cataloged = {
+                (phase, metric_local_name(item["key"]))
+                for phase, phase_catalog in catalog.items()
+                for item in phase_catalog["metrics"]
+            }
+            self.assertEqual(emitted, cataloged)
+            self.assertEqual(len(emitted), len(retrospective["calculation_evidence"]))
+            null_metric_count = sum(
+                value is None
+                for values in retrospective["metrics_by_phase"].values()
+                for value in values.values()
+            )
+            unavailable_evidence_count = sum(
+                not evidence["available"] and bool(evidence["reason"])
+                for evidence in retrospective["calculation_evidence"].values()
+            )
+            self.assertEqual(null_metric_count, unavailable_evidence_count)
+            self.assertEqual(len(long_rows), len(cataloged))
+            self.assertTrue({
+                "phase",
+                "metric_key",
+                "value_numeric",
+                "available",
+                "formula",
+                "operands_json",
+                "selection_rationale",
+            }.issubset(long_rows[0]))
             self.assertTrue(paths["protocol"]["protocol"].exists())
             self.assertTrue(paths["protocol"]["transcript_txt"].exists())
-            self.assertTrue(paths["protocol"]["audio_manifest"].exists())
+            protocol = json.loads(paths["protocol"]["protocol"].read_text(encoding="utf-8"))
+            self.assertIn("audio_manifest", protocol)
             self.assertTrue(paths["network_json"].exists())
             self.assertTrue(paths["network_graph"].exists())
             self.assertFalse(any(child.is_dir() for child in paths["run_dir"].iterdir()))

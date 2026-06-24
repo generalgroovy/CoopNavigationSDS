@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from coop_navigation_sds.Configuration.runtime import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
+from coop_navigation_sds.Configuration.schema import resolve_results_root
 from coop_navigation_sds.Configuration.speech import (
     AGENT_B_PLUGIN,
     SPEECH_AUDIO_DIR,
@@ -22,7 +23,8 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertTrue(SPEECH_PATTERNS)
         self.assertTrue(NUM_TURNS)
         self.assertTrue(AGENT_B_PLUGIN)
-        self.assertEqual(RESULTS_DIR, "results")
+        self.assertEqual(Path(RESULTS_DIR), Path(__file__).resolve().parents[1] / "results")
+        self.assertEqual(Path(resolve_results_root("results")), Path(RESULTS_DIR))
         self.assertTrue(SESSION_LOG_DIR)
         self.assertFalse(LLM_AGENT_A)
 

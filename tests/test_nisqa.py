@@ -9,11 +9,11 @@ from coop_navigation_sds.EvaluationMetrics.nisqa import NISQAEvaluator, read_mon
 
 
 class NISQATests(unittest.TestCase):
-    def test_nisqa_is_a_core_learned_mos_metric(self):
+    def test_nisqa_is_a_default_learned_mos_metric(self):
         self.assertIn("tts_nisqa", CORE_METRIC_KEYS)
         metadata = metric_metadata("tts_nisqa", "tts")
         self.assertEqual(metadata["class"], "L")
-        self.assertEqual(metadata["tier"], "core")
+        self.assertNotIn("tier", metadata)
         self.assertEqual(metadata["unit"], "mean_opinion_score_1_to_5")
         self.assertEqual(metadata["estimator"]["range"], [1.0, 5.0])
 

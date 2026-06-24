@@ -5,10 +5,9 @@ from coop_navigation_sds.EvaluationMetrics.catalog import (
     DEFAULT_METRIC_CONFIG,
     METRIC_KEYS,
     METRIC_FAMILY_SPECS,
-    SUPPLEMENTARY_METRIC_KEYS,
     metric_metadata,
 )
-from coop_navigation_sds.EvaluationMetrics.metrics import metric_config_with_defaults
+from coop_navigation_sds.EvaluationMetrics.metrics import obligatory_metric_map
 
 from coop_navigation_sds.DialogManagement.result import DialogResult
 from coop_navigation_sds.EvaluationMetrics.metrics import (
@@ -26,46 +25,23 @@ from coop_navigation_sds.TransportNetwork import DEFAULT_TEST_CASE, get_test_cas
 
 
 class MetricFamilyTests(unittest.TestCase):
-    def test_each_phase_enables_at_least_seven_core_metrics(self):
+    def test_each_phase_has_at_least_seven_default_metrics(self):
         for family in METRIC_FAMILY_SPECS:
             enabled = [
                 key for key, _label in family["metrics"]
-                if key in CORE_METRIC_KEYS
+                if DEFAULT_METRIC_CONFIG[key]
             ]
             self.assertGreaterEqual(len(enabled), 7, family["key"])
 
-    def test_core_metrics_are_mandatory_and_supplementary_metrics_default_off(self):
+    def test_all_metrics_are_obligatory(self):
         core_key = next(iter(CORE_METRIC_KEYS))
-        supplementary_key = next(iter(SUPPLEMENTARY_METRIC_KEYS))
         self.assertTrue(DEFAULT_METRIC_CONFIG[core_key])
-        self.assertFalse(DEFAULT_METRIC_CONFIG[supplementary_key])
-        configured = metric_config_with_defaults(
-            {
-                core_key: False,
-                supplementary_key: True,
-            },
-            {
-                core_key: "supplementary",
-                supplementary_key: "core",
-            },
-        )
-        self.assertFalse(configured[core_key])
-        self.assertTrue(configured[supplementary_key])
-        configured = metric_config_with_defaults({
-            core_key: False,
-            supplementary_key: True,
-        })
+        configured = obligatory_metric_map()
         self.assertTrue(configured[core_key])
-        self.assertTrue(configured[supplementary_key])
 
-    def test_metric_catalog_exports_core_and_supplementary_tiers(self):
+    def test_metric_catalog_no_longer_exports_tiers(self):
         core_key = next(iter(CORE_METRIC_KEYS))
-        supplementary_key = next(iter(SUPPLEMENTARY_METRIC_KEYS))
-        self.assertEqual(metric_metadata(core_key, "whole_dialogue")["tier"], "core")
-        self.assertEqual(
-            metric_metadata(supplementary_key, "whole_dialogue")["tier"],
-            "supplementary",
-        )
+        self.assertNotIn("tier", metric_metadata(core_key, "whole_dialogue"))
 
     def test_metric_record_exposes_stage_families(self):
         class FakeNISQAEvaluator:
@@ -195,6 +171,35 @@ class MetricFamilyTests(unittest.TestCase):
                     },
                 },
                 "condition_runtime_sec": 0.25,
+                "runtime_events": [
+                    {
+                        "phase": "dialogue_state_tracking",
+                        "event_type": "agent_memory_snapshot",
+                        "payload": {
+                            "turn": 1,
+                            "snapshots": {
+                                "Agent A": {"current_route": []},
+                                "Agent B": {"current_route": []},
+                            },
+                            "additions": {"Agent A": {"latest_spoken": "Need a route."}},
+                        },
+                    },
+                    {
+                        "phase": "dialogue_state_tracking",
+                        "event_type": "agent_memory_snapshot",
+                        "payload": {
+                            "turn": 2,
+                            "snapshots": {
+                                "Agent A": {"current_route": reference_route},
+                                "Agent B": {"current_route": reference_route},
+                            },
+                            "additions": {
+                                "Agent A": {"current_route": reference_route},
+                                "Agent B": {"current_route": reference_route},
+                            },
+                        },
+                    },
+                ],
             },
         )
 
@@ -210,8 +215,8 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertIn("backend_task_execution", record.metric_families)
         self.assertIn("dialogue_state_tracking", record.metric_families)
         self.assertEqual(row["audio_turn_latency"], 0.07)
-        self.assertIn("audio_end_of_utterance_error", row)
-        self.assertIn("audio_overlap_rate", row)
+        self.assertNotIn("audio_end_of_utterance_error", row)
+        self.assertNotIn("audio_overlap_rate", row)
         self.assertIn("asr_wer", row)
         self.assertEqual(row["asr_success_rate"], 1.0)
         self.assertEqual(row["asr_failure_count"], 0)
@@ -224,6 +229,9 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["nlu_constraint_extraction_f1"], 1.0)
         self.assertEqual(row["nlu_semantic_frame_accuracy"], 1.0)
         self.assertEqual(row["dialogue_state_shared_state_agreement"], 1.0)
+        self.assertEqual(row["dialogue_state_memory_trace_coverage"], 1.0)
+        self.assertEqual(row["dialogue_state_memory_update_rate"], 1.0)
+        self.assertEqual(row["dialogue_state_route_memory_retention_rate"], 1.0)
         self.assertEqual(row["dialogue_management_premature_answer_rate"], 0.0)
         self.assertGreaterEqual(row["dialogue_management_repair_success_rate"], 0.0)
         self.assertLessEqual(row["dialogue_management_repair_success_rate"], 1.0)
@@ -253,7 +261,7 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["pipeline_success_rate"], 1.0)
         self.assertEqual(row["pipeline_failure_count"], 0)
         self.assertEqual(row["whole_dialogue_interaction_quality_trajectory"], row["automatic_eval_score"])
-        self.assertIsNone(row["metric_validity_rank_stability"])
+        self.assertNotIn("metric_validity_rank_stability", row)
         self.assertIn("route_line_sequence", row)
         self.assertIn("reference_line_sequence", row)
         self.assertGreaterEqual(row["route_line_change_count"], 0)
@@ -318,6 +326,9 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertIn("asr_numeric_preservation_rate", keys)
         self.assertIn("nlu_joint_frame_accuracy", keys)
         self.assertIn("dialogue_state_candidate_memory_precision", keys)
+        self.assertIn("dialogue_state_memory_trace_coverage", keys)
+        self.assertIn("dialogue_state_memory_update_rate", keys)
+        self.assertIn("dialogue_state_route_memory_retention_rate", keys)
         self.assertIn("dialogue_management_clarification_precision", keys)
         self.assertIn("agent_b_duration_regret", keys)
         self.assertIn("nlg_slot_error_rate", keys)
@@ -357,9 +368,9 @@ class MetricFamilyTests(unittest.TestCase):
             self.assertIsNotNone(validity["success_confidence_interval_high"])
             self.assertIsNotNone(validity["seed_variance"])
             self.assertIsNotNone(validity["missingness_rate"])
-            self.assertTrue(validity["available"])
+            self.assertNotIn("available", validity)
 
-    def test_metric_configuration_filters_research_phase_metrics(self):
+    def test_legacy_metric_configuration_cannot_filter_metrics(self):
         test_case = get_test_case(DEFAULT_TEST_CASE)
         scenario = test_case.scenario
         result = DialogResult(
@@ -383,19 +394,14 @@ class MetricFamilyTests(unittest.TestCase):
                     "audio_missing_rate": False,
                     "audio_turn_latency": True,
                 },
-                "metric_tiers": {
-                    "asr_wer": "supplementary",
-                    "audio_missing_rate": "supplementary",
-                    "audio_turn_latency": "core",
-                },
             },
         )
 
         row = MetricComputer().compute(result, scenario).as_dict()
 
         self.assertIn("audio_turn_latency", row)
-        self.assertNotIn("asr_wer", row)
-        self.assertNotIn("audio_missing_rate", row)
+        self.assertIn("asr_wer", row)
+        self.assertIn("audio_missing_rate", row)
         self.assertIn("asr_word_error_rate", row)
 
     def test_metric_record_exposes_pipeline_failure_case(self):

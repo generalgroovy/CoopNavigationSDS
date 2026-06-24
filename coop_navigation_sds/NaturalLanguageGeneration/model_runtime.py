@@ -126,11 +126,13 @@ def create_model_adapter(
 ):
     """Create the configured provider-neutral model adapter."""
     provider = str(provider or MODEL_PROVIDER).strip().lower()
-    if provider in {"openai", "openai_compatible"}:
+    if provider in {"openai", "openai_compatible", "llama_cpp"}:
         return OpenAICompatibleChatAdapter(
-            model=model_name or CHAT_MODEL,
+            model=model_name or ("local-model" if provider == "llama_cpp" else CHAT_MODEL),
             api_key=api_key or CHAT_API_KEY,
-            base_url=base_url or CHAT_BASE_URL,
+            base_url=base_url or (
+                "http://127.0.0.1:8080/v1" if provider == "llama_cpp" else CHAT_BASE_URL
+            ),
             timeout_sec=timeout_sec,
             max_new_tokens=max_new_tokens,
         )

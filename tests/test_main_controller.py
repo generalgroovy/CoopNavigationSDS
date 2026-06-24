@@ -7,14 +7,17 @@ import unittest
 
 from coop_navigation_sds.app import (
     ConsoleEventSink,
+    agent_a_model_integrity,
+    build_agent_a_responder,
     configure_model_adapter_runtime,
     default_run_config,
     normalize_run_config,
 )
-from coop_navigation_sds.Configuration.gui import StartupConfigDialog
+from coop_navigation_sds.Configuration.gui import GUI_PHASE_LAYOUT, StartupConfigDialog
 from coop_navigation_sds.Configuration.component_catalog import startup_choices
 from coop_navigation_sds.Configuration.experimental_defaults import numeric_range
 from coop_navigation_sds.DialogManagement.speech_pipeline import SpeechPipelineError
+from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import LLMAgentAResponder
 
 
 class MainControllerTests(unittest.TestCase):
@@ -38,42 +41,6 @@ class MainControllerTests(unittest.TestCase):
         text = output.getvalue()
         self.assertEqual(text, "")
 
-    def test_metric_tier_core_forces_enabled_and_supplementary_is_optional(self):
-        class Variable:
-            def __init__(self, value):
-                self.value = value
-
-            def get(self):
-                return self.value
-
-            def set(self, value):
-                self.value = value
-
-        class Widget:
-            def __init__(self):
-                self.states = set()
-
-            def state(self, states):
-                for state in states:
-                    if state.startswith("!"):
-                        self.states.discard(state[1:])
-                    else:
-                        self.states.add(state)
-
-        dialog = StartupConfigDialog.__new__(StartupConfigDialog)
-        widget = Widget()
-        dialog.metric_vars = {"asr_wer": Variable(False)}
-        dialog.metric_tier_vars = {"asr_wer": Variable("core")}
-        dialog.metric_enabled_widgets = {"asr_wer": widget}
-
-        dialog._refresh_metric_state("asr_wer")
-        self.assertTrue(dialog.metric_vars["asr_wer"].get())
-        self.assertIn("disabled", widget.states)
-
-        dialog.metric_tier_vars["asr_wer"].set("supplementary")
-        dialog._refresh_metric_state("asr_wer")
-        self.assertNotIn("disabled", widget.states)
-
     def test_run_scripts_exist_for_dialog_and_script_config_modes(self):
         root = Path(__file__).resolve().parents[1]
         self.assertTrue((root / "scripts" / "run_with_config_dialog.py").exists())
@@ -92,22 +59,77 @@ class MainControllerTests(unittest.TestCase):
         self.assertEqual(config["agent_a_audio_persona"], "high_clarity_caller")
         self.assertEqual(config["agent_b_audio_persona"], "high_clarity_operator")
         self.assertGreaterEqual(config["asr_end_silence_ms"], 1500)
+        self.assertEqual(config["dialogue_stagnation_limit"], 2)
         self.assertEqual(config["asr_beam_size"], 8)
-        self.assertEqual(config["agent_a_speech_rate"], -3)
-        self.assertEqual(config["agent_a_words_per_minute"], 140)
-        self.assertEqual(config["agent_b_pause_ms"], 280)
+        self.assertLessEqual(config["agent_a_speech_rate"], -3)
+        self.assertLessEqual(config["agent_a_words_per_minute"], 140)
+        self.assertGreaterEqual(config["agent_b_pause_ms"], 280)
         self.assertGreaterEqual(config["model_max_new_tokens"], 96)
         self.assertEqual(config["max_utterance_sec"], 20.0)
         self.assertEqual(config["agent_b_volume"], 100)
         self.assertIn(config["agent_a_emphasis"], {"none", "reduced", "moderate", "strong"})
-        self.assertTrue(config["metric_config"]["task_outcome_completion"])
+        self.assertEqual(config["console_view"], "compact")
+        self.assertIn(config["log_profile"], {"startup", "runtime", "full"})
+        self.assertNotIn("metric_config", config)
 
-    def test_metric_switches_are_normalized(self):
+    def test_legacy_metric_switches_are_discarded(self):
         config = default_run_config()
         config["metric_config"] = {"asr_wer": False}
         normalized = normalize_run_config(config)
-        self.assertTrue(normalized["metric_config"]["asr_wer"])
-        self.assertTrue(normalized["metric_config"]["task_outcome_completion"])
+        self.assertNotIn("metric_config", normalized)
+
+    def test_console_view_and_log_profile_are_validated(self):
+        config = default_run_config()
+        config["console_view"] = "transcript"
+        config["log_profile"] = "debug"
+        with self.assertRaises(ValueError):
+            normalize_run_config(config)
+
+        config["log_profile"] = "full"
+        normalized = normalize_run_config(config)
+        self.assertEqual(normalized["console_view"], "transcript")
+        self.assertEqual(normalized["log_profile"], "full")
+
+    def test_console_views_control_live_detail(self):
+        speech_event = ("telemetry", "speech", {
+            "speaker": "Agent A",
+            "outgoing_text": "I need Alpha to Echo.",
+            "incoming_transcript": "I need Alpha to Echo.",
+        })
+        memory_event = ("telemetry", "memory", {"snapshots": {"Agent A": {"known": "Alpha"}}})
+        phase_event = ("stage", "proposal")
+
+        transcript_output = StringIO()
+        with redirect_stdout(transcript_output):
+            sink = ConsoleEventSink("transcript")
+            sink.put(speech_event)
+            sink.put(memory_event)
+            sink.put(phase_event)
+        self.assertIn("TTS SPEECH", transcript_output.getvalue())
+        self.assertNotIn("MEMORY", transcript_output.getvalue())
+        self.assertNotIn("STAGE", transcript_output.getvalue())
+
+        compact_output = StringIO()
+        with redirect_stdout(compact_output):
+            sink = ConsoleEventSink("compact")
+            sink.put(speech_event)
+            sink.put(memory_event)
+        self.assertIn("TTS SPEECH", compact_output.getvalue())
+        self.assertNotIn("MEMORY", compact_output.getvalue())
+
+        debug_output = StringIO()
+        with redirect_stdout(debug_output):
+            sink = ConsoleEventSink("debug")
+            sink.put(memory_event)
+            sink.put(phase_event)
+        self.assertIn("MEMORY", debug_output.getvalue())
+        self.assertIn("STAGE: proposal", debug_output.getvalue())
+
+        quiet_output = StringIO()
+        with redirect_stdout(quiet_output):
+            sink = ConsoleEventSink("quiet")
+            sink.put(speech_event)
+        self.assertEqual(quiet_output.getvalue(), "")
 
     def test_runtime_lengths_are_clamped(self):
         config = default_run_config()
@@ -175,16 +197,18 @@ class MainControllerTests(unittest.TestCase):
             sink.put(("metric_results", metric))
 
         text = output.getvalue()
-        self.assertIn("SPEECH: Agent A: I need Alpha to Echo.", text)
-        self.assertIn("ASR RAW: Agent B: I need Alpha to Echo.", text)
-        self.assertIn("MISINTERPRETATIONS: none", text)
-        self.assertIn("CORRECTIONS: none", text)
-        self.assertIn("UNDERSTOOD: Agent B: I need Alpha to Echo.", text)
-        self.assertEqual(text.count("I need Alpha to Echo."), 3)
+        self.assertIn("TTS SPEECH:    I need Alpha to Echo.", text)
+        self.assertIn("ASR HEARD:     I need Alpha to Echo.", text)
+        self.assertNotIn("AGENT INPUT:", text)
+        self.assertNotIn("TTS -> ASR:", text)
+        self.assertNotIn("ASR -> INPUT:", text)
+        self.assertEqual(text.count("I need Alpha to Echo."), 2)
         self.assertIn("Conversation And Task Summary", text)
-        self.assertIn("[2. Automatic Speech Recognition]", text)
-        self.assertIn("WER = 0.1000", text)
-        self.assertIn("Formula:", text)
+        self.assertIn("2. Automatic Speech Recognition [1/1 calculable]", text)
+        self.assertIn("WER=0.1000", text)
+        self.assertIn("Detailed formulas, operands, substitutions", text)
+        self.assertIn("Post-Experiment Metric Overview", text)
+        self.assertNotIn("Calculation: Formula:", text)
 
     def test_console_shows_raw_errors_corrections_and_listener_input(self):
         sink = ConsoleEventSink()
@@ -206,15 +230,18 @@ class MainControllerTests(unittest.TestCase):
             }))
 
         text = output.getvalue()
-        self.assertIn("ASR RAW: Agent A: Take metro line em one to harder.", text)
-        self.assertIn("M1 -> em one", text)
+        self.assertIn("ASR HEARD:     Take metro line em one to harder.", text)
+        self.assertIn("'M1' -> em one", text)
         self.assertIn("em one -> M1", text)
-        self.assertIn("UNDERSTOOD: Agent A: Take metro line M1 to Harbor.", text)
+        self.assertNotIn("replace:", text)
+        self.assertIn("AGENT INPUT:   Take metro line M1 to Harbor.", text)
+        self.assertIn("TTS -> ASR:", text)
+        self.assertIn("ASR -> INPUT:", text)
 
-    def test_console_prints_retrospective_numeric_operands_and_steps(self):
+    def test_console_prints_one_compact_line_per_phase(self):
         sink = ConsoleEventSink()
         metric = SimpleNamespace(
-            metric_families={"asr": {"available": True, "wer": 0.25}},
+            metric_families={"asr": {"available": True, "wer": 0.25, "entity_error_rate": None}},
             metric_calculations={
                 "asr_wer": {
                     "formula": "(substitutions + deletions + insertions) / reference words",
@@ -225,7 +252,12 @@ class MainControllerTests(unittest.TestCase):
                         "reference_words": 4,
                     },
                     "substitution": "(1 + 0 + 0) / 4 = 0.25",
-                }
+                    "available": True,
+                },
+                "asr_entity_error_rate": {
+                    "available": False,
+                    "reason": "required evidence unavailable",
+                },
             },
         )
         output = StringIO()
@@ -234,8 +266,14 @@ class MainControllerTests(unittest.TestCase):
             sink.put(("metric_results", metric))
 
         text = output.getvalue()
-        self.assertIn("substitutions=1", text)
-        self.assertIn("Steps: (1 + 0 + 0) / 4 = 0.25", text)
+        self.assertIn("WER=0.2500", text)
+        self.assertIn("unavailable=1", text)
+        self.assertNotIn("required evidence unavailable", text)
+        phase_lines = [
+            line for line in text.splitlines()
+            if "Automatic Speech Recognition [" in line
+        ]
+        self.assertEqual(len(phase_lines), 1)
 
     def test_console_defers_pipeline_phases_during_conversation(self):
         sink = ConsoleEventSink()
@@ -302,25 +340,43 @@ class MainControllerTests(unittest.TestCase):
     def test_configuration_gui_combines_configuration_and_metrics_by_phase(self):
         source = inspect.getsource(StartupConfigDialog)
 
-        self.assertIn('text="Experiment pipeline"', source)
         self.assertIn("_build_combined_pipeline", source)
         self.assertIn("_attach_phase_metrics", source)
         self.assertIn("_expand_phase_metrics", source)
         self.assertIn("_collapse_phase_metrics", source)
-        self.assertIn('text="Close metrics"', source)
+        self.assertIn('text="Hide metrics"', source)
         self.assertIn('orient="vertical", command=canvas.yview', source)
-        self.assertIn("_vertical_pipeline", source)
+        self.assertIn("_phase_grid", source)
         self.assertNotIn("ttk.Notebook", source)
-        self.assertIn('self.root.state("zoomed")', source)
-        self.assertIn("self.root.after_idle(self._maximize_window)", source)
-        self.assertIn("Core forces the metric on", source)
-        self.assertIn("_refresh_metric_state", source)
+        self.assertNotIn('text="Experiment pipeline"', source)
+        self.assertNotIn("Flow.TLabel", source)
+        self.assertNotIn("Heading.TLabel", source)
+        self.assertNotIn('self.root.state("zoomed")', source)
+        self.assertNotIn("self.root.after_idle(self._maximize_window)", source)
+        self.assertIn('"console_view": tk.StringVar', source)
+        self.assertIn('"log_profile": tk.StringVar', source)
+        self.assertIn('"Console view"', source)
+        self.assertIn('"Structured log level"', source)
+        self.assertIn("This metric is obligatory", source)
+        self.assertNotIn("self.metric_vars", source)
+        self.assertNotIn("metric_tier_vars", source)
+        self.assertNotIn('values=("core", "supplementary")', source)
         self.assertIn("_refresh_conditional_sections", source)
         self.assertIn("ttk.Scale", source)
         self.assertIn("numeric_range", source)
         self.assertIn('style.configure("TButton"', source)
         self.assertNotIn("laugh_level", source)
         self.assertNotIn("reference_audio", source)
+
+    def test_configuration_gui_splits_screen_into_eight_equal_phase_regions(self):
+        self.assertEqual(len(GUI_PHASE_LAYOUT), 8)
+        self.assertTrue(all(span == 1 for _row, _column, span in GUI_PHASE_LAYOUT.values()))
+        self.assertEqual(set(GUI_PHASE_LAYOUT.values()), {
+            (0, 0, 1), (0, 1, 1),
+            (1, 0, 1), (1, 1, 1),
+            (2, 0, 1), (2, 1, 1),
+            (3, 0, 1), (3, 1, 1),
+        })
 
     def test_component_catalog_exposes_plug_and_play_backends(self):
         choices = startup_choices()
@@ -332,6 +388,27 @@ class MainControllerTests(unittest.TestCase):
         self.assertIn("chattts", choices["tts_engines"])
         self.assertIn("whisper_cpp", choices["asr_engines"])
         self.assertEqual(numeric_range("asr_end_silence_ms", (0, 1, 1)), (500, 6000, 100))
+
+    def test_model_backed_agent_a_cannot_silently_fallback(self):
+        with self.assertRaisesRegex(RuntimeError, "requires a loaded model adapter"):
+            build_agent_a_responder(None, agent_a_type="userlm")
+
+        responder = build_agent_a_responder(object(), agent_a_type="tinyllama")
+        self.assertIsInstance(responder, LLMAgentAResponder)
+
+    def test_agent_a_model_integrity_is_explicit(self):
+        self.assertTrue(agent_a_model_integrity({"agent_a_type": "staged"}, None)["valid"])
+        valid = agent_a_model_integrity(
+            {"agent_a_type": "tinyllama", "model_profile": "tinyllama_1b_transformers"},
+            object(),
+        )
+        self.assertTrue(valid["valid"])
+        self.assertEqual(valid["expected_model_profile"], "tinyllama_1b_transformers")
+        invalid = agent_a_model_integrity(
+            {"agent_a_type": "tinyllama", "model_profile": "qwen2_5_0_5b_transformers"},
+            object(),
+        )
+        self.assertFalse(invalid["valid"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "name": "tinyllama_piper_faster_whisper_comparison",
+  "description": "Paired two-scenario matrix for Agent A TinyLlama, Agent B TinyLlama, Piper synthesis, and Faster-Whisper recognition. Named linked profiles isolate synthesis pace, Piper acoustic variation, and ASR search effects while retaining a baseline.",
+  "iterations": 2,
+  "config": {
+    "agent_a_type": "tinyllama",
+    "agent_b_plugin": "llm",
+    "model_profile": "tinyllama_1b_transformers",
+    "model_provider": "transformers",
+    "model_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "allow_model_download": false,
+    "num_turns": 14,
+    "maximum_progressive_constraints": 3,
+    "minimum_compared_routes": 2,
+    "paired_audio_text_runs": true,
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "tts_engine": "piper",
+    "asr_engine": "faster_whisper",
+    "tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx",
+    "asr_model": ".speech-providers/models/faster-whisper",
+    "asr_device": "cpu",
+    "log_profile": "runtime"
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city", "midday_transfer"],
+    "personas": ["focused_commuter"],
+    "agent_a_audio_personas": ["high_clarity_caller"],
+    "agent_b_audio_personas": ["high_clarity_operator"],
+    "speech_patterns": ["clean"],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"],
+    "tts_engines": ["piper"],
+    "asr_engines": ["faster_whisper"],
+    "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"]
+  },
+  "parameter_profiles": [
+    {
+      "profile_key": "baseline",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.0,
+      "agent_b_speed": 1.0,
+      "agent_a_temperature": 0.15,
+      "agent_b_temperature": 0.15,
+      "agent_a_top_p": 0.5,
+      "agent_b_top_p": 0.5,
+      "asr_beam_size": 5,
+      "asr_compute_type": "int8"
+    },
+    {
+      "profile_key": "fast_speech",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.18,
+      "agent_b_speed": 1.18,
+      "agent_a_temperature": 0.15,
+      "agent_b_temperature": 0.15,
+      "agent_a_top_p": 0.5,
+      "agent_b_top_p": 0.5,
+      "asr_beam_size": 5,
+      "asr_compute_type": "int8"
+    },
+    {
+      "profile_key": "acoustic_variation",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.0,
+      "agent_b_speed": 1.0,
+      "agent_a_temperature": 0.35,
+      "agent_b_temperature": 0.35,
+      "agent_a_top_p": 0.75,
+      "agent_b_top_p": 0.75,
+      "asr_beam_size": 5,
+      "asr_compute_type": "int8"
+    },
+    {
+      "profile_key": "wide_asr_search",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.0,
+      "agent_b_speed": 1.0,
+      "agent_a_temperature": 0.15,
+      "agent_b_temperature": 0.15,
+      "agent_a_top_p": 0.5,
+      "agent_b_top_p": 0.5,
+      "asr_beam_size": 10,
+      "asr_compute_type": "float32"
+    }
+  ]
+}

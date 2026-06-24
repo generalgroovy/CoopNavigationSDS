@@ -5,7 +5,14 @@ import unittest
 
 from coop_navigation_sds.app import default_run_config, normalize_run_config
 from coop_navigation_sds.Configuration.gui import StartupConfigDialog, ToolTip
-from coop_navigation_sds.Configuration.jobs import load_experiment_job
+from coop_navigation_sds.Configuration.jobs import (
+    job_parameter_profiles,
+    load_experiment_job,
+)
+from coop_navigation_sds.Configuration.assets import (
+    faster_whisper_model_ready,
+    resolve_faster_whisper_model,
+)
 from coop_navigation_sds.experiments import build_condition_grid
 from coop_navigation_sds.TextToSpeech.personas import audio_persona_keys, synthesis_values
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import normalize_agent_a_type
@@ -93,13 +100,72 @@ class AudioPersonaAndJobTests(unittest.TestCase):
         jobs = [load_experiment_job(path) for path in paths]
         self.assertEqual(
             {normalize_agent_a_type(job["config"]["agent_a_type"]) for job in jobs},
-            {"staged", "userlm"},
+            {"tinyllama", "userlm"},
         )
         for job in jobs:
             self.assertTrue(job["config"]["paired_audio_text_runs"])
             self.assertGreaterEqual(len(job["grid"]["tts_engines"]), 3)
             self.assertGreaterEqual(len(job["grid"]["asr_engines"]), 3)
             self.assertGreaterEqual(len(job["grid"]["agent_b_models"]), 3)
+
+    def test_tinyllama_piper_whisper_job_has_linked_comparable_profiles(self):
+        source = (
+            Path(__file__).resolve().parents[1]
+            / "jobs"
+            / "tinyllama_piper_faster_whisper_comparison.job"
+        )
+        job = load_experiment_job(source)
+        grid = job["grid"]
+        conditions = list(build_condition_grid(
+            test_case_keys=grid["test_cases"],
+            persona_keys=grid["personas"],
+            speech_pattern_keys=grid["speech_patterns"],
+            model_param_keys=grid["model_params"],
+            objective_modes=grid["objective_modes"],
+            agent_a_audio_persona_keys=grid["agent_a_audio_personas"],
+            agent_b_audio_persona_keys=grid["agent_b_audio_personas"],
+            tts_engine_keys=grid["tts_engines"],
+            asr_engine_keys=grid["asr_engines"],
+            agent_b_model_keys=grid["agent_b_models"],
+            iterations=job["iterations"],
+            parameter_profiles=job_parameter_profiles(job),
+            pair_audio_with_text=True,
+        ))
+
+        self.assertEqual(job["config"]["agent_a_type"], "tinyllama")
+        self.assertEqual(job["grid"]["agent_b_models"], ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"])
+        self.assertEqual(len(conditions), 32)
+        self.assertEqual(
+            {condition.parameter_values["profile_key"] for condition in conditions},
+            {"baseline", "fast_speech", "acoustic_variation", "wide_asr_search"},
+        )
+        self.assertEqual({condition.run_type for condition in conditions}, {"text_only", "audio_variant"})
+
+    def test_parallel_job_shards_inherit_one_profile_each(self):
+        root = Path(__file__).resolve().parents[1] / "jobs"
+        paths = sorted(root.glob("tinyllama_piper_faster_whisper_parallel_*.job"))
+        self.assertEqual(len(paths), 4)
+        jobs = [load_experiment_job(path) for path in paths]
+        self.assertEqual(
+            {job["parameter_profiles"][0]["profile_key"] for job in jobs},
+            {"baseline", "fast_speech", "acoustic_variation", "wide_asr_search"},
+        )
+        self.assertTrue(all(len(job["parameter_profiles"]) == 1 for job in jobs))
+        self.assertTrue(all(len(job["grid"]["test_cases"]) == 2 for job in jobs))
+
+    def test_faster_whisper_cache_parent_resolves_to_ctranslate_snapshot(self):
+        root = Path(__file__).resolve().parents[1]
+        cache = root / ".speech-providers" / "models" / "faster-whisper"
+        if not cache.exists():
+            self.skipTest("Prepared Faster-Whisper cache is not present.")
+
+        resolved = Path(resolve_faster_whisper_model(cache))
+        ready, ready_path = faster_whisper_model_ready(cache)
+
+        self.assertTrue(ready)
+        self.assertEqual(Path(ready_path), resolved)
+        self.assertTrue((resolved / "model.bin").is_file())
+        self.assertTrue((resolved / "config.json").is_file())
 
     def test_configuration_window_has_tooltips_and_dynamic_persona_details(self):
         source = inspect.getsource(StartupConfigDialog)

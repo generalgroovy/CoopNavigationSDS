@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "name": "research_smoke",
+  "description": "Fast deterministic paired-control batch validating condition generation, traces, retrospective metrics, and exports without external assets.",
+  "iterations": 2,
+  "config": {
+    "agent_a_type": "staged",
+    "agent_b_plugin": "simple",
+    "num_turns": 6,
+    "maximum_progressive_constraints": 0,
+    "minimum_compared_routes": 1,
+    "paired_audio_text_runs": true,
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "tts_engine": "file",
+    "asr_engine": "file"
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter"],
+    "speech_patterns": ["clean"],
+    "model_params": ["greedy"],
+    "objective_modes": ["only_valid_route"],
+    "tts_engines": ["file"],
+    "asr_engines": ["file"]
+  }
+}

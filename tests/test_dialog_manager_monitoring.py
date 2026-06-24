@@ -27,6 +27,283 @@ def fast_text_transport():
 
 
 class DialogManagerMonitoringTests(unittest.TestCase):
+    def test_missing_trip_slot_is_repaired_once_and_route_dialogue_resumes(self):
+        class MissingStartTransport:
+            description = "missing-start-speech"
+            asr_engine = type("AsrEngine", (), {"name": "test-asr", "pattern_key": "clean"})()
+
+            def __init__(self):
+                self.agent_a_turns = 0
+
+            def transmit_trace(self, speaker, text):
+                transcript = str(text)
+                if speaker == "Agent A":
+                    self.agent_a_turns += 1
+                    if self.agent_a_turns == 1:
+                        transcript = transcript.replace("Bravo", "")
+                return SpeechPipelineTrace(
+                    speaker=speaker,
+                    generated_text=text,
+                    outgoing_text=text,
+                    incoming_transcript=transcript,
+                    outgoing_enabled=True,
+                    incoming_enabled=True,
+                    tts_engine="test-tts",
+                    asr_engine="test-asr",
+                    pattern_key="clean",
+                    simulated_duration_sec=0.01,
+                    mode="speech",
+                    diagnostics={"raw_asr_transcript": transcript},
+                )
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            SimplePlannerAgentBPlugin(),
+            num_turns=6,
+            speech_transport=MissingStartTransport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+        agent_b_turns = [text for speaker, text in result.conversation if speaker == "Agent B"]
+
+        self.assertEqual(sum("starting station" in text.casefold() for text in agent_b_turns), 1)
+        self.assertTrue(
+            any("metro line" in text.casefold() or "tram line" in text.casefold() or "bus line" in text.casefold() for text in agent_b_turns),
+            result.extra["agent_memories"]["Agent B"],
+        )
+        self.assertGreaterEqual(result.extra["candidate_routes"], 1)
+        self.assertNotEqual(result.extra["early_stop_reason"], "stagnation_limit")
+
+    def test_agent_b_does_not_end_call_when_trip_repair_fails(self):
+        class GarblingTransport:
+            description = "garbling-speech"
+            asr_engine = type("AsrEngine", (), {"name": "test-asr", "pattern_key": "garbled"})()
+
+            def transmit_trace(self, speaker, text):
+                transcript = "unclear words" if speaker == "Agent A" else str(text)
+                return SpeechPipelineTrace(
+                    speaker=speaker,
+                    generated_text=text,
+                    outgoing_text=text,
+                    incoming_transcript=transcript,
+                    outgoing_enabled=True,
+                    incoming_enabled=True,
+                    tts_engine="test-tts",
+                    asr_engine="test-asr",
+                    pattern_key="garbled",
+                    simulated_duration_sec=0.01,
+                    mode="speech",
+                    diagnostics={"raw_asr_transcript": transcript},
+                )
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            SimplePlannerAgentBPlugin(),
+            num_turns=5,
+            speech_transport=GarblingTransport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+        agent_b_turns = [
+            text.casefold()
+            for speaker, text in result.conversation
+            if speaker == "Agent B"
+        ]
+
+        self.assertTrue(agent_b_turns)
+        self.assertFalse(any("end this call" in text for text in agent_b_turns))
+        self.assertFalse(any("allowed repairs" in text for text in agent_b_turns))
+        self.assertTrue(any("missed" in text or "reset the trip details" in text for text in agent_b_turns))
+
+    def test_controller_suppresses_agent_b_closure_attempt(self):
+        class ClosingAgentB:
+            name = "closing-agent-b"
+
+            def run_agent_b(self, _state):
+                return "I cannot help with that, goodbye."
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            ClosingAgentB(),
+            num_turns=3,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+        agent_b_turns = [
+            text.casefold()
+            for speaker, text in result.conversation
+            if speaker == "Agent B"
+        ]
+
+        self.assertTrue(agent_b_turns)
+        self.assertFalse(any("goodbye" in text for text in agent_b_turns))
+        self.assertFalse(any("cannot help" in text for text in agent_b_turns))
+        self.assertTrue(any(
+            event["event_type"] == "agent_b_closure_suppressed"
+            for event in result.extra["runtime_events"]
+        ))
+
+    def test_agents_receive_perspective_specific_persistent_memories(self):
+        class CaseChangingTransport:
+            description = "case-changing-speech"
+            asr_engine = type("AsrEngine", (), {"name": "test-asr", "pattern_key": "clean"})()
+
+            def transmit_trace(self, speaker, text):
+                transcript = str(text)
+                if speaker == "Agent A":
+                    transcript = transcript.replace("Bravo", "bravo")
+                else:
+                    transcript = transcript.replace("Harbor", "harbor")
+                return SpeechPipelineTrace(
+                    speaker=speaker,
+                    generated_text=text,
+                    outgoing_text=text,
+                    incoming_transcript=transcript,
+                    outgoing_enabled=True,
+                    incoming_enabled=True,
+                    tts_engine="test-tts",
+                    asr_engine="test-asr",
+                    pattern_key="clean",
+                    simulated_duration_sec=0.01,
+                    mode="speech",
+                    diagnostics={"raw_asr_transcript": transcript},
+                )
+
+        class CapturingPlugin:
+            name = "capturing-agent-b"
+
+            def __init__(self):
+                self.memory = None
+                self.delegate = SimplePlannerAgentBPlugin()
+
+            def run_agent_b(self, state):
+                self.memory = list(state.conversation)
+                return self.delegate.run_agent_b(state)
+
+        class CapturingCaller:
+            name = "capturing-agent-a"
+
+            def __init__(self):
+                self.memory = None
+                self.delegate = TemplateAgentAResponder()
+
+            def reply(self, turn, persona, scenario, conversation):
+                self.memory = list(conversation)
+                return self.delegate.reply(turn, persona, scenario, conversation)
+
+        test_case = get_test_case(DEFAULT_TEST_CASE)
+        plugin = CapturingPlugin()
+        caller = CapturingCaller()
+        manager = DialogManager(
+            test_case,
+            plugin,
+            num_turns=3,
+            speech_transport=CaseChangingTransport(),
+            agent_a_responder=caller,
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertIn("bravo", plugin.memory[0][1])
+        self.assertEqual(caller.memory[0][1], test_case.opening_utterance())
+        self.assertIn("harbor", caller.memory[-1][1])
+        self.assertTrue(any(
+            item["speaker"] == "Agent B" and "Harbor" in item["text"]
+            for item in result.extra["agent_memories"]["Agent B"]
+        ))
+        self.assertTrue(any(
+            item["speaker"] == "Agent B" and "harbor" in item["text"]
+            for item in result.extra["agent_memories"]["Agent A"]
+        ))
+
+    def test_controller_stops_repetitive_no_progress_dialogue(self):
+        class RepeatingPlugin:
+            name = "repeating-test-plugin"
+
+            def run_agent_b(self, _state):
+                return "I cannot provide a route yet."
+
+        class RepeatingCaller:
+            name = "repeating-test-caller"
+
+            def reply(self, _turn, _persona, _scenario, _conversation):
+                return "Please provide the route."
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            RepeatingPlugin(),
+            num_turns=12,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=RepeatingCaller(),
+            invalid_route_limit=10,
+            stagnation_limit=2,
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(result.extra["early_stop_reason"], "stagnation_limit")
+        self.assertEqual(result.extra["stagnation_count"], 2)
+        self.assertLessEqual(len(result.conversation), 5)
+        self.assertEqual(result.conversation[-1][0], "Agent A")
+        self.assertIn("repeating the same information", result.conversation[-1][1])
+        self.assertTrue(any(
+            event["event_type"] == "dialogue_stagnation"
+            for event in result.extra["runtime_events"]
+        ))
+
+    def test_controller_requests_identical_transcript_repair_only_once(self):
+        class RepairingTransport:
+            description = "repairing-test-transport"
+            asr_engine = type("AsrEngine", (), {"name": "test-asr", "pattern_key": "clean"})()
+
+            def transmit_trace(self, speaker, text):
+                corrections = []
+                if speaker == "Agent B" and "I meant" not in text:
+                    corrections = [{
+                        "source_tokens": ["harder"],
+                        "target_tokens": ["Harbor"],
+                    }]
+                return SpeechPipelineTrace(
+                    speaker=speaker,
+                    generated_text=text,
+                    outgoing_text=text,
+                    incoming_transcript=text,
+                    outgoing_enabled=True,
+                    incoming_enabled=True,
+                    tts_engine="test",
+                    asr_engine="test",
+                    pattern_key="clean",
+                    simulated_duration_sec=0.01,
+                    mode="speech",
+                    diagnostics={"transcript_corrections": corrections},
+                )
+
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            SimplePlannerAgentBPlugin(),
+            num_turns=8,
+            speech_transport=RepairingTransport(),
+            agent_a_responder=TemplateAgentAResponder(),
+            stagnation_limit=3,
+        )
+
+        result = manager.run(NullEventQueue())
+        repair_questions = [
+            text for speaker, text in result.conversation
+            if speaker == "Agent A" and "Did you mean 'Harbor'" in text
+        ]
+
+        self.assertEqual(len(repair_questions), 1)
+        self.assertEqual(result.extra["transcript_repair_questions"], 1)
+        self.assertTrue(any(
+            event["event_type"] == "duplicate_transcript_repair_suppressed"
+            for event in result.extra["runtime_events"]
+        ))
+
     def test_three_agent_b_models_complete_the_same_speech_pipeline(self):
         first_replies = {}
         for plugin_key in ("pareto", "robust", "diverse"):
@@ -86,6 +363,11 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertIn("[Task]", result.metrics_text)
             self.assertIn("[Comparison]", result.metrics_text)
             self.assertIn("[Execution]", result.metrics_text)
+            self.assertIn("Selected route:", result.metrics_text)
+            self.assertIn("Optimal route:", result.metrics_text)
+            self.assertRegex(result.metrics_text, r"Selected route: .+--(?:metro|tram|bus) [MTB]\d+")
+            self.assertIn("Task success:", result.metrics_text)
+            self.assertIn("Constraints satisfied:", result.metrics_text)
             self.assertLessEqual(len(result.metrics_text.splitlines()), 30)
             self.assertTrue(all(" | " not in line for line in result.metrics_text.splitlines()))
             self.assertIsNotNone(result.extra["constraint_duration_min"])
@@ -133,6 +415,39 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         ]
         self.assertEqual(agent_b_phases[:4], ["NLG", "TTS", "ASR", "NLU"])
 
+    def test_controller_emits_agent_memory_snapshots_with_deltas(self):
+        ui_queue = queue.Queue()
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            SimplePlannerAgentBPlugin(),
+            num_turns=3,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(ui_queue)
+
+        events = []
+        while not ui_queue.empty():
+            events.append(ui_queue.get_nowait())
+        memory_events = [
+            event[2]
+            for event in events
+            if event[0] == "telemetry" and event[1] == "memory"
+        ]
+        runtime_memory_events = [
+            event for event in result.extra["runtime_events"]
+            if event["event_type"] == "agent_memory_snapshot"
+        ]
+
+        self.assertGreaterEqual(len(memory_events), len(result.conversation))
+        self.assertEqual(len(memory_events), len(runtime_memory_events))
+        self.assertIn("Agent A", memory_events[-1]["snapshots"])
+        self.assertIn("Agent B", memory_events[-1]["snapshots"])
+        self.assertTrue(memory_events[-1]["snapshots"]["Agent A"]["current_route"])
+        self.assertTrue(memory_events[-1]["snapshots"]["Agent B"]["current_route"])
+        self.assertTrue(any(event["additions"] for event in memory_events))
+
     def test_agent_a_elicits_multiple_compared_route_candidates(self):
         manager = DialogManager(
             get_test_case(DEFAULT_TEST_CASE).with_persona("distracted_multitasker"),
@@ -155,6 +470,58 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         self.assertIsNotNone(result.extra["constraint_duration_gap_min"])
         self.assertGreaterEqual(len(result.extra["stated_constraints"]), 1)
         self.assertTrue(any("Can you make it" in text for text in agent_a_replies))
+
+    def test_clarification_is_confirmed_once_then_normal_generation_resumes(self):
+        class CountingRoutePlugin:
+            name = "counting-route-plugin"
+
+            def __init__(self):
+                self.calls = 0
+
+            def run_agent_b(self, _state):
+                self.calls += 1
+                return (
+                    "Take metro line M1 from Bravo to Harbor. "
+                    "It takes 12 minutes, with no changes."
+                )
+
+        class OneClarificationResponder:
+            name = "one-clarification-agent-a"
+
+            def __init__(self):
+                self.calls = 0
+
+            def reply(self, *_args):
+                self.calls += 1
+                if self.calls == 1:
+                    return "I heard 'em one'. Did you mean 'M1'?"
+                return "Can you compare another route?"
+
+        plugin = CountingRoutePlugin()
+        manager = DialogManager(
+            get_test_case(DEFAULT_TEST_CASE),
+            plugin,
+            num_turns=6,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=OneClarificationResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+        agent_b_replies = [
+            text for speaker, text in result.conversation if speaker == "Agent B"
+        ]
+
+        self.assertEqual(plugin.calls, 2)
+        self.assertEqual(agent_b_replies[1], "Yes, I meant M1.")
+        self.assertEqual(len(result.extra["nlu_turns"]), 2)
+        self.assertEqual(result.extra["invalid_route_count"], 0)
+        self.assertEqual(
+            sum(
+                event["event_type"] == "clarification_resolved"
+                for event in result.extra["runtime_events"]
+            ),
+            1,
+        )
 
     def test_agent_b_defers_secondary_constraints_until_agent_a_asks(self):
         manager = DialogManager(
@@ -300,6 +667,10 @@ class DialogManagerMonitoringTests(unittest.TestCase):
         result = manager.run(NullEventQueue())
 
         self.assertEqual(result.extra["early_stop_reason"], "invalid_route_limit")
+        self.assertLessEqual(sum(
+            speaker == "Agent A" and "did you mean" in text.casefold()
+            for speaker, text in result.conversation
+        ), 1)
         self.assertEqual(result.extra["invalid_route_count"], 2)
         self.assertLess(len(result.conversation), 8)
         self.assertEqual(result.conversation[-1][0], "Agent A")

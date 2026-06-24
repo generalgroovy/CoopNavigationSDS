@@ -7,6 +7,7 @@ from xml.sax.saxutils import escape
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from coop_navigation_sds.EvaluationMetrics.catalog import METRIC_FAMILY_SPECS, phase_key
+from coop_navigation_sds.ResultsAndArtifacts.metric_tables import metric_long_rows
 
 
 IDENTIFIER_COLUMNS = [
@@ -31,6 +32,13 @@ def write_metrics_xlsx(metrics, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     sheets = [("summary", _summary_rows(records))]
+    long_rows = metric_long_rows(records)
+    if long_rows:
+        columns = list(long_rows[0])
+        sheets.append((
+            "metric_long",
+            [columns] + [[row.get(column) for column in columns] for row in long_rows],
+        ))
     present = {phase for record in records for phase in record.metric_families}
     known_order = [phase_key(family) for family in METRIC_FAMILY_SPECS]
     phase_names = [phase for phase in known_order if phase in present]

@@ -549,6 +549,14 @@ def stage_viability_report(scenario, persona, transfer_tolerance=1, max_constrai
     required_count = minimum_stage_suboptimal_options(scenario)
     require_options = stage_suboptimal_options_required(scenario)
     constraint_order = available_agent_a_constraints(persona or {}, scenario or {})[:max_constraints]
+    layered = layered_optimal_routes(
+        scenario,
+        persona,
+        transfer_tolerance=transfer_tolerance,
+        max_constraints=max_constraints,
+    )
+    optimum_by_stage = [layered[1], *layered[2:]]
+    require_route_changes = bool((scenario or {}).get("require_constraint_route_changes", True))
     stages = []
     for stage_index in range(max_constraints + 1):
         stated_keys = constraint_order[:stage_index]
@@ -563,6 +571,19 @@ def stage_viability_report(scenario, persona, transfer_tolerance=1, max_constrai
             option for option in options
             if tuple(option["route"]) != tuple(best_route)
         ]
+        optimum = optimum_by_stage[stage_index] if stage_index < len(optimum_by_stage) else None
+        previous_optimum = optimum_by_stage[stage_index - 1] if stage_index > 0 else None
+        route_changed = (
+            True if stage_index == 0 else bool(
+                optimum
+                and previous_optimum
+                and optimum.get("available")
+                and previous_optimum.get("available")
+                and optimum.get("path_text") != previous_optimum.get("path_text")
+            )
+        )
+        alternatives_satisfied = (not require_options) or len(suboptimal) >= required_count
+        route_change_satisfied = (not require_route_changes) or route_changed
         stages.append({
             "stage": stage_index + 1,
             "stated_constraints": stated_keys,
@@ -570,7 +591,10 @@ def stage_viability_report(scenario, persona, transfer_tolerance=1, max_constrai
             "suboptimal_option_count": len(suboptimal),
             "required_suboptimal_option_count": required_count,
             "require_suboptimal_options": require_options,
-            "requirement_satisfied": (not require_options) or len(suboptimal) >= required_count,
+            "requirement_satisfied": alternatives_satisfied and route_change_satisfied,
+            "constraint_changes_optimal_route": route_changed,
+            "prior_optimal_path": previous_optimum.get("path_text") if previous_optimum else None,
+            "optimal_path": optimum.get("path_text") if optimum else None,
             "best_route": best_route,
             "best_duration_min": options[0]["duration_min"] if options else None,
             "suboptimal_options": [
@@ -592,6 +616,7 @@ def stage_viability_report(scenario, persona, transfer_tolerance=1, max_constrai
         "optimal_duration_min": optimal_route_duration_min(scenario, persona),
         "constraint_order": constraint_order,
         "require_suboptimal_options": require_options,
+        "require_constraint_route_changes": require_route_changes,
         "required_suboptimal_option_count": required_count,
         "all_stage_requirements_satisfied": all(stage["requirement_satisfied"] for stage in stages),
         "stages": stages,

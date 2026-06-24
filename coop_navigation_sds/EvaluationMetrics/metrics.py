@@ -28,6 +28,7 @@ from coop_navigation_sds.EvaluationMetrics.catalog import (
 )
 from coop_navigation_sds.EvaluationMetrics.dnsmos import DNSMOSEvaluator
 from coop_navigation_sds.EvaluationMetrics.nisqa import NISQAEvaluator
+from coop_navigation_sds.EvaluationMetrics.reference_audio import ReferenceAudioQualityEvaluator
 from coop_navigation_sds.TransportNetwork.network import STATION_POS
 from coop_navigation_sds.TransportNetwork.routes import (
     optimal_time_route,
@@ -88,63 +89,36 @@ COOPERATION_TERMS = {
 
 
 def metric_tier_config_with_defaults(config=None):
-    """Return a complete core/supplementary tier map."""
-    provided = config or {}
-    tiers = dict(DEFAULT_METRIC_TIERS)
-    if not isinstance(provided, dict):
-        return tiers
-    for key, value in provided.items():
-        if key not in METRIC_KEYS:
-            continue
-        tier = value.get("tier") if isinstance(value, dict) else value
-        tier = str(tier or "").strip().lower()
-        if tier in {"core", "supplementary"}:
-            tiers[key] = tier
-    return tiers
+    """Return a legacy-compatible metric label map.
 
-
-def _metric_enabled_value(config, key):
-    if not isinstance(config, dict) or key not in config:
-        return DEFAULT_METRIC_CONFIG[key]
-    value = config[key]
-    if isinstance(value, dict):
-        return bool(value.get("enabled", DEFAULT_METRIC_CONFIG[key]))
-    return bool(value)
-
-
-def metric_config_with_defaults(config=None, tiers=None):
-    """Return a complete metric switch map.
-
-    Each metric has two controls: whether it is enabled, and whether it is core
-    or supplementary. Core metrics are forced on; supplementary metrics use the
-    enabled switch.
+    Metric tiers were removed from the experiment UI and analysis contract.
+    The function remains so old settings and job files can be loaded without
+    changing runtime behavior.
     """
-    resolved_tiers = metric_tier_config_with_defaults(tiers)
-    return {
-        key: True if resolved_tiers[key] == "core" else _metric_enabled_value(config, key)
-        for key in METRIC_KEYS
-    }
+    return dict(DEFAULT_METRIC_TIERS)
+
+
+def obligatory_metric_map():
+    """Return the complete obligatory retrospective metric set."""
+    return dict(DEFAULT_METRIC_CONFIG)
 
 
 def enabled_metric_family_specs(config=None, tiers=None):
-    """Return only metric families and metric rows enabled by configuration."""
-    switches = metric_config_with_defaults(config, tiers)
-    families = []
-    for family in METRIC_FAMILY_SPECS:
-        metrics = [
-            (key, label)
-            for key, label in family["metrics"]
-            if switches.get(key, False)
-        ]
-        if metrics:
-            families.append({
-                "key": family["key"],
-                "order": family["order"],
-                "title": family["title"],
-                "description": family["description"],
-                "metrics": metrics,
-            })
-    return families
+    """Return every canonical metric family.
+
+    Arguments remain for backwards-compatible callers but cannot filter the
+    mandatory retrospective evaluation.
+    """
+    return [
+        {
+            "key": family["key"],
+            "order": family["order"],
+            "title": family["title"],
+            "description": family["description"],
+            "metrics": list(family["metrics"]),
+        }
+        for family in METRIC_FAMILY_SPECS
+    ]
 
 
 def phase_key_from_title(title):
@@ -274,11 +248,14 @@ class MetricRecord:
     paired_audio_error_effect: float | None = None
     metric_families: dict[str, dict[str, object]] = field(default_factory=dict)
     metric_calculations: dict[str, dict[str, object]] = field(default_factory=dict)
+    experimental_factors: dict[str, object] = field(default_factory=dict)
 
     def as_dict(self):
         row = asdict(self)
         families = row.pop("metric_families", {})
         row.pop("metric_calculations", None)
+        factors = row.pop("experimental_factors", {})
+        row.update({f"factor_{key}": value for key, value in factors.items()})
         for family_name, metrics in families.items():
             for metric_name, value in metrics.items():
                 if metric_name in {
@@ -290,6 +267,8 @@ class MetricRecord:
                     row[f"{family_name}_{metric_name}"] = value
                 else:
                     row[global_metric_key(family_name, metric_name)] = value
+        # Preserve nulls so flat CSV/XLSX exports retain the complete obligatory
+        # metric schema and do not make unavailable metrics look unrequested.
         return row
 
 
@@ -601,11 +580,14 @@ def wilson_interval(successes, total, z=1.96):
 class MetricComputer:
     """Compute thesis-facing automatic evaluation metrics from a completed dialog."""
 
-    def __init__(self, nisqa_evaluator=None, dnsmos_evaluator=None):
+    def __init__(self, nisqa_evaluator=None, dnsmos_evaluator=None, reference_audio_evaluator=None):
         self.nisqa_evaluator = nisqa_evaluator or NISQAEvaluator()
         self.dnsmos_evaluator = dnsmos_evaluator or DNSMOSEvaluator()
+        self.reference_audio_evaluator = reference_audio_evaluator or ReferenceAudioQualityEvaluator()
 
     def compute(self, result, scenario) -> MetricRecord:
+        configured_tiers = metric_tier_config_with_defaults()
+        obligatory_metrics = obligatory_metric_map()
         reference_arrival, reference_steps = optimal_time_route(
             scenario["start_station"],
             scenario["destination_station"],
@@ -662,6 +644,19 @@ class MetricComputer:
         message_count = result.extra.get("messages", len(result.conversation))
         avg_words_per_message = len(words) / message_count if message_count else 0.0
         task_focus_score = task_terms / len(words) if words else 0.0
+        agent_a_words = tokenize_words(
+            " ".join(text for speaker, text in result.conversation if speaker == "Agent A")
+        )
+        agent_b_words = tokenize_words(
+            " ".join(text for speaker, text in result.conversation if speaker == "Agent B")
+        )
+        agent_a_task_focus_score = safe_ratio(
+            sum(word in TASK_TERMS for word in agent_a_words), len(agent_a_words)
+        )
+        agent_b_task_focus_score = safe_ratio(
+            sum(word in TASK_TERMS for word in agent_b_words), len(agent_b_words)
+        )
+        distraction_rate = 1.0 - task_focus_score if words else None
         lexical_diversity = safe_ratio(len(set(words)), len(words))
 
         agent_b_tokens = tokenize_words(
@@ -706,6 +701,9 @@ class MetricComputer:
         asr_success_count = 0
         asr_failure_count = 0
         transcript_correction_count = 0
+        corrected_token_count = 0
+        correction_turn_count = 0
+        raw_misinterpretation_count = 0
         uncorrected_misinterpretation_count = 0
         agent_b_transcripts = []
 
@@ -736,7 +734,17 @@ class MetricComputer:
             word_insertions += ins
             source_text = turn.get("outgoing_text", turn.get("source_text", ""))
             transcript_text = turn.get("incoming_transcript", turn.get("transcript", ""))
-            transcript_correction_count += len(turn.get("transcript_corrections", []))
+            turn_corrections = turn.get("transcript_corrections", [])
+            transcript_correction_count += len(turn_corrections)
+            corrected_token_count += sum(
+                max(
+                    len(correction.get("source_tokens") or ()),
+                    len(correction.get("target_tokens") or ()),
+                )
+                for correction in turn_corrections
+            )
+            correction_turn_count += int(bool(turn_corrections))
+            raw_misinterpretation_count += len(turn.get("misinterpreted_tokens", []))
             uncorrected_misinterpretation_count += len(
                 transcript_token_changes(source_text, transcript_text)
             )
@@ -1208,6 +1216,9 @@ class MetricComputer:
             and result.route_correct
             and all_constraints_satisfied
         )
+        task_success_rate = float(
+            result.route_correct and acceptable_duration and all_constraints_satisfied
+        )
 
         audio_measurements = []
         valid_audio_count = 0
@@ -1300,14 +1311,44 @@ class MetricComputer:
                 "speaker": turn.get("speaker"),
                 "turn_index": index,
                 "tts_engine": turn.get("tts_engine"),
+                "reference_path": (turn.get("audio") or {}).get("reference_path"),
+                "polqa_score": (turn.get("audio") or {}).get("polqa_score"),
             }
             for index, turn in enumerate(speech_turns, start=1)
             if isinstance(turn.get("audio"), dict)
         ]
-        nisqa_report = self.nisqa_evaluator.evaluate(speech_audio_items)
-        dnsmos_report = self.dnsmos_evaluator.evaluate(speech_audio_items)
+        disabled_audio_report = {
+            "status": "not_configured",
+            "reason": "metric_disabled",
+            "score": None,
+            "evaluated_file_count": 0,
+            "files": [],
+            "errors": [],
+        }
+        nisqa_report = (
+            self.nisqa_evaluator.evaluate(speech_audio_items)
+            if obligatory_metrics["tts_nisqa"] else dict(disabled_audio_report)
+        )
+        dnsmos_report = (
+            self.dnsmos_evaluator.evaluate(speech_audio_items)
+            if obligatory_metrics["tts_dnsmos"] else dict(disabled_audio_report)
+        )
+        reference_metric_keys = ("tts_pesq", "tts_polqa", "tts_stoi", "tts_si_sdr")
+        reference_audio_report = (
+            self.reference_audio_evaluator.evaluate(speech_audio_items)
+            if any(obligatory_metrics[key] for key in reference_metric_keys)
+            else {
+                "status": "not_configured",
+                "reason": "metrics_disabled",
+                "evaluated_pair_count": 0,
+                "scores": {"pesq": None, "polqa": None, "stoi": None, "si_sdr_db": None},
+                "files": [],
+                "errors": [],
+            }
+        )
         result.extra["nisqa_evaluation"] = nisqa_report
         result.extra["dnsmos_evaluation"] = dnsmos_report
+        result.extra["reference_audio_evaluation"] = reference_audio_report
 
         interpreter = NaturalRouteInterpreter()
         agent_b_speech = [turn for turn in speech_turns if turn.get("speaker") == "Agent B"]
@@ -1404,22 +1445,81 @@ class MetricComputer:
             )
         )
 
-        clarification_events = agent_a_question_count
+        runtime_events = list(result.extra.get("runtime_events", []))
+        heard_trip_state_events = [
+            event for event in runtime_events
+            if event.get("event_type") == "heard_trip_state"
+        ]
+        trip_completeness_values = [
+            event.get("payload", {}).get("completeness")
+            for event in heard_trip_state_events
+            if event.get("payload", {}).get("completeness") is not None
+        ]
+        missing_trip_slot_counts = [
+            len(event.get("payload", {}).get("missing_slots") or [])
+            for event in heard_trip_state_events
+        ]
+        trip_slot_total = 3
+        trip_fact_completeness = mean_or_none(trip_completeness_values)
+        missing_trip_slot_rate = (
+            safe_ratio(sum(missing_trip_slot_counts), len(missing_trip_slot_counts) * trip_slot_total)
+            if missing_trip_slot_counts else None
+        )
+        memory_events = [
+            event for event in runtime_events
+            if event.get("event_type") == "agent_memory_snapshot"
+        ]
+        memory_update_count = sum(
+            1
+            for event in memory_events
+            if event.get("payload", {}).get("additions")
+        )
+        memory_trace_coverage = safe_ratio(len(memory_events), message_count)
+        memory_update_rate = (
+            safe_ratio(memory_update_count, len(memory_events))
+            if memory_events else None
+        )
+        post_route_memory_events = []
+        route_seen = False
+        for event in memory_events:
+            snapshots = event.get("payload", {}).get("snapshots") or {}
+            any_route = any(
+                bool((snapshot or {}).get("current_route"))
+                for snapshot in snapshots.values()
+            )
+            if any_route:
+                route_seen = True
+            if route_seen:
+                post_route_memory_events.append(event)
+        route_retention_count = sum(
+            1
+            for event in post_route_memory_events
+            if all(
+                bool((event.get("payload", {}).get("snapshots") or {}).get(agent, {}).get("current_route"))
+                for agent in ("Agent A", "Agent B")
+            )
+        )
+        route_memory_retention_rate = (
+            safe_ratio(route_retention_count, len(post_route_memory_events))
+            if post_route_memory_events else None
+        )
+        explicit_repair_requests = [
+            event for event in runtime_events
+            if event.get("event_type") == "explicit_transcript_repair_requested"
+        ]
+        resolved_repairs = [
+            event for event in runtime_events
+            if event.get("event_type") == "clarification_resolved"
+        ]
+        clarification_events = max(
+            len(explicit_repair_requests),
+            int(result.extra.get("distinct_clarification_requests", 0) or 0),
+        )
         eligible_failures = len(invalid_proposals) + int(result.extra.get("time_frame_miss_count", 0) or 0) + int(result.extra.get("constraint_miss_count", 0) or 0)
         clarification_precision = safe_ratio(min(clarification_events, eligible_failures), clarification_events) if clarification_events else (1.0 if not eligible_failures else 0.0)
         clarification_recall = safe_ratio(min(clarification_events, eligible_failures), eligible_failures) if eligible_failures else 1.0
-        route_revisions = int(result.extra.get("route_revisions", 0) or 0)
-        repair_attempts = min(route_revisions, eligible_failures)
-        successful_revisions = sum(
-            1
-            for event in unique_candidates
-            if event.get("decision") == "improved"
-            or (
-                event.get("time_frame_satisfied", False)
-                and not event.get("unsatisfied_constraints")
-            )
-        )
-        repair_successes = min(repair_attempts, successful_revisions)
+        repair_attempts = clarification_events
+        repair_successes = min(repair_attempts, len(resolved_repairs))
         progress_events = sum(
             1 for event in unique_candidates
             if event.get("decision") in {"baseline", "improved"}
@@ -1540,18 +1640,62 @@ class MetricComputer:
             safe_ratio(sum(interaction_progress), len(interaction_progress))
             if interaction_progress else 0.0
         )
-        failure_phase = None
-        if pipeline_failure_count:
-            failure_phase = "speech_pipeline"
-        elif asr_success_rate < 1.0 or asr_word_error_rate > 0:
-            failure_phase = "asr"
-        elif invalid_proposals:
-            failure_phase = "nlu"
-        elif result.extra.get("constraint_miss_count"):
-            failure_phase = "dialogue_management"
-        elif not result.route_correct:
-            failure_phase = "agent_b"
-        failure_localization_score = 1.0 if failure_phase or result.route_correct else 0.0
+        phase_order = {
+            "audio_input": 1,
+            "tts": 2,
+            "asr": 3,
+            "nlu": 4,
+            "dialogue_management": 5,
+            "backend_task_execution": 6,
+            "task_outcome": 9,
+        }
+        deviations = []
+
+        def add_deviation(turn, phase, evidence):
+            try:
+                normalized_turn = max(1, int(turn))
+            except (TypeError, ValueError):
+                normalized_turn = message_count or 1
+            deviations.append((normalized_turn, phase_order[phase], phase, evidence))
+
+        for index, turn in enumerate(speech_turns, start=1):
+            dialogue_turn = turn.get("turn", index)
+            if not turn.get("pipeline_ok", True):
+                add_deviation(dialogue_turn, "audio_input", "speech pipeline failure")
+            outgoing = normalized_text(turn.get("outgoing_text", turn.get("source_text", "")))
+            raw_transcript = normalized_text(
+                turn.get("raw_asr_transcript", turn.get("incoming_transcript", ""))
+            )
+            if turn.get("incoming_enabled") and outgoing != raw_transcript:
+                add_deviation(dialogue_turn, "asr", "recognized transcript differs from speech")
+        for index, turn in enumerate(nlu_turns, start=1):
+            if turn.get("has_station_mentions") and not turn.get("route_valid"):
+                add_deviation(turn.get("turn", index), "nlu", "route mention could not be parsed")
+        for event in candidate_events:
+            dialogue_turn = event.get("dialogue_turn", event.get("turn", message_count))
+            if event.get("decision") == "repeat":
+                add_deviation(dialogue_turn, "dialogue_management", "repeated route proposal")
+            if not event.get("time_frame_satisfied", True):
+                add_deviation(dialogue_turn, "backend_task_execution", "route exceeds time limit")
+            if event.get("unsatisfied_constraints"):
+                add_deviation(dialogue_turn, "backend_task_execution", "route violates active constraints")
+        task_succeeded = bool(result.route_correct and acceptable_duration and all_constraints_satisfied)
+        if not task_succeeded:
+            add_deviation(message_count, "task_outcome", "final task criteria not satisfied")
+
+        first_deviation = min(deviations, default=None)
+        first_deviation_turn = first_deviation[0] if first_deviation else None
+        first_deviation_phase = first_deviation[2] if first_deviation else None
+        first_deviation_elapsed_sec = None
+        if first_deviation_turn is not None:
+            elapsed_values = [
+                turn.get("turn_elapsed_sec", turn.get("turn_latency_sec", 0.0))
+                for turn in timing_turns
+                if int(turn.get("turn", 0) or 0) <= first_deviation_turn
+            ]
+            first_deviation_elapsed_sec = sum(elapsed_values) if elapsed_values else None
+        failure_phase = first_deviation_phase if not task_succeeded else None
+        failure_localization_score = 1.0 if task_succeeded or failure_phase else 0.0
         dialogue_cost = (
             message_count
             + 0.1 * len(words)
@@ -1559,16 +1703,34 @@ class MetricComputer:
             + 2.0 * warning_count
             + repair_attempts
         )
+        generation_history = (
+            result.extra.get("model_backend", {}).get("generation_history", [])
+            if isinstance(result.extra.get("model_backend"), dict)
+            else []
+        )
+        output_token_values = [
+            item.get("output_tokens")
+            for item in generation_history
+            if isinstance(item, dict) and isinstance(item.get("output_tokens"), (int, float))
+        ]
+        model_output_tokens = sum(output_token_values) if output_token_values else None
+        layered_routes = [
+            layer.get("path_text")
+            for layer in result.extra.get("preflight_viability", {}).get("optimal_routes_by_layer", [])
+            if isinstance(layer, dict) and layer.get("available") and layer.get("path_text")
+        ]
+        layered_route_changes = sum(
+            current != previous
+            for previous, current in zip(layered_routes, layered_routes[1:])
+        )
+        trace_keys = (
+            "agent_memories", "speech_turns", "timing_turns", "phase_timings", "nlu_turns",
+            "runtime_events", "candidate_events",
+        )
+        captured_trace_collections = 1 + sum(key in result.extra for key in trace_keys)
+        required_trace_collections = 1 + len(trace_keys)
 
-        configured_tiers = metric_tier_config_with_defaults(
-            result.extra.get("metric_tiers") or result.extra.get("metric_config")
-        )
-        configured_metrics = metric_config_with_defaults(
-            result.extra.get("metric_config"),
-            configured_tiers,
-        )
-        research_metric_values = {key: None for key in METRIC_KEYS}
-        research_metric_values.update({
+        research_metric_values = {
             "audio_capture_success_rate": safe_ratio(valid_audio_count, outgoing_enabled_count),
             "audio_missing_rate": 1.0 - safe_ratio(valid_audio_count, outgoing_enabled_count) if outgoing_enabled_count else None,
             "audio_turn_latency": mean_turn_latency_sec,
@@ -1599,6 +1761,10 @@ class MetricComputer:
             "asr_empty_transcript_rate": safe_ratio(asr_failure_count, incoming_enabled_count),
             "asr_hallucinated_token_rate": safe_ratio(word_insertions, max(ref_word_total + word_insertions - word_deletions, 1)),
             "asr_transcript_correction_count": transcript_correction_count,
+            "asr_domain_correction_yield": (
+                min(1.0, safe_ratio(transcript_correction_count, raw_misinterpretation_count))
+                if raw_misinterpretation_count else None
+            ),
             "asr_uncorrected_misinterpretation_count": uncorrected_misinterpretation_count,
             "asr_recognition_latency": asr_latency,
             "asr_real_time_factor": asr_rtf,
@@ -1622,6 +1788,11 @@ class MetricComputer:
             "nlu_pipeline_input_match_rate": nlu_pipeline_input_match_rate,
             "dialogue_state_joint_goal_accuracy": task_success_rate,
             "dialogue_state_slot_accuracy": nlu_slot_f1,
+            "dialogue_state_trip_fact_completeness": trip_fact_completeness,
+            "dialogue_state_missing_trip_slot_rate": missing_trip_slot_rate,
+            "dialogue_state_memory_trace_coverage": memory_trace_coverage,
+            "dialogue_state_memory_update_rate": memory_update_rate,
+            "dialogue_state_route_memory_retention_rate": route_memory_retention_rate,
             "dialogue_state_stage_accuracy": constraint_retention,
             "dialogue_state_state_drift_rate": 1.0 - constraint_retention if constraint_retention is not None else None,
             "dialogue_state_constraint_retention_rate": constraint_retention,
@@ -1676,6 +1847,10 @@ class MetricComputer:
             "agent_b_best_route_discovery_turn": best_discovery_turn,
             "agent_b_plugin_execution_success": 0.0 if pipeline_failure else 1.0,
             "agent_b_model_generation_latency": agent_b_generation_latency,
+            "agent_b_valid_proposals_per_100_output_tokens": (
+                safe_ratio(100.0 * valid_candidate_count, model_output_tokens)
+                if model_output_tokens else None
+            ),
             "agent_a_verifier_catch_rate": verifier_catch_rate,
             "agent_a_constraint_violation_catch_rate": safe_ratio(
                 min(agent_a_question_count, int(result.extra.get("constraint_miss_count", 0) or 0)),
@@ -1741,6 +1916,10 @@ class MetricComputer:
             "tts_leading_trailing_silence": leading_trailing_silence,
             "tts_dnsmos": dnsmos_report.get("score"),
             "tts_nisqa": nisqa_report.get("score"),
+            "tts_pesq": reference_audio_report["scores"].get("pesq"),
+            "tts_polqa": reference_audio_report["scores"].get("polqa"),
+            "tts_stoi": reference_audio_report["scores"].get("stoi"),
+            "tts_si_sdr": reference_audio_report["scores"].get("si_sdr_db"),
             "tts_playback_success_rate": safe_ratio(played_count, playback_attempt_count) if playback_attempt_count else None,
             "tts_text_change_rate": tts_text_change_rate,
             "task_outcome_completion": task_success_rate,
@@ -1748,6 +1927,8 @@ class MetricComputer:
             "task_outcome_acceptable_duration_completion": float(result.route_correct and acceptable_duration),
             "task_outcome_constraint_satisfaction": float(all_constraints_satisfied),
             "task_outcome_constraint_satisfaction_rate": constraint_satisfaction_rate,
+            "task_outcome_stated_constraint_count": len(result.extra.get("stated_constraints", [])),
+            "task_outcome_satisfied_constraint_count": satisfied_constraints,
             "task_outcome_stage_completion_rate": statistics.fmean([float(result.route_correct), float(acceptable_duration), float(all_constraints_satisfied)]),
             "task_outcome_duration_quality": duration_score,
             "task_outcome_duration_ratio": safe_ratio(result.route_duration_min, reference_duration) if result.route_duration_min is not None and reference_duration else None,
@@ -1759,6 +1940,10 @@ class MetricComputer:
             "task_outcome_first_valid_route_turn": first_valid_route_turn,
             "task_outcome_first_compliant_route_turn": first_compliant_route_turn,
             "task_outcome_successful_natural_closure": float(natural_closure),
+            "task_outcome_constraint_route_change_rate": (
+                safe_ratio(layered_route_changes, len(layered_routes) - 1)
+                if len(layered_routes) > 1 else None
+            ),
             "whole_dialogue_dialogue_success_score": automatic_eval_score,
             "whole_dialogue_interaction_quality_trajectory": automatic_eval_score,
             "whole_dialogue_goal_progress_auc": goal_progress_auc,
@@ -1769,38 +1954,47 @@ class MetricComputer:
             "whole_dialogue_total_runtime": result.runtime_sec,
             "whole_dialogue_candidate_count": candidate_route_count,
             "whole_dialogue_route_revision_count": route_revision_count,
-            "whole_dialogue_clarification_count": agent_a_question_count,
+            "whole_dialogue_clarification_count": clarification_events,
             "whole_dialogue_repair_count": repair_attempts,
             "whole_dialogue_warning_count": warning_count,
             "whole_dialogue_abandonment_rate": abandonment_rate,
             "whole_dialogue_failure_localization_score": failure_localization_score,
             "whole_dialogue_failure_phase": failure_phase,
             "whole_dialogue_pipeline_dependency_integrity": nlu_pipeline_input_match_rate,
+            "whole_dialogue_trace_completeness_rate": safe_ratio(
+                captured_trace_collections, required_trace_collections
+            ),
             "whole_dialogue_cooperative_progress_rate": safe_ratio(progress_events, message_count),
             "whole_dialogue_task_focus_score": task_focus_score,
+            "whole_dialogue_agent_a_task_focus_score": agent_a_task_focus_score,
+            "whole_dialogue_agent_b_task_focus_score": agent_b_task_focus_score,
+            "whole_dialogue_distraction_rate": distraction_rate,
+            "whole_dialogue_correction_turn_rate": safe_ratio(
+                correction_turn_count, len(speech_turns)
+            ),
+            "whole_dialogue_corrected_token_rate": safe_ratio(
+                corrected_token_count, ref_word_total
+            ),
+            "whole_dialogue_first_deviation_turn": first_deviation_turn,
+            "whole_dialogue_first_deviation_phase": first_deviation_phase,
+            "whole_dialogue_first_deviation_elapsed_sec": first_deviation_elapsed_sec,
             "whole_dialogue_conversation_repetition_rate": nlg_repetition_rate,
             "whole_dialogue_natural_closure_rate": float(natural_closure),
             "whole_dialogue_resource_cost": dialogue_cost,
-        })
+        }
         research_metric_values = {
             key: round(value, 4) if isinstance(value, float) and math.isfinite(value) else value
             for key, value in research_metric_values.items()
         }
         metric_families = {}
-        for family in enabled_metric_family_specs(configured_metrics, configured_tiers):
+        for family in enabled_metric_family_specs(obligatory_metrics, configured_tiers):
             current_phase = phase_key(family)
             values = {
                 metric_local_name(key): research_metric_values.get(key)
                 for key, _label in family["metrics"]
             }
-            available_count = sum(value is not None for value in values.values())
-            metric_families[current_phase] = {
-                "available": available_count > 0,
-                "coverage_rate": round(safe_ratio(available_count, len(values)), 4),
-                "available_metric_count": available_count,
-                "configured_metric_count": len(values),
-                **values,
-            }
+            if values:
+                metric_families[current_phase] = values
 
         evidence_groups = {
             "audio_input": {
@@ -1825,6 +2019,12 @@ class MetricComputer:
                 "messages": message_count,
                 "candidate_routes": candidate_route_count,
                 "runtime_events": len(result.extra.get("runtime_events", [])),
+                "heard_trip_state_events": len(heard_trip_state_events),
+                "missing_trip_slots": sum(missing_trip_slot_counts),
+                "memory_snapshots": len(memory_events),
+                "memory_updates": memory_update_count,
+                "post_route_memory_snapshots": len(post_route_memory_events),
+                "route_retention_snapshots": route_retention_count,
             },
             "dialogue_management": {
                 "messages": message_count,
@@ -1846,6 +2046,9 @@ class MetricComputer:
                 "successful_syntheses": tts_success_count,
                 "valid_audio_files": valid_audio_count,
                 "reference_words": ref_word_total,
+                "nisqa_files": nisqa_report.get("evaluated_file_count", 0),
+                "dnsmos_files": dnsmos_report.get("evaluated_file_count", 0),
+                "aligned_reference_pairs": reference_audio_report.get("evaluated_pair_count", 0),
             },
             "task_outcome": {
                 "route_valid": bool(result.route_valid),
@@ -1860,19 +2063,37 @@ class MetricComputer:
                 "words": len(words),
                 "runtime_seconds": round(result.runtime_sec, 4),
                 "repair_attempts": repair_attempts,
+                "clarification_requests": clarification_events,
+                "clarifications_resolved": len(resolved_repairs),
+                "correction_turns": correction_turn_count,
+                "corrected_tokens": corrected_token_count,
+                "speech_turns": len(speech_turns),
+                "reference_words": ref_word_total,
+                "first_deviation_turn": first_deviation_turn,
+                "first_deviation_phase": first_deviation_phase,
             },
             "metric_validity": {
-                "configured_metrics": sum(bool(value) for value in configured_metrics.values()),
+                "configured_metrics": sum(bool(value) for value in obligatory_metrics.values()),
                 "calculated_metrics": sum(value is not None for value in research_metric_values.values()),
             },
         }
         metric_calculations = {}
-        for family in enabled_metric_family_specs(configured_metrics, configured_tiers):
+        for family in enabled_metric_family_specs(obligatory_metrics, configured_tiers):
             current_phase = phase_key(family)
             operands = evidence_groups.get(current_phase, {"messages": message_count})
             for key, _label in family["metrics"]:
                 value = research_metric_values.get(key)
                 formula = metric_calculation_method(key)
+                if value is None:
+                    metric_calculations[key] = {
+                        "formula": formula,
+                        "operands": dict(operands),
+                        "substitution": "not calculated because required evidence was unavailable or the metric was not applicable in this run",
+                        "result": None,
+                        "available": False,
+                        "reason": "required evidence unavailable or metric not applicable",
+                    }
+                    continue
                 substitution = f"{formula} with recorded operands = {value}"
                 if key == "asr_wer":
                     substitution = (
@@ -1891,20 +2112,86 @@ class MetricComputer:
                     substitution = f"{tts_failure_count} / {outgoing_enabled_count} = {value}"
                 elif key == "tts_audio_validity_rate":
                     substitution = f"{valid_audio_count} / {outgoing_enabled_count} = {value}"
+                elif key == "tts_nisqa":
+                    substitution = (
+                        f"mean NISQA v2 overall MOS across "
+                        f"{nisqa_report.get('evaluated_file_count', 0)} WAV files = {value}"
+                    )
+                elif key == "tts_dnsmos":
+                    substitution = (
+                        f"mean DNSMOS across {dnsmos_report.get('evaluated_file_count', 0)} "
+                        f"WAV files = {value}"
+                    )
+                elif key in {"tts_pesq", "tts_polqa", "tts_stoi", "tts_si_sdr"}:
+                    substitution = (
+                        f"mean over {reference_audio_report.get('evaluated_pair_count', 0)} "
+                        f"aligned reference pairs = {value}"
+                    )
                 elif key == "task_outcome_duration_quality":
                     substitution = (
                         f"min({reference_duration} / {result.route_duration_min}, 1) = {value}"
+                    )
+                elif key == "asr_domain_correction_yield":
+                    substitution = (
+                        f"{transcript_correction_count} / {raw_misinterpretation_count} = {value}"
+                    )
+                elif key == "agent_b_valid_proposals_per_100_output_tokens":
+                    substitution = (
+                        f"100 * {valid_candidate_count} / {model_output_tokens} = {value}"
+                    )
+                elif key == "task_outcome_constraint_route_change_rate":
+                    substitution = (
+                        f"{layered_route_changes} / {max(len(layered_routes) - 1, 0)} = {value}"
+                    )
+                elif key == "whole_dialogue_trace_completeness_rate":
+                    substitution = (
+                        f"{captured_trace_collections} / {required_trace_collections} = {value}"
+                    )
+                elif key == "whole_dialogue_correction_turn_rate":
+                    substitution = f"{correction_turn_count} / {len(speech_turns)} = {value}"
+                elif key == "whole_dialogue_corrected_token_rate":
+                    substitution = f"{corrected_token_count} / {ref_word_total} = {value}"
+                elif key == "dialogue_state_trip_fact_completeness":
+                    substitution = (
+                        f"mean({trip_completeness_values}) over "
+                        f"{len(heard_trip_state_events)} heard-trip-state snapshots = {value}"
+                    )
+                elif key == "dialogue_state_missing_trip_slot_rate":
+                    substitution = (
+                        f"{sum(missing_trip_slot_counts)} missing slots / "
+                        f"({len(missing_trip_slot_counts)} snapshots * {trip_slot_total} slots) = {value}"
+                    )
+                elif key == "dialogue_state_memory_trace_coverage":
+                    substitution = f"{len(memory_events)} memory snapshots / {message_count} messages = {value}"
+                elif key == "dialogue_state_memory_update_rate":
+                    substitution = f"{memory_update_count} snapshots with additions / {len(memory_events)} memory snapshots = {value}"
+                elif key == "dialogue_state_route_memory_retention_rate":
+                    substitution = (
+                        f"{route_retention_count} snapshots with both agents retaining a route / "
+                        f"{len(post_route_memory_events)} post-route memory snapshots = {value}"
+                    )
+                elif key == "whole_dialogue_distraction_rate":
+                    substitution = f"1 - {task_focus_score} = {value}"
+                elif key in {
+                    "whole_dialogue_first_deviation_turn",
+                    "whole_dialogue_first_deviation_phase",
+                    "whole_dialogue_first_deviation_elapsed_sec",
+                }:
+                    substitution = (
+                        f"earliest ordered deviation = turn {first_deviation_turn}, "
+                        f"phase {first_deviation_phase}, elapsed {first_deviation_elapsed_sec} = {value}"
                     )
                 metric_calculations[key] = {
                     "formula": formula,
                     "operands": dict(operands),
                     "substitution": substitution,
                     "result": value,
+                    "available": True,
                 }
         result.extra["metric_input_inventory"] = {
             "captured_after_dialogue": True,
             "groups": evidence_groups,
-            "configured_metric_count": sum(bool(value) for value in configured_metrics.values()),
+            "configured_metric_count": sum(bool(value) for value in obligatory_metrics.values()),
             "calculation_evidence_count": len(metric_calculations),
         }
 
@@ -1921,7 +2208,7 @@ class MetricComputer:
             model_do_sample=bool(model_parameters.get("do_sample", False)),
             model_temperature=model_parameters.get("temperature"),
             model_top_p=model_parameters.get("top_p"),
-            success=result.route_correct,
+            success=task_succeeded,
             conversation_outcome=result.extra.get("conversation_outcome", "unknown"),
             stated_constraints=", ".join(result.extra.get("stated_constraints", [])) if result.extra.get("stated_constraints") else "None",
             unsatisfied_constraints=", ".join(result.extra.get("unsatisfied_constraints", [])) if result.extra.get("unsatisfied_constraints") else "None",
@@ -2006,12 +2293,34 @@ class MetricComputer:
             automatic_eval_score=round(automatic_eval_score, 4),
             metric_families=metric_families,
             metric_calculations=metric_calculations,
+            experimental_factors={
+                "agent_a_type": result.extra.get(
+                    "agent_a_type",
+                    result.extra.get("resolved_run_config", {}).get("agent_a_type"),
+                ),
+                "agent_b_plugin": result.extra.get(
+                    "agent_b_plugin",
+                    result.extra.get("resolved_run_config", {}).get("agent_b_plugin"),
+                ),
+                "tts_engine": result.extra.get(
+                    "tts_engine",
+                    result.extra.get("resolved_run_config", {}).get("tts_engine"),
+                ),
+                "asr_engine": result.extra.get(
+                    "asr_engine",
+                    result.extra.get("resolved_run_config", {}).get("asr_engine"),
+                ),
+                **dict(result.extra.get("parameter_values") or {}),
+            },
         )
 
 
 def _record_group_key(record):
     """Return the condition identity without the iteration suffix."""
     condition = str(record.condition_id)
+    compact = re.sub(r"-I\d+-[0-9a-f]{10}-[TA]$", "", condition)
+    if compact != condition:
+        return compact
     head, separator, tail = condition.rpartition("__")
     return head if separator and tail.isdigit() else condition
 
@@ -2028,6 +2337,8 @@ def _average_metric_outcome_correlation(records):
     outcomes = [float(record.success) for record in records]
     correlations = []
     for phase in records[0].metric_families:
+        if phase in {"task_outcome", "whole_dialogue", "metric_validity"}:
+            continue
         metric_names = {
             name
             for record in records
@@ -2045,6 +2356,104 @@ def _average_metric_outcome_correlation(records):
             if correlation is not None:
                 correlations.append(abs(correlation))
     return statistics.fmean(correlations) if correlations else None
+
+
+def failure_indicator_analysis(records, minimum_per_outcome=3):
+    """Find exploratory pre-outcome thresholds associated with failed runs.
+
+    Thresholds are descriptive, not validated classifiers. Task-outcome,
+    whole-dialogue, and cross-run metrics are excluded to prevent label leakage.
+    """
+    records = list(records)
+    failures = sum(not bool(record.success) for record in records)
+    successes = len(records) - failures
+    report = {
+        "status": "available",
+        "method": "exhaustive univariate threshold search maximizing balanced accuracy",
+        "interpretation": "exploratory association; validate on a held-out batch before inference",
+        "minimum_runs_per_outcome": int(minimum_per_outcome),
+        "run_count": len(records),
+        "success_count": successes,
+        "failure_count": failures,
+        "indicators": [],
+    }
+    if min(successes, failures) < minimum_per_outcome:
+        report.update({
+            "status": "insufficient_outcome_support",
+            "reason": (
+                f"Need at least {minimum_per_outcome} successful and failed runs; "
+                f"observed {successes} successful and {failures} failed."
+            ),
+        })
+        return report
+
+    series = {}
+    for record in records:
+        for phase, metrics in record.metric_families.items():
+            if phase in {"task_outcome", "whole_dialogue", "metric_validity"}:
+                continue
+            for name, value in metrics.items():
+                if name in {
+                    "available", "coverage_rate", "available_metric_count",
+                    "configured_metric_count",
+                }:
+                    continue
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    series.setdefault(global_metric_key(phase, name), []).append(
+                        (float(value), not bool(record.success))
+                    )
+
+    for metric_key, observations in series.items():
+        observed_successes = sum(not failed for _value, failed in observations)
+        observed_failures = sum(failed for _value, failed in observations)
+        values = sorted({value for value, _failed in observations})
+        if min(observed_successes, observed_failures) < minimum_per_outcome or len(values) < 2:
+            continue
+        thresholds = [
+            (left + right) / 2.0
+            for left, right in zip(values, values[1:])
+            if left != right
+        ]
+        best = None
+        for threshold in thresholds:
+            for direction in ("at_or_below", "at_or_above"):
+                predicted = [
+                    value <= threshold if direction == "at_or_below" else value >= threshold
+                    for value, _failed in observations
+                ]
+                actual = [failed for _value, failed in observations]
+                true_positive = sum(pred and failed for pred, failed in zip(predicted, actual))
+                false_negative = sum(not pred and failed for pred, failed in zip(predicted, actual))
+                true_negative = sum(not pred and not failed for pred, failed in zip(predicted, actual))
+                false_positive = sum(pred and not failed for pred, failed in zip(predicted, actual))
+                sensitivity = safe_ratio(true_positive, true_positive + false_negative)
+                specificity = safe_ratio(true_negative, true_negative + false_positive)
+                balanced_accuracy = (sensitivity + specificity) / 2.0
+                candidate = (
+                    balanced_accuracy,
+                    min(sensitivity, specificity),
+                    -abs(threshold),
+                    {
+                        "metric": metric_key,
+                        "failure_when": direction,
+                        "threshold": round(threshold, 6),
+                        "balanced_accuracy": round(balanced_accuracy, 4),
+                        "failure_sensitivity": round(sensitivity, 4),
+                        "success_specificity": round(specificity, 4),
+                        "complete_case_count": len(observations),
+                        "success_count": observed_successes,
+                        "failure_count": observed_failures,
+                    },
+                )
+                if best is None or candidate[:3] > best[:3]:
+                    best = candidate
+        if best is not None:
+            report["indicators"].append(best[3])
+
+    report["indicators"].sort(
+        key=lambda item: (-item["balanced_accuracy"], item["metric"])
+    )
+    return report
 
 
 def _maximum_metric_redundancy(records):
@@ -2137,7 +2546,6 @@ def apply_cross_run_metrics(records):
         "success_confidence_interval_low": ci_low,
         "success_confidence_interval_high": ci_high,
         "metric_outcome_correlation": correlation,
-        "rank_stability": None,
         "seed_variance": statistics.fmean(seed_variances) if seed_variances else None,
         "test_retest_agreement": statistics.fmean(retest_agreements) if retest_agreements else None,
         "missingness_rate": missingness,
@@ -2152,26 +2560,15 @@ def apply_cross_run_metrics(records):
         "subgroup_performance_gap": _group_success_gap(records, "persona_key"),
     }
     for record in records:
-        family = record.metric_families.setdefault("metric_validity", {})
-        family.update({
+        calculated = {
             key: round(value, 4) if isinstance(value, float) and math.isfinite(value) else value
             for key, value in values.items()
-        })
-        metric_values = [
-            value
-            for key, value in family.items()
-            if key not in {
-                "available",
-                "coverage_rate",
-                "available_metric_count",
-                "configured_metric_count",
-            }
-        ]
-        available_count = sum(value is not None for value in metric_values)
-        family["available"] = available_count > 0
-        family["coverage_rate"] = round(safe_ratio(available_count, len(metric_values)), 4)
-        family["available_metric_count"] = available_count
-        family["configured_metric_count"] = len(metric_values)
+            if value is not None
+        }
+        if calculated:
+            record.metric_families["metric_validity"] = calculated
+        else:
+            record.metric_families.pop("metric_validity", None)
     return records
 
 

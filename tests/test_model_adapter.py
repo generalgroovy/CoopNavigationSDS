@@ -10,8 +10,12 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (
     OllamaChatAdapter,
     OpenAICompatibleChatAdapter,
     TransformersModelAdapter,
+    available_model_profile_keys,
     available_model_provider_keys,
+    model_profile_metadata,
+    model_adapter_runtime_metadata,
     model_provider_defaults,
+    research_model_profiles_by_tier,
     ensure_ollama_ready,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_model_adapter
@@ -109,13 +113,59 @@ class TransformersModelAdapterTests(unittest.TestCase):
         self.assertIsNone(model.call["generation_config"].max_length)
         self.assertEqual(model.call["generation_config"].max_new_tokens, 64)
 
-    def test_three_distinct_model_provider_families_are_public(self):
+    def test_distinct_model_provider_families_and_conditions_are_public(self):
         self.assertEqual(
             available_model_provider_keys(),
-            ("transformers", "openai_compatible", "ollama"),
+            ("transformers", "openai_compatible", "ollama", "llama_cpp"),
         )
         self.assertTrue(model_provider_defaults("openai_compatible")["model_base_url"])
         self.assertTrue(model_provider_defaults("ollama")["model_base_url"])
+        self.assertTrue(model_provider_defaults("llama_cpp")["model_base_url"])
+        profiles = available_model_profile_keys()
+        self.assertIn("tinyllama_1b_transformers", profiles)
+        self.assertIn("qwen2_5_0_5b_llama_cpp", profiles)
+        self.assertIn("gemma2_2b_ollama", profiles)
+        self.assertIn("qwen3_4b_ollama", profiles)
+        self.assertIn("mistral_7b_ollama", profiles)
+        self.assertEqual(
+            model_profile_metadata("qwen2_5_0_5b_llama_cpp")["provider"],
+            "llama_cpp",
+        )
+        self.assertEqual(model_profile_metadata("gemma2_2b_ollama")["family"], "Gemma 2")
+        self.assertEqual(model_profile_metadata("qwen3_4b_ollama")["provider"], "ollama")
+        self.assertEqual(model_profile_metadata("mistral_7b_ollama")["size_tier"], "large")
+        tiers = research_model_profiles_by_tier()
+        self.assertEqual(set(tiers), {"small", "medium", "large"})
+        self.assertTrue(all(len(profiles) == 2 for profiles in tiers.values()))
+        self.assertEqual(
+            tiers["medium"],
+            ("llama3_2_3b_ollama", "phi3_3_8b_ollama"),
+        )
+        self.assertEqual(
+            tiers["large"],
+            ("qwen2_5_7b_ollama", "llama3_1_8b_ollama"),
+        )
+        self.assertEqual(
+            model_profile_metadata(tiers["small"][0])["size_tier"],
+            "small",
+        )
+
+    def test_factory_builds_local_llama_cpp_adapter_without_api_key(self):
+        adapter = create_model_adapter(
+            "llama_cpp",
+            model_name="local-model",
+            base_url="http://127.0.0.1:8080/v1",
+        )
+
+        self.assertIsInstance(adapter, OpenAICompatibleChatAdapter)
+        self.assertEqual(adapter.name, "local-model")
+
+    def test_unused_model_configuration_is_not_reported_as_an_executed_backend(self):
+        metadata = model_adapter_runtime_metadata(None, provider="transformers")
+
+        self.assertFalse(metadata["used"])
+        self.assertEqual(metadata["provider"], "none")
+        self.assertEqual(metadata["roles"], [])
 
     def test_factory_builds_openai_compatible_adapter(self):
         adapter = create_model_adapter(

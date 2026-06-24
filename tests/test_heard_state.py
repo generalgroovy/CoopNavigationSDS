@@ -4,10 +4,12 @@ import unittest
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import (
     DialogState,
     VerbalTransformationPipeline,
+    heard_trip_report,
     parse_heard_clock,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import SimplePlannerAgentBPlugin
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import LLMAgentAResponder
+from coop_navigation_sds.NaturalLanguageGeneration.caller.prompting import agent_a_requested_trip_fact
 from coop_navigation_sds.TransportNetwork import get_test_case
 
 
@@ -39,10 +41,7 @@ class HeardStateTests(unittest.TestCase):
 
         reply = VerbalTransformationPipeline(FailingModel()).run_agent_b(state)
 
-        self.assertIn("repeat", reply.lower())
-        self.assertIn("start", reply.lower())
-        self.assertIn("did you mean", reply.lower())
-        self.assertIn("Harbor", reply)
+        self.assertIn("starting station", reply.lower())
         self.assertNotIn("Bravo", reply)
 
     def test_agent_b_escalates_repeated_clarification_to_structured_fields(self):
@@ -54,10 +53,10 @@ class HeardStateTests(unittest.TestCase):
 
         reply = VerbalTransformationPipeline(FailingModel()).run_agent_b(state)
 
-        self.assertIn("each separately", reply.lower())
-        self.assertIn("departure time", reply.lower())
+        self.assertIn("starting station", reply.lower())
+        self.assertIn("say", reply.lower())
 
-    def test_agent_b_resets_after_configured_clarification_budget(self):
+    def test_agent_b_keeps_clarifying_after_configured_repair_budget(self):
         state = self.state([
             ("Agent A", "I need the rude to harder"),
             ("Agent B", "Please repeat the start, destination, and time."),
@@ -67,8 +66,48 @@ class HeardStateTests(unittest.TestCase):
 
         reply = VerbalTransformationPipeline(FailingModel()).run_agent_b(state)
 
-        self.assertIn("reset", reply.lower())
-        self.assertIn("say only", reply.lower())
+        self.assertIn("reset the trip details", reply.lower())
+        self.assertIn("starting station", reply.lower())
+        self.assertNotIn("end this call", reply.lower())
+
+    def test_agent_b_repair_budget_is_specific_to_missing_slot(self):
+        state = self.state([
+            ("Agent A", "I am going to Harbor at eight seven."),
+            ("Agent B", "I missed the starting station. Please say only that."),
+            ("Agent A", "Still unclear."),
+        ])
+        state.scenario["clarification_max_attempts"] = 1
+
+        reply = VerbalTransformationPipeline(FailingModel()).run_agent_b(state)
+
+        self.assertIn("starting station", reply.lower())
+        self.assertIn("please say only", reply.lower())
+        self.assertNotIn("end this call", reply.lower())
+
+        state = self.state([
+            ("Agent A", "Bravo."),
+            ("Agent B", "I missed the starting station. Please say only that."),
+            ("Agent A", "Bravo going to Harbor."),
+        ])
+        state.scenario["clarification_max_attempts"] = 1
+
+        reply = VerbalTransformationPipeline(FailingModel()).run_agent_b(state)
+
+        self.assertIn("departure time", reply.lower())
+        self.assertNotIn("end this call", reply.lower())
+
+    def test_slot_repair_does_not_reverse_start_and_destination(self):
+        state = self.state([
+            ("Agent A", "I am going to Harbor at eight seven."),
+            ("Agent B", "I missed the starting station. Please say only that."),
+            ("Agent A", "Bravo."),
+        ])
+
+        heard = state.assistant_scenario
+
+        self.assertEqual(heard["start_station"], "Bravo")
+        self.assertEqual(heard["destination_station"], "Harbor")
+        self.assertEqual(heard["start_time_min"], 8 * 60 + 7)
 
     def test_simple_agent_uses_only_journey_facts_it_heard(self):
         state = self.state([
@@ -86,6 +125,16 @@ class HeardStateTests(unittest.TestCase):
 
     def test_spoken_compact_clock_from_clean_speech_is_understood(self):
         self.assertEqual(parse_heard_clock("I am at Bravo at eight seven"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("I am at Bravo at eight oh seven"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("I am at Bravo at eight o seven"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("I am at Bravo at eight 0 7"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("I am at Bravo at 8 oh 7"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("Shore, I said Bravo at 8-7, going to Harbor"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("8, 7."), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("8 7"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("departure time 807"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("departure time eight to seven"), 8 * 60 + 7)
+        self.assertEqual(parse_heard_clock("departure time eight oh seventy"), 8 * 60 + 7)
         state = self.state([
             ("Agent A", "I Emmett Bravo eight seven going to Harbor"),
         ])
@@ -93,6 +142,87 @@ class HeardStateTests(unittest.TestCase):
         self.assertEqual(heard["start_station"], "Bravo")
         self.assertEqual(heard["destination_station"], "Harbor")
         self.assertEqual(heard["start_time_min"], 8 * 60 + 7)
+
+    def test_departure_time_repair_accepts_asr_digit_pair(self):
+        state = self.state([
+            ("Agent A", "Shore I said Bravo at 8-7 going to Harbor please use those"),
+            ("Agent B", "I missed the departure time. Please say only that."),
+            ("Agent A", "8, 7."),
+        ])
+
+        heard = state.assistant_scenario
+
+        self.assertEqual(heard["start_station"], "Bravo")
+        self.assertEqual(heard["destination_station"], "Harbor")
+        self.assertEqual(heard["start_time_min"], 8 * 60 + 7)
+        self.assertEqual(state.missing_trip_slots, ())
+
+    def test_focused_departure_time_repair_is_self_identifying(self):
+        test_case = get_test_case("morning_peak_cross_city")
+
+        reply = agent_a_requested_trip_fact(
+            "I missed the departure time. Please say only that.",
+            test_case.scenario,
+        )
+        state = self.state([
+            ("Agent A", "I am at Bravo going to Harbor."),
+            ("Agent B", "I missed the departure time. Please say only that."),
+            ("Agent A", "Departure time 807."),
+        ])
+
+        self.assertEqual(reply, "Departure time: 08:07.")
+        self.assertEqual(state.assistant_scenario["start_time_min"], 8 * 60 + 7)
+        self.assertNotIn("departure time", SimplePlannerAgentBPlugin().run_agent_b(state).lower())
+
+    def test_route_numbers_do_not_become_departure_time_without_time_context(self):
+        self.assertIsNone(parse_heard_clock("Take line B12 from Bravo to Hotel, then M4 to Harbor.", allow_contextless=False))
+        state = self.state([
+            ("Agent A", "Take line B12 from Bravo to Hotel, then M4 to Harbor."),
+        ])
+
+        report = heard_trip_report(state.conversation)
+
+        self.assertEqual(report["facts"]["start_station"], "Bravo")
+        self.assertEqual(report["facts"]["destination_station"], "Harbor")
+        self.assertIsNone(report["facts"]["start_time_min"])
+        self.assertIn("start_time_min", report["missing_slots"])
+
+    def test_heard_trip_state_contains_metric_evidence(self):
+        state = self.state([
+            ("Agent A", "I Emmett Bravo eight seven going to Harbor"),
+        ])
+
+        report = state.heard_trip_state
+
+        self.assertEqual(report["facts"]["start_station"], "Bravo")
+        self.assertEqual(report["facts"]["destination_station"], "Harbor")
+        self.assertEqual(report["facts"]["start_time_min"], 8 * 60 + 7)
+        self.assertEqual(report["missing_slots"], ())
+        self.assertEqual(report["completeness"], 1.0)
+        self.assertEqual(report["evidence"]["start_time_min"]["method"], "clock_expression")
+
+    def test_full_time_repetition_after_departure_repair_resumes_route_dialogue(self):
+        state = self.state([
+            (
+                "Agent A",
+                "I'm starting at station Bravo at eight oh seven. "
+                "I need to take transit lines to Harbor. Which lines should I take?",
+            ),
+            ("Agent B", "I missed the departure time. Please say only that."),
+            (
+                "Agent A",
+                "Sure: I said Bravo at eight oh seven, going to Harbor. Please use those.",
+            ),
+        ])
+
+        heard = state.assistant_scenario
+        reply = SimplePlannerAgentBPlugin().run_agent_b(state)
+
+        self.assertEqual(heard["start_station"], "Bravo")
+        self.assertEqual(heard["destination_station"], "Harbor")
+        self.assertEqual(heard["start_time_min"], 8 * 60 + 7)
+        self.assertNotIn("missed the departure time", reply.lower())
+        self.assertIn("Harbor", reply)
 
     def test_agent_a_does_not_call_a_garbled_heard_route_valid(self):
         test_case = get_test_case("morning_peak_cross_city")
@@ -112,11 +242,8 @@ class HeardStateTests(unittest.TestCase):
         )
 
         self.assertNotIn("valid route", reply.lower())
-        self.assertTrue(
-            "actual route" in reply.lower()
-            or "restat" in reply.lower()
-            or "missed" in reply.lower()
-        )
+        self.assertIn("did you mean", reply.lower())
+        self.assertNotIn("12 minutes", reply.lower())
 
     def test_agent_a_answers_structured_reset_with_trip_facts(self):
         test_case = get_test_case("morning_peak_cross_city")

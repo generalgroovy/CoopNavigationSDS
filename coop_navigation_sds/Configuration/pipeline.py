@@ -6,13 +6,91 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import subprocess
+from urllib import error, request
 
+from coop_navigation_sds.Configuration.assets import faster_whisper_model_ready
 from coop_navigation_sds.EvaluationMetrics.catalog import (
-    CORE_METRIC_KEYS,
-    DEFAULT_METRIC_CONFIG,
     METRIC_DISPLAY_NAMES,
     METRIC_FAMILY_SPECS,
 )
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _transformers_assets_ready(model_name):
+    """Check config, tokenizer, and weights without importing Transformers."""
+    model_name = str(model_name or "").strip()
+    prepared = PROJECT_ROOT / ".speech-providers" / "models" / "huggingface" / model_name.replace("/", "--")
+    candidates = [Path(model_name).expanduser(), prepared]
+    for candidate in candidates:
+        if not candidate.is_dir():
+            continue
+        config_ready = (candidate / "config.json").is_file()
+        tokenizer_ready = any(
+            (candidate / name).is_file()
+            for name in (
+                "tokenizer.json", "tokenizer_config.json", "tokenizer.model",
+                "spiece.model", "vocab.json",
+            )
+        )
+        weights_ready = any(
+            path.is_file() and path.stat().st_size > 0
+            for pattern in ("*.safetensors", "pytorch_model*.bin", "model*.bin")
+            for path in candidate.glob(pattern)
+        )
+        if config_ready and tokenizer_ready and weights_ready:
+            return True, str(candidate.resolve())
+    try:
+        from huggingface_hub import try_to_load_from_cache
+        config = try_to_load_from_cache(model_name, "config.json")
+        tokenizer = next(
+            (
+                path for name in ("tokenizer.json", "tokenizer_config.json", "tokenizer.model")
+                if isinstance((path := try_to_load_from_cache(model_name, name)), str)
+            ),
+            None,
+        )
+        weights = next(
+            (
+                path for name in ("model.safetensors", "pytorch_model.bin", "model.safetensors.index.json")
+                if isinstance((path := try_to_load_from_cache(model_name, name)), str)
+            ),
+            None,
+        )
+        if all(isinstance(path, str) and Path(path).is_file() for path in (config, tokenizer, weights)):
+            return True, "Hugging Face cache"
+    except Exception:
+        pass
+    return False, "missing config, tokenizer, or model weights"
+
+
+def _speech_assets_ready(key, model):
+    """Validate the minimum local asset signature required by a speech engine."""
+    if model is None or not model.exists():
+        return False
+    if model.is_file():
+        return model.stat().st_size > 0
+    files = [path for path in model.rglob("*") if path.is_file() and path.stat().st_size > 0]
+    names = {path.name.casefold() for path in files}
+    suffixes = {path.suffix.casefold() for path in files}
+    if key == "chattts":
+        return bool({"config.json", "vocos.pt", "dvae.pt", "gpt.pt"} & names) and ".pt" in suffixes
+    if key == "piper":
+        return any(path.suffix.casefold() == ".onnx" for path in files)
+    if key == "coqui":
+        return "config.json" in names and bool({".pth", ".pt", ".onnx"} & suffixes)
+    if key == "faster_whisper":
+        return "config.json" in names and bool({"model.bin", "model.safetensors"} & names)
+    if key == "vosk":
+        relative_parts = {part.casefold() for path in files for part in path.relative_to(model).parts}
+        return {"am", "conf", "graph"}.issubset(relative_parts)
+    if key == "qwen3_asr":
+        return "config.json" in names and bool({".safetensors", ".bin"} & suffixes)
+    if key == "sherpa_onnx":
+        return any("token" in name for name in names) and ".onnx" in suffixes
+    return bool(files)
 
 
 PIPELINE_PHASES = (
@@ -50,6 +128,8 @@ LOGGED_DATA_FIELDS = {
         ("endpoint_events", "Endpoint and overlap event annotations"),
         ("nisqa_model", "Local NISQA model evidence"),
         ("dnsmos_model", "Local DNSMOS model evidence"),
+        ("audio_reference_pairs", "Aligned clean-reference and synthesized WAV pairs"),
+        ("licensed_polqa_scores", "Scores from a licensed POLQA implementation"),
     ),
     "asr": (
         ("asr_raw_transcript", "Raw recognizer output"),
@@ -96,16 +176,12 @@ PHASE_METRIC_FIELDS = {
 }
 
 SPECIAL_METRIC_FIELDS = {
-    "audio_endpointing_latency": ("endpoint_events",),
-    "audio_early_endpoint_rate": ("endpoint_events",),
-    "audio_late_endpoint_rate": ("endpoint_events",),
-    "audio_end_of_utterance_error": ("endpoint_events",),
-    "audio_overlap_rate": ("endpoint_events",),
-    "audio_interruption_rate": ("endpoint_events",),
-    "audio_barge_in_success_rate": ("endpoint_events",),
-    "asr_confidence_calibration_error": ("asr_confidence",),
     "tts_nisqa": ("audio_files", "nisqa_model"),
     "tts_dnsmos": ("audio_files", "dnsmos_model"),
+    "tts_pesq": ("audio_files", "audio_reference_pairs"),
+    "tts_polqa": ("audio_files", "audio_reference_pairs", "licensed_polqa_scores"),
+    "tts_stoi": ("audio_files", "audio_reference_pairs"),
+    "tts_si_sdr": ("audio_files", "audio_reference_pairs"),
 }
 
 
@@ -135,20 +211,25 @@ def collected_data_fields(config):
     }
     if audio:
         collected.update({"audio_files", "tts_trace", "audio_signal_features"})
-    if config.get("batch_enabled") or config.get("paired_audio_text_runs"):
-        collected.update({"cross_run_records", "pair_metadata", "pair_comparison"})
+    if config.get("batch_enabled"):
+        collected.add("cross_run_records")
+    if config.get("paired_audio_text_runs"):
+        collected.update({"pair_metadata", "pair_comparison"})
     if str(config.get("asr_engine")) in {"sapi", "faster_whisper", "qwen3_asr", "sherpa_onnx"}:
         collected.add("asr_confidence")
     if os.environ.get("COOP_NAVIGATION_SDS_NISQA_MODEL"):
         collected.add("nisqa_model")
     if os.environ.get("COOP_NAVIGATION_SDS_DNSMOS_MODEL"):
         collected.add("dnsmos_model")
+    if config.get("tts_reference_audio_manifest"):
+        collected.add("audio_reference_pairs")
+    if config.get("polqa_result_manifest"):
+        collected.add("licensed_polqa_scores")
     return collected
 
 
-def metric_dependency_report(config, metric_config=None):
+def metric_dependency_report(config):
     """Return metric-by-field availability used by GUI, preflight, and manifests."""
-    enabled = {**DEFAULT_METRIC_CONFIG, **dict(metric_config or config.get("metric_config") or {})}
     collected = collected_data_fields(config)
     metrics = {}
     for key, label in METRIC_DISPLAY_NAMES.items():
@@ -160,15 +241,15 @@ def metric_dependency_report(config, metric_config=None):
             "required_fields": required,
             "missing_fields": missing,
             "available": not missing,
-            "enabled": bool(enabled.get(key)),
-            "core": key in CORE_METRIC_KEYS,
+            "obligatory": True,
+            "enabled": not missing,
         }
     return {"collected_fields": collected, "metrics": metrics}
 
 
-def serializable_metric_dependency_report(config, metric_config=None):
+def serializable_metric_dependency_report(config):
     """Return the dependency report in stable JSON-ready form."""
-    report = metric_dependency_report(config, metric_config)
+    report = metric_dependency_report(config)
     return {
         "collected_fields": sorted(report["collected_fields"]),
         "metrics": report["metrics"],
@@ -189,21 +270,42 @@ def component_status(kind, key, config=None):
     if kind == "model":
         if key == "transformers":
             model_name = str(config.get("model_name", "")).strip()
-            if Path(model_name).exists():
-                return ComponentStatus(key, True, "Local model directory found")
-            try:
-                from huggingface_hub import try_to_load_from_cache
-                cached = try_to_load_from_cache(model_name, "config.json")
-                ready = isinstance(cached, str) and Path(cached).is_file()
-            except Exception:
-                ready = False
-            return ComponentStatus(key, ready, "Local cache found" if ready else "Cache the selected model before runtime")
+            if config.get("allow_model_download"):
+                return ComponentStatus(key, True, "Model may be downloaded by Transformers during execution")
+            ready, location = _transformers_assets_ready(model_name)
+            return ComponentStatus(
+                key,
+                ready,
+                f"Complete local model found at {location}"
+                if ready else f"Local model is incomplete: {location}",
+            )
         if key == "openai_compatible":
             ready = bool(config.get("model_api_key") and config.get("model_base_url"))
             return ComponentStatus(key, ready, "Credentials configured" if ready else "Configure API key and service URL")
+        if key == "llama_cpp":
+            base_url = str(config.get("model_base_url") or "").rstrip("/")
+            try:
+                with request.urlopen(f"{base_url}/models", timeout=0.5) as response:
+                    ready = 200 <= int(getattr(response, "status", 200)) < 300
+            except (OSError, ValueError, error.URLError, TimeoutError):
+                ready = False
+            return ComponentStatus(
+                key,
+                ready,
+                "Local llama.cpp endpoint responded" if ready else "Start the configured llama.cpp server",
+            )
         if key == "ollama":
-            ready = bool(config.get("model_base_url") and config.get("model_name"))
-            return ComponentStatus(key, ready, "Local service configured" if ready else "Configure local Ollama service and model")
+            try:
+                from coop_navigation_sds.NaturalLanguageGeneration.models import ensure_ollama_ready
+                ensure_ollama_ready(
+                    config.get("model_base_url"),
+                    config.get("model_name"),
+                    autostart=False,
+                    timeout_sec=0.5,
+                )
+            except Exception as exc:
+                return ComponentStatus(key, False, str(exc))
+            return ComponentStatus(key, True, "Local Ollama service and model responded")
     if key == "file":
         return ComponentStatus(key, True, "Built-in deterministic control")
     if key == "sapi":
@@ -237,14 +339,48 @@ def component_status(kind, key, config=None):
         )
         return ComponentStatus(key, ready, reason)
     module = modules.get(key)
-    ready = bool(isolated_python or (module and importlib.util.find_spec(module)))
-    reason = "Python provider installed" if ready else f"Install or configure the {key} provider"
+    if isolated_python and module:
+        try:
+            probe_module = module.split(".", 1)[0]
+            probe = subprocess.run(
+                [
+                    str(isolated_python),
+                    "-c",
+                    (
+                        "import importlib.util,sys;"
+                        f"sys.exit(0 if importlib.util.find_spec({probe_module!r}) else 1)"
+                    ),
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=20,
+                check=False,
+            )
+            provider_ready = probe.returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            provider_ready = False
+    else:
+        try:
+            provider_ready = bool(module and importlib.util.find_spec(module))
+        except (ImportError, ModuleNotFoundError, ValueError):
+            provider_ready = False
+    ready = provider_ready
+    reason = "Python provider import succeeded" if ready else f"Install or configure the {key} provider"
     if key in {"chattts", "piper", "coqui", "faster_whisper", "vosk", "qwen3_asr", "sherpa_onnx"}:
         model_key = "tts_model" if kind == "tts" else "asr_model"
         model_value = str(config.get(model_key, "")).strip()
         model = Path(model_value) if model_value else None
-        ready = ready and model is not None and model.exists()
-        reason = "Provider and local model found" if ready else f"Configure a local {key} model path"
+        if key == "faster_whisper":
+            asset_ready, resolved_model = faster_whisper_model_ready(model_value)
+        else:
+            asset_ready = _speech_assets_ready(key, model)
+            resolved_model = model_value
+        ready = ready and asset_ready
+        reason = (
+            f"Provider import and local model checks passed: {resolved_model}"
+            if ready
+            else f"Configure a readable local {key} model path"
+        )
     return ComponentStatus(key, ready, reason)
 
 
@@ -276,8 +412,8 @@ def optimal_route_preview(config):
 
         summary = "\n".join(
             (
-                f"{layer['label']}: {layer['path_text']} | "
-                f"{layer['duration_min']} min | {change_text(layer)}"
+                f"{layer['label']}: {layer['duration_min']} min | "
+                f"{change_text(layer)} | {layer['path_text']}"
             ) if layer["available"] else f"{layer['label']}: unavailable"
             for layer in layers
         )

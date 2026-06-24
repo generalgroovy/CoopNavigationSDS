@@ -21,6 +21,10 @@ import time
 from typing import Protocol
 import wave
 
+from coop_navigation_sds.Configuration.assets import (
+    faster_whisper_model_ready,
+    resolve_faster_whisper_model,
+)
 from coop_navigation_sds.Configuration.speech import (
     DEFAULT_SPEECH_PATTERN,
     SPEECH_AUDIO_DIR,
@@ -51,6 +55,14 @@ SYNTHESIS_CONTROL_KEYS = (
     "emphasis",
 )
 
+PUNCTUATION_PAUSE_PATTERNS = (
+    (r",", 0.55),
+    (r";", 0.75),
+    (r"\.+", 1.0),
+    (r"!+", 1.05),
+    (r"\?+", 1.15),
+)
+
 
 def synthesis_controls(prosody):
     """Return only arguments accepted by a synthesis backend."""
@@ -59,6 +71,15 @@ def synthesis_controls(prosody):
         for key in SYNTHESIS_CONTROL_KEYS
         if key in prosody
     }
+
+
+def punctuation_pause_duration_sec(text, pause_ms):
+    """Return punctuation-weighted pause time for natural cadence."""
+    base_seconds = max(0, int(pause_ms)) / 1000.0
+    return sum(
+        len(re.findall(pattern, str(text or ""))) * factor * base_seconds
+        for pattern, factor in PUNCTUATION_PAUSE_PATTERNS
+    )
 
 
 _SMALL_NUMBER_WORDS = (
@@ -86,12 +107,17 @@ def normalize_text_for_speech(text):
         if minute == 0:
             spoken_minute = "o'clock"
         elif minute < 10:
-            spoken_minute = _SMALL_NUMBER_WORDS[minute]
+            spoken_minute = f"oh {_SMALL_NUMBER_WORDS[minute]}"
         else:
             spoken_minute = _number_under_sixty(minute)
         return f"{_number_under_sixty(hour)} {spoken_minute}"
 
-    return re.sub(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", replace_time, str(text))
+    spoken = re.sub(r"\b([01]?\d|2[0-3]):([0-5]\d)\b", replace_time, str(text))
+    spoken = re.sub(r"\s+([,;.!?])", r"\1", spoken)
+    spoken = re.sub(r"[ \t]+", " ", spoken).strip()
+    if spoken and spoken[-1] not in ".!?":
+        spoken += "."
+    return spoken
 
 
 class SpeechPipelineError(RuntimeError):
@@ -738,6 +764,7 @@ class ChatTTSTextToSpeech(OptionalTextToSpeechBase):
     def __init__(self, config):
         super().__init__(config)
         self._chat = None
+        self._speaker_embeddings = {}
 
     def _model(self):
         if self._chat is not None:
@@ -782,9 +809,8 @@ class ChatTTSTextToSpeech(OptionalTextToSpeechBase):
                 },
             ) from exc
         ChatTTS = self._import_chattts()
-        torch.manual_seed(prosody["seed"])
         chat = self._model()
-        speaker = chat.sample_random_speaker()
+        speaker, speaker_strategy = self._speaker_embedding(chat, torch, prosody["seed"])
         infer = ChatTTS.Chat.InferCodeParams(
             spk_emb=speaker,
             temperature=prosody["temperature"],
@@ -800,7 +826,44 @@ class ChatTTSTextToSpeech(OptionalTextToSpeechBase):
         )
         wavs = chat.infer([text], params_refine_text=refine, params_infer_code=infer)
         _write_float_wave(wav_path, wavs[0], 24000)
-        return {"sample_rate": 24000, "speaker_seed": prosody["seed"]}
+        return {
+            "sample_rate": 24000,
+            "speaker_seed": prosody["seed"],
+            "speaker_strategy": speaker_strategy,
+            "speaker_cached": True,
+        }
+
+    def _speaker_embedding(self, chat, torch, seed):
+        """Return a cached speaker tensor without ChatTTS' memory-heavy LZMA encoding."""
+        seed = int(seed)
+        if seed in self._speaker_embeddings:
+            return self._speaker_embeddings[seed], "cached_tensor"
+
+        torch.manual_seed(seed)
+        speaker_model = getattr(chat, "speaker", None)
+        sample_tensor = getattr(speaker_model, "_sample_random", None)
+        if callable(sample_tensor):
+            speaker = sample_tensor()
+            if hasattr(speaker, "detach"):
+                speaker = speaker.detach().to(device="cpu")
+            self._speaker_embeddings[seed] = speaker
+            return speaker, "uncompressed_tensor"
+
+        try:
+            speaker = chat.sample_random_speaker()
+        except MemoryError as exc:
+            raise SpeechPipelineError(
+                "ChatTTS could not allocate memory while creating a speaker embedding.",
+                {
+                    "speaker_seed": seed,
+                    "troubleshooting": (
+                        "Use a ChatTTS release exposing speaker._sample_random, reduce other "
+                        "loaded models, or select a lower-memory TTS engine."
+                    ),
+                },
+            ) from exc
+        self._speaker_embeddings[seed] = speaker
+        return speaker, "encoded_fallback"
 
     def install_hint(self):
         return (
@@ -1463,10 +1526,12 @@ class WindowsSapiTextToSpeech:
             script_parts.append(f"$speaker.SelectVoice('{escaped_voice}'); ")
         script_parts.append("$escaped = [System.Security.SecurityElement]::Escape($text); ")
         if safe_pause:
-            script_parts.append(
-                f"$escaped = [regex]::Replace($escaped, '([,;:.!?])', "
-                f"'$1<break time=\"{safe_pause}ms\"/>'); "
-            )
+            for pattern, factor in PUNCTUATION_PAUSE_PATTERNS:
+                duration_ms = max(1, round(safe_pause * factor))
+                script_parts.append(
+                    f"$escaped = [regex]::Replace($escaped, '{pattern}', "
+                    f"'$0<break time=\"{duration_ms}ms\"/>'); "
+                )
         script_parts.extend([
             "$ssml = \"<speak version='1.0' xml:lang='en-US'>"
             f"<prosody pitch='{pitch}'>{emphasis_open}\" + $escaped + "
@@ -1674,7 +1739,7 @@ class FasterWhisperSpeechToText:
         min_silence_duration_ms=1200,
         model_cache_dir=".speech-providers/models/faster-whisper",
     ):
-        self.model_name = model_name or "small.en"
+        self.model_name = resolve_faster_whisper_model(model_name or "small.en")
         self.device = device or "auto"
         self.compute_type = compute_type or "default"
         self.language = (language or "en").split("-")[0].lower()
@@ -1693,6 +1758,23 @@ class FasterWhisperSpeechToText:
                 "Faster-Whisper is selected but not installed.",
                 {"troubleshooting": "Install `faster-whisper` and ensure its model can be loaded."},
             ) from exc
+        local_path = Path(str(self.model_name))
+        if local_path.exists():
+            ready, resolved = faster_whisper_model_ready(local_path)
+            if not ready:
+                raise SpeechPipelineError(
+                    "Faster-Whisper model assets are incomplete.",
+                    {
+                        "configured_model": str(local_path),
+                        "resolved_model": resolved,
+                        "required_file": "model.bin",
+                        "troubleshooting": (
+                            "Configure asr_model to the snapshot directory containing "
+                            "model.bin and config.json, or to its prepared cache parent."
+                        ),
+                    },
+                )
+            self.model_name = resolved
         self._model = WhisperModel(
             self.model_name,
             device=self.device,
@@ -2459,7 +2541,7 @@ class SpeechTransport:
             (
                 "Agent B",
                 "Take metro line M1 from Bravo to Harbor with no changes.",
-                (("ring",), ("bravo",), ("harbor", "harbour")),
+                (("m1",), ("bravo",), ("harbor", "harbour")),
             ),
         )
         for speaker, probe_text, expected_groups in probes:
@@ -2472,6 +2554,11 @@ class SpeechTransport:
             semantic_matches = [
                 any(variant in folded for variant in variants)
                 for variants in expected_groups
+            ]
+            missing_entity_groups = [
+                list(variants)
+                for variants, matched in zip(expected_groups, semantic_matches)
+                if not matched
             ]
             semantic_coverage = sum(semantic_matches) / len(semantic_matches)
             semantic_ok = self.config.pattern_key != "clean" or semantic_coverage == 1.0
@@ -2490,12 +2577,40 @@ class SpeechTransport:
                 "transcript_ok": transcript_ok,
                 "semantic_coverage": semantic_coverage,
                 "semantic_ok": semantic_ok,
+                "expected_entity_groups": [list(group) for group in expected_groups],
+                "missing_entity_groups": missing_entity_groups,
                 "diagnostics": trace.diagnostics or {},
             })
+        audio_root_value = getattr(self.config, "audio_dir", None)
+        if audio_root_value:
+            audio_root = Path(audio_root_value).resolve()
+            for check in checks:
+                removed = []
+                audio = check.get("audio") if isinstance(check.get("audio"), dict) else {}
+                for value in (audio.get("path"), audio.get("transcript_path")):
+                    if not value:
+                        continue
+                    path = Path(value)
+                    try:
+                        path.resolve().relative_to(audio_root)
+                    except (OSError, ValueError):
+                        continue
+                    try:
+                        path.unlink(missing_ok=True)
+                        removed.append(str(path))
+                    except OSError:
+                        continue
+                check["removed_probe_artifacts"] = removed
+        operational_ok = all(check["pipeline_ok"] for check in checks)
+        quality_ok = all(check["quality_ok"] for check in checks)
         return {
             "mode": "speech",
-            "ok": all(check["pipeline_ok"] for check in checks),
-            "quality_ok": all(check["quality_ok"] for check in checks),
+            # Readiness and recognition quality are separate signals. A usable
+            # audio/transcription path may produce imperfect entity recognition;
+            # that degradation belongs in retrospective ASR metrics, not preflight.
+            "ok": operational_ok,
+            "operational_ok": operational_ok,
+            "quality_ok": quality_ok,
             "checks": checks,
         }
 
@@ -2613,7 +2728,7 @@ class SpeechTransport:
         duration_multiplier = float(settings.get("duration_multiplier", 1.0) or 1.0)
         seconds = len(words) * 60 / max(rate, 1)
         seconds *= max(duration_multiplier, 0.1)
-        seconds += len(re.findall(r"[,;:.!?]", text)) * prosody["pause_ms"] / 1000.0
+        seconds += punctuation_pause_duration_sec(text, prosody["pause_ms"])
         return round(min(max(seconds, self.config.min_utterance_sec), self.config.max_utterance_sec), 3)
 
 

@@ -20,6 +20,7 @@ NUMERIC_CONTROL_RANGES = {
     "num_turns": (1, 30, 1),
     "invalid_route_limit": (1, 10, 1),
     "constraint_miss_limit": (1, 10, 1),
+    "dialogue_stagnation_limit": (1, 6, 1),
     "agent_a_transfer_tolerance": (0, 3, 1),
     "maximum_progressive_constraints": (0, 4, 1),
     "minimum_compared_routes": (1, 6, 1),

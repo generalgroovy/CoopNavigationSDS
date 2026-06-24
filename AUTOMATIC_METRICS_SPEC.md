@@ -3,43 +3,52 @@
 ## Implementation Status
 
 The runtime catalog is maintained in
-`coop_navigation_sds/EvaluationMetrics/catalog.py`. `MetricComputer` calculates all metrics
-supported by the captured run evidence and exports every enabled metric even
-when its value is unavailable.
+`coop_navigation_sds/EvaluationMetrics/catalog.py`. The catalog contains 220
+single-run metrics with explicit retrospective calculations and 15 batch-only
+validity metrics. Metrics without a calculation path have been removed.
 
-Per-phase exports include:
+Every implemented metric is obligatory and cannot be disabled per run.
+Retrospective metric calculation keeps all catalog metrics visible even when a
+value cannot be calculated. Missing or inapplicable values are represented as
+`null` with calculation evidence explaining which evidence or estimator was
+missing; they are never represented as fabricated zeroes.
 
-- `available`;
-- `coverage_rate`;
-- `available_metric_count`;
-- `configured_metric_count`.
+The generated `metric_catalog.json` records each metric's evidence class,
+scope, unit, required trace family, missing-data policy, and interpretation
+metadata. Metric tiers and per-metric switches are not used. Every phase defines
+at least seven metrics. Dependency preflight marks metrics as calculable or not
+calculable for the selected configuration and shows missing fields before the
+run. NISQA and DNSMOS are calculated only when their versioned local estimators
+and readable audio are present. The console prints one line per catalog
+metric; exact formulas, operands, substitutions, and unavailable reasons are
+stored in result files for audit.
 
-The generated `metric_catalog.json` additionally records the evidence class,
-measurement tier, scope, unit, required trace family, and missing-data policy
-for every metric.
+## Metric Selection Rationale
 
-Metric tiers:
+A metric is included only when it serves at least one of four experiment needs:
 
-- **Core / mandatory:** the minimum measurements required to interpret
-  pipeline integrity, task completion, constraint satisfaction, and failure
-  location. These switches cannot be disabled.
-- **Additional / supplementary:** optional diagnostics and research measures.
-  They default to disabled and can be enabled per interactive, scripted, or
-  batch configuration.
+1. measure correctness or information preservation inside one pipeline phase;
+2. expose the earliest trace-supported failure point;
+3. quantify dialogue efficiency, cooperation, repair, or task completion;
+4. test whether a metric remains stable and predictive across controlled
+   models, scenarios, seeds, and speech conditions.
 
-Both tiers use `null` for unavailable evidence. Mandatory means that the
-calculation is always attempted, not that a value is fabricated.
+Every metric must name its required captured evidence and retrospective
+calculation. Measures that require unavailable human labels, reference signals,
+or licensed estimators remain null rather than being approximated. The
+normative per-metric table, including the individual selection rationale for
+every catalog entry, is [METRIC_REFERENCE.md](METRIC_REFERENCE.md).
 
-Every phase has at least seven core metrics enabled by default. The TTS phase
-has eight because NISQA and DNSMOS are both mandatory learned audio-quality
-measures in addition to pipeline integrity and round-trip intelligibility.
-The catalog exports a concise `calculation` description for every metric, and
-the console prints these methods as numbered phase calculation steps.
+The result folder contains the same contract in machine-readable form:
+`metric_catalog.json` stores definitions, `retrospective_metrics.json` stores
+detailed calculation evidence, and `metrics_long.csv` plus
+`metrics_long.jsonl` provide one graphable row per condition and metric.
 
 Single-run deterministic and reference metrics are calculated after the
-dialogue. Metrics requiring a population of runs are populated by
-`apply_cross_run_metrics` after a batch completes. Learned-estimator metrics
-remain `null` until a versioned estimator is integrated.
+dialogue. Batch runs first write a combined `metric_inputs.json`, then rebuild
+all metric rows from that evidence file. Population metrics are populated by
+`apply_cross_run_metrics` after a batch completes. A single run does not emit
+cross-run values.
 
 Current trace support includes:
 
@@ -51,14 +60,39 @@ Current trace support includes:
 - route candidates, duplicate decisions, durations, active constraints, and
   constraint status;
 - ordered runtime events and constraint-state snapshots;
+- heard trip-fact snapshots with recovered start station, destination,
+  departure time, missing slots, and extraction evidence;
+- per-turn Agent A and Agent B task-memory snapshots with route candidate,
+  active constraints, focus, latest heard text, and memory additions;
 - final route, outcome, timing, persona, provider, condition, and iteration
   identifiers.
+- sanitized resolved configuration, random seed, runtime environment, model
+  condition, and provider token usage when available;
+- a versioned `metric_inputs.json` evidence document written before any
+  derived metric calculation.
 
-Endpointing, overlap, interruption, barge-in, confidence-calibration, human
-ratings, learned language quality, and speaker embeddings remain unavailable
-unless their required event source or estimator is configured. NISQA v2.0 and
-DNSMOS are core metrics calculated retrospectively from turn WAV artifacts
-through versioned TorchMetrics implementations.
+Additional phase-aware measures now captured from those traces include:
+
+- stated and satisfied constraint counts;
+- first deviation turn, phase, and elapsed time;
+- Agent A and Agent B task-focus scores;
+- dialogue distraction rate;
+- correction-turn and corrected-token rates.
+- dialogue-state trip-fact completeness and missing-trip-slot rate.
+- memory trace coverage, memory update rate, and route-memory retention rate.
+
+Batch exports include `failure_indicators.json`, an exploratory threshold
+search over pre-outcome phase metrics. It excludes task outcome, whole-dialogue,
+and metric-validity metrics to avoid label leakage and reports
+balanced accuracy, failure sensitivity, success specificity, support, threshold,
+and direction. Use this report for hypothesis generation unless evaluated on a
+held-out batch.
+
+Endpointing, overlap, interruption, barge-in, confidence calibration, human
+ratings, learned language quality, and speaker embeddings are not in the
+active catalog because the runtime does not currently capture trustworthy
+evidence for them. The proposal table below defines the evidence contracts
+required before selected measures can be implemented.
 
 ## Canonical Dialogue-System Phases
 
@@ -286,6 +320,11 @@ Behavioral and audio personas are independent variables. Do not aggregate them
 into one label: hurried speech does not imply a hurried route preference, and
 a risk-averse behavioral persona does not imply slow speech.
 
+The following phase tables are a measurement-definition inventory, not an
+activation list. The Python catalog is the authoritative implemented set.
+[METRIC_PROPOSALS.md](METRIC_PROPOSALS.md) contains additions that remain
+disabled and absent from outputs until their stated evidence contracts exist.
+
 ## Experimental Preflight: Scenario And Network
 
 | Metric | Class | Automatic calculation |
@@ -381,12 +420,21 @@ The generated or spoken text is the automatic reference in controlled experiment
 | Empty-transcript rate | D | Empty recognized strings divided by recognition attempts. |
 | Hallucinated-token rate | R | Inserted words divided by transcript words. |
 | Transcript correction count | D | Number of token edit groups applied between raw ASR output and listener input. |
+| Domain correction yield | D | Transcript correction groups divided by detected raw token misinterpretations. |
 | Uncorrected misinterpretation count | D | Speech-to-raw-ASR token edit groups that remain different in listener input. |
 | Recognition latency | D | Audio availability to final transcript. |
 | ASR real-time factor | D | Recognition processing time divided by audio duration. |
 | Confidence calibration error | R | Difference between ASR confidence and observed token correctness, if confidence exists. |
 | Repair-trigger rate | D | Turns causing clarification because of transcript uncertainty or error. |
 | ASR repair success | R | Failed semantic frames corrected after clarification divided by repair attempts. |
+
+Clock-time evidence is evaluated at two levels. Raw ASR metrics compare the
+spoken form with the recognizer transcript exactly as captured. Semantic slot
+metrics allow documented clock normalizations, for example `8-7`, `8, 7`,
+`8 7`, `eight seven`, and `eight oh seven` as `08:07` when the utterance is a
+departure-time expression or focused time-repair answer. This prevents a
+successful time repair from being counted as a dialogue-state failure while
+preserving the ASR error for word, character, and token-level metrics.
 
 ## Phase 3: Spoken-Language Understanding
 
@@ -425,6 +473,11 @@ trace state with the state implied by the recognized conversation.
 | --- | --- | --- |
 | Joint goal accuracy | R | Full tracked state equals ground-truth state after each turn. |
 | Slot accuracy | R | Correct tracked state slots divided by tracked slots. |
+| Trip-fact completeness | D | Mean share of required trip facts recovered from Agent B's heard memory before each Agent B action. |
+| Missing trip-slot rate | D | Missing start, destination, and departure-time slots divided by all required trip slots across heard-state snapshots. |
+| Memory trace coverage | D | Memory snapshots divided by dialogue messages. |
+| Memory update rate | D | Snapshots with new remembered facts, routes, constraints, or focus changes divided by memory snapshots. |
+| Route-memory retention rate | D | Post-route snapshots where both agents retain a route candidate divided by all post-route snapshots. |
 | Stage accuracy | R | Tracked dialogue stage equals deterministic experiment stage. |
 | Stage drift rate | R | Turns where state moves to an incorrect stage. |
 | Constraint retention rate | R | Previously stated constraints still present in current state. |
@@ -504,6 +557,7 @@ trace state with the state implied by the recognized conversation.
 | Best-route discovery turn | D | Turn where the best proposed route first appears. |
 | Plugin execution success | D | Successful assistant calls divided by attempted calls. |
 | Model generation latency | D | Prompt submission to raw response. |
+| Valid proposals per 100 output tokens | D | `100 * valid proposals / output tokens`; `null` when the provider exposes no token count. |
 | Repair generation success | D | Invalid or repeated drafts repaired into acceptable proposals. |
 
 ## Phase 7: Natural-Language Generation
@@ -558,8 +612,17 @@ trace state with the state implied by the recognized conversation.
 | Speaker consistency | L | Optional speaker-embedding similarity across turns. |
 | NISQA overall MOS | L | Core TorchMetrics NISQA v2.0 estimate from each turn WAV, averaged across readable turns. |
 | DNSMOS overall MOS | L | Core non-personalized TorchMetrics DNSMOS estimate, with P.808, signal, background, and overall dimensions retained. |
-| Other audio quality score | L | Optional versioned learned speech-quality estimator. |
+| PESQ | R | ITU-T P.862 perceptual score when an aligned clean reference and the optional PESQ implementation are available. |
+| POLQA | R | Licensed ITU-T P.863 score imported from a configured compliant implementation; never approximated. |
+| STOI | R | Short-time objective intelligibility from an aligned clean-reference pair. |
+| SI-SDR | R | Scale-invariant signal-to-distortion ratio from aligned reference and synthesized samples. |
 | Playback success rate | D | Successful playback attempts divided by requested playbacks. |
+
+NISQA v2 and DNSMOS are non-intrusive and need only synthesized speech. PESQ,
+POLQA, STOI, and SI-SDR are intrusive metrics and remain `null` unless the
+experiment logs aligned clean-reference audio. POLQA additionally requires a
+licensed implementation; the framework accepts its trace score but does not
+substitute an open metric for POLQA.
 
 ## Phase 9: End-To-End Task Outcome
 
@@ -582,6 +645,7 @@ trace state with the state implied by the recognized conversation.
 | First-valid-route turn | D | First turn containing a valid route to the destination. |
 | First-compliant-route turn | D | First turn satisfying time and all constraints revealed at that point. |
 | Successful natural closure | D | Agent A closes only after selecting a viable route. |
+| Constraint-induced route change rate | D | Changed adjacent staged optima divided by eligible stage transitions. |
 
 Report all primary outcomes per run, scenario, persona, model, speech condition, and seed.
 
@@ -606,6 +670,7 @@ Report all primary outcomes per run, scenario, persona, model, speech condition,
 | Abandonment rate | D | Runs ending without a selected route. |
 | Failure localization score | D | Fraction of failed runs assigned to the earliest trace-supported failing phase. |
 | Pipeline dependency integrity | D | Downstream input equals the preceding phase output. |
+| Trace completeness rate | D | Required raw evidence collections present divided by required collections. |
 | Cooperative progress rate | D | Turns that add valid information or improve route quality. |
 | Task-focus score | D | Task-relevant content divided by total content. |
 | Comparison quality | D | Relevant route trade-offs correctly compared. |
@@ -624,7 +689,6 @@ These are computed across multiple runs.
 | Mean metric confidence interval | D | Bootstrap interval for each scalar metric. |
 | Seed variance | D | Variance across identical conditions with different seeds. |
 | Test-retest agreement | D | Agreement across repeated identical deterministic conditions. |
-| Rank stability | D | Correlation of system rankings across seeds or scenario subsets. |
 | Metric-outcome correlation | D | Correlation between phase metrics and primary outcomes. |
 | Partial metric-outcome correlation | D | Correlation controlling for scenario difficulty. |
 | Discriminative power | D | Effect size between successful and failed dialogues. |

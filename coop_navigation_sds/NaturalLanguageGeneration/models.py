@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import time
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Protocol
 from urllib import error, parse, request
 
@@ -173,6 +173,23 @@ class ModelProviderSpec:
     requires_api_key: bool = False
 
 
+@dataclass(frozen=True)
+class ModelProfileSpec:
+    """Reproducible Agent B model condition independent of runtime plumbing."""
+
+    key: str
+    label: str
+    provider: str
+    model: str
+    experimental_value: str
+    approximate_memory_gb: float | None = None
+    base_url: str = ""
+    optional_dependency: str = ""
+    size_tier: str = "custom"
+    parameter_count_billion: float | None = None
+    family: str = "unknown"
+
+
 MODEL_PROVIDER_SPECS = {
     "transformers": ModelProviderSpec(
         "transformers",
@@ -193,7 +210,159 @@ MODEL_PROVIDER_SPECS = {
         "Uses a locally served Ollama chat model through its native API.",
         OLLAMA_MODEL,
     ),
+    "llama_cpp": ModelProviderSpec(
+        "llama_cpp",
+        "llama.cpp server",
+        "Uses a local llama.cpp OpenAI-compatible server for quantized GGUF models.",
+        "local-model",
+    ),
 }
+
+
+MODEL_PROFILE_SPECS = {
+    "smollm2_360m_transformers": ModelProfileSpec(
+        "smollm2_360m_transformers", "SmolLM2 360M Instruct", "transformers",
+        "HuggingFaceTB/SmolLM2-360M-Instruct",
+        "Sub-billion-parameter family contrast for low-resource instruction following.", 2.0,
+        optional_dependency="transformers, torch", size_tier="small",
+        parameter_count_billion=0.36, family="SmolLM2",
+    ),
+    "tinyllama_1b_transformers": ModelProfileSpec(
+        "tinyllama_1b_transformers", "TinyLlama 1.1B Chat", "transformers",
+        "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "Small local baseline with low memory use and limited instruction following.", 4.5,
+        optional_dependency="transformers, torch", size_tier="small",
+        parameter_count_billion=1.1, family="Llama-derived",
+    ),
+    "qwen2_5_0_5b_transformers": ModelProfileSpec(
+        "qwen2_5_0_5b_transformers", "Qwen2.5 0.5B Instruct", "transformers",
+        "Qwen/Qwen2.5-0.5B-Instruct",
+        "Very small multilingual instruction model for speed and resource comparisons.", 2.5,
+        optional_dependency="transformers, torch", size_tier="small",
+        parameter_count_billion=0.5, family="Qwen2.5",
+    ),
+    "smollm2_1_7b_transformers": ModelProfileSpec(
+        "smollm2_1_7b_transformers", "SmolLM2 1.7B Instruct", "transformers",
+        "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+        "Different compact model family with stronger instruction tuning than TinyLlama.", 7.0,
+        optional_dependency="transformers, torch", size_tier="medium",
+        parameter_count_billion=1.7, family="SmolLM2",
+    ),
+    "llama3_2_1b_ollama": ModelProfileSpec(
+        "llama3_2_1b_ollama", "Llama 3.2 1B via Ollama", "ollama", "llama3.2:1b",
+        "Quantized local service condition separating model behavior from Transformers runtime.", 3.0,
+        base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service", size_tier="medium",
+        parameter_count_billion=1.0, family="Llama 3.2",
+    ),
+    "qwen2_5_1_5b_ollama": ModelProfileSpec(
+        "qwen2_5_1_5b_ollama", "Qwen2.5 1.5B via Ollama", "ollama", "qwen2.5:1.5b",
+        "Larger multilingual local model for quality-versus-latency comparison.", 4.0,
+        base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service", size_tier="medium",
+        parameter_count_billion=1.5, family="Qwen2.5",
+    ),
+    "llama3_2_3b_ollama": ModelProfileSpec(
+        "llama3_2_3b_ollama", "Llama 3.2 3B via Ollama", "ollama", "llama3.2:3b",
+        "Mid-size local chat model with stronger instruction following than 1B baselines.",
+        6.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="medium", parameter_count_billion=3.0, family="Llama 3.2",
+    ),
+    "phi3_3_8b_ollama": ModelProfileSpec(
+        "phi3_3_8b_ollama", "Phi-3 Mini 3.8B via Ollama", "ollama", "phi3:mini",
+        "Mid-size non-Llama family for reasoning and instruction-following contrast.",
+        7.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="medium", parameter_count_billion=3.8, family="Phi-3",
+    ),
+    "gemma2_2b_ollama": ModelProfileSpec(
+        "gemma2_2b_ollama", "Gemma 2 2B via Ollama", "ollama", "gemma2:2b",
+        "Compact Gemma-family instruction model for another local architecture contrast.",
+        5.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="medium", parameter_count_billion=2.0, family="Gemma 2",
+    ),
+    "qwen3_4b_ollama": ModelProfileSpec(
+        "qwen3_4b_ollama", "Qwen3 4B via Ollama", "ollama", "qwen3:4b",
+        "Newer Qwen-family local model for stronger route-repair behavior with moderate resources.",
+        8.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="medium", parameter_count_billion=4.0, family="Qwen3",
+    ),
+    "qwen2_5_7b_ollama": ModelProfileSpec(
+        "qwen2_5_7b_ollama", "Qwen2.5 7B via Ollama", "ollama", "qwen2.5:7b",
+        "Large local multilingual instruction model for high-quality route dialogue.",
+        10.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="large", parameter_count_billion=7.0, family="Qwen2.5",
+    ),
+    "llama3_1_8b_ollama": ModelProfileSpec(
+        "llama3_1_8b_ollama", "Llama 3.1 8B via Ollama", "ollama", "llama3.1:8b",
+        "Large local Llama-family baseline for quality, latency, and repair comparisons.",
+        12.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="large", parameter_count_billion=8.0, family="Llama 3.1",
+    ),
+    "mistral_7b_ollama": ModelProfileSpec(
+        "mistral_7b_ollama", "Mistral 7B via Ollama", "ollama", "mistral:7b",
+        "Large non-Llama local baseline with different instruction-tuning behavior.",
+        10.0, base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service",
+        size_tier="large", parameter_count_billion=7.0, family="Mistral",
+    ),
+    "qwen2_5_0_5b_llama_cpp": ModelProfileSpec(
+        "qwen2_5_0_5b_llama_cpp", "Qwen2.5 0.5B GGUF via llama.cpp", "llama_cpp", "local-model",
+        "CPU-oriented quantized backend for Windows/Linux runtime-efficiency experiments.", 2.0,
+        base_url="http://127.0.0.1:8080/v1", optional_dependency="llama.cpp server and GGUF model",
+        size_tier="small", parameter_count_billion=0.5, family="Qwen2.5",
+    ),
+    "chatgpt_mini_api": ModelProfileSpec(
+        "chatgpt_mini_api", "ChatGPT mini API condition", "openai_compatible", "gpt-4.1-mini",
+        "Hosted instruction model condition for local-versus-API quality and latency comparisons.",
+        base_url=CHAT_BASE_URL, optional_dependency="OpenAI-compatible API key",
+        size_tier="hosted", family="OpenAI GPT",
+    ),
+}
+
+
+def available_model_profile_keys():
+    return ("custom", *MODEL_PROFILE_SPECS)
+
+
+def research_model_profiles_by_tier():
+    """Return the two primary Agent B model contrasts in each size tier."""
+    preferred = {
+        "small": ("smollm2_360m_transformers", "qwen2_5_0_5b_transformers"),
+        "medium": ("llama3_2_3b_ollama", "phi3_3_8b_ollama"),
+        "large": ("qwen2_5_7b_ollama", "llama3_1_8b_ollama"),
+    }
+    return {
+        tier: tuple(key for key in keys if key in MODEL_PROFILE_SPECS)
+        for tier, keys in preferred.items()
+    }
+
+
+def model_profile_defaults(key):
+    """Return provider settings for a registered model condition."""
+    spec = MODEL_PROFILE_SPECS.get(str(key or "").strip())
+    if spec is None:
+        return {}
+    return {
+        "model_profile": spec.key,
+        "model_provider": spec.provider,
+        "model_name": spec.model,
+        "model_base_url": spec.base_url,
+    }
+
+
+def model_profile_metadata(key):
+    spec = MODEL_PROFILE_SPECS.get(str(key or "").strip())
+    return asdict(spec) if spec else None
+
+
+def matching_model_profile(provider, model):
+    """Return the registered condition matching a provider/model pair, if any."""
+    provider = str(provider or "").strip().lower()
+    model = str(model or "").strip()
+    return next(
+        (
+            key for key, spec in MODEL_PROFILE_SPECS.items()
+            if spec.provider == provider and spec.model == model
+        ),
+        "custom",
+    )
 
 
 def available_model_provider_keys():
@@ -214,6 +383,8 @@ def model_provider_defaults(key):
         base_url = CHAT_BASE_URL
     elif normalized == "ollama":
         base_url = OLLAMA_BASE_URL
+    elif normalized == "llama_cpp":
+        base_url = "http://127.0.0.1:8080/v1"
     else:
         base_url = ""
     return {
@@ -301,6 +472,7 @@ class TransformersModelAdapter:
         self.max_input_tokens = max_input_tokens
         self.model_parameters = model_parameters or get_model_parameter_set("greedy")
         self.max_time_sec = max_time_sec
+        self.generation_history = []
         if hasattr(self.model.generation_config, "max_length"):
             self.model.generation_config.max_length = None
 
@@ -370,6 +542,7 @@ class TransformersModelAdapter:
 
         import torch
 
+        started = time.perf_counter()
         with torch.inference_mode():
             outputs = self.model.generate(
                 input_ids=input_ids,
@@ -377,6 +550,20 @@ class TransformersModelAdapter:
                 generation_config=generation_config,
             )
 
+        generated = outputs[0]
+        generated_length = (
+            int(generated.shape[-1])
+            if hasattr(generated, "shape")
+            else len(generated)
+        )
+        output_tokens = max(0, generated_length - int(input_ids.shape[1]))
+        self.generation_history.append({
+            "provider": "transformers",
+            "model": self.name,
+            "input_tokens": int(input_ids.shape[1]),
+            "output_tokens": output_tokens,
+            "latency_sec": round(time.perf_counter() - started, 6),
+        })
         return self.tokenizer.decode(
             outputs[0][input_ids.shape[1]:],
             skip_special_tokens=True,
@@ -412,7 +599,8 @@ class OpenAICompatibleChatAdapter:
         max_new_tokens: int = MAX_NEW_TOKENS,
         model_parameters: ModelParameterSet | None = None,
     ):
-        if not api_key:
+        hostname = parse.urlparse(base_url).hostname
+        if not api_key and hostname not in {"localhost", "127.0.0.1", "::1"}:
             raise RuntimeError("An API key is required for the OpenAI-compatible provider.")
         self.name = model
         self.model = model
@@ -421,6 +609,7 @@ class OpenAICompatibleChatAdapter:
         self.timeout_sec = timeout_sec
         self.max_new_tokens = max_new_tokens
         self.model_parameters = model_parameters or get_model_parameter_set("greedy")
+        self.generation_history = []
 
     def with_model_params(self, model_param_key: str):
         return OpenAICompatibleChatAdapter(
@@ -447,17 +636,27 @@ class OpenAICompatibleChatAdapter:
             payload["top_p"] = self.model_parameters.top_p
 
         body = json.dumps(payload).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         req = request.Request(
             f"{self.base_url}/chat/completions",
             data=body,
             method="POST",
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
         )
+        started = time.perf_counter()
         with request.urlopen(req, timeout=self.timeout_sec) as response:
             data = json.loads(response.read().decode("utf-8"))
+        usage = data.get("usage") or {}
+        self.generation_history.append({
+            "provider": "openai_compatible",
+            "model": self.model,
+            "input_tokens": usage.get("prompt_tokens"),
+            "output_tokens": usage.get("completion_tokens"),
+            "total_tokens": usage.get("total_tokens"),
+            "latency_sec": round(time.perf_counter() - started, 6),
+        })
         return data["choices"][0]["message"]["content"]
 
 
@@ -480,6 +679,7 @@ class OllamaChatAdapter:
         self.timeout_sec = timeout_sec
         self.max_new_tokens = max_new_tokens
         self.model_parameters = model_parameters or get_model_parameter_set("greedy")
+        self.generation_history = []
 
     def with_model_params(self, model_param_key: str):
         return OllamaChatAdapter(
@@ -514,6 +714,7 @@ class OllamaChatAdapter:
             method="POST",
             headers={"Content-Type": "application/json"},
         )
+        started = time.perf_counter()
         try:
             with request.urlopen(req, timeout=self.timeout_sec) as response:
                 data = json.loads(response.read().decode("utf-8"))
@@ -522,4 +723,45 @@ class OllamaChatAdapter:
                 f"Ollama model '{self.model}' exceeded the configured "
                 f"{self.timeout_sec:g}-second response timeout."
             ) from exc
+        self.generation_history.append({
+            "provider": "ollama",
+            "model": self.model,
+            "input_tokens": data.get("prompt_eval_count"),
+            "output_tokens": data.get("eval_count"),
+            "latency_sec": round(time.perf_counter() - started, 6),
+            "load_duration_ns": data.get("load_duration"),
+            "evaluation_duration_ns": data.get("eval_duration"),
+        })
         return data["message"]["content"]
+
+
+def model_adapter_runtime_metadata(adapter, *, provider=None, profile="custom", roles=()):
+    """Return provider-neutral audit metadata for an adapter actually used in a run."""
+    if adapter is None:
+        return {
+            "used": False,
+            "profile": "not_applicable",
+            "profile_metadata": None,
+            "provider": "none",
+            "model": None,
+            "roles": [],
+            "generation_history": [],
+        }
+    if provider is None:
+        if isinstance(adapter, TransformersModelAdapter):
+            provider = "transformers"
+        elif isinstance(adapter, OllamaChatAdapter):
+            provider = "ollama"
+        elif isinstance(adapter, OpenAICompatibleChatAdapter):
+            provider = "openai_compatible"
+        else:
+            provider = type(adapter).__name__
+    return {
+        "used": True,
+        "profile": profile or "custom",
+        "profile_metadata": model_profile_metadata(profile),
+        "provider": provider,
+        "model": getattr(adapter, "name", type(adapter).__name__),
+        "roles": list(roles),
+        "generation_history": list(getattr(adapter, "generation_history", [])),
+    }

@@ -23,8 +23,8 @@
     "speech_patterns": ["clean"],
     "model_params": ["greedy"],
     "objective_modes": ["shortest_valid_route_with_constraints"],
-    "tts_engines": ["sapi", "chattts", "piper"],
-    "asr_engines": ["sapi", "faster_whisper", "vosk"],
-    "agent_b_models": ["llama3.2:latest", "llama4:latest", "phi4-mini:latest"]
+    "tts_engines": ["chattts", "piper", "espeak_ng", "coqui"],
+    "asr_engines": ["faster_whisper", "vosk", "whisper_cpp", "sherpa_onnx"],
+    "agent_b_models": ["llama3.2:3b", "phi3:mini", "qwen2.5:7b", "llama3.1:8b"]
   }
 }

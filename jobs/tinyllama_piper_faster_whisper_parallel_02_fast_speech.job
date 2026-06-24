@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "extends": "tinyllama_piper_faster_whisper_comparison.job",
+  "name": "tinyllama_piper_faster_whisper_parallel_02_fast_speech",
+  "description": "Parallel-array shard 2 of 4: faster Piper speech.",
+  "parameter_profiles": [
+    {
+      "profile_key": "fast_speech",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.18,
+      "agent_b_speed": 1.18,
+      "agent_a_temperature": 0.15,
+      "agent_b_temperature": 0.15,
+      "agent_a_top_p": 0.5,
+      "agent_b_top_p": 0.5,
+      "asr_beam_size": 5,
+      "asr_compute_type": "int8"
+    }
+  ]
+}

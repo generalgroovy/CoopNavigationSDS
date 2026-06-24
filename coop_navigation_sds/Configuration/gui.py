@@ -7,11 +7,11 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import messagebox, ttk
 
-from coop_navigation_sds.Configuration.settings import default_settings_path
 from coop_navigation_sds.Configuration.component_catalog import speech_engine_profile
 from coop_navigation_sds.Configuration.experimental_defaults import numeric_range
 from coop_navigation_sds.NaturalLanguageGeneration.caller.personas import get_persona, preference_text
 from coop_navigation_sds.NaturalLanguageGeneration.models import (
+    model_profile_defaults,
     model_provider_defaults,
 )
 from coop_navigation_sds.EvaluationMetrics.catalog import (
@@ -19,8 +19,6 @@ from coop_navigation_sds.EvaluationMetrics.catalog import (
 )
 from coop_navigation_sds.EvaluationMetrics.metrics import (
     METRIC_FAMILY_SPECS,
-    metric_config_with_defaults,
-    metric_tier_config_with_defaults,
 )
 from coop_navigation_sds.Configuration.pipeline import (
     FIELD_LABELS,
@@ -34,10 +32,10 @@ from coop_navigation_sds.Configuration.pipeline import (
 COMBINED_GUI_PHASES = (
     ("network_task", "Network and Task"),
     ("agent_a", "Agent A"),
-    ("agent_b_nlg", "Agent B and Natural-Language Generation"),
-    ("tts", "Text-to-Speech"),
+    ("agent_b_nlg", "Agent B and Natural Language Generation"),
+    ("tts", "Audio Persona and Text to Speech"),
     ("asr", "Automatic Speech Recognition"),
-    ("nlu", "Natural-Language Understanding"),
+    ("nlu", "Natural Language Understanding"),
     ("dialogue_management", "Dialogue Management"),
     ("results", "Results, Logging, and Batch"),
 )
@@ -53,14 +51,26 @@ GUI_METRIC_FAMILIES = {
     "results": ("metric_validity",),
 }
 
+GUI_PHASE_LAYOUT = {
+    "network_task": (0, 0, 1),
+    "agent_a": (0, 1, 1),
+    "agent_b_nlg": (1, 0, 1),
+    "tts": (1, 1, 1),
+    "asr": (2, 0, 1),
+    "nlu": (2, 1, 1),
+    "dialogue_management": (3, 0, 1),
+    "results": (3, 1, 1),
+}
+
 
 SETTING_HELP = {
     "test_case_key": "Selects the network scenario, start, destination, and travel conditions.",
     "persona_key": "Controls Agent A's dialogue behavior and private travel preferences.",
     "agent_b_plugin": "Selects the deterministic assistant, local language model, or custom plugin factory.",
     "agent_a_objective_mode": "Defines whether Agent A requires any valid route, the shortest route, or staged constraint satisfaction.",
-    "agent_a_type": "Selects the deterministic staged caller policy or the model-backed UserLM caller.",
+    "agent_a_type": "Selects the deterministic staged caller, fixed TinyLlama caller, or configurable UserLM caller.",
     "model_provider": "Language-model runtime used by the configurable Agent B implementation.",
+    "model_profile": "Reproducible model condition. Choose custom to edit the provider and model independently.",
     "model_name": "Provider-specific model identifier or local model path.",
     "model_api_key": "Credential sent to the selected OpenAI-compatible service. It is not needed for local Transformers or Ollama.",
     "model_base_url": "Address of the selected model service. Use the service's API root, not a web interface URL.",
@@ -68,10 +78,12 @@ SETTING_HELP = {
     "model_timeout_sec": "Maximum seconds to wait for one response from an API or Ollama service before the turn fails.",
     "model_service_autostart": "Start a locally installed Ollama service during preflight when the configured loopback endpoint is not running.",
     "model_max_new_tokens": "Maximum generated response length. Higher values allow more natural route explanations but can increase latency.",
+    "allow_model_download": "Allow Transformers to download the selected model if it is not already prepared locally. Leave off for reproducible offline batches.",
     "num_turns": "Maximum total dialogue turns before the experiment stops.",
     "invalid_route_limit": "Stops the dialogue after this many invalid route proposals.",
     "constraint_miss_limit": "Stops the dialogue after this many proposals that miss already stated constraints.",
     "clarification_max_attempts": "Number of targeted hearing-repair turns allowed before the agents reset and request the three trip facts separately.",
+    "dialogue_stagnation_limit": "Stops the run after this many consecutive dialogue rounds add no route, constraint, resolved repair, or final choice.",
     "agent_a_transfer_tolerance": "Additional transfers Agent A accepts beyond the constraint-aware baseline.",
     "agent_a_ticket_modes": "Exactly two public transport tickets available to Agent A. The third public mode is unavailable.",
     "agent_a_max_walking_min": "Maximum cumulative walking time accepted across the complete route.",
@@ -106,7 +118,9 @@ SETTING_HELP = {
     "speech_pattern_key": "Controlled speaking condition applied before synthesis, such as clean speech, hesitation, pauses, or dropped words.",
     "speech_playback_enabled": "Plays each synthesized utterance through the system audio output.",
     "speech_realtime_enabled": "Waits for playback to finish before the listening agent receives its transcript.",
-    "protocol_log_dir": "Parent folder for run results. Each execution creates one self-contained timestamped subfolder.",
+    "results_root": "The single parent folder for all runs. Every execution writes all artifacts into one flat timestamped subfolder.",
+    "console_view": "Controls live console detail. Compact shows conversation plus summaries, transcript shows only speech exchange, debug shows internal state events, and quiet minimizes console output.",
+    "log_profile": "Controls structured event logging volume. Off disables structured logs, startup records setup only, runtime records experiment execution, and full records all available evidence.",
 }
 
 PROSODY_HELP = {
@@ -160,8 +174,7 @@ class StartupConfigDialog:
         self.result = None
         self.root = tk.Tk()
         self.root.title("CoopNavigationSDS Experiment Configuration")
-        self.root.minsize(980, 700)
-        self.root.after_idle(self._maximize_window)
+        self.root.minsize(1180, 760)
         self.persona_detail = tk.StringVar()
         self.dynamic_frames = {}
         self._last_tts_engine = str(defaults["tts_engine"])
@@ -178,6 +191,7 @@ class StartupConfigDialog:
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
             "persona_key": tk.StringVar(value=defaults["persona_key"]),
             "agent_b_plugin": tk.StringVar(value=defaults["agent_b_plugin"]),
+            "model_profile": tk.StringVar(value=defaults.get("model_profile", "custom")),
             "model_provider": tk.StringVar(value=defaults["model_provider"]),
             "model_name": tk.StringVar(value=defaults["model_name"]),
             "model_api_key": tk.StringVar(value=defaults["model_api_key"]),
@@ -185,6 +199,7 @@ class StartupConfigDialog:
             "model_device": tk.StringVar(value=defaults["model_device"]),
             "model_timeout_sec": tk.DoubleVar(value=defaults["model_timeout_sec"]),
             "model_max_new_tokens": tk.IntVar(value=defaults["model_max_new_tokens"]),
+            "allow_model_download": tk.BooleanVar(value=defaults.get("allow_model_download", False)),
             "model_service_autostart": tk.BooleanVar(value=defaults.get("model_service_autostart", True)),
             "agent_a_type": tk.StringVar(value=defaults["agent_a_type"]),
             "agent_a_objective_mode": tk.StringVar(value=defaults["agent_a_objective_mode"]),
@@ -192,6 +207,7 @@ class StartupConfigDialog:
             "invalid_route_limit": tk.IntVar(value=defaults["invalid_route_limit"]),
             "constraint_miss_limit": tk.IntVar(value=defaults["constraint_miss_limit"]),
             "clarification_max_attempts": tk.IntVar(value=defaults["clarification_max_attempts"]),
+            "dialogue_stagnation_limit": tk.IntVar(value=defaults.get("dialogue_stagnation_limit", 2)),
             "agent_a_transfer_tolerance": tk.IntVar(value=defaults["agent_a_transfer_tolerance"]),
             "agent_a_ticket_modes": tk.StringVar(value=defaults["agent_a_ticket_modes"]),
             "agent_a_max_walking_min": tk.IntVar(value=defaults["agent_a_max_walking_min"]),
@@ -214,12 +230,16 @@ class StartupConfigDialog:
             "tts_device": tk.StringVar(value=defaults["tts_device"]),
             "tts_model": tk.StringVar(value=defaults["tts_model"]),
             "tts_executable": tk.StringVar(value=defaults["tts_executable"]),
+            "tts_python_executable": tk.StringVar(value=defaults.get("tts_python_executable", "")),
+            "tts_timeout_sec": tk.DoubleVar(value=defaults.get("tts_timeout_sec", 60.0)),
             "asr_language": tk.StringVar(value=defaults["asr_language"]),
             "asr_model": tk.StringVar(value=defaults["asr_model"]),
             "asr_device": tk.StringVar(value=defaults["asr_device"]),
             "asr_compute_type": tk.StringVar(value=defaults["asr_compute_type"]),
             "asr_executable": tk.StringVar(value=defaults["asr_executable"]),
+            "asr_python_executable": tk.StringVar(value=defaults.get("asr_python_executable", "")),
             "asr_vad_model": tk.StringVar(value=defaults["asr_vad_model"]),
+            "asr_timeout_sec": tk.DoubleVar(value=defaults.get("asr_timeout_sec", 60.0)),
             "asr_beam_size": tk.IntVar(value=defaults["asr_beam_size"]),
             "asr_initial_silence_sec": tk.DoubleVar(value=defaults["asr_initial_silence_sec"]),
             "asr_babble_timeout_sec": tk.DoubleVar(value=defaults["asr_babble_timeout_sec"]),
@@ -237,39 +257,17 @@ class StartupConfigDialog:
             "agent_b_top_p": tk.DoubleVar(value=defaults["agent_b_top_p"]),
             "agent_a_seed": tk.IntVar(value=defaults["agent_a_seed"]),
             "agent_b_seed": tk.IntVar(value=defaults["agent_b_seed"]),
-            "protocol_log_dir": tk.StringVar(value=defaults["protocol_log_dir"]),
+            "results_root": tk.StringVar(value=defaults["results_root"]),
+            "console_view": tk.StringVar(value=defaults.get("console_view", "compact")),
+            "log_profile": tk.StringVar(value=defaults.get("log_profile", "runtime")),
             "gui_font_size": tk.IntVar(value=defaults.get("gui_font_size", 11)),
             "paired_audio_text_runs": tk.BooleanVar(value=defaults.get("paired_audio_text_runs", True)),
         }
-        metric_tiers = metric_tier_config_with_defaults(defaults.get("metric_tiers"))
-        metric_defaults = metric_config_with_defaults(
-            defaults.get("metric_config"),
-            metric_tiers,
-        )
-        self.metric_vars = {
-            key: tk.BooleanVar(value=metric_defaults[key])
-            for family in METRIC_FAMILY_SPECS
-            for key, _label in family["metrics"]
-        }
-        self.metric_tier_vars = {
-            key: tk.StringVar(value=metric_tiers[key])
-            for family in METRIC_FAMILY_SPECS
-            for key, _label in family["metrics"]
-        }
-        self.metric_enabled_widgets = {}
+        self.metric_status_vars = {}
         self._build()
         self._refresh_persona_detail()
         self._refresh_conditional_sections()
         self.root.protocol("WM_DELETE_WINDOW", self.cancel)
-
-    def _maximize_window(self):
-        """Fill the available desktop while retaining native window controls."""
-        try:
-            self.root.state("zoomed")
-        except tk.TclError:
-            width = self.root.winfo_screenwidth()
-            height = self.root.winfo_screenheight()
-            self.root.geometry(f"{width}x{height}+0+0")
 
     def _build(self):
         style = ttk.Style(self.root)
@@ -277,41 +275,49 @@ class StartupConfigDialog:
             style.theme_use("clam")
         family = "Segoe UI" if self.root.tk.call("tk", "windowingsystem") == "win32" else "DejaVu Sans"
         size = int(self.defaults.get("gui_font_size", 11))
+        colors = {
+            "background": "#F3F5F7",
+            "surface": "#FFFFFF",
+            "border": "#CBD3DC",
+            "text": "#202A35",
+            "muted": "#5D6977",
+            "primary": "#176B5B",
+            "secondary": "#315E86",
+            "warning": "#9A5A12",
+            "selection": "#DCEAE6",
+        }
+        self.colors = colors
+        self.root.configure(background=colors["background"])
         for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont"):
             tkfont.nametofont(name).configure(family=family, size=size)
-        style.configure("TLabelframe.Label", font=(family, size, "bold"))
-        style.configure("Pipeline.TLabelframe.Label", font=(family, size + 1, "bold"))
-        style.configure("Heading.TLabel", font=(family, size + 3, "bold"))
-        style.configure("TButton", padding=(10, 4))
+        style.configure("TFrame", background=colors["surface"])
+        style.configure("TLabel", background=colors["surface"], foreground=colors["text"])
+        style.configure("TLabelframe", background=colors["surface"], bordercolor=colors["border"], relief="solid")
+        style.configure("TLabelframe.Label", background=colors["surface"], foreground=colors["text"], font=(family, size, "bold"))
+        style.configure("Pipeline.TLabelframe", background=colors["surface"], bordercolor=colors["border"], relief="solid")
+        style.configure("Pipeline.TLabelframe.Label", background=colors["surface"], foreground=colors["primary"], font=(family, size + 1, "bold"))
+        style.configure("Card.TFrame", background=colors["surface"])
+        style.configure("Card.TLabel", background=colors["surface"], foreground=colors["text"])
+        style.configure("PhaseSummary.TLabel", background=colors["surface"], foreground=colors["muted"])
+        style.configure("PhaseWarning.TLabel", background=colors["surface"], foreground=colors["warning"])
+        style.configure("MetricSummary.TLabel", background=colors["surface"], foreground=colors["secondary"], font=(family, size, "bold"))
+        style.configure("TButton", padding=(10, 5), background="#E8EDF2", foreground=colors["text"])
+        style.map("TButton", background=[("active", "#DDE5EC")])
+        style.configure("Accent.TButton", background=colors["primary"], foreground="#FFFFFF", font=(family, size, "bold"))
+        style.map("Accent.TButton", background=[("active", "#125849")])
         style.configure("TCheckbutton", padding=(2, 2))
+        style.configure("TCombobox", selectbackground=colors["selection"])
 
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
 
-        shell = ttk.Frame(self.root, padding=(7, 6, 7, 2))
+        shell = ttk.Frame(self.root, padding=(6, 6, 6, 2))
         shell.grid(row=0, column=0, sticky="nsew")
-        shell.rowconfigure(1, weight=1)
+        shell.rowconfigure(0, weight=1)
         shell.columnconfigure(0, weight=1)
 
-        heading = ttk.Frame(shell)
-        heading.grid(row=0, column=0, sticky="ew", pady=(0, 4))
-        heading.columnconfigure(0, weight=1)
-        ttk.Label(
-            heading,
-            text="Cooperative Route-Dialogue Experiment",
-            style="Heading.TLabel",
-        ).grid(row=0, column=0, sticky="w")
-        ttk.Label(
-            heading,
-            text="Experiments are local-only. Prepare providers and model assets before starting a run.",
-        ).grid(row=1, column=0, sticky="w", pady=(2, 0))
-        ttk.Label(
-            heading,
-            text=f"Saved settings: {default_settings_path()}",
-        ).grid(row=2, column=0, sticky="w", pady=(2, 0))
-
-        workspace = ttk.LabelFrame(shell, text="Experiment pipeline", padding=5)
-        workspace.grid(row=1, column=0, sticky="nsew")
+        workspace = ttk.Frame(shell, padding=0)
+        workspace.grid(row=0, column=0, sticky="nsew")
         workspace.rowconfigure(0, weight=1)
         workspace.columnconfigure(0, weight=1)
         self._build_combined_pipeline(workspace)
@@ -319,27 +325,19 @@ class StartupConfigDialog:
         actions = ttk.Frame(self.root)
         actions.grid(row=1, column=0, sticky="ew", padx=7, pady=(4, 6))
         actions.columnconfigure(0, weight=1)
-        ttk.Label(
-            actions,
-            text="Preflight validates local components and metric evidence before execution.",
-        ).grid(row=0, column=0, sticky="w")
         ttk.Button(actions, text="Cancel", command=self.cancel).grid(row=0, column=1, padx=(8, 8))
-        ttk.Button(actions, text="Start Experiment", command=self.start).grid(row=0, column=2)
+        ttk.Button(actions, text="Start Experiment", command=self.start, style="Accent.TButton").grid(row=0, column=2)
 
-        for key in (
-            "test_case_key", "persona_key", "agent_a_type", "agent_b_plugin",
-            "model_provider", "model_name", "tts_engine", "asr_engine",
-            "agent_a_audio_persona", "agent_b_audio_persona", "protocol_log_dir",
-        ):
-            self.vars[key].trace_add("write", self._schedule_pipeline_refresh)
-        for variable in self.metric_vars.values():
+        for variable in self.vars.values():
             variable.trace_add("write", self._schedule_pipeline_refresh)
         self.root.after_idle(self._refresh_pipeline_overview)
 
     def _build_combined_pipeline(self, parent):
-        content = self._vertical_pipeline(parent)
+        content = self._phase_grid(parent)
         content.columnconfigure(0, weight=1, uniform="phase_column")
         content.columnconfigure(1, weight=1, uniform="phase_column")
+        for row in range(4):
+            content.rowconfigure(row, weight=1, uniform="phase_row")
         cards = {
             key: self._combined_phase_card(content, index, key, title)
             for index, (key, title) in enumerate(COMBINED_GUI_PHASES)
@@ -372,10 +370,14 @@ class StartupConfigDialog:
         self.agent_b_model_controls.grid(row=3, column=0, columnspan=3, sticky="ew")
         self.agent_b_model_controls.columnconfigure(1, weight=1)
         self._combo(
-            self.agent_b_model_controls, 0, "Model provider", "model_provider",
+            self.agent_b_model_controls, 0, "Model condition", "model_profile",
+            self.choices["model_profiles"], on_change=self._select_model_profile,
+        )
+        self._combo(
+            self.agent_b_model_controls, 1, "Model provider", "model_provider",
             self.choices["model_providers"], on_change=self._select_model_provider,
         )
-        self._entry(self.agent_b_model_controls, 1, "Model", "model_name")
+        self._entry(self.agent_b_model_controls, 2, "Model", "model_name")
         self.dynamic_frames["model"] = self._collapsible(assistant, 4, "Implementation settings")
         self.agent_b_model_advanced = self.dynamic_frames["model"].master
 
@@ -383,14 +385,19 @@ class StartupConfigDialog:
         self._combo(tts, 2, "Engine", "tts_engine", self.choices["tts_engines"], on_change=self._select_tts_engine)
         self._combo(tts, 3, "Agent A audio persona", "agent_a_audio_persona", self.choices["agent_a_audio_personas"], on_change=self._select_audio_persona)
         self._combo(tts, 4, "Agent B audio persona", "agent_b_audio_persona", self.choices["agent_b_audio_personas"], on_change=self._select_audio_persona)
-        self._check(tts, 5, "Play synthesized speech", "speech_playback_enabled")
-        self._number(tts, 6, "Maximum utterance seconds", "max_utterance_sec", 5, 40, 1)
-        self.dynamic_frames["tts"] = self._collapsible(tts, 7, "Implementation settings")
+        self._combo(tts, 5, "Speech pattern", "speech_pattern_key", self.choices["speech_patterns"])
+        self._check(tts, 6, "Play synthesized speech", "speech_playback_enabled")
+        self._check(tts, 7, "Wait for speech before recognition", "speech_realtime_enabled")
+        self._number(tts, 8, "Maximum utterance seconds", "max_utterance_sec", 5, 40, 1)
+        self.dynamic_frames["tts"] = self._collapsible(tts, 9, "Implementation settings")
 
         asr = cards["asr"]
         self._combo(asr, 2, "Engine", "asr_engine", self.choices["asr_engines"], on_change=self._select_asr_engine)
         self._entry(asr, 3, "Language", "asr_language")
-        self.dynamic_frames["asr"] = self._collapsible(asr, 4, "Implementation settings")
+        self._number(asr, 4, "Recognition search width", "asr_beam_size", 1, 16)
+        self._number(asr, 5, "End pause milliseconds", "asr_end_silence_ms", 500, 6000, 100)
+        self._number(asr, 6, "Ambiguous pause milliseconds", "asr_ambiguous_end_silence_ms", 1000, 8000, 100)
+        self.dynamic_frames["asr"] = self._collapsible(asr, 7, "Implementation settings")
 
         nlu = cards["nlu"]
         self._check(nlu, 2, "Normalize transit terms", "asr_domain_normalization_enabled")
@@ -401,27 +408,44 @@ class StartupConfigDialog:
         self._number(dialogue, 3, "Invalid route limit", "invalid_route_limit", 1, 20)
         self._number(dialogue, 4, "Constraint miss limit", "constraint_miss_limit", 1, 20)
         self._number(dialogue, 5, "Clarification attempts", "clarification_max_attempts", 1, 6)
-        self._number(dialogue, 6, "Progressive constraints", "maximum_progressive_constraints", 0, 6)
-        self._number(dialogue, 7, "Routes compared", "minimum_compared_routes", 1, 10)
-        self._check(dialogue, 8, "Retain earlier constraints", "require_constraint_retention")
+        self._number(dialogue, 6, "No-progress limit", "dialogue_stagnation_limit", 1, 6)
+        self._number(dialogue, 7, "Progressive constraints", "maximum_progressive_constraints", 0, 6)
+        self._number(dialogue, 8, "Routes compared", "minimum_compared_routes", 1, 10)
+        self._check(dialogue, 9, "Retain earlier constraints", "require_constraint_retention")
 
         results = cards["results"]
-        self._entry(results, 2, "Results root", "protocol_log_dir")
-        self._check(results, 3, "Pair audio with text control", "paired_audio_text_runs")
-        self._number(results, 4, "Interface font size", "gui_font_size", 9, 16)
-        self._build_logging_controls(results, 5)
+        self._entry(results, 2, "Single results root", "results_root")
+        self._combo(results, 3, "Console view", "console_view", ("compact", "transcript", "debug", "quiet"))
+        self._combo(results, 4, "Structured log level", "log_profile", ("runtime", "startup", "full", "off"))
+        self._check(results, 5, "Pair audio with text control", "paired_audio_text_runs")
+        self._number(results, 6, "Interface font size", "gui_font_size", 9, 16)
+        self._build_logging_controls(results, 7)
 
         for key, card in cards.items():
             self._attach_phase_metrics(card, key, 80)
 
     def _combined_phase_card(self, parent, index, key, title):
         card = ttk.LabelFrame(parent, text=f"{index + 1}. {title}", padding=7, style="Pipeline.TLabelframe")
-        card.grid(row=index // 2, column=index % 2, sticky="nsew", padx=3, pady=3)
+        row, column, column_span = GUI_PHASE_LAYOUT[key]
+        card.grid(
+            row=row,
+            column=column,
+            columnspan=column_span,
+            sticky="nsew",
+            padx=3,
+            pady=3,
+        )
         card.columnconfigure(1, weight=1)
-        status = ttk.Label(card, textvariable=self.pipeline_summary_vars[key], wraplength=680, justify="left")
-        status.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 5))
+        status = ttk.Label(
+            card,
+            textvariable=self.pipeline_summary_vars[key],
+            wraplength=520,
+            justify="left",
+            style="PhaseWarning.TLabel",
+        )
+        status.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 4))
+        status.grid_remove()
         self.phase_status_widgets[key] = status
-        ttk.Separator(card).grid(row=1, column=0, columnspan=3, sticky="ew", pady=(0, 4))
         return card
 
     def _attach_phase_metrics(self, card, phase_key, row):
@@ -429,10 +453,10 @@ class StartupConfigDialog:
         host = ttk.Frame(card)
         host.grid(row=row + 1, column=0, columnspan=3, sticky="ew")
         host.columnconfigure(0, weight=1)
-        ttk.Label(host, textvariable=self.phase_metric_summary_vars[phase_key]).grid(row=0, column=0, sticky="w")
+        ttk.Label(host, textvariable=self.phase_metric_summary_vars[phase_key], style="MetricSummary.TLabel").grid(row=0, column=0, sticky="w")
         toggle = ttk.Button(
             host,
-            text="Metrics",
+            text="Show metrics",
             command=lambda target=host, key=phase_key: self._expand_phase_metrics(target, key),
         )
         toggle.grid(row=0, column=1, sticky="e", padx=(8, 0))
@@ -443,7 +467,7 @@ class StartupConfigDialog:
         if panel["viewport"] is not None:
             panel["viewport"].grid()
             panel["toggle"].configure(
-                text="Close metrics",
+                text="Hide metrics",
                 command=lambda key=phase_key: self._collapse_phase_metrics(key),
             )
             return
@@ -452,7 +476,7 @@ class StartupConfigDialog:
         viewport.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(5, 0))
         viewport.rowconfigure(0, weight=1)
         viewport.columnconfigure(0, weight=1)
-        canvas = tk.Canvas(viewport, height=240, highlightthickness=0)
+        canvas = tk.Canvas(viewport, height=240, highlightthickness=0, background=self.colors["surface"])
         scrollbar = ttk.Scrollbar(viewport, orient="vertical", command=canvas.yview)
         content = ttk.Frame(canvas, padding=(2, 0, 5, 2))
         content.columnconfigure(0, weight=1)
@@ -480,7 +504,7 @@ class StartupConfigDialog:
                 row += 1
         panel["viewport"] = viewport
         panel["toggle"].configure(
-            text="Close metrics",
+            text="Hide metrics",
             command=lambda key=phase_key: self._collapse_phase_metrics(key),
         )
         self._schedule_pipeline_refresh()
@@ -489,7 +513,7 @@ class StartupConfigDialog:
         panel = self.phase_metric_panels[phase_key]
         panel["viewport"].grid_remove()
         panel["toggle"].configure(
-            text="Metrics",
+            text="Show metrics",
             command=lambda target=panel["host"], key=phase_key: self._expand_phase_metrics(target, key),
         )
 
@@ -515,20 +539,11 @@ class StartupConfigDialog:
         self.dependency_scrollbar.grid(row=2, column=0, sticky="ew")
         self.dependency_tree.grid_remove()
         self.dependency_scrollbar.grid_remove()
-    def _vertical_pipeline(self, parent):
+    def _phase_grid(self, parent):
         parent.rowconfigure(0, weight=1)
         parent.columnconfigure(0, weight=1)
-        canvas = tk.Canvas(parent, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
-        content = ttk.Frame(canvas, padding=4)
-        content.columnconfigure(0, weight=1)
-        window = canvas.create_window((0, 0), window=content, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.grid(row=0, column=0, sticky="nsew")
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        content.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window, width=event.width))
-        canvas.bind("<MouseWheel>", lambda event: canvas.yview_scroll(int(-event.delta / 120), "units"))
+        content = ttk.Frame(parent, padding=3)
+        content.grid(row=0, column=0, sticky="nsew")
         return content
 
     def _collapsible(self, parent, row, title):
@@ -561,7 +576,6 @@ class StartupConfigDialog:
                 config[key] = variable.get()
             except tk.TclError:
                 pass
-        config["metric_config"] = {key: variable.get() for key, variable in self.metric_vars.items()}
         return config
 
     def _refresh_pipeline_overview(self):
@@ -570,31 +584,32 @@ class StartupConfigDialog:
         tts = component_status("tts", config.get("tts_engine"), config)
         asr = component_status("asr", config.get("asr_engine"), config)
         model = component_status("model", config.get("model_provider"), config)
-        if str(config.get("agent_b_plugin", "")).lower() not in {"", "llm", "minillama"} and str(config.get("agent_a_type", "")).lower() != "userlm":
+        if str(config.get("agent_b_plugin", "")).lower() not in {"", "llm", "minillama"} and str(config.get("agent_a_type", "")).lower() not in {"tinyllama", "userlm"}:
             model = type(model)(model.key, True, "No language model required")
         report = metric_dependency_report(config)
-        enabled = [item for item in report["metrics"].values() if item["enabled"]]
-        unavailable = [item for item in enabled if not item["available"]]
-        for key, widget in self.metric_enabled_widgets.items():
-            if report["metrics"][key]["available"]:
-                self._refresh_metric_state(key)
-            else:
-                widget.state(["disabled"])
-        summaries = {
-            "network_task": "",
-            "agent_a": "",
-            "agent_b_nlg": "" if model.available else f"Unavailable: {model.reason}",
-            "tts": "" if tts.available else f"Unavailable: {tts.reason}",
-            "asr": "" if asr.available else f"Unavailable: {asr.reason}",
-            "nlu": "",
-            "dialogue_management": "",
-            "results": "",
+        obligatory = [item for item in report["metrics"].values() if item["obligatory"]]
+        unavailable = [item for item in obligatory if not item["available"]]
+        for key, variable in self.metric_status_vars.items():
+            item = report["metrics"][key]
+            variable.set(
+                "calculable"
+                if item["available"]
+                else "unavailable: " + ", ".join(
+                    FIELD_LABELS.get(field, field) for field in item["missing_fields"]
+                )
+            )
+        warnings = {
+            "agent_b_nlg": None if model.available else model.reason,
+            "tts": None if tts.available else tts.reason,
+            "asr": None if asr.available else asr.reason,
         }
-        for key, value in summaries.items():
-            self.pipeline_summary_vars[key].set(value)
-            if value:
+        for key, _title in COMBINED_GUI_PHASES:
+            warning = warnings.get(key)
+            if warning:
+                self.pipeline_summary_vars[key].set(f"Unavailable: {warning}")
                 self.phase_status_widgets[key].grid()
             else:
+                self.pipeline_summary_vars[key].set("")
                 self.phase_status_widgets[key].grid_remove()
         for phase_key, family_keys in GUI_METRIC_FAMILIES.items():
             phase_metrics = [
@@ -602,9 +617,10 @@ class StartupConfigDialog:
                 if item["phase"] in family_keys
             ]
             phase_enabled = sum(item["enabled"] for item in phase_metrics)
-            phase_blocked = sum(item["enabled"] and not item["available"] for item in phase_metrics)
+            phase_blocked = sum(item["obligatory"] and not item["available"] for item in phase_metrics)
             self.phase_metric_summary_vars[phase_key].set(
-                f"Metrics: {phase_enabled} enabled" + (f", {phase_blocked} blocked" if phase_blocked else "")
+                f"{len(phase_metrics)} obligatory | {phase_enabled} calculable"
+                + (f" | {phase_blocked} unavailable" if phase_blocked else "")
             )
         self.optimal_route_text.set(optimal_route_preview(config)["summary"])
         lines = []
@@ -631,7 +647,7 @@ class StartupConfigDialog:
 
     def _refresh_dependency_tree(self, report):
         tree = self.dependency_tree
-        metrics = [key for key, item in report["metrics"].items() if item["enabled"]]
+        metrics = list(report["metrics"])
         tree.configure(columns=metrics)
         for key in metrics:
             item = report["metrics"][key]
@@ -657,12 +673,17 @@ class StartupConfigDialog:
         )
 
     def _combo(self, parent, row, label, key, values, editable=False, on_change=None):
+        current = str(self.vars[key].get() or "").strip()
+        choice_values = [str(value) for value in values if str(value or "").strip()]
+        if current and current not in choice_values:
+            choice_values.append(current)
+        choice_values = list(dict.fromkeys(choice_values))
         label_widget = ttk.Label(parent, text=label)
         label_widget.grid(row=row, column=0, sticky="w", padx=(0, 6), pady=2)
         widget = ttk.Combobox(
             parent,
             textvariable=self.vars[key],
-            values=list(values),
+            values=choice_values,
             state="normal" if editable else "readonly",
         )
         widget.grid(row=row, column=1, sticky="ew", pady=2)
@@ -791,7 +812,7 @@ class StartupConfigDialog:
         self._clear_frame(frame)
         needs_model = (
             self.vars["agent_b_plugin"].get().strip().lower() in {"", "llm", "minillama"}
-            or self.vars["agent_a_type"].get().strip().lower() == "userlm"
+            or self.vars["agent_a_type"].get().strip().lower() in {"tinyllama", "userlm"}
         )
         if not needs_model:
             self.agent_b_model_controls.grid_remove()
@@ -803,9 +824,7 @@ class StartupConfigDialog:
         if provider == "transformers":
             self._entry(frame, 0, "Inference device", "model_device")
             self._number(frame, 1, "Maximum response tokens", "model_max_new_tokens", 8, 512, 8)
-            ttk.Label(frame, text="Offline only: model and tokenizer must already be cached.", wraplength=270).grid(
-                row=2, column=0, columnspan=2, sticky="w"
-            )
+            self._check(frame, 2, "Allow model download", "allow_model_download")
         elif provider == "openai_compatible":
             self._entry(frame, 1, "Service URL", "model_base_url")
             self._entry(frame, 2, "API key", "model_api_key", show="*")
@@ -862,36 +881,23 @@ class StartupConfigDialog:
         self._clear_frame(frame)
         engine = self.vars["asr_engine"].get()
         if engine == "sapi":
-            self._entry(frame, 0, "Recognition language", "asr_language")
-            self._number(frame, 1, "End-of-speech pause milliseconds", "asr_end_silence_ms", 500, 6000, 100)
-            self._number(frame, 2, "Ambiguous speech pause milliseconds", "asr_ambiguous_end_silence_ms", 1000, 8000, 100)
-            next_row = 3
+            self._number(frame, 0, "Initial listening seconds", "asr_initial_silence_sec", 1, 15, 0.5)
+            self._number(frame, 1, "Non-speech tolerance seconds", "asr_babble_timeout_sec", 1, 15, 0.5)
         elif engine == "faster_whisper":
             self._entry(frame, 0, "Whisper model", "asr_model")
             self._entry(frame, 1, "Inference device", "asr_device")
             self._entry(frame, 2, "Compute type", "asr_compute_type")
-            self._number(frame, 3, "Recognition beam size", "asr_beam_size", 1, 20)
-            self._entry(frame, 4, "Recognition language", "asr_language")
-            next_row = 5
         elif engine == "vosk":
             self._entry(frame, 0, "Local Vosk model directory", "asr_model")
-            self._entry(frame, 1, "Recognition language", "asr_language")
-            next_row = 2
         elif engine == "whisper_cpp":
             self._entry(frame, 0, "whisper.cpp model path", "asr_model")
             self._entry(frame, 1, "whisper-cli executable", "asr_executable")
             self._entry(frame, 2, "Optional voice activity model", "asr_vad_model")
-            self._entry(frame, 3, "Recognition language", "asr_language")
-            next_row = 4
         elif engine == "qwen3_asr":
             self._entry(frame, 0, "Qwen3-ASR model", "asr_model")
             self._entry(frame, 1, "Inference device", "asr_device")
-            self._entry(frame, 2, "Recognition language", "asr_language")
-            next_row = 3
         elif engine == "sherpa_onnx":
             self._entry(frame, 0, "sherpa-onnx model directory", "asr_model")
-            self._entry(frame, 1, "Recognition language", "asr_language")
-            next_row = 2
         else:
             ttk.Label(
                 frame,
@@ -899,71 +905,46 @@ class StartupConfigDialog:
                 wraplength=430,
                 justify="left",
             ).grid(row=0, column=0, columnspan=2, sticky="ew")
-            next_row = 1
-        self._check(frame, next_row, "Repair close transit terms", "asr_domain_normalization_enabled")
-        self._number(
-            frame,
-            next_row + 1,
-            "Domain repair similarity",
-            "asr_domain_similarity_threshold",
-            0.70,
-            1.0,
-            0.01,
-        )
 
     def _refresh_persona_detail(self):
         persona = get_persona(self.vars["persona_key"].get())
         self.persona_detail.set(f"{persona['description']} {preference_text(persona)}")
 
     def _select_model_provider(self):
+        self.vars["model_profile"].set("custom")
         defaults = model_provider_defaults(self.vars["model_provider"].get())
         self.vars["model_name"].set(defaults["model_name"])
         self.vars["model_base_url"].set(defaults["model_base_url"])
         self.vars["model_timeout_sec"].set(defaults["model_timeout_sec"])
         self._refresh_conditional_sections()
 
+    def _select_model_profile(self):
+        values = model_profile_defaults(self.vars["model_profile"].get())
+        if not values:
+            return
+        for key in ("model_provider", "model_name", "model_base_url"):
+            self.vars[key].set(values[key])
+        provider = model_provider_defaults(values["model_provider"])
+        self.vars["model_timeout_sec"].set(provider["model_timeout_sec"])
+        self._refresh_conditional_sections()
+
     def _build_metric_row(self, group, row, key, label):
         label_widget = ttk.Label(group, text=label)
         label_widget.grid(row=row, column=0, sticky="w", pady=1)
-        enabled = ttk.Checkbutton(
-            group, variable=self.metric_vars[key],
-            command=lambda metric_key=key: self._refresh_metric_state(metric_key),
-        )
-        enabled.grid(row=row, column=1, sticky="w", padx=(8, 0))
-        tier = ttk.Combobox(
-            group, textvariable=self.metric_tier_vars[key],
-            values=("core", "supplementary"), state="readonly", width=14,
-        )
-        tier.grid(row=row, column=2, sticky="w", padx=(8, 0))
-        tier.bind("<<ComboboxSelected>>", lambda _event, metric_key=key: self._refresh_metric_state(metric_key))
-        self.metric_enabled_widgets[key] = enabled
+        status = tk.StringVar(value="checking evidence...")
+        status_widget = ttk.Label(group, textvariable=status, style="PhaseSummary.TLabel")
+        status_widget.grid(row=row, column=1, sticky="w", padx=(8, 0))
+        self.metric_status_vars[key] = status
         tooltip = (
-            f"{label}: {metric_calculation_method(key)}. Core forces the metric on; "
-            "supplementary metrics are optional."
+            f"{label}: {metric_calculation_method(key)}. This metric is obligatory. "
+            "It is calculated after the run when its evidence exists; otherwise the result records the missing evidence."
         )
-        for widget in (label_widget, enabled, tier):
+        for widget in (label_widget, status_widget):
             ToolTip(widget, tooltip)
-        self._refresh_metric_state(key)
-
-    def _refresh_metric_state(self, metric_key):
-        """Apply the core/supplementary rule to one metric row."""
-        tier = self.metric_tier_vars[metric_key].get().strip().lower()
-        widget = self.metric_enabled_widgets.get(metric_key)
-        if tier == "core":
-            self.metric_vars[metric_key].set(True)
-            if widget is not None:
-                widget.state(["disabled"])
-        elif widget is not None:
-            widget.state(["!disabled"])
+        self._schedule_pipeline_refresh()
 
     def start(self):
         selected = {key: variable.get() for key, variable in self.vars.items()}
-        selected["metric_config"] = {
-            key: variable.get() for key, variable in self.metric_vars.items()
-        }
-        selected["metric_tiers"] = {
-            key: variable.get() for key, variable in self.metric_tier_vars.items()
-        }
         try:
             self.result = self.validator(selected) if self.validator else selected
         except Exception as exc:

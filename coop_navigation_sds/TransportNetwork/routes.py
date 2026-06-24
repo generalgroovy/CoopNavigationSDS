@@ -376,19 +376,34 @@ def route_station_sequence(steps):
 
 
 def route_path_text_from_steps(steps):
-    """Return a complete edge-by-edge path with a service on every edge."""
+    """Return a complete path with consecutive same-line edges condensed."""
     if not steps:
         return "No route found."
 
-    path = [steps[0]["from"]]
-    for step in steps:
-        if step_transport_type(step) == "walking":
-            minutes = max(1, int(step["arrive"] - step["depart"]))
-            service = f"walk {minutes} min"
-        else:
-            service = step["line"]
-        path.append(f"--{service}--> {step['to']}")
-    return " ".join(path)
+    clauses = [steps[0]["from"]]
+    index = 0
+    while index < len(steps):
+        first = steps[index]
+        mode = step_transport_type(first)
+        if mode == "walking":
+            minutes = max(1, int(first["arrive"] - first["depart"]))
+            clauses.append(f"--walk {minutes} min--> {first['to']}")
+            index += 1
+            continue
+
+        line = first["line"]
+        destinations = [first["to"]]
+        index += 1
+        while index < len(steps):
+            following = steps[index]
+            if step_transport_type(following) == "walking" or following["line"] != line:
+                break
+            destinations.append(following["to"])
+            index += 1
+        intermediate = destinations[:-1]
+        stop_text = f" ({', '.join(intermediate)})" if intermediate else ""
+        clauses.append(f"--{mode} {line}{stop_text}--> {destinations[-1]}")
+    return " ".join(clauses)
 
 
 def route_text_from_steps(steps):
@@ -407,17 +422,18 @@ def route_text_from_steps(steps):
         if ride["mode"] == "walking":
             minutes = max(1, int(ride["arrive"] - ride["depart"]))
             return f"walk {minutes} minutes from {ride['from']} to {ride['to']}"
-        prefix = "take " if first else ""
-        return f"{prefix}{service_name(ride)} from {ride['from']} to {ride['to']}"
+        prefix = "Take " if first else ""
+        service = service_name(ride) if first else f"{ride['mode']} {ride['line']}"
+        return f"{prefix}{service} from {ride['from']} to {ride['to']}"
 
     first, *remaining = rides
     ride_text = ride_clause(first, first=True)
     ride_text += "".join(
-        f"; then {ride_clause(ride)}"
+        f"; {ride_clause(ride)}"
         for ride in remaining
     )
     spoken_route = ride_text[:1].upper() + ride_text[1:]
-    return f"{spoken_route}. It takes {total} minutes, with {change_text}."
+    return f"{spoken_route}. {total} minutes, {change_text}."
 
 
 def route_step_details(steps):

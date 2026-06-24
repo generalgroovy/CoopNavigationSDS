@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "extends": "tinyllama_piper_faster_whisper_comparison.job",
+  "name": "tinyllama_piper_faster_whisper_parallel_04_wide_asr",
+  "description": "Parallel-array shard 4 of 4: wider Faster-Whisper beam and float32 compute.",
+  "parameter_profiles": [
+    {
+      "profile_key": "wide_asr_search",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.0,
+      "agent_b_speed": 1.0,
+      "agent_a_temperature": 0.15,
+      "agent_b_temperature": 0.15,
+      "agent_a_top_p": 0.5,
+      "agent_b_top_p": 0.5,
+      "asr_beam_size": 10,
+      "asr_compute_type": "float32"
+    }
+  ]
+}

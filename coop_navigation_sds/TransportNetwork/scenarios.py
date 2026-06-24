@@ -25,6 +25,7 @@ def make_scenario(
     acceptable_duration_ratio=ACCEPTABLE_DURATION_RATIO,
     min_stage_suboptimal_options=MIN_STAGE_SUBOPTIMAL_OPTIONS,
     require_stage_suboptimal_options=REQUIRE_STAGE_SUBOPTIMAL_OPTIONS,
+    require_constraint_route_changes=True,
     allow_unreachable=False,
 ):
     """Make scenario function for this module's MVC responsibility.
@@ -65,6 +66,7 @@ def make_scenario(
         "acceptable_duration_ratio": float(acceptable_duration_ratio),
         "min_stage_suboptimal_options": int(min_stage_suboptimal_options),
         "require_stage_suboptimal_options": bool(require_stage_suboptimal_options),
+        "require_constraint_route_changes": bool(require_constraint_route_changes),
         "goal": "fastest_route",
         "allow_unreachable": allow_unreachable,
     }

@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from contextlib import nullcontext
 from pathlib import Path
+from urllib.parse import urlparse
 
 try:
     from huggingface_hub.utils import logging as hf_logging
@@ -19,7 +20,7 @@ from coop_navigation_sds.Configuration.runtime import (
     MAXIMUM_PROGRESSIVE_CONSTRAINTS,
     MINIMUM_COMPARED_ROUTES,
     NUM_TURNS,
-    PROTOCOL_LOG_DIR,
+    RESULTS_DIR,
     REQUIRE_CONSTRAINT_RETENTION,
     SESSION_LOG_PROFILE,
     SESSION_NAME,
@@ -32,11 +33,16 @@ from coop_navigation_sds.Configuration.component_catalog import (
     startup_choices,
 )
 from coop_navigation_sds.Configuration.settings import load_run_settings, save_run_settings
+from coop_navigation_sds.Configuration.schema import (
+    resolve_results_root,
+    runtime_environment_metadata,
+    sanitized_config,
+)
+from coop_navigation_sds.Configuration.run_identity import single_run_label
 from coop_navigation_sds.Configuration.speech import (
     AGENT_B_PLUGIN,
     DEFAULT_SPEECH_PATTERN,
     SPEECH_ASR_ENGINE,
-    SPEECH_AUDIO_DIR,
     SPEECH_PLAYBACK_ENABLED,
     SPEECH_REALTIME_ENABLED,
     SPEECH_TTS_ENGINE,
@@ -73,6 +79,9 @@ from coop_navigation_sds.Configuration.travel import (
 from coop_navigation_sds.NaturalLanguageGeneration.models import (
     available_model_provider_keys,
     ensure_ollama_ready,
+    matching_model_profile,
+    model_adapter_runtime_metadata,
+    model_profile_defaults,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import (
     AgentBPluginConfig,
@@ -81,9 +90,9 @@ from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry imp
 from coop_navigation_sds.NaturalLanguageGeneration.caller.config import DEFAULT_PERSONA, LLM_AGENT_A
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
     AGENT_A_MINILLAMA,
-    AGENT_A_USERLM,
     LLMAgentAResponder,
     TemplateAgentAResponder,
+    agent_a_uses_model,
     normalize_agent_a_type,
 )
 from coop_navigation_sds.DialogManagement.manager import DEFAULT_MAX_TURN_ELAPSED_SEC, HARD_MAX_TURN_ELAPSED_SEC, DialogManager
@@ -92,21 +101,15 @@ from coop_navigation_sds.DialogManagement.whisper_cpp_runtime import whisper_cpp
 from coop_navigation_sds.DialogManagement.result import NullEventQueue
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     create_execution_run_dir,
-    run_scoped_path,
     write_single_run_research_outputs,
 )
 from coop_navigation_sds.ResultsAndArtifacts.logging import MonitoringEventQueue, SessionLogger
 from coop_navigation_sds.EvaluationMetrics.metrics import (
-    DEFAULT_METRIC_CONFIG,
-    DEFAULT_METRIC_TIERS,
     METRIC_DISPLAY_NAMES,
-    metric_config_with_defaults,
-    metric_tier_config_with_defaults,
 )
 from coop_navigation_sds.EvaluationMetrics.catalog import (
     PHASE_DISPLAY_NAMES,
     global_metric_key,
-    metric_calculation_method,
 )
 from coop_navigation_sds.DialogManagement.speech_pipeline import (
     SpeechPipelineConfig,
@@ -126,7 +129,10 @@ from coop_navigation_sds.TextToSpeech.personas import (
 )
 from coop_navigation_sds.TransportNetwork.constraints import normalize_objective_mode
 from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
-from coop_navigation_sds.Configuration.pipeline import optimal_route_preview, serializable_metric_dependency_report
+from coop_navigation_sds.Configuration.pipeline import (
+    optimal_route_preview,
+    serializable_metric_dependency_report,
+)
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -134,24 +140,36 @@ if hf_logging is not None:
     hf_logging.set_verbosity_warning()
 
 
+CONSOLE_VIEW_CHOICES = ("compact", "transcript", "debug", "quiet")
+
+
 class ConsoleEventSink:
     """Print a readable speech transcript and retrospective metric report."""
 
-    def __init__(self):
+    def __init__(self, view="compact"):
         self.turn = 0
         self._last_speech_payload = None
         self._system_messages = set()
+        self.view = str(view or "compact").strip().lower()
+        if self.view not in CONSOLE_VIEW_CHOICES:
+            self.view = "compact"
 
     def put(self, event):
         if not event:
             return
         kind = event[0]
         if kind == "telemetry" and len(event) >= 3 and event[1] == "speech":
-            self._print_speech_turn(event[2])
+            if self.view not in {"quiet"}:
+                self._print_speech_turn(event[2])
+        elif kind == "telemetry" and len(event) >= 3 and event[1] == "memory":
+            if self.view == "debug":
+                self._print_memory_state(event[2])
         elif kind == "telemetry" and len(event) >= 3 and event[1] == "phase_timing":
-            return
+            if self.view == "debug":
+                self._print_debug_event("PHASE TIMING", event[2])
         elif kind == "phase" and len(event) >= 2:
-            return
+            if self.view == "debug":
+                self._print_debug_event("PHASE", event[1])
         elif kind == "metrics" and len(event) >= 2:
             self._print_run_summary(event[1])
         elif kind == "metric_results" and len(event) >= 2:
@@ -159,11 +177,13 @@ class ConsoleEventSink:
         elif kind == "configuration" and len(event) >= 2:
             self._print_configuration(event[1])
         elif kind == "candidate" and len(event) >= 2:
-            return
+            if self.view == "debug":
+                self._print_debug_event("CANDIDATE", event[1])
         elif kind == "warning" and len(event) >= 2:
             print(f"\nWARNING: {event[1]}", flush=True)
         elif kind == "stage" and len(event) >= 2:
-            return
+            if self.view == "debug":
+                self._print_debug_event("STAGE", event[1])
         elif kind == "system" and len(event) >= 2:
             self._print_system_message(event[1])
 
@@ -177,6 +197,7 @@ class ConsoleEventSink:
         self.turn += 1
         speaker = payload.get("speaker", "Agent")
         listener = "Agent B" if speaker == "Agent A" else "Agent A"
+        intended = payload.get("generated_text") or ""
         spoken = payload.get("outgoing_text") or payload.get("generated_text") or ""
         raw = payload.get("raw_asr_transcript") or (
             payload.get("diagnostics") or {}
@@ -188,25 +209,89 @@ class ConsoleEventSink:
         corrections = payload.get("transcript_corrections") or (
             payload.get("diagnostics") or {}
         ).get("transcript_corrections") or []
-        print(f"\n--- Turn {self.turn}: {speaker} to {listener} ---", flush=True)
-        print(f"SPEECH: {speaker}: {spoken}", flush=True)
-        print(f"ASR RAW: {listener}: {raw}", flush=True)
-        print(
-            f"MISINTERPRETATIONS: {self._format_token_changes(misinterpretations)}",
-            flush=True,
-        )
-        print(f"CORRECTIONS: {self._format_token_changes(corrections)}", flush=True)
-        print(f"UNDERSTOOD: {listener}: {understood}", flush=True)
+        print(f"\n--- Turn {self.turn}: {speaker} -> {listener} ---", flush=True)
+        if intended.strip() != spoken.strip():
+            self._print_transcript_row("INTENDED:", intended)
+        self._print_transcript_row("TTS SPEECH:", spoken)
+        self._print_transcript_row("ASR HEARD:", raw)
+        if understood.strip() != raw.strip():
+            self._print_transcript_row("AGENT INPUT:", understood)
+        if misinterpretations:
+            self._print_transcript_row(
+                "TTS -> ASR:",
+                self._format_token_changes(misinterpretations, quote_source=True),
+            )
+        if corrections:
+            self._print_transcript_row(
+                "ASR -> INPUT:",
+                self._format_token_changes(corrections),
+            )
 
     @staticmethod
-    def _format_token_changes(changes):
+    def _print_transcript_row(label, value):
+        print(f"{label:<15}{value}", flush=True)
+
+    def _print_memory_state(self, payload):
+        if not isinstance(payload, dict):
+            return
+        turn = payload.get("turn", "?")
+        reason = payload.get("reason", "memory")
+        snapshots = payload.get("snapshots") or {}
+        additions = payload.get("additions") or {}
+        print(f"MEMORY T{turn} ({reason}):", flush=True)
+        for agent in ("Agent A", "Agent B"):
+            memory = snapshots.get(agent) or {}
+            route = memory.get("current_route_summary") or "none"
+            constraints = ", ".join(memory.get("active_constraints") or []) or "none"
+            focus = memory.get("pending_focus") or "unknown"
+            heard = memory.get("latest_heard") or "none"
+            task = self._format_task_variables(memory)
+            print(
+                f"  {agent}: task={task}; focus={focus}; route={route}; constraints={constraints}; heard={heard}",
+                flush=True,
+            )
+            agent_additions = additions.get(agent) or {}
+            if agent_additions:
+                print(
+                    f"  {agent} new: {self._format_memory_additions(agent_additions)}",
+                    flush=True,
+                )
+
+    @staticmethod
+    def _format_memory_additions(additions):
+        rendered = []
+        for key, value in additions.items():
+            if isinstance(value, list):
+                text = ", ".join(str(item) for item in value) or "none"
+            else:
+                text = str(value)
+            rendered.append(f"{key}={text}")
+        return "; ".join(rendered)
+
+    @staticmethod
+    def _format_task_variables(memory):
+        values = memory.get("task_variables") or {}
+        missing = memory.get("missing_task_variables") or []
+        start = values.get("start_station") or "unknown"
+        destination = values.get("destination_station") or "unknown"
+        minutes = values.get("start_time_min")
+        try:
+            time_text = f"{int(minutes) // 60:02d}:{int(minutes) % 60:02d}" if minutes is not None else "unknown"
+        except (TypeError, ValueError):
+            time_text = "unknown"
+        suffix = f"; missing={', '.join(missing)}" if missing else ""
+        return f"start={start}; destination={destination}; time={time_text}{suffix}"
+
+    @staticmethod
+    def _format_token_changes(changes, quote_source=False):
         if not changes:
             return "none"
         rendered = []
         for change in changes:
             source = " ".join(change.get("source_tokens") or []) or "[none]"
             target = " ".join(change.get("target_tokens") or []) or "[none]"
-            rendered.append(f"{change.get('operation', 'change')}: {source} -> {target}")
+            displayed_source = f"'{source}'" if quote_source and source != "[none]" else source
+            rendered.append(f"{displayed_source} -> {target}")
         return "; ".join(rendered)
 
     @staticmethod
@@ -224,17 +309,52 @@ class ConsoleEventSink:
         print(f"[system] {text}", flush=True)
 
     @staticmethod
+    def _print_debug_event(label, payload):
+        print(f"{label}: {payload}", flush=True)
+
+    @staticmethod
     def _print_configuration(config):
-        print("\n=== Experiment Configuration ===", flush=True)
+        dependency_report = None
+        if isinstance(config, dict):
+            dependency_report = config.get("__metric_dependency_report")
+        print("\n=== Pre-Experiment Overview ===", flush=True)
+        print("[Configuration]", flush=True)
         for label, value in config.items():
+            if str(label).startswith("__"):
+                continue
             print(f"{label}: {value}", flush=True)
+        if dependency_report:
+            ConsoleEventSink._print_metric_dependency_overview(dependency_report)
+
+    @staticmethod
+    def _print_metric_dependency_overview(report):
+        print("\n[Metric Evidence Plan]", flush=True)
+        collected = set(report.get("collected_fields") or [])
+        print(f"Captured values: {len(collected)} trace fields", flush=True)
+        phase_rows = {}
+        for key, item in (report.get("metrics") or {}).items():
+            phase = item.get("phase", "unknown")
+            phase_rows.setdefault(phase, {"obligatory": 0, "available": 0, "missing": set()})
+            if item.get("obligatory"):
+                phase_rows[phase]["obligatory"] += 1
+                if item.get("available"):
+                    phase_rows[phase]["available"] += 1
+                else:
+                    phase_rows[phase]["missing"].update(item.get("missing_fields") or [])
+        for phase, row in phase_rows.items():
+            missing = ", ".join(sorted(row["missing"])) if row["missing"] else "none"
+            print(
+                f"{PHASE_DISPLAY_NAMES.get(phase, phase.replace('_', ' ').title())}: "
+                f"{row['available']}/{row['obligatory']} calculable; missing fields: {missing}",
+                flush=True,
+            )
 
     @staticmethod
     def _print_metric_results(metric):
-        print("\n=== Retrospective Metric Calculations ===", flush=True)
+        print("\n=== Post-Experiment Metric Overview ===", flush=True)
         for phase, values in getattr(metric, "metric_families", {}).items():
-            print(f"\n[{PHASE_DISPLAY_NAMES.get(phase, phase.replace('_', ' ').title())}]", flush=True)
-            step = 0
+            calculable = []
+            unavailable = 0
             for key, value in values.items():
                 if key in {
                     "available",
@@ -243,26 +363,26 @@ class ConsoleEventSink:
                     "configured_metric_count",
                 }:
                     continue
-                step += 1
                 full_key = global_metric_key(phase, key)
                 label = METRIC_DISPLAY_NAMES.get(full_key, key.replace("_", " ").title())
-                method = metric_calculation_method(full_key)
-                evidence = getattr(metric, "metric_calculations", {}).get(full_key, {})
-                print(
-                    f"  {step}. {label} = {ConsoleEventSink._format_metric_value(value)}",
-                    flush=True,
-                )
-                print(f"     Formula: {evidence.get('formula', method)}", flush=True)
-                operands = evidence.get("operands", {})
-                if operands:
-                    rendered = ", ".join(
-                        f"{name}={ConsoleEventSink._format_metric_value(operand)}"
-                        for name, operand in operands.items()
-                    )
-                    print(f"     Values: {rendered}", flush=True)
-                substitution = evidence.get("substitution")
-                if substitution:
-                    print(f"     Steps: {substitution}", flush=True)
+                if value is None:
+                    unavailable += 1
+                else:
+                    calculable.append(f"{label}={ConsoleEventSink._format_metric_value(value)}")
+            title = PHASE_DISPLAY_NAMES.get(phase, phase.replace("_", " ").title())
+            total = len(calculable) + unavailable
+            values_text = " | ".join(calculable) if calculable else "none"
+            print(
+                f"{title} [{len(calculable)}/{total} calculable]: "
+                f"{values_text}"
+                + (f" | unavailable={unavailable}" if unavailable else ""),
+                flush=True,
+            )
+        print(
+            "Detailed formulas, operands, substitutions, ranges, and unavailable reasons "
+            "are stored in retrospective_metrics.json and metrics_long.csv/jsonl.",
+            flush=True,
+        )
 
     @staticmethod
     def _format_metric_value(value):
@@ -278,9 +398,29 @@ class ConsoleEventSink:
 def build_agent_a_responder(model_adapter, llm_agent_a=LLM_AGENT_A, agent_a_type=None):
     """Create the configured Agent A responder."""
     normalized_type = normalize_agent_a_type(agent_a_type, llm_agent_a)
-    if normalized_type == AGENT_A_USERLM and model_adapter is not None:
+    if agent_a_uses_model(normalized_type):
+        if model_adapter is None:
+            raise RuntimeError(
+                f"Agent A implementation '{normalized_type}' requires a loaded model adapter."
+            )
         return LLMAgentAResponder(model_adapter)
     return TemplateAgentAResponder()
+
+
+def agent_a_model_integrity(config, model_adapter):
+    """Return explicit Agent A model-use evidence for protocol output."""
+    agent_a_type = normalize_agent_a_type((config or {}).get("agent_a_type"))
+    uses_model = agent_a_uses_model(agent_a_type)
+    profile = (config or {}).get("model_profile")
+    expected_profile = "tinyllama_1b_transformers" if agent_a_type == "tinyllama" else profile
+    return {
+        "agent_a_type": agent_a_type,
+        "uses_model": uses_model,
+        "adapter_loaded": model_adapter is not None,
+        "model_profile": profile,
+        "expected_model_profile": expected_profile,
+        "valid": (not uses_model) or (model_adapter is not None and profile == expected_profile),
+    }
 
 
 def configure_model_adapter_runtime(model_adapter, calculation_max_time_sec):
@@ -296,16 +436,18 @@ def default_run_config():
     """Return the complete default configuration for one speech experiment."""
     agent_a_audio = synthesis_values(DEFAULT_AGENT_A_AUDIO_PERSONA)
     agent_b_audio = synthesis_values(DEFAULT_AGENT_B_AUDIO_PERSONA)
+    default_model_name = (
+        CHAT_MODEL
+        if MODEL_PROVIDER in {"openai", "openai_compatible"}
+        else OLLAMA_MODEL if MODEL_PROVIDER == "ollama" else MODEL
+    )
     return {
         "test_case_key": DEFAULT_TEST_CASE,
         "persona_key": DEFAULT_PERSONA,
         "agent_b_plugin": AGENT_B_PLUGIN,
+        "model_profile": matching_model_profile(MODEL_PROVIDER, default_model_name),
         "model_provider": MODEL_PROVIDER,
-        "model_name": (
-            CHAT_MODEL
-            if MODEL_PROVIDER in {"openai", "openai_compatible"}
-            else OLLAMA_MODEL if MODEL_PROVIDER == "ollama" else MODEL
-        ),
+        "model_name": default_model_name,
         "model_api_key": CHAT_API_KEY or "",
         "model_base_url": (
             CHAT_BASE_URL
@@ -316,11 +458,13 @@ def default_run_config():
         "model_timeout_sec": 180.0 if MODEL_PROVIDER == "ollama" else CHAT_TIMEOUT_SEC,
         "model_max_new_tokens": MAX_NEW_TOKENS,
         "model_max_input_tokens": MAX_INPUT_TOKENS,
+        "allow_model_download": ALLOW_MODEL_DOWNLOAD,
         "model_service_autostart": True,
         "num_turns": NUM_TURNS,
         "invalid_route_limit": INVALID_ROUTE_LIMIT,
         "constraint_miss_limit": CONSTRAINT_MISS_LIMIT,
         "clarification_max_attempts": 2,
+        "dialogue_stagnation_limit": 2,
         "agent_a_transfer_tolerance": AGENT_A_TRANSFER_TOLERANCE,
         "agent_a_ticket_modes": "metro,tram",
         "agent_a_max_walking_min": 10,
@@ -336,12 +480,11 @@ def default_run_config():
         "agent_a_objective_mode": "shortest_valid_route_with_constraints",
         "max_turn_elapsed_sec": DEFAULT_MAX_TURN_ELAPSED_SEC,
         "calculation_max_time_sec": GENERATION_MAX_TIME_SEC,
-        "agent_a_type": AGENT_A_USERLM if LLM_AGENT_A else AGENT_A_MINILLAMA,
+        "agent_a_type": "userlm" if LLM_AGENT_A else AGENT_A_MINILLAMA,
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
         "tts_engine": SPEECH_TTS_ENGINE or platform_default_tts_engine(),
         "asr_engine": SPEECH_ASR_ENGINE or platform_default_asr_engine(),
-        "speech_audio_dir": SPEECH_AUDIO_DIR,
         "speech_playback_enabled": SPEECH_PLAYBACK_ENABLED,
         "speech_realtime_enabled": SPEECH_REALTIME_ENABLED,
         "agent_a_audio_persona": DEFAULT_AGENT_A_AUDIO_PERSONA,
@@ -378,22 +521,33 @@ def default_run_config():
         "max_utterance_sec": DEFAULT_MAX_UTTERANCE_SEC,
         "provider_environment_dir": ".speech-providers",
         "gui_font_size": 11,
+        "console_view": "compact",
+        "log_profile": SESSION_LOG_PROFILE,
         "paired_audio_text_runs": True,
-        "protocol_log_dir": PROTOCOL_LOG_DIR,
-        "metric_config": dict(DEFAULT_METRIC_CONFIG),
-        "metric_tiers": dict(DEFAULT_METRIC_TIERS),
+        "results_root": RESULTS_DIR,
     }
 
 
 def normalize_run_config(config):
     """Validate and complete a mandatory full-speech run configuration."""
     supplied = dict(config)
+    if "results_root" not in supplied and supplied.get("protocol_log_dir"):
+        supplied["results_root"] = supplied.pop("protocol_log_dir")
     normalized = {**default_run_config(), **supplied}
     normalized["agent_a_type"] = normalize_agent_a_type(
         supplied.get("agent_a_type"),
         supplied.get("llm_agent_a", normalized.get("llm_agent_a", False)),
     )
-    normalized["llm_agent_a"] = normalized["agent_a_type"] == AGENT_A_USERLM
+    normalized["llm_agent_a"] = agent_a_uses_model(normalized["agent_a_type"])
+    if normalized["agent_a_type"] == "tinyllama":
+        normalized.update(model_profile_defaults("tinyllama_1b_transformers"))
+        normalized["model_profile"] = "tinyllama_1b_transformers"
+    selected_profile = str(normalized.get("model_profile") or "custom").strip()
+    if selected_profile != "custom" and "model_profile" in supplied:
+        profile_values = model_profile_defaults(selected_profile)
+        if not profile_values:
+            raise ValueError(f"Unknown language-model condition '{selected_profile}'.")
+        normalized.update(profile_values)
     if str(normalized.get("agent_b_plugin") or "").strip().lower() in {"", "minillama"}:
         normalized["agent_b_plugin"] = "llm"
     normalized["model_provider"] = str(
@@ -407,6 +561,11 @@ def normalize_run_config(config):
             f"Allowed: {available_model_provider_keys()}"
         )
     normalized["model_name"] = str(normalized.get("model_name") or "").strip()
+    normalized["model_profile"] = (
+        selected_profile
+        if selected_profile != "custom"
+        else matching_model_profile(normalized["model_provider"], normalized["model_name"])
+    )
     if normalized["model_provider"] == "ollama" and normalized["model_name"] == "llama3.2:3b":
         normalized["model_name"] = "llama3.2:latest"
     normalized["model_service_autostart"] = bool(normalized.get("model_service_autostart", True))
@@ -422,8 +581,8 @@ def normalize_run_config(config):
     normalized["model_max_input_tokens"] = max(
         128, min(131072, int(normalized["model_max_input_tokens"]))
     )
-    normalized.pop("allow_model_download", None)
     normalized.pop("allow_tts_model_download", None)
+    normalized["allow_model_download"] = bool(normalized.get("allow_model_download", ALLOW_MODEL_DOWNLOAD))
     normalized["maximum_progressive_constraints"] = max(
         0, min(6, int(normalized["maximum_progressive_constraints"]))
     )
@@ -445,6 +604,9 @@ def normalize_run_config(config):
     normalized["network_seed"] = max(0, min(2147483647, int(normalized["network_seed"])))
     normalized["clarification_max_attempts"] = max(
         1, min(6, int(normalized["clarification_max_attempts"]))
+    )
+    normalized["dialogue_stagnation_limit"] = max(
+        1, min(10, int(normalized["dialogue_stagnation_limit"]))
     )
     normalized["minimum_compared_routes"] = max(
         1, min(10, int(normalized["minimum_compared_routes"]))
@@ -589,21 +751,30 @@ def normalize_run_config(config):
     normalized["asr_domain_similarity_threshold"] = max(
         0.70, min(1.0, float(normalized["asr_domain_similarity_threshold"]))
     )
-    normalized["metric_tiers"] = metric_tier_config_with_defaults(
-        normalized.get("metric_tiers") or normalized.get("metric_config")
-    )
-    normalized["metric_config"] = metric_config_with_defaults(
-        normalized.get("metric_config"),
-        normalized["metric_tiers"],
-    )
+    # Per-metric switches are obsolete. Every registered metric is evaluated.
+    normalized.pop("metric_config", None)
+    normalized.pop("metric_tiers", None)
     normalized["agent_a_objective_mode"] = normalize_objective_mode(normalized.get("agent_a_objective_mode"))
+    normalized["console_view"] = str(normalized.get("console_view") or "compact").strip().lower()
+    if normalized["console_view"] not in CONSOLE_VIEW_CHOICES:
+        raise ValueError(f"console_view must be one of {CONSOLE_VIEW_CHOICES}.")
+    normalized["log_profile"] = str(normalized.get("log_profile") or SESSION_LOG_PROFILE).strip().lower()
+    if normalized["log_profile"] not in {"off", "startup", "runtime", "full"}:
+        raise ValueError("log_profile must be off, startup, runtime, or full.")
+    normalized["results_root"] = resolve_results_root(
+        str(normalized.get("results_root") or RESULTS_DIR).strip()
+    )
     return normalized
 
 
 def select_run_config():
     """Show the startup-only configuration window."""
     defaults = normalize_run_config(load_run_settings({}))
-    choices = startup_choices(AGENT_B_PLUGIN)
+    choices = startup_choices(
+        AGENT_B_PLUGIN,
+        defaults,
+        operational_only=True,
+    )
     from coop_navigation_sds.Configuration.gui import StartupConfigDialog
 
     selected = StartupConfigDialog(
@@ -687,7 +858,7 @@ def validate_run_config_for_start(config):
     """Validate implementation-specific requirements before closing the GUI."""
     normalized = normalize_run_config(config)
     agent_b = AgentBPluginConfig(normalized["agent_b_plugin"])
-    needs_model = agent_b.needs_model or normalized["agent_a_type"] == AGENT_A_USERLM
+    needs_model = agent_b.needs_model or agent_a_uses_model(normalized["agent_a_type"])
     if needs_model:
         provider = normalized["model_provider"]
         if not normalized["model_name"]:
@@ -697,16 +868,23 @@ def validate_run_config_for_start(config):
             _require_module("transformers", "Local Transformers")
             _validate_transformers_model(
                 normalized["model_name"],
-                False,
+                normalized["allow_model_download"],
             )
         elif provider == "openai_compatible":
-            if not normalized["model_api_key"]:
+            hostname = urlparse(normalized["model_base_url"]).hostname
+            if not normalized["model_api_key"] and hostname not in {"localhost", "127.0.0.1", "::1"}:
                 raise ValueError(
                     "ChatGPT/OpenAI-compatible models require an API key. "
                     "Enter it in the API key field or set OPENAI_API_KEY."
                 )
             if not normalized["model_base_url"]:
                 raise ValueError("The OpenAI-compatible provider requires a service URL.")
+        elif provider == "llama_cpp":
+            if not normalized["model_base_url"]:
+                raise ValueError("llama.cpp requires its local OpenAI-compatible API URL.")
+            hostname = urlparse(normalized["model_base_url"]).hostname
+            if hostname not in {"localhost", "127.0.0.1", "::1"}:
+                raise ValueError("The llama.cpp backend must use a local loopback service URL.")
         elif provider == "ollama":
             if not normalized["model_base_url"]:
                 raise ValueError("The Ollama provider requires its API URL.")
@@ -805,7 +983,7 @@ def validate_run_config_for_start(config):
             "network seed, tickets, walking limit, duration ratio, or alternative requirement."
         )
 
-    results_root = Path(normalized["protocol_log_dir"])
+    results_root = Path(normalized["results_root"])
     results_root.mkdir(parents=True, exist_ok=True)
     return normalized
 
@@ -824,6 +1002,7 @@ def configured_test_case(run_config):
             require_constraint_retention=run_config["require_constraint_retention"],
             maximum_dialog_turns=run_config["num_turns"],
             clarification_max_attempts=run_config["clarification_max_attempts"],
+            dialogue_stagnation_limit=run_config["dialogue_stagnation_limit"],
             ticket_modes=tuple(run_config["agent_a_ticket_modes"].split(",")),
             max_walking_min=run_config["agent_a_max_walking_min"],
             max_delay_probability={"low": 0.24, "medium": 0.44, "high": 1.0}[run_config["agent_a_max_delay_risk"]],
@@ -837,14 +1016,11 @@ def prepare_execution_run_config(run_config):
     normalized = normalize_run_config(run_config)
     if not normalized.get("execution_run_dir"):
         run_dir = create_execution_run_dir(
-            normalized["protocol_log_dir"],
-            label=f"single_{normalized['test_case_key']}__{normalized['persona_key']}",
+            normalized["results_root"],
+            label=single_run_label(normalized),
         )
         normalized["execution_run_dir"] = str(run_dir)
-        configured_audio_dir = normalized.get("speech_audio_dir")
-        if configured_audio_dir == SPEECH_AUDIO_DIR:
-            configured_audio_dir = None
-        normalized["speech_audio_dir"] = str(run_scoped_path(run_dir, configured_audio_dir, ""))
+        normalized["speech_audio_dir"] = str(run_dir)
     return normalized
 
 
@@ -942,10 +1118,9 @@ def build_dialog_runtime(event_queue, model_adapter, run_config):
         monitor=event_queue if hasattr(event_queue, "log_step") else None,
         invalid_route_limit=int(run_config["invalid_route_limit"]),
         constraint_miss_limit=int(run_config["constraint_miss_limit"]),
+        stagnation_limit=int(run_config["dialogue_stagnation_limit"]),
         transfer_tolerance=int(run_config["agent_a_transfer_tolerance"]),
         max_turn_elapsed_sec=float(run_config["max_turn_elapsed_sec"]),
-        metric_config=run_config["metric_config"],
-        metric_tiers=run_config["metric_tiers"],
         agent_a_objective_mode=run_config["agent_a_objective_mode"],
     )
     return run_config, test_case, agent_b_plugin, speech_transport, manager
@@ -993,21 +1168,19 @@ def conversation_worker(event_queue, model_adapter, run_config):
                 "Scenario": test_case.name,
                 "Agent A": f"{manager.agent_a_responder.name} / {run_config['persona_key']}",
                 "Agent B": f"{getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)} / {run_config['model_name']}",
+                "Audio personas": f"{run_config['agent_a_audio_persona']} / {run_config['agent_b_audio_persona']}",
+                "TTS": run_config["tts_engine"],
+                "ASR": run_config["asr_engine"],
                 "Speech": speech_transport.description,
                 **layer_configuration,
+                "__metric_dependency_report": serializable_metric_dependency_report(run_config),
                 "Results": run_config["execution_run_dir"],
             }))
             health = speech_transport.health_check()
             if not health["ok"]:
                 raise SpeechPipelineError("Speech preflight failed.", health)
-            if not health.get("quality_ok", True):
-                event_queue.put((
-                    "warning",
-                    "Speech preflight is operational, but one or more probe transcripts "
-                    "missed expected route entities. Continuing and recording the ASR "
-                    "quality result for retrospective evaluation.",
-                ))
             result = manager.run(event_queue)
+            result.extra["speech_preflight"] = health
             result.extra["agent_a_audio_persona"] = run_config["agent_a_audio_persona"]
             result.extra["agent_b_audio_persona"] = run_config["agent_b_audio_persona"]
             result.extra["resolved_audio_personas"] = {
@@ -1015,10 +1188,27 @@ def conversation_worker(event_queue, model_adapter, run_config):
                 "agent_b": speech_transport.config.prosody_for("Agent B"),
             }
             result.extra["metric_data_dependencies"] = serializable_metric_dependency_report(run_config)
+            model_roles = []
+            if AgentBPluginConfig(run_config["agent_b_plugin"]).needs_model:
+                model_roles.append("agent_b")
+            if agent_a_uses_model(run_config["agent_a_type"]):
+                model_roles.append("agent_a")
+            result.extra["model_backend"] = model_adapter_runtime_metadata(
+                model_adapter,
+                provider=run_config["model_provider"],
+                profile=run_config.get("model_profile", "custom"),
+                roles=model_roles,
+            )
+            result.extra["agent_a_model_integrity"] = agent_a_model_integrity(
+                run_config,
+                model_adapter,
+            )
+            result.extra["resolved_run_config"] = sanitized_config(run_config)
+            result.extra["runtime_environment"] = runtime_environment_metadata()
             paths = write_single_run_research_outputs(
                 result,
                 test_case.scenario,
-                run_config["protocol_log_dir"],
+                run_config["results_root"],
                 run_dir=run_config["execution_run_dir"],
             )
             event_queue.put(("metric_results", paths["metric"]))
@@ -1043,12 +1233,18 @@ def conversation_worker(event_queue, model_adapter, run_config):
 
 def _load_model_or_fallback(run_config, event_queue):
     agent_b_config = AgentBPluginConfig(run_config["agent_b_plugin"])
-    if not agent_b_config.needs_model and run_config["agent_a_type"] != AGENT_A_USERLM:
+    agent_a_model = agent_a_uses_model(run_config["agent_a_type"])
+    if not agent_b_config.needs_model and not agent_a_model:
         return None
+    roles = []
+    if agent_a_model:
+        roles.append(f"Agent A {run_config['agent_a_type']}")
+    if agent_b_config.needs_model:
+        roles.append("Agent B")
     event_queue.put((
         "system",
-        f"Loading Agent B model {run_config['model_name']} "
-        f"through {run_config['model_provider']}.",
+        f"Loading language model for {', '.join(roles)}: "
+        f"{run_config['model_name']} through {run_config['model_provider']}.",
     ))
     try:
         from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_model_adapter
@@ -1068,7 +1264,7 @@ def _load_model_or_fallback(run_config, event_queue):
                 device=run_config["model_device"],
                 max_new_tokens=run_config["model_max_new_tokens"],
                 max_input_tokens=run_config["model_max_input_tokens"],
-                allow_model_download=False,
+                allow_model_download=run_config["allow_model_download"],
             )
     except Exception as exc:
         logging.exception("Model loading failed")
@@ -1086,9 +1282,9 @@ def main():
     run_dir = Path(run_config["execution_run_dir"])
 
     logger = None
-    if SESSION_LOG_PROFILE != "off":
-        logger = SessionLogger(SESSION_NAME, run_dir, profile=SESSION_LOG_PROFILE)
-    event_queue = MonitoringEventQueue(ConsoleEventSink(), logger)
+    if run_config["log_profile"] != "off":
+        logger = SessionLogger(SESSION_NAME, run_dir, profile=run_config["log_profile"])
+    event_queue = MonitoringEventQueue(ConsoleEventSink(run_config["console_view"]), logger)
     model_adapter = _load_model_or_fallback(run_config, event_queue)
     conversation_worker(event_queue, model_adapter, run_config)
 

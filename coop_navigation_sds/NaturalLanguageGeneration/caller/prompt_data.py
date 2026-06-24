@@ -1,6 +1,6 @@
 """Prompt-context helpers that describe the current transit model and task rules to the language models.
 """
-from coop_navigation_sds.TransportNetwork.network import STATIONS
+from coop_navigation_sds.TransportNetwork.network import LINES, STATIONS
 from coop_navigation_sds.TransportNetwork.constraints import (
     available_agent_a_constraints,
     constraint_request_text,
@@ -8,6 +8,13 @@ from coop_navigation_sds.TransportNetwork.constraints import (
     ranked_constraint_routes,
 )
 from coop_navigation_sds.TransportNetwork.routes import route_text_from_steps
+
+
+def network_vocabulary_text():
+    """Return the shared station and line vocabulary known by both agents."""
+    station_names = ", ".join(STATIONS)
+    line_names = ", ".join(sorted(LINES))
+    return f"Known station names: {station_names}. Known line names: {line_names}."
 
 
 def compact_prompt_context(scenario, persona=None):
@@ -24,6 +31,7 @@ def compact_prompt_context(scenario, persona=None):
     return (
         f"Time: {scenario['start_time_min']} minutes after midnight. "
         f"Start: {scenario['start_station']}. Destination: {destination_text}. "
+        f"{network_vocabulary_text()} "
         "Use only these verified candidates and their stated facts. "
         f"Candidates: {compact_route_candidate_text(scenario, persona)}"
     )
@@ -41,7 +49,9 @@ def caller_prompt_context(scenario, persona=None):
     return (
         f"Time: {scenario['start_time_min']} minutes after midnight. "
         f"Start: {scenario['start_station']}. Destination: {destination_text}. "
-        "You do not know the transit network, lines, route candidates, delays, or transfer times. "
+        f"{network_vocabulary_text()} "
+        "You know these names but not which stations a line serves, network connectivity, "
+        "route candidates, schedules, delays, capacity, or transfer times. "
         f"Private constraints to reveal only after the route and duration are acceptable: {constraint_text}."
     )
 

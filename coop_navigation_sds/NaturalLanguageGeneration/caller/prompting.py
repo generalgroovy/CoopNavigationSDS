@@ -4,6 +4,7 @@ This module keeps system-prompt assembly, phase instructions, and template
 selection in one place so the rest of the pipeline can stay focused on routing
 and model execution.
 """
+import re
 
 from coop_navigation_sds.NaturalLanguageGeneration.caller.config import AGENT_RULES
 from coop_navigation_sds.NaturalLanguageGeneration.caller.personas import preference_text
@@ -11,6 +12,9 @@ from coop_navigation_sds.NaturalLanguageGeneration.caller.prompt_data import cal
 from coop_navigation_sds.NaturalLanguageUnderstanding.clarification import (
     clarification_attempt_count,
     clarification_question,
+    clarification_was_asked,
+    is_clarification_request,
+    last_substantive_agent_b_utterance,
     misunderstood_word_options,
 )
 from coop_navigation_sds.TransportNetwork.constraints import (
@@ -44,6 +48,49 @@ def agent_a_repeat_trip_facts(scenario, conversation=None):
     )
 
 
+def agent_a_word_correction(question, scenario, conversation=None):
+    """Answer a word-level clarification with one known term only."""
+    match = re.search(
+        r"did you mean\s+(.+?)(?:\?|\s+by\s+['\"])",
+        str(question or ""),
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return None
+    options = [
+        option.strip(" '\".,?")
+        for option in re.split(r"\s+or\s+", match.group(1), flags=re.IGNORECASE)
+    ]
+    known_values = {
+        str(scenario.get("start_station") or "").casefold(): scenario.get("start_station"),
+        str(scenario.get("destination_station") or "").casefold(): scenario.get("destination_station"),
+    }
+    prior_agent_a = " ".join(
+        text for speaker, text in (conversation or ()) if speaker == "Agent A"
+    ).casefold()
+    for option in options:
+        canonical = known_values.get(option.casefold())
+        if canonical:
+            return f"{canonical}."
+        if option and option.casefold() in prior_agent_a:
+            return f"{option}."
+    return None
+
+
+def agent_a_requested_trip_fact(question, scenario):
+    """Answer one explicitly requested missing trip slot without extra detail."""
+    lower = str(question or "").casefold()
+    if "start" in lower:
+        return f"{scenario['start_station']}."
+    if any(term in lower for term in ("destination", "going to", "where to")):
+        return f"{scenario['destination_station']}."
+    if any(term in lower for term in ("departure time", "what time", "leaving")):
+        from coop_navigation_sds.TransportNetwork.routes import fmt_time
+
+        return f"Departure time: {fmt_time(scenario['start_time_min'])}."
+    return None
+
+
 def agent_a_unclear_route_reply(text, destination):
     """Return a compact repair request for a nonsensical Agent B answer."""
     fallback = f"I need the actual route to {destination}. Give connected boarding stations."
@@ -51,11 +98,8 @@ def agent_a_unclear_route_reply(text, destination):
     if not word:
         return fallback
     if len(options) >= 2:
-        return (
-            f"When you said '{word}', did you mean {options[0]} or {options[1]}? "
-            f"{fallback}"
-        )
-    return f"When you said '{word}', did you mean {options[0]}? {fallback}"
+        return f"Did you mean {options[0]} or {options[1]} by '{word}'?"
+    return f"Did you mean {options[0]} by '{word}'?"
 
 
 AGENT_A_ROUTE_TEMPLATES = {
@@ -175,7 +219,7 @@ def build_agent_a_system(persona, scenario):
         )
     return (
         "You are Agent A, a caller on a transit hotline. "
-        "You have no transit-network knowledge. "
+        "You know the network's station and line names, but not its topology or service details. "
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
@@ -183,7 +227,11 @@ def build_agent_a_system(persona, scenario):
         "First state start time, start station, and destination. "
         "Remember Agent B's previous viable routes and corrections. "
         "If Agent B did not understand, repeat start station, start time, and destination. "
-        "If Agent B's answer makes no sense, ask whether a likely word was meant before continuing. "
+        "If Agent B's answer makes no sense, ask only about the unclear word before continuing. "
+        "A correction turn must contain only the disputed word and likely correction. "
+        "Ask about the same disputed word at most once; after confirmation, resume the pending route objective. "
+        "Use the latest heard transcript together with your retained prior turns; if they conflict, ask one targeted question, accept the answer, update the fact, and continue. "
+        "Do not repeat an earlier request in different words. Refer to the earlier route and state exactly what must improve. "
         f"{objective_instruction}End naturally when you choose a route. "
         f"{caller_prompt_context(scenario, persona)}"
     )
@@ -194,7 +242,11 @@ def build_agent_b_system(scenario, persona=None):
         "You are Agent B on a transit hotline. Reply naturally in one short sentence. "
         "Use only the verified route candidates below. Give one valid route first; later offer a distinct candidate that retains accepted constraints. "
         "React only to what the caller was heard saying. If a key fact is unclear, ask only for that fact. "
+        "A correction turn must contain only the disputed word and likely correction; do not restate the route. "
+        "Ask each clarification once. After a correction, answer the route request that was pending before it. "
+        "Retain confirmed trip facts and constraints across turns; do not reopen them unless a later heard utterance explicitly changes them. "
         "Do not repeat a route or mention fullness, changes, or risk before the caller asks. "
+        "If no distinct viable route remains, say so and recommend the best earlier compliant route instead of repeating it. "
         f"{preference_text(persona or {})} "
         "Say line legs and total time once. No reasoning, lists, or formatting. "
         f"{compact_prompt_context(scenario, persona)}"
@@ -232,11 +284,13 @@ def build_agent_b_stage_instruction(stage, destination):
         ),
         ConversationStage.COMPARISON: (
             "Respond directly to the caller's latest comparison request. "
-            "Offer one distinct valid alternative and state the practical tradeoff."
+            "Offer one distinct valid alternative and state the practical tradeoff. "
+            "If none remains, recommend the best earlier route and close the comparison."
         ),
         ConversationStage.REFINEMENT: (
             "Respond directly to the latest constraint or correction. "
-            "Keep remembered accepted details and change only what the caller asked to improve."
+            "Keep remembered accepted details and change only what the caller asked to improve. "
+            "Do not repeat a failed proposal or clarification."
         ),
         ConversationStage.CONFIRMATION: (
             "Confirm the best route as lines and stations in order. "
@@ -293,7 +347,7 @@ def final_agent_a_turn(scenario, conversation):
 def agent_a_route_reaction(turn, persona, scenario, conversation):
     """Return a concise caller reaction based on Agent B's latest route reply."""
     objective_mode = normalize_objective_mode(scenario.get("agent_a_objective_mode"))
-    last_agent_b = next((text for speaker, text in reversed(conversation) if speaker == "Agent B"), "")
+    last_agent_b = last_substantive_agent_b_utterance(conversation)
     if not last_agent_b:
         return ""
 
@@ -311,8 +365,16 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
     stated_keys = stated_constraint_keys(conversation)
     allowed_modes = dialog_route_allowed_modes(scenario, persona, stated_keys)
     lower_reply = last_agent_b.lower()
+    if "end this call" in lower_reply or "cannot establish the trip details" in lower_reply:
+        return agent_a_repeat_trip_facts(scenario, conversation)
+    focused_correction = agent_a_word_correction(last_agent_b, scenario, conversation)
+    if focused_correction:
+        return focused_correction
+    requested_fact = agent_a_requested_trip_fact(last_agent_b, scenario)
+    if requested_fact and is_clarification_request(last_agent_b):
+        return requested_fact
     if (
-        any(term in lower_reply for term in ("did not catch", "heard", "unclearly", "repeat", "reset", "say only"))
+        any(term in lower_reply for term in ("did not catch", "heard", "missed", "unclearly", "repeat", "reset", "say only"))
         and any(term in lower_reply for term in ("start", "destination", "time", "mean"))
     ):
         return agent_a_repeat_trip_facts(scenario, conversation)
@@ -363,7 +425,13 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
                     f"That fits. Can you make it "
                     f"{constraint_request_text(next_constraint, persona, scenario)}?"
                 )
-        return agent_a_unclear_route_reply(last_agent_b, scenario["destination_station"])
+        repair = agent_a_unclear_route_reply(last_agent_b, scenario["destination_station"])
+        if clarification_was_asked(conversation, "Agent A", repair):
+            return (
+                f"That still is not a usable route to {scenario['destination_station']}. "
+                "Give the connected lines and boarding stations."
+            )
+        return repair
 
     route = interpreter.interpret_reply(last_agent_b, scenario)
     if not route:
@@ -371,6 +439,11 @@ def agent_a_route_reaction(turn, persona, scenario, conversation):
             last_agent_b,
             "I missed the connection. Restate the boarding stations and change points.",
         )
+        if clarification_was_asked(conversation, "Agent A", repair):
+            return (
+                f"That still is not a complete route to {scenario['destination_station']}. "
+                "Give a different connected route with line codes."
+            )
         return repair
 
     reaches_destination = (

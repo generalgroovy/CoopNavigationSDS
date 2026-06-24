@@ -3,12 +3,8 @@ import json
 import os
 from pathlib import Path
 
-from coop_navigation_sds.EvaluationMetrics.catalog import (
-    DEFAULT_METRIC_CONFIG,
-    DEFAULT_METRIC_TIERS,
-)
-
-SETTINGS_SCHEMA_VERSION = 3
+from coop_navigation_sds.Configuration.schema import CONFIG_SCHEMA_VERSION
+SETTINGS_SCHEMA_VERSION = CONFIG_SCHEMA_VERSION
 TRANSIENT_SETTING_KEYS = {"execution_run_dir"}
 FUNDAMENTAL_SETTING_KEYS = {
     "test_case_key",
@@ -20,6 +16,7 @@ FUNDAMENTAL_SETTING_KEYS = {
     "invalid_route_limit",
     "constraint_miss_limit",
     "clarification_max_attempts",
+    "dialogue_stagnation_limit",
     "agent_a_transfer_tolerance",
     "agent_a_ticket_modes",
     "agent_a_max_walking_min",
@@ -35,12 +32,13 @@ FUNDAMENTAL_SETTING_KEYS = {
     "max_turn_elapsed_sec",
     "calculation_max_time_sec",
     "model_provider",
+    "model_profile",
     "model_name",
     "model_device",
     "model_base_url",
-    "model_api_key",
     "model_timeout_sec",
     "model_max_new_tokens",
+    "allow_model_download",
     "model_service_autostart",
     "speech_pattern_key",
     "tts_engine",
@@ -58,12 +56,14 @@ FUNDAMENTAL_SETTING_KEYS = {
     "tts_device",
     "tts_model",
     "tts_executable",
+    "tts_python_executable",
     "tts_timeout_sec",
     "asr_language",
     "asr_model",
     "asr_device",
     "asr_compute_type",
     "asr_executable",
+    "asr_python_executable",
     "asr_vad_model",
     "asr_timeout_sec",
     "asr_beam_size",
@@ -75,11 +75,11 @@ FUNDAMENTAL_SETTING_KEYS = {
     "max_utterance_sec",
     "asr_domain_normalization_enabled",
     "asr_domain_similarity_threshold",
-    "protocol_log_dir",
+    "results_root",
     "gui_font_size",
     "paired_audio_text_runs",
-    "metric_config",
-    "metric_tiers",
+    "console_view",
+    "log_profile",
 }
 
 
@@ -113,6 +113,8 @@ def load_run_settings(defaults=None, path=None):
     if not isinstance(saved, dict):
         return merged
     saved = dict(saved)
+    if "results_root" not in saved and saved.get("protocol_log_dir"):
+        saved["results_root"] = saved.pop("protocol_log_dir")
     if int(document.get("schema_version", 0) or 0) < 2 and saved.get("model_provider") == "ollama":
         if saved.get("model_name") == "llama3.2:3b":
             saved["model_name"] = "llama3.2:latest"
@@ -136,24 +138,6 @@ def save_run_settings(config, path=None):
     persistent = {}
     for key, value in dict(config).items():
         if key not in FUNDAMENTAL_SETTING_KEYS or key in TRANSIENT_SETTING_KEYS:
-            continue
-        if key == "metric_config" and isinstance(value, dict):
-            compact = {
-                metric_key: enabled
-                for metric_key, enabled in value.items()
-                if DEFAULT_METRIC_CONFIG.get(metric_key) != enabled
-            }
-            if compact:
-                persistent[key] = compact
-            continue
-        if key == "metric_tiers" and isinstance(value, dict):
-            compact = {
-                metric_key: tier
-                for metric_key, tier in value.items()
-                if DEFAULT_METRIC_TIERS.get(metric_key) != tier
-            }
-            if compact:
-                persistent[key] = compact
             continue
         persistent[key] = value
     document = {

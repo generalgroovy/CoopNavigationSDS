@@ -13,6 +13,9 @@ import time
 import tracemalloc
 from typing import Any
 
+from coop_navigation_sds.Configuration.schema import TRACE_SCHEMA_VERSION, safe_artifact_name
+from coop_navigation_sds.Configuration.runtime import RESULTS_DIR
+
 
 STOP = object()
 
@@ -39,7 +42,7 @@ class StructuredEvent:
     payload: dict = field(default_factory=dict)
 
     def to_dict(self):
-        return asdict(self)
+        return {"schema_version": TRACE_SCHEMA_VERSION, **asdict(self)}
 
 
 @dataclass(frozen=True)
@@ -108,13 +111,13 @@ def resource_snapshot() -> dict[str, Any]:
 class SessionLogger:
     """Write structured session logs on a background thread."""
 
-    def __init__(self, session_name: str, log_dir: str | Path = "logs", profile: str = LOG_PROFILE_FULL):
+    def __init__(self, session_name: str, log_dir: str | Path = RESULTS_DIR, profile: str = LOG_PROFILE_FULL):
         self.profile = _normalize_profile(profile)
         self.enabled = self.profile != LOG_PROFILE_OFF
         self.capture_resources = self.profile == LOG_PROFILE_FULL
-        self.session_name = session_name
+        self.session_name = str(session_name)
         self.session_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.session_label = f"{session_name}-{self.session_id}"
+        self.session_label = f"{safe_artifact_name(self.session_name, 72)}-{self.session_id}"
         self.log_dir = Path(log_dir)
         self.started_at = time.time()
         self._closed = False
@@ -214,6 +217,28 @@ class SessionLogger:
                     "turn": turn,
                     "speaker": speaker,
                     "utterance": utterance,
+                    "phase": metrics.get("phase"),
+                    "detected_intent": metrics.get("detected_intent"),
+                    "detected_constraints": list(metrics.get("detected_constraints") or []),
+                    "proposed_route": list(metrics.get("route") or []),
+                    "route_validation": {
+                        "valid": metrics.get("route_valid"),
+                        "reaches_goal": metrics.get("route_reaches_goal"),
+                        "status": metrics.get("route_status"),
+                    },
+                    "constraint_satisfaction": metrics.get("constraint_satisfaction"),
+                    "clarification_requested": bool(metrics.get("clarification_requested", False)),
+                    "repair_count": int(metrics.get("repair_count", 0) or 0),
+                    "failed_assumptions": list(metrics.get("failed_assumptions") or []),
+                    "timing": {
+                        key: metrics.get(key)
+                        for key in (
+                            "generation_sec", "speech_sec", "turn_latency_sec",
+                            "turn_elapsed_sec", "raw_turn_elapsed_sec",
+                        )
+                    },
+                    "token_counts": metrics.get("token_counts"),
+                    "backend": metrics.get("backend"),
                     "metrics": metrics,
                     **({"resources": resource_snapshot()} if self.capture_resources else {}),
                 },
@@ -325,6 +350,13 @@ class SessionLogger:
                     f"dialogue_management={payload.get('dialogue_management_sec')} "
                     f"pipeline_wall={payload.get('speech_pipeline_wall_sec')} "
                     f"turn_observed={payload.get('observed_turn_sec')}"
+                )
+            if name == "telemetry.memory":
+                additions = payload.get("additions") or {}
+                changed = ",".join(additions.keys()) if additions else "none"
+                return (
+                    f"[{timestamp}] MEMORY turn={payload.get('turn')} "
+                    f"reason={payload.get('reason')} changed={changed}"
                 )
             if str(name).startswith("phase."):
                 return (

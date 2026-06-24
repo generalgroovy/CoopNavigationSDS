@@ -13,9 +13,11 @@ from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import Dia
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
     LLMAgentAResponder,
     TemplateAgentAResponder,
+    agent_a_uses_model,
     available_agent_a_types,
     normalize_agent_a_type,
 )
+from coop_navigation_sds.DialogManagement.stages import agent_memory_view
 from coop_navigation_sds.TransportNetwork import DEFAULT_TEST_CASE, get_test_case
 
 
@@ -28,10 +30,14 @@ class AgentPolicyTests(unittest.TestCase):
         self.assertIn("Which lines", opening)
 
     def test_agent_a_types_are_explicit_and_legacy_compatible(self):
-        self.assertEqual(available_agent_a_types(), ("staged", "userlm"))
+        self.assertEqual(available_agent_a_types(), ("staged", "tinyllama", "userlm"))
         self.assertEqual(normalize_agent_a_type(None, False), "staged")
         self.assertEqual(normalize_agent_a_type("minillama"), "staged")
+        self.assertEqual(normalize_agent_a_type("tinyllama"), "tinyllama")
         self.assertEqual(normalize_agent_a_type(None, True), "userlm")
+        self.assertTrue(agent_a_uses_model("tinyllama"))
+        self.assertTrue(agent_a_uses_model("userlm"))
+        self.assertFalse(agent_a_uses_model("staged"))
         self.assertIsInstance(TemplateAgentAResponder(), TemplateAgentAResponder)
 
     def test_research_agent_b_plugins_are_built_in_and_model_free(self):
@@ -68,6 +74,54 @@ class AgentPolicyTests(unittest.TestCase):
         self.assertIn("balanced", replies["pareto"].lower())
         self.assertIn("reliable", replies["robust"].lower())
         self.assertIn("different", replies["diverse"].lower())
+
+    def test_agent_memory_tracks_route_and_active_constraints(self):
+        test_case = get_test_case("morning_peak_cross_city")
+        conversation = [
+            ("Agent A", test_case.opening_utterance()),
+            ("Agent B", "Take metro line M1 from Bravo to Harbor. 12 minutes, no changes."),
+            ("Agent A", "That route works. Can you avoid near-capacity trains?"),
+        ]
+
+        memory = agent_memory_view(
+            "Agent A",
+            conversation,
+            scenario=test_case.scenario,
+            persona=test_case.persona,
+        )
+        summary = memory.prompt_summary()
+
+        self.assertIn("Bravo", summary)
+        self.assertIn("Harbor", summary)
+        self.assertIn("current route candidate", summary)
+        self.assertIn("fullness", memory.active_constraints)
+        self.assertIn("currently active caller constraints: fullness", summary)
+        self.assertEqual(memory.task_variables["start_station"], test_case.scenario["start_station"])
+        self.assertEqual(memory.task_variables["destination_station"], test_case.scenario["destination_station"])
+        self.assertEqual(memory.task_variables["start_time_min"], test_case.scenario["start_time_min"])
+        self.assertEqual(memory.missing_task_variables, ())
+        self.assertEqual(memory.active_constraint_details["fullness"], "avoid near-capacity trains")
+
+    def test_agent_memory_keeps_agent_b_task_facts_separate_from_hidden_scenario(self):
+        test_case = get_test_case("morning_peak_cross_city")
+        agent_b_heard = [
+            ("Agent A", "I am going to Harbor at eight seven."),
+        ]
+
+        memory = agent_memory_view(
+            "Agent B",
+            agent_b_heard,
+            scenario=test_case.scenario,
+            persona=test_case.persona,
+        )
+        summary = memory.prompt_summary()
+
+        self.assertIsNone(memory.task_variables["start_station"])
+        self.assertEqual(memory.task_variables["destination_station"], "Harbor")
+        self.assertEqual(memory.task_variables["start_time_min"], 8 * 60 + 7)
+        self.assertIn("start_station", memory.missing_task_variables)
+        self.assertIn("start=unknown", summary)
+        self.assertNotIn(f"start={test_case.scenario['start_station']}", summary)
 
     def test_research_policies_choose_for_different_objectives(self):
         options = [

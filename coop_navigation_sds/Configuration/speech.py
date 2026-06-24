@@ -2,6 +2,8 @@
 import json
 import os
 
+from coop_navigation_sds.Configuration.runtime import RESULTS_DIR
+
 
 def _environment(name, legacy_name, default):
     return os.environ.get(name, os.environ.get(legacy_name, default))
@@ -11,7 +13,7 @@ AGENT_B_PLUGIN = _environment("COOP_NAVIGATION_SDS_AGENT_B_PLUGIN", "MINILLAMA_A
 DEFAULT_SPEECH_PATTERN = _environment("COOP_NAVIGATION_SDS_DEFAULT_SPEECH_PATTERN", "MINILLAMA_DEFAULT_SPEECH_PATTERN", "clean").strip() or "clean"
 SPEECH_TTS_ENGINE = _environment("COOP_NAVIGATION_SDS_TTS_ENGINE", "MINILLAMA_TTS_ENGINE", "").strip().lower()
 SPEECH_ASR_ENGINE = _environment("COOP_NAVIGATION_SDS_ASR_ENGINE", "MINILLAMA_ASR_ENGINE", "").strip().lower()
-SPEECH_AUDIO_DIR = _environment("COOP_NAVIGATION_SDS_SPEECH_AUDIO_DIR", "MINILLAMA_SPEECH_AUDIO_DIR", "results")
+SPEECH_AUDIO_DIR = RESULTS_DIR
 SPEECH_PLAYBACK_ENABLED = _environment("COOP_NAVIGATION_SDS_SPEECH_PLAYBACK", "MINILLAMA_SPEECH_PLAYBACK", "1").lower() in {"1", "true", "on", "yes"}
 SPEECH_REALTIME_ENABLED = _environment("COOP_NAVIGATION_SDS_SPEECH_REALTIME", "MINILLAMA_SPEECH_REALTIME", "1").lower() in {"1", "true", "on", "yes"}
 SPEECH_SHOW_RAW_TEXT = _environment("COOP_NAVIGATION_SDS_SPEECH_SHOW_RAW", "MINILLAMA_SPEECH_SHOW_RAW", "0").lower() in {"1", "true", "on", "yes"}

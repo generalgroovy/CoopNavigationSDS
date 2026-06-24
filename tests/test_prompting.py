@@ -42,7 +42,10 @@ class PromptingTests(unittest.TestCase):
     def test_agent_a_system_prompt_includes_persona_and_context(self):
         prompt = build_agent_a_system(self.persona, self.scenario)
         self.assertIn("Agent A", prompt)
-        self.assertIn("no transit-network knowledge", prompt)
+        self.assertIn("station and line names", prompt)
+        self.assertIn("Known station names:", prompt)
+        self.assertIn("Known line names:", prompt)
+        self.assertIn("not which stations a line serves", prompt)
         self.assertIn("Focused commuter", prompt)
         self.assertIn("Central", prompt)
         self.assertIn("Museum", prompt)
@@ -81,6 +84,7 @@ class PromptingTests(unittest.TestCase):
         self.assertEqual(report["acceptable_duration_ratio"], 1.5)
         self.assertEqual(len(report["stages"]), 3)
         self.assertTrue(all(stage["suboptimal_option_count"] >= 1 for stage in report["stages"]))
+        self.assertTrue(all(stage["constraint_changes_optimal_route"] for stage in report["stages"]))
 
     def test_optimal_routes_are_calculated_for_each_progressive_layer(self):
         layers = layered_optimal_routes(self.real_scenario, self.persona, max_constraints=3)
@@ -95,16 +99,32 @@ class PromptingTests(unittest.TestCase):
             self.assertTrue(layer["available"])
             self.assertEqual(layer["route"][0], self.real_scenario["start_station"])
             self.assertEqual(layer["route"][-1], self.real_scenario["destination_station"])
-            self.assertEqual(layer["path_text"].count("-->"), len(layer["steps"]))
             for step in layer["steps"]:
                 if step.get("mode") != "walking":
-                    self.assertIn(f"--{step['line']}-->", layer["path_text"])
+                    self.assertIn(f"--{step['mode']} {step['line']}", layer["path_text"])
             if layer["layer"].startswith("constraint_"):
                 constraint_paths.append(layer["path_text"])
         progressive_paths = [layer["path_text"] for layer in layers[1:]]
         for previous, current in zip(progressive_paths, progressive_paths[1:]):
             self.assertNotEqual(previous, current)
         self.assertEqual(len(constraint_paths), len(set(constraint_paths)))
+
+    def test_all_standard_scenarios_require_constraint_driven_route_changes(self):
+        from coop_navigation_sds.TransportNetwork.test_cases import TEST_CASES
+
+        for key, test_case in TEST_CASES.items():
+            with self.subTest(test_case=key):
+                report = stage_viability_report(
+                    test_case.scenario,
+                    test_case.persona,
+                    max_constraints=3,
+                )
+                self.assertTrue(report["require_constraint_route_changes"])
+                self.assertTrue(report["all_stage_requirements_satisfied"])
+                self.assertTrue(all(
+                    stage["constraint_changes_optimal_route"]
+                    for stage in report["stages"]
+                ))
 
     def test_agent_b_phase_instruction_changes_by_turn(self):
         first = build_agent_b_phase_instruction(0, "Museum")
@@ -133,6 +153,8 @@ class PromptingTests(unittest.TestCase):
         self.assertIn("Start: Central", prompt)
         self.assertIn("Destination: Museum", prompt)
         self.assertIn("verified route candidates", prompt)
+        self.assertIn("Known station names:", prompt)
+        self.assertIn("Known line names:", prompt)
         self.assertLess(len(prompt.split()), 350)
 
     def test_agent_b_system_prioritizes_validity_over_constraints(self):
@@ -150,7 +172,7 @@ class PromptingTests(unittest.TestCase):
         self.assertIn("actual route", text)
         self.assertIn("Museum", text)
 
-    def test_agent_a_repeats_trip_facts_when_agent_b_did_not_understand(self):
+    def test_agent_a_answers_word_clarification_with_only_the_known_term(self):
         text = agent_a_route_reaction(
             1,
             self.persona,
@@ -158,10 +180,7 @@ class PromptingTests(unittest.TestCase):
             [("Agent B", "I heard 'Harbour' unclearly. Did you mean Harbor or Grove? Please repeat the start station, destination, and time.")],
         )
 
-        self.assertIn("Bravo", text)
-        self.assertIn("08:07", text)
-        self.assertIn("Harbor", text)
-        self.assertIn("Please use those", text)
+        self.assertEqual(text, "Harbor.")
 
     def test_agent_a_asks_about_possible_misheard_words_when_reply_makes_no_sense(self):
         text = agent_a_route_reaction(
@@ -172,7 +191,8 @@ class PromptingTests(unittest.TestCase):
         )
 
         self.assertIn("did you mean", text.lower())
-        self.assertIn("actual route", text)
+        self.assertNotIn("actual route", text)
+        self.assertLessEqual(len(text.split()), 8)
 
     def test_agent_a_reacts_to_connected_route_with_comparison_request(self):
         reply = route_text_from_steps(stage_route_options(self.real_scenario, self.persona)[0]["steps"])
@@ -237,7 +257,7 @@ class PromptingTests(unittest.TestCase):
 
         self.assertLessEqual(len(reply.split()), 40)
         self.assertIn("take", reply.lower())
-        self.assertIn("It takes", reply)
+        self.assertIn("minutes", reply)
 
     def test_agent_a_reaction_turns_are_concise_for_speech(self):
         reply = route_text_from_steps(stage_route_options(self.real_scenario, self.persona)[0]["steps"])
