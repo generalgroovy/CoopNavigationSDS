@@ -9,6 +9,7 @@ from coop_navigation_sds.TransportNetwork.network import (
     STATION_PUBLIC_MODES,
     TRAVEL_TIMES,
     line_segment_key,
+    line_stop_pairs,
 )
 from coop_navigation_sds.TransportNetwork.constraints import optimal_constraint_route
 from coop_navigation_sds.TransportNetwork.routes import optimal_time_route
@@ -68,6 +69,30 @@ class NetworkStructureTests(unittest.TestCase):
 
         self.assertGreaterEqual(len(sampled), 3)
         self.assertTrue(all(minutes >= 1 for minutes in sampled.values()))
+
+    def test_walking_is_slower_than_bus_on_shared_station_pairs(self):
+        bus_times_by_pair = {}
+        for line_name, data in LINES.items():
+            if data.get("mode") != "bus":
+                continue
+            for station_a, station_b in line_stop_pairs(line_name, data):
+                pair = tuple(sorted((station_a, station_b)))
+                bus_times_by_pair.setdefault(pair, []).append(
+                    TRAVEL_TIMES[line_segment_key(line_name, station_a, station_b)]
+                )
+
+        shared_pairs = 0
+        for station_a, station_b in line_stop_pairs("Walking", LINES["Walking"]):
+            pair = tuple(sorted((station_a, station_b)))
+            if pair not in bus_times_by_pair:
+                continue
+            shared_pairs += 1
+            walking_minutes = TRAVEL_TIMES[
+                line_segment_key("Walking", station_a, station_b)
+            ]
+            self.assertGreater(walking_minutes, max(bus_times_by_pair[pair]))
+
+        self.assertGreater(shared_pairs, 0)
 
     def test_generated_lines_have_varied_station_coverage(self):
         stop_counts = [len(data["stops"]) for data in LINES.values()]

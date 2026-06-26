@@ -1,495 +1,623 @@
 # CoopNavigationSDS
 
-CoopNavigationSDS is a configurable research platform for cooperative
-transit-hotline speech dialogue. Agent A acts as a caller with private travel
-constraints. Agent B proposes distinct routes, reacts to the caller's latest
-heard utterance, and helps compare candidates before Agent A selects the best
-currently viable route.
+CoopNavigationSDS is a research framework for the automatic, phase-aware
+evaluation of cooperative speech dialogue systems. Two agents solve a public
+transport route-finding task:
 
-Production conditions use complete bidirectional speech. Every turn follows
-NLG -> TTS -> audio -> ASR -> NLU -> dialogue management, and the receiving
-agent reacts only to the ASR transcript and downstream state. Batch experiments
-also support a paired deterministic file-backed text control with identical
-non-audio settings.
+- **Agent A** represents a caller who knows the start station, destination,
+  departure time, valid station and line names, and private travel constraints.
+- **Agent B** represents the dialogue system. It proposes grounded routes,
+  responds to clarification and critique, and improves proposals as Agent A
+  reveals constraints.
 
-Every public service has a mode-coded identifier: metro `M1`-`M20`, tram
-`T1`-`T25`, and bus `B1`-`B30`. Spoken public-transport legs use
-`<transport type> line <code> from <station> to <station>`. Walking legs use
-`walk <minutes> minutes from <station> to <station>`. Structured route steps
-record the origin station, destination station, transport type, and line code;
-walking steps have no line code.
+The framework is designed for controlled comparisons of language models,
+text-to-speech systems, automatic speech recognition systems, personas,
+scenarios, and speech conditions. It records raw phase evidence during the
+dialogue and calculates all registered metrics retrospectively.
 
-## Architecture
+## Research Scope
 
-```text
-coop_navigation_sds/
-  NaturalLanguageGeneration/
-    caller/                      Agent A prompts and response policies
-    assistant/                   Agent B plugins and response pipeline
-    models.py                    provider-neutral LLM adapters
-    model_runtime.py             lazy provider construction
-  TextToSpeech/
-    engines.py                   public TTS component API
-    personas.py                  reproducible audio personas
-    setup.py                     optional provider setup
-  AutomaticSpeechRecognition/
-    engines.py                   public ASR component API
-  NaturalLanguageUnderstanding/
-    interpreter.py               route and constraint interpretation
-  DialogManagement/
-    manager.py                   turn orchestration and phase guards
-    stages.py                    explicit dialogue stages
-    memory.py                    route candidate deduplication
-    speech_pipeline.py           cohesive TTS/audio/ASR transport
-  TransportNetwork/
-    network.py                   multimodal network definition
-    routes.py                    route search and timing
-    constraints.py               stage viability and route constraints
-    scenarios.py                 scenario data
-    test_cases.py                standardized test cases
-  EvaluationMetrics/
-    catalog.py                   obligatory metric definitions and metadata
-    metrics.py                   retrospective metric computation
-    nisqa.py                     NISQA evaluation
-    dnsmos.py                    DNSMOS evaluation
-    reference_audio.py           PESQ, STOI, SI-SDR, licensed POLQA input
-  ResultsAndArtifacts/
-    artifacts.py                 protocols and run outputs
-    logging.py                   structured execution logging
-    metric_tables.py             canonical graphable long-form metrics
-    xlsx.py                      analysis workbook export
-  Configuration/
-    schema.py                    shared schema versions, paths, redaction
-    gui.py                       startup-only configuration GUI
-    settings.py                  persistent JSON settings
-    jobs.py                      batch job files
-    runtime.py                   dialogue and output defaults
-    speech.py                    speech conditions
-    travel.py                    network and model defaults
-  app.py                         interactive single-run controller
-  batch.py                       batch command-line controller
-  experiments.py                 reusable experiment runner
-  smoke.py                       dependency-light end-to-end validation
-```
+The software supports research questions such as:
 
-Package initializers are side-effect free where component cycles are possible.
-Optional model and speech dependencies load only when their provider is
-selected.
+- Which phase-specific metrics best predict task completion and constraint
+  satisfaction across language models of different sizes?
+- Where does the earliest measurable failure occur in an unsuccessful speech
+  dialogue?
+- How do speech synthesis and recognition errors propagate into language
+  understanding, dialogue policy, and route selection?
+- Which clarification and repair behaviors prevent an acoustic or semantic
+  error from becoming a task failure?
+- Do larger language models improve grounded route proposals enough to justify
+  additional latency and resource use?
+- Are metric relationships stable across scenarios, repetitions, model
+  families, and paired text/audio conditions?
 
-[API_REFERENCE.md](API_REFERENCE.md) inventories all 75 package modules, 90
-classes, 424 top-level functions, and 292 methods. Regenerate it and the
-per-metric reference after structural changes with:
-
-```powershell
-python scripts\generate_research_docs.py
-```
+The experiment is not a generic chatbot benchmark. It measures cooperation in
+a bounded task with machine-verifiable routes, progressively revealed
+constraints, known optimal baselines, and explicit success criteria.
 
 ## Pipeline
 
+Every production turn traverses the complete speech dialogue pipeline:
+
 ```mermaid
 flowchart LR
-    C["Configuration"] --> P["Network and provider preflight"]
-    P --> AN["Agent A NLG"]
-    AN --> AT["Agent A TTS"]
-    AT --> AA["Audio"]
-    AA --> BA["Agent B ASR"]
-    BA --> BU["Agent B NLU"]
-    BU --> BD["Agent B dialogue management"]
-    BD --> BN["Agent B NLG"]
-    BN --> BT["Agent B TTS"]
-    BT --> AB["Audio"]
-    AB --> AR["Agent A ASR"]
-    AR --> AU["Agent A NLU and verification"]
-    AU --> S["Shared dialogue state"]
-    S --> AN
-    S --> T["Immutable trace"]
-    T --> M["Retrospective metrics"]
-    M --> R["Run result folder"]
+    C["Configuration"] --> P["Preflight"]
+    P --> N["Network and staged optima"]
+    N --> DM1["Dialogue policy selects speaker action"]
+    DM1 --> NLG["Natural-language generation"]
+    NLG --> TTS["Text-to-speech"]
+    TTS --> A["WAV audio"]
+    A --> ASR["Automatic speech recognition"]
+    ASR --> NR["Domain normalization"]
+    NR --> NLU["Language and route understanding"]
+    NLU --> M["Listener-specific memory"]
+    M --> DM2["Dialogue-state and policy update"]
+    DM2 --> DM1
+    M --> R["Immutable runtime evidence"]
+    R --> E["Retrospective metrics"]
+    E --> O["Research outputs"]
 ```
 
-TTS or ASR failure stops the run with diagnostics. Source text is never used
-as a hidden substitute for failed recognition.
+For Agent A to Agent B and Agent B to Agent A turns, the same stages run in
+opposite speaker/listener directions. Time advances through the pipeline; no
+phase is duplicated as a hidden alternate path.
 
-## Conversation Policy
+### Phase Responsibilities
 
-Agent A knows the valid station and line names plus its start, destination,
-departure time, persona, and private constraints. It does not know line stops,
-connectivity, schedules, route candidates, travel times, capacity, or risks.
+| Phase | Responsibility | Primary evidence |
+| --- | --- | --- |
+| Network and task | Generate the transport network, scenario, constraints, and staged optimal routes | Network graph, scenario state, constraint layers, optimal candidates |
+| Agent policy | Select the current conversational objective and next action | Stage, active objective, candidate history, repair state |
+| Natural-language generation | Express the selected action as concise dialogue | Intended utterance, model metadata, token use, generation latency |
+| Text-to-speech | Convert the utterance into the audio heard by the other agent | Spoken text, prosody, WAV path, duration, synthesis diagnostics |
+| Automatic speech recognition | Transcribe the generated audio | Raw transcript, confidence where available, recognition latency |
+| Normalization | Apply conservative, logged transit-domain corrections | Raw and corrected tokens, final listener input |
+| Natural-language understanding | Recover trip facts, constraints, intent, and route structure | Semantic frame, route parse, missing slots, validation flags |
+| Dialogue state | Update only the listening agent's perspective-specific memory | Memory before/after, additions, retained candidates and constraints |
+| Dialogue management | Progress, clarify, repair, compare, or close | Stage transition, warnings, repair outcome, stopping decision |
+| Evaluation | Reconstruct metrics from stored evidence after completion | Formula, operands, substitution, result, availability reason |
+
+## Experiment Integrity
+
+The implementation enforces the following research contracts.
+
+### Actual Speech Dependency
+
+The listener reacts to the transcript produced by the configured speech
+pipeline. Generated source text is never substituted for failed recognition.
+If text-to-speech or automatic speech recognition fails, the condition stops
+with diagnostics instead of silently switching engines.
+
+The console keeps relevant representations distinct:
+
+```text
+TTS SPEECH:    Take tram line T1 from Bravo to Juliett.
+ASR HEARD:     Take tram line T1 from Bravo to Juliet.
+AGENT INPUT:   Take tram line T1 from Bravo to Juliett.
+TTS -> ASR:    'Juliett' -> Juliet
+ASR -> INPUT:  Juliet -> Juliett
+```
+
+`ASR HEARD` remains the raw recognizer output. `AGENT INPUT` is the actual
+downstream transcript after any configured correction. Every correction is
+retained as explicit evidence.
+
+### Independent Agent Memory
+
+The agents do not share a hidden memory:
+
+- Agent A retains its caller setup, its intended utterances, and what it heard.
+- Agent B retains only what it said and what it heard through the speech
+  pipeline.
+- Agent A does not receive network topology, schedules, or optimal routes.
+- Agent B receives route-planning authority but must infer the caller's trip
+  facts and stated constraints from its own conversation history.
+
+Each turn records both memory snapshots, newly added information, unresolved
+trip slots, current route candidates, active constraints, and repair focus.
+
+### Reproducibility and Traceability
+
+- Configuration schemas, trace schemas, and result schemas are versioned.
+- Every run stores the resolved configuration, runtime environment, model and
+  provider metadata, scenario, network seed, and random seeds.
+- Credentials are redacted from persisted configuration.
+- Missing evidence produces a `null` metric with an explicit reason, never a
+  fabricated zero.
+- Raw evidence is stored before derived metrics are calculated.
+- Metric calculation can be repeated from `metric_inputs.json` without
+  rerunning the conversation.
+- Unsupported or missing models, executables, and assets fail preflight.
+- Result files from all conditions use the same stable keys and schemas.
+
+### Paired Controls
+
+Batch experiments can automatically pair every audio condition with a
+file-backed text control that has identical non-audio settings. Each pair
+stores:
+
+- `pair_id`;
+- `run_type = text_only | audio_variant`;
+- task-success delta;
+- route-validity delta;
+- constraint-satisfaction delta;
+- turn-count delta;
+- repair-turn delta;
+- audio-error effect.
+
+This isolates the effect of the speech channel from the task, model, persona,
+scenario, and decoding condition.
+
+## Transport Network and Dialogue Task
+
+The transport network is a deterministic, seed-controlled experimental model.
+It is generated before each condition and then becomes authoritative for route
+search, proposal verification, staged optimal routes, and retrospective
+metrics. Changing `network_seed` changes realized network values while
+preserving the structural invariants below.
+
+### Network Parameters
+
+| Parameter | Default | Experimental meaning |
+| --- | ---: | --- |
+| Stations | 36 | Fixed station vocabulary |
+| Service entries | 14 | 13 public lines plus walking |
+| Public modes | metro, tram, bus | Ticket-constrained transport modes |
+| Additional mode | walking | Available separately and limited cumulatively |
+| Network seed | 42 | Reproduces lines, travel times, transfers, and demand |
+| Public segment travel time | 2-6 min | Distance-, line-, and mode-specific |
+| Walking segment travel time | 3-15 min | Distance-scaled and always longer than bus for the same connection |
+| Metro headway | 4 min | Fastest and most frequent public mode |
+| Tram headway | 6 min | Intermediate speed and frequency |
+| Bus headway | 8 min | Broadest coverage and slowest public mode |
+| Walking headway | 0 min | Immediately available |
+| Station transfer range | 1-8 min | Relevant only when changing lines |
+| Scenario transfer floor | 2 min | Minimum transfer supplied to route search |
+| Line fullness range | 15-95% | Internal quantitative line-load value |
+| Station fullness range | 8-98% | Time-varying station-demand value |
+| Near-capacity threshold | 85% | Binary dialogue capacity boundary |
+| Default maximum walking | 10 min | Cumulative persona-configurable limit |
+| Default duration ratio | 1.5 | Selected route must be under 150% of optimum |
+| Required alternatives | 1 per stage | Ensures meaningful route comparison |
+
+Map coordinates use a staggered schematic grid with 120 horizontal and 90
+vertical units between cells. Travel-time scaling is:
+
+| Mode | Minutes per map unit | Relative role |
+| --- | ---: | --- |
+| Metro | 0.025 | Fastest |
+| Tram | 0.030 | Second fastest |
+| Bus | 0.055 | Slower public transport |
+| Walking | 0.060 | Slowest; rounded time is forced at least 1 min above bus |
+
+Deterministic jitter of up to `+-0.35` is applied before travel time is rounded
+and clamped. Travel times are keyed by `line + unordered station pair`, so
+different lines may have different travel times between the same stations.
+
+### Structural Invariants
+
+- The normal research graph is fully connected.
+- Every station has exactly two of metro, tram, and bus.
+- Walking is additional and does not count toward the two-mode invariant.
+- A walking segment is always at least one minute slower than any bus service
+  between the same two stations.
+- Bus covers at least as many stations as tram; tram covers more than metro.
+- All edges are bidirectional.
+- Line identifiers encode mode: metro `M1-M20`, tram `T1-T25`, bus `B1-B30`.
+- A public route leg is incomplete if its line is omitted.
+- Transfer time applies only when consecutive legs change line.
+- Staying on the same directional service adds no intermediate wait or
+  transfer.
+- Ring services run in both directions and close the final stop to the first.
+- No synthetic walking pseudo-lines are inserted.
+- Rebuilding the network clears route, crowding, and prompt-description caches.
+
+### Route Representation
+
+A complete public leg contains mode, line, origin, and destination:
+
+```text
+tram line T1 from Bravo to Juliett
+```
+
+Walking contains duration and both stations:
+
+```text
+walk 5 minutes from Alpha to Bravo
+```
+
+Consecutive stations on one service are condensed:
+
+```text
+Bravo --tram T1 (Charlie, Delta)--> Gamma
+```
+
+Every planned route step records:
+
+- origin and destination station;
+- line, transport mode, and directional service;
+- departure and arrival minute;
+- wait, travel, and transfer minutes;
+- segment fullness and delay probability;
+- transfer-station time and missed-connection probability;
+- cumulative walking minutes.
+
+The earliest-arrival search state contains station, directional service, and
+cumulative walking. It uses headways and stop offsets. Continuing on the same
+service departs immediately; boarding or changing service waits for the next
+scheduled departure.
+
+Transfer time is:
+
+```text
+0                                      with no previous line
+0                                      when previous line == next line
+max(scenario transfer floor,
+    station-specific transfer time)    when changing lines
+```
+
+Missed-connection risk exists only for a real line change. It increases with a
+short buffer, insufficient station transfer time, station crowding, and the
+next service's headway.
+
+### Fullness, Demand, and Delay
+
+Station demand contains baseline demand, deterministic variation, and Gaussian
+time peaks:
+
+| Period | Peak center |
+| --- | ---: |
+| Morning | 08:15 |
+| Midday | 12:20 |
+| Evening | 17:30 |
+| Late event | 21:10 |
+
+Station profiles represent hub, business, residential, mixed-core, or leisure
+districts according to grid position and interchange degree. Line fullness is
+the mean fullness of its stops. Segment fullness is the mean of origin,
+destination, and line fullness.
+
+Internal percentages remain available for research. Dialogue uses only:
+
+- `near capacity` at or above 85%;
+- `not near capacity` below 85%.
+
+Descriptive fullness classes are low below 40%, moderate from 40% through 69%,
+and high from 70%.
+
+Delay class combines mode and line fullness. Walking is low; metro begins low,
+tram begins moderate, and bus has the highest base score. High fullness raises
+the class. Internal class proxies are low `0.15`, moderate `0.32`, and high
+`0.55`. Segment delay risk also incorporates headway, fullness, and travel
+time, then clamps the result to `0.01-0.75`.
+
+Route-level delay and transfer-miss risks are the maximum segment values.
+Risk classes are `<0.25 = low`, `<0.45 = medium`, and otherwise high. Agents
+communicate classes rather than exact percentages.
+
+### Access and Constraint Evaluation
+
+Each persona owns exactly two public transport tickets. Before the ticket
+constraint is stated, Agent B may propose all public modes. Afterwards, any
+route using the unavailable mode is invalid. Walking remains separate and
+becomes bounded when Agent A reveals its walking constraint.
+
+| Constraint | Stored route value | Satisfaction rule |
+| --- | --- | --- |
+| Transfers | Line-change count | At most baseline changes plus tolerance |
+| Fullness | Near-capacity segment count | Must equal zero |
+| Delay | Maximum segment delay class | Must not exceed caller threshold |
+| Transfer safety | Maximum missed-connection class | Must not exceed caller threshold |
+| Tickets | Set of used public modes | Must be a subset of owned tickets |
+| Walking | Cumulative walking minutes | Must not exceed caller limit |
+
+Candidate ranking applies the newest revealed constraint before duration, then
+uses duration, line changes, and path length as deterministic tie-breakers.
+
+### Default Seed 42 Network
+
+Default stations:
+
+```text
+Alpha, Bravo, Charlie, Delta, Echo, Foxtrot, Golf, Hotel, India,
+Juliett, Kilo, Lima, Mike, November, Oscar, Papa, Quebec, Romeo,
+Sierra, Tango, Uniform, Victor, Whiskey, Xray, Yankee, Zulu,
+Aster, Birch, Cedar, Dover, Elm, Flint, Grove, Harbor, Ivy, Jasper
+```
+
+Public-mode allocation:
+
+| Modes | Stations |
+| --- | --- |
+| Tram and bus | Alpha, Bravo, Charlie, Delta, Echo, Kilo, Lima, Mike, November, Oscar, Uniform, Victor, Whiskey, Xray, Yankee, Elm, Flint, Grove, Harbor, Ivy |
+| Metro and bus | Foxtrot, Golf, Hotel, Papa, Quebec, Romeo, Zulu, Aster, Birch, Jasper |
+| Metro and tram | India, Juliett, Sierra, Tango, Cedar, Dover |
+
+<details>
+<summary>Default lines, stops, headways, fullness, and delay classes</summary>
+
+| Line | Mode | Headway | Stops | Fullness at 08:07 | Delay |
+| --- | --- | ---: | --- | ---: | --- |
+| M1 | Metro | 4 | Foxtrot, Golf, Hotel, India, Juliett, Papa, Quebec, Romeo, Sierra, Tango, Zulu, Aster, Birch, Cedar, Dover, Jasper | 74% | moderate |
+| M2 | Metro | 4 | Papa, Quebec, Romeo | 84% | moderate |
+| M3 | Metro | 4 | India, Aster | 82% | moderate |
+| T1 | Tram | 6 | Alpha, Bravo, Charlie, Delta, Echo, India, Juliett, Kilo, Lima, Mike, November, Oscar, Sierra, Tango, Uniform, Victor, Whiskey, Xray, Yankee, Cedar, Dover, Elm, Flint, Grove, Harbor, Ivy | 78% | moderate |
+| T2 | Tram | 6 | Alpha, Bravo, Charlie, Delta, Echo | 81% | moderate |
+| T3 | Tram | 6 | Sierra, Tango, Uniform, Victor, Whiskey, Xray | 82% | moderate |
+| T4 | Tram | 6 | Elm, Flint, Grove, Harbor, Ivy | 82% | moderate |
+| T5 | Tram | 6 | Alpha, Mike, Sierra, Yankee, Elm | 79% | moderate |
+| T6 | Tram | 6 | Delta, Juliett, Victor, Harbor | 79% | moderate |
+| B1 | Bus | 8 | Alpha, Bravo, Charlie, Delta, Echo, Foxtrot, Golf, Hotel, Kilo, Lima, Mike, November, Oscar, Papa, Quebec, Romeo, Uniform, Victor, Whiskey, Xray, Yankee, Zulu, Aster, Birch, Elm, Flint, Grove, Harbor, Ivy, Jasper | 79% | high |
+| B2 | Bus | 8 | Golf, Hotel, Kilo, Lima | 83% | high |
+| B3 | Bus | 8 | Yankee, Zulu, Aster, Birch | 84% | high |
+| B4 | Bus | 8 | Bravo, Hotel, November, Zulu, Flint | 86% | high |
+| Walking | Walking | 0 | All 36 stations in generated sequence | 78% internal | low |
+
+</details>
+
+<details>
+<summary>Default line-specific segment travel times</summary>
+
+Values are minutes. Segment keys are line-specific and bidirectional.
+
+| Line | Consecutive segment times |
+| --- | --- |
+| M1 | Foxtrot-Golf 6; Golf-Hotel 3; Hotel-India 3; India-Juliett 3; Juliett-Papa 3; Papa-Quebec 3; Quebec-Romeo 3; Romeo-Sierra 6; Sierra-Tango 3; Tango-Zulu 2; Zulu-Aster 3; Aster-Birch 3; Birch-Cedar 3; Cedar-Dover 3; Dover-Jasper 2; Jasper-Foxtrot 6 |
+| M2 | Papa-Quebec 3; Quebec-Romeo 3 |
+| M3 | India-Aster 6 |
+| T1 | Alpha-Bravo 3; Bravo-Charlie 4; Charlie-Delta 4; Delta-Echo 3; Echo-India 6; India-Juliett 4; Juliett-Kilo 3; Kilo-Lima 3; Lima-Mike 6; Mike-November 3; November-Oscar 3; Oscar-Sierra 6; Sierra-Tango 4; Tango-Uniform 4; Uniform-Victor 4; Victor-Whiskey 4; Whiskey-Xray 4; Xray-Yankee 6; Yankee-Cedar 6; Cedar-Dover 4; Dover-Elm 6; Elm-Flint 4; Flint-Grove 4; Grove-Harbor 4; Harbor-Ivy 4 |
+| T2 | Alpha-Bravo 3; Bravo-Charlie 4; Charlie-Delta 4; Delta-Echo 3 |
+| T3 | Sierra-Tango 3; Tango-Uniform 4; Uniform-Victor 3; Victor-Whiskey 4; Whiskey-Xray 4 |
+| T4 | Elm-Flint 4; Flint-Grove 3; Grove-Harbor 3; Harbor-Ivy 3 |
+| T5 | Alpha-Mike 5; Mike-Sierra 3; Sierra-Yankee 3; Yankee-Elm 2 |
+| T6 | Delta-Juliett 2; Juliett-Victor 6; Victor-Harbor 6 |
+| B1 | Alpha-Bravo 6; Bravo-Charlie 6; Charlie-Delta 6; Delta-Echo 6; Echo-Foxtrot 6; Foxtrot-Golf 6; Golf-Hotel 6; Hotel-Kilo 6; Kilo-Lima 6; Lima-Mike 6; Mike-November 6; November-Oscar 6; Oscar-Papa 6; Papa-Quebec 6; Quebec-Romeo 6; Romeo-Uniform 6; Uniform-Victor 6; Victor-Whiskey 6; Whiskey-Xray 6; Xray-Yankee 6; Yankee-Zulu 6; Zulu-Aster 6; Aster-Birch 6; Birch-Elm 6; Elm-Flint 6; Flint-Grove 6; Grove-Harbor 6; Harbor-Ivy 6; Ivy-Jasper 6 |
+| B2 | Golf-Hotel 6; Hotel-Kilo 6; Kilo-Lima 6 |
+| B3 | Yankee-Zulu 6; Zulu-Aster 6; Aster-Birch 6 |
+| B4 | Bravo-Hotel 5; Hotel-November 5; November-Zulu 6; Zulu-Flint 5 |
+| Walking | Alpha-Bravo 7; Bravo-Charlie 7; Charlie-Delta 7; Delta-Echo 7; Echo-Foxtrot 7; Foxtrot-Golf 15; Golf-Hotel 8; Hotel-India 7; India-Juliett 7; Juliett-Kilo 7; Kilo-Lima 7; Lima-Mike 15; Mike-November 7; November-Oscar 7; Oscar-Papa 7; Papa-Quebec 7; Quebec-Romeo 7; Romeo-Sierra 15; Sierra-Tango 7; Tango-Uniform 7; Uniform-Victor 7; Victor-Whiskey 7; Whiskey-Xray 7; Xray-Yankee 15; Yankee-Zulu 8; Zulu-Aster 7; Aster-Birch 7; Birch-Cedar 7; Cedar-Dover 7; Dover-Elm 15; Elm-Flint 8; Flint-Grove 7; Grove-Harbor 7; Harbor-Ivy 7; Ivy-Jasper 7 |
+
+</details>
+
+<details>
+<summary>Default station coordinates, public modes, transfer times, and demand districts</summary>
+
+| Station | Coordinate | Public modes | Transfer min | Demand district |
+| --- | --- | --- | ---: | --- |
+| Alpha | 80,70 | tram + bus | 4 | hub |
+| Bravo | 200,70 | tram + bus | 5 | hub |
+| Charlie | 320,70 | tram + bus | 5 | hub |
+| Delta | 440,70 | tram + bus | 4 | hub |
+| Echo | 560,70 | tram + bus | 5 | hub |
+| Foxtrot | 680,70 | metro + bus | 3 | leisure |
+| Golf | 105,160 | metro + bus | 5 | hub |
+| Hotel | 225,160 | metro + bus | 6 | hub |
+| India | 345,160 | metro + tram | 4 | hub |
+| Juliett | 465,160 | metro + tram | 5 | hub |
+| Kilo | 585,160 | tram + bus | 6 | hub |
+| Lima | 705,160 | tram + bus | 4 | hub |
+| Mike | 80,250 | tram + bus | 7 | hub |
+| November | 200,250 | tram + bus | 7 | hub |
+| Oscar | 320,250 | tram + bus | 5 | mixed core |
+| Papa | 440,250 | metro + bus | 6 | hub |
+| Quebec | 560,250 | metro + bus | 6 | hub |
+| Romeo | 680,250 | metro + bus | 6 | hub |
+| Sierra | 105,340 | metro + tram | 7 | hub |
+| Tango | 225,340 | metro + tram | 7 | hub |
+| Uniform | 345,340 | tram + bus | 4 | hub |
+| Victor | 465,340 | tram + bus | 5 | hub |
+| Whiskey | 585,340 | tram + bus | 7 | hub |
+| Xray | 705,340 | tram + bus | 4 | hub |
+| Yankee | 80,430 | tram + bus | 5 | hub |
+| Zulu | 200,430 | metro + bus | 5 | hub |
+| Aster | 320,430 | metro + bus | 5 | hub |
+| Birch | 440,430 | metro + bus | 7 | hub |
+| Cedar | 560,430 | metro + tram | 4 | residential |
+| Dover | 680,430 | metro + tram | 2 | residential |
+| Elm | 105,520 | tram + bus | 5 | hub |
+| Flint | 225,520 | tram + bus | 6 | hub |
+| Grove | 345,520 | tram + bus | 4 | hub |
+| Harbor | 465,520 | tram + bus | 5 | hub |
+| Ivy | 585,520 | tram + bus | 5 | hub |
+| Jasper | 705,520 | metro + bus | 5 | residential |
+
+</details>
+
+The tables document the default seed, but run artifacts are authoritative.
+`network_overview.json` stores every realized:
+
+- line name, kind, headway, stops, segments, segment times, fullness,
+  fullness class, capacity label, and delay class;
+- station name, coordinates, fullness, capacity label, transfer time, serving
+  lines, and neighbors;
+- line, station, and segment count.
+
+`network_graph.svg` visualizes the same realized network.
+
+### Complete Network Visualization
+
+The graph below contains every realized line-specific connection. Services
+sharing the same station pair are assigned separate parallel lanes instead of
+being drawn on top of one another. Walking connections are dashed. The line
+index occupies a dedicated panel outside the graph, so it cannot cover a
+station or connection.
+
+![Default seed 42 network with every station, connection, and external line index](docs/network_graph.svg)
+
+### Standard Scenarios
+
+| Scenario | Start | Destination(s) | Time | Duration ratio | Delay limit | Transfer limit |
+| --- | --- | --- | ---: | ---: | --- | --- |
+| Morning peak cross-city | Bravo | Harbor | 08:07 | 1.5 | medium | medium |
+| Midday transfer-heavy | Echo | Zulu | 12:18 | 1.5 | medium | medium (`0.28`) |
+| Evening outbound | Echo | Zulu | 17:42 | 1.5 | medium | medium |
+| Late-event crowding | Kilo | Jasper | 21:05 | 1.5 | medium | medium |
+| Airport connection | Bravo | Harbor | 06:35 | 2.0 | high (`0.60`) | low (`0.20`) |
+| Hospital appointment | Alpha | Ivy | 09:12 | 2.0 | medium | low (`0.18`) |
+| Crowded event exit | Sierra | Charlie | 22:18 | 1.5 | medium | medium |
+| Multi-destination errands | Delta | Quebec, Yankee, Grove | 14:05 | 2.5 | medium | medium |
+
+Numeric thresholds are retained for calculation. Dialogue and high-level
+interpretation use the general risk classes.
+
+### Progressive Objectives
+
+Agent A follows a guarded sequence:
 
 1. Establish a connected route from start to destination.
-2. Verify that its duration is within `acceptable_duration_ratio` of the
-   precalculated optimal route.
-3. Reveal one private constraint only after the current objective is met.
-4. Ask for improvement when a proposal violates any stated constraint.
+2. Verify that its duration is within the configured ratio of the optimal
+   route.
+3. Reveal one private constraint after the current objective succeeds.
+4. Request another proposal if the route violates a stated constraint.
 5. Reveal the next constraint only after the previous one is satisfied.
-6. Compare at least `minimum_compared_routes` distinct valid routes.
-7. Accept a replacement only when all earlier stated constraints remain
-   satisfied.
-8. At the turn limit, choose the best currently viable retained candidate.
+6. Compare distinct viable candidates.
+7. Select the best retained route and end the conversation.
 
-Both agents receive the same valid station-name and line-name vocabulary.
-Agent B additionally receives verified route candidates; Agent A does not
-receive network topology. Agent B gives short natural route directions, avoids
-route repetition, and mentions fullness, delay, transfer-risk, or line-change
-properties only after Agent A asks about them. Word-repair turns contain only
-the unclear term and correction, then normal task dialogue resumes. The same
-automatic word-repair question is issued at most once unless a later utterance
-introduces the ambiguity again. Consecutive rounds that add no route, resolved
-repair, new constraint, or final choice are bounded by
-`dialogue_stagnation_limit` so a failed condition terminates explicitly instead
-of consuming the remaining turn budget in a loop.
+Possible constraints include allowed public transport tickets, maximum walking
+time, line-change tolerance, fullness, delay risk, and transfer risk.
 
-Each agent has a perspective-specific persistent memory. Its own entries retain
-the utterance it intended to speak; entries from the other agent contain only
-the transcript produced by that agent's audio, recognition, and configured
-normalization pipeline. Agent B derives start, destination, and departure time
-as named slots from this heard history. Agent A's task-variable memory comes
-from its own known caller setup plus what it said and heard; Agent B's
-task-variable memory comes only from what Agent B heard and said. A focused
-correction updates only the missing slot, so a late start-station correction
-cannot reverse start and destination. Each memory snapshot records recognized
-start station, destination station, departure time, missing critical variables,
-current request focus, active caller constraints, the current route candidate,
-route duration when known, and clarification count. Both memory views and
-every speech trace are stored for audit. Memory is never a hidden oracle:
-Agent A's memory is based on what Agent A knew, said, and heard, while Agent
-B's memory is based on what Agent B said and heard.
+Before dialogue, the planner calculates a separate optimum for:
 
-Speech text is normalized before synthesis, and punctuation drives cadence:
-commas use short pauses, sentence endings use full pauses, questions use
-slightly longer pauses, and an ellipsis is treated as one pause.
+- route validity;
+- acceptable duration;
+- constraint 1;
+- constraints 1 and 2;
+- constraints 1, 2, and 3.
 
-The explicit dialogue stages are `discovery`, `proposal`, `comparison`,
-`refinement`, `confirmation`, and `closed`.
+Scenarios verify that each stage has a viable route and the configured number
+of suboptimal alternatives. Progressive constraints are designed to change the
+best qualifying route, making cooperation and comparison necessary.
+
+## Components and Frameworks
+
+### Language Models
+
+All model-backed agents use the same provider-neutral chat-message interface.
+Model-specific logic remains outside dialogue orchestration.
+
+| Provider | Framework | Use |
+| --- | --- | --- |
+| `transformers` | Hugging Face Transformers and PyTorch | Direct local inference with prepared weights |
+| `ollama` | Ollama HTTP API | Quantized locally served models |
+| `llama_cpp` | llama.cpp OpenAI-compatible server | CPU-oriented GGUF experiments |
+| `openai_compatible` | Chat-completions HTTP API | ChatGPT or compatible hosted/local services |
+
+Agent A implementations:
+
+| Key | Description |
+| --- | --- |
+| `staged` | Deterministic research control implementing the guarded caller policy |
+| `tinyllama` | Fixed TinyLlama 1.1B Chat caller condition |
+| `userlm` | Model-backed caller using the selected model condition |
+
+Agent B policies include `llm`, `simple`, `pareto`, `robust`, and `diverse`.
+Custom plugins use `package.module:factory`.
+
+The primary registered Agent B size matrix is:
+
+| Size tier | Model 1 | Model 2 | Main contrast |
+| --- | --- | --- | --- |
+| Small | SmolLM2 360M Instruct | Qwen2.5 0.5B Instruct | Sub-billion resource and family contrast |
+| Medium | Llama 3.2 3B | Phi-3 Mini 3.8B | Practical local dialogue models from different families |
+| Large | Qwen2.5 7B | Llama 3.1 8B | Quality, repair, latency, and memory-cost comparison |
+
+Additional registered profiles include TinyLlama 1.1B, SmolLM2 1.7B, Llama
+3.2 1B, Qwen2.5 1.5B, Gemma 2 2B, Qwen3 4B, Mistral 7B, a Qwen2.5 GGUF
+condition, and an OpenAI-compatible `gpt-4.1-mini` condition.
+
+### Text-to-Speech
+
+| Engine | Platform | Experimental characteristic |
+| --- | --- | --- |
+| ChatTTS | Windows/Linux | Conversational neural synthesis and reproducible speaker sampling |
+| Piper | Windows/Linux | Fast local ONNX synthesis with explicit voice assets |
+| Coqui TTS | Windows/Linux via isolated provider | Neural synthesis and broader model support |
+| eSpeak NG | Windows/Linux | Small deterministic command-line baseline |
+| Windows SAPI | Windows | Native operating-system baseline |
+| File-backed WAV | Script/test control | Deterministic paired text condition |
+
+Audio personas are independent of the text-to-speech engine. They configure
+pace, pauses, volume, pitch, hesitation, fillers, stuttering, clipping,
+station substitutions, and noise/error intensity. Engine-specific controls are
+used only when supported.
+
+### Automatic Speech Recognition
+
+| Engine | Platform | Experimental characteristic |
+| --- | --- | --- |
+| Faster-Whisper | Windows/Linux | Neural Whisper transcription with configurable beam, device, and compute type |
+| Vosk | Windows/Linux | Low-latency offline CPU recognition |
+| whisper.cpp | Windows/Linux | Portable quantized Whisper execution |
+| sherpa-onnx | Windows/Linux | ONNX transducer, Whisper, or Paraformer support |
+| Qwen3-ASR | Windows/Linux | Multilingual neural recognition |
+| Windows SAPI | Windows | Native operating-system baseline |
+| File sidecar | Script/test control | Deterministic transcript control |
+
+Faster-Whisper accepts either a CTranslate2 snapshot or its prepared cache
+parent. Preflight resolves the parent to the directory containing `model.bin`
+and `config.json`, and the same resolved path is used at runtime.
+
+### Core Python Dependencies
+
+| Framework | Configured version | Role |
+| --- | ---: | --- |
+| PyTorch | 2.11.0 | Local neural model execution |
+| Transformers | 4.57.6 | Hugging Face causal language-model inference |
+| Hugging Face Hub | 0.36.2 | Prepared model cache and asset discovery |
+| TorchMetrics | 1.9.0 | NISQA, DNSMOS, and metric support |
+| librosa | 0.11.0 | Audio loading and signal analysis |
+| ONNX Runtime | 1.26.0 | ONNX speech-provider execution |
+| Requests | 2.34.2 | Local and hosted model-service communication |
+
+Optional speech packages include ChatTTS, Faster-Whisper, Piper, Qwen ASR,
+sherpa-onnx, Vosk, PESQ, and pystoi. Exact versions are pinned in
+`requirements-speech-optional.txt`. Coqui uses an isolated compatible Python
+provider when required.
+
+No provider is silently installed or downloaded during an experiment. Asset
+preparation and experiment execution are separate operations.
 
 ## Configuration
 
-The optional startup GUI opens as one compact chronological experiment
-workspace split into eight equal phase regions. Each region contains only the
-controls for its phase; repeated pipeline headings and normal-state summaries
-are omitted. Warnings appear only when a selected component is unavailable.
-Detailed metric lists and implementation settings stay collapsed until opened.
-Configuration, readiness, and metrics are combined inside each program phase:
+The optional startup GUI contains eight compact phase groups:
 
-`Network and Task -> Agent A -> Agent B and NLG -> TTS -> ASR -> NLU -> Dialogue Management -> Results and Logging`
-
-Each phase card shows its high-priority controls, current selection, readiness
-warning, and metric availability once. Detailed metrics and provider-specific
-settings are lazy-loaded within their owning phase. Metrics are not selectable:
-every catalog metric is obligatory, and each row reports whether its required
-evidence will be available. The selected condition's
-constraint-aware optimal route belongs to Network and Task; logging evidence
-and the dependency matrix belong to Results and Logging.
-
-Results and Logging contains the two runtime-transparency switches. `console_view`
-can be `compact`, `transcript`, `debug`, or `quiet`. Compact prints the
-conversation, memory snapshots, warnings, and retrospective summaries;
-transcript prints only the speech exchange; debug adds internal stage and
-phase events; quiet suppresses live conversation output except final summaries
-and warnings. `log_profile` can be `off`, `startup`, `runtime`, or `full` and
-controls structured event logging volume without changing the experiment
-condition.
-
-Provider packages, isolated Python environments, executables, manifests, and
-model destination directories are prepared before experiments. Language models
-can also be downloaded at runtime when `allow_model_download=true`; leave this
-off for reproducible offline batches. Speech providers still perform strict
-preflight on the selected executable and model path before a dialogue starts.
-Run `python scripts/prepare_test_environment.py` to initialize the standard
-local asset layout and use `--check` to validate it.
-
-Complete platform preparation and test entry points are:
-
-```powershell
-scripts\prepare_windows_tests.ps1
+```text
+Network/Task -> Agent A -> Agent B/NLG -> TTS -> ASR -> NLU
+             -> Dialogue Management -> Results/Logging
 ```
 
-```bash
-bash scripts/prepare_linux_tests.sh
-```
+It shows only high-priority settings by default. Provider-specific controls,
+metric lists, logging evidence, and the metric dependency matrix are
+collapsible. The GUI closes before model loading and runtime execution; batch
+and script execution remain fully GUI-free.
 
-Both install platform dependencies, prepare all declared assets, run the test
-suite, and execute the live TTS/ASR matrix. Coqui uses an isolated Python 3.11
-provider. On managed Windows systems, Application Control must permit that
-provider's PyTorch DLLs; otherwise preflight marks Coqui unavailable before an
-experiment starts.
-
-Every control has a tooltip explaining its experimental effect. Provider
-settings are created only for the selected implementation: ChatTTS sampling
-controls are not shown for SAPI or Piper, Vosk asks for a Vosk model directory,
-and model-service fields appear only when an LLM-backed agent is selected.
-The GUI validates packages, executables, model paths, local model availability,
-platform support, and result storage before it closes. Invalid configurations
-remain open with an actionable error. There is no runtime GUI.
-
-Only fundamental experiment settings are saved as scriptable JSON in
-`run_settings.json`; obsolete custom-prosody and reference-audio values are
-discarded. Set
-`COOP_NAVIGATION_SDS_SETTINGS_FILE` to use another file. Previous
-`MINILLAMA_*` environment variables remain accepted as compatibility
-fallbacks; new configurations should use `COOP_NAVIGATION_SDS_*`.
-
-Important staged-policy settings:
+Important defaults:
 
 | Setting | Default | Meaning |
 | --- | ---: | --- |
-| `num_turns` | 14 | Maximum messages; allows bounded clarification and repair |
-| `clarification_max_attempts` | 2 | Targeted repair requests before a structured trip-detail reset |
-| `dialogue_stagnation_limit` | 2 | Consecutive no-progress rounds allowed before explicit termination |
-| `acceptable_duration_ratio` | 1.5 | Route must be less than 50% longer than optimal |
-| `maximum_progressive_constraints` | 3 | Maximum private constraints revealed sequentially |
-| `minimum_compared_routes` | 2 | Distinct valid routes required before normal closure |
-| `require_constraint_retention` | true | New route must preserve prior constraints |
-| `minimum_stage_suboptimal_options` | 1 | Required viable non-best option per stage |
-| `require_stage_suboptimal_options` | true | Enforce stage viability during preflight |
-| `agent_a_ticket_modes` | `metro,tram` | Exactly two tickets from metro, tram, and bus |
-| `agent_a_max_walking_min` | 10 | Maximum cumulative walking time |
-| `agent_a_max_delay_risk` | `high` | Highest accepted whole-route delay class |
-| `agent_a_max_transfer_risk` | `medium` | Highest accepted missed-connection class |
-| `network_seed` | 42 | Reproducible topology, service, timing, and demand seed |
+| `num_turns` | 14 | Maximum dialogue messages |
+| `clarification_max_attempts` | 2 | Targeted repair attempts before reset |
+| `dialogue_stagnation_limit` | 2 | Consecutive no-progress rounds |
+| `acceptable_duration_ratio` | 1.5 | Maximum selected/optimal duration ratio |
+| `maximum_progressive_constraints` | 3 | Maximum sequential private constraints |
+| `minimum_compared_routes` | 2 | Required distinct viable candidates |
+| `require_constraint_retention` | true | Preserve all previously satisfied constraints |
+| `network_seed` | 42 | Reproducible network and demand condition |
 
-Every generated station has exactly two of the three public modes: metro,
-tram, and bus. Walking is a separate local mode available at every station and
-is bounded by the caller's cumulative walking limit. Metro is fastest per map
-unit, followed by tram, bus, and walking. Line changes alone incur the
-station-specific transfer time.
+Settings are stored in scriptable JSON. Job files support:
 
-## Providers
+- ordinary configuration values;
+- Cartesian grids;
+- inclusive numeric ranges;
+- named linked parameter profiles;
+- job inheritance through `extends`;
+- paired text/audio controls;
+- repeated iterations.
 
-### Agent B language models
+## Setup
 
-| Provider key | Implementation | Research contrast |
-| --- | --- | --- |
-| `transformers` | Local Hugging Face causal model | Local weights and controlled decoding |
-| `openai_compatible` | Chat-completions HTTP API | Hosted ChatGPT or compatible service |
-| `ollama` | Native local Ollama chat API | Independently served local model |
-| `llama_cpp` | Local OpenAI-compatible llama.cpp server | Quantized CPU/GGUF resource condition |
-
-The primary Agent B research matrix contains two conditions per size tier:
-
-| Tier | Conditions | Research contrast |
-| --- | --- | --- |
-| Small | SmolLM2 360M, Qwen2.5 0.5B | Very low-resource instruction-following baselines |
-| Mid | Llama 3.2 3B, Phi-3 Mini 3.8B | Practical local assistants from different model families |
-| Large | Qwen2.5 7B, Llama 3.1 8B | Higher-quality local models for latency and repair comparison |
-
-Additional registered profiles remain available for compatibility and targeted
-studies: TinyLlama 1.1B, Llama 3.2 1B through Ollama, Qwen2.5 1.5B through
-Ollama, Gemma 2 2B through Ollama, Qwen3 4B through Ollama, Mistral 7B through
-Ollama, Qwen2.5 0.5B GGUF through llama.cpp, and a ChatGPT mini API condition.
-Each profile documents its experimental contrast and resource class; select
-`custom` for independent provider/model settings.
-
-Model provider, model name, endpoint, device, timeouts, token limits, and API
-key are configurable in the GUI, JSON settings, and batch CLI. Credentials are
-never persisted to `run_settings.json` or unredacted result metadata.
-PyTorch and Transformers are imported only for the `transformers` provider.
-When Agent A or Agent B requires a model, the console prints the roles, model
-identifier, and provider before loading starts.
-ChatGPT/OpenAI-compatible runs require an API key. Enter it in the startup GUI,
-set `OPENAI_API_KEY`, or pass `--model-api-key` for batch runs. Missing keys
-fail preflight instead of silently switching to another Agent B implementation.
-
-Agent B policies are `llm`, `simple`, `pareto`, `robust`, and `diverse`.
-`package.module:factory` loads a custom plugin. The old `minillama` Agent B key
-is accepted as an alias for `llm`.
-
-Agent A implementations are `staged`, `tinyllama`, and `userlm`. `staged` is
-deterministic and dependency-light. `tinyllama` is model-backed and forces the
-TinyLlama 1.1B Chat profile for a fixed local Agent A condition. `userlm` is
-model-backed and uses the selected language-model condition. The old
-`minillama` Agent A key is accepted as an alias for `staged`.
-Model-backed Agent A conditions fail preflight if no adapter is loaded; they
-never silently fall back to the staged template caller. Each run manifest also
-stores an `agent_a_model_integrity` record with the configured Agent A type,
-expected model profile, adapter-loaded status, and validity flag.
-
-### Text-to-speech
-
-Portable GUI implementations are `chattts`, `piper`, `espeak_ng`, and
-`coqui`. The GUI lists only engines whose provider import and local asset
-signature pass startup checks. `sapi` remains available from scripts on
-Windows for legacy comparisons. `file` is script-only and is used for smoke
-tests and paired controls, not as an interactive speech condition.
-
-ChatTTS includes a tested pure-Python Base16384 fallback for Python 3.14 when
-the native `pybase16384` extension is unavailable.
-
-Clock notation is expanded before synthesis for recognizer clarity. A time
-such as `08:07` is spoken as `eight oh seven`, not `eight seven`, because the
-explicit zero reduces ASR ambiguity. This transformation is logged as part of
-the speech trace when it changes the generated utterance.
-
-### Automatic speech recognition
-
-Portable GUI implementations are `faster_whisper`, `vosk`, `whisper_cpp`, and
-`sherpa_onnx`. The script layer also retains `sapi`, `qwen3_asr`, and
-`file` for legacy, exploratory, or deterministic-control runs.
-
-Optional engines perform strict local preflight checks and report missing
-packages, executables, model files, or unsupported platforms before
-conversation. The pipeline never silently substitutes an implementation during
-an experiment.
-`Configuration/platform_manifest.json` documents platform-capable providers
-and required local assets.
-Every recognizer passes through the same optional, conservative domain repair.
-The pipeline records the raw transcript and domain-repaired transcript separately. Common
-public transit variants such as `rude` for `route` and `Harbour` for `Harbor`
-are repaired before the listening agent receives the transcript; the repair
-flag and token-level edit list remain available for retrospective ASR metrics.
-Mode-grounded line variants such as `metro line em one` are normalized to
-`metro line M1`. Configure this with
-`asr_domain_normalization_enabled` and
-`asr_domain_similarity_threshold` (default `0.86`). Repeated failed repairs
-progress from a natural clarification to separately requested start,
-destination, and departure-time fields, then a bounded reset.
-
-Departure-time parsing accepts common ASR renderings of compact spoken clock
-pairs. For example, `8-7`, `8, 7`, `8 7`, `eight seven`, and `eight oh seven`
-all normalize to the semantic slot `08:07` when they occur as a departure-time
-expression or focused time-repair answer. The raw ASR text remains stored; only
-the downstream slot value is normalized for dialogue state.
-Focused time repairs are self-identifying (`Departure time: 08:07.`), so the
-recognizer can distort the clock into forms such as `807` or `eight to seven`
-without causing Agent B to repeatedly ask for the departure time.
-
-## Running
-
-Configuration GUI:
-
-```powershell
-python -m coop_navigation_sds
-```
-
-Script configuration without GUI:
-
-```powershell
-python scripts\run_from_script_config.py
-```
-
-Fast end-to-end smoke test without model downloads or a GUI:
-
-```powershell
-python -m coop_navigation_sds --smoke --results-dir results
-# or
-python -m coop_navigation_sds.smoke --results-dir results
-```
-
-The smoke condition uses deterministic agents and file-backed TTS/ASR while
-still exercising orchestration, route validation, raw traces, retrospective
-metrics, XLSX export, and artifact verification.
-
-Batch research smoke with paired text/audio controls and retrospective metrics:
-
-```powershell
-python -m coop_navigation_sds.batch `
-  --job-file jobs\research_smoke.job `
-  --iterations 1 `
-  --results-dir results `
-  --progress
-```
-
-TinyLlama/Piper/Faster-Whisper comparison matrix:
-
-```powershell
-python -m coop_navigation_sds.batch `
-  --job-file jobs\tinyllama_piper_faster_whisper_sequential.job `
-  --results-dir results `
-  --progress
-```
-
-This job runs two route scenarios, four named linked speech treatments, and
-two repetitions. Every audio condition receives an otherwise identical
-file-backed control. The treatment profiles are `baseline`, `fast_speech`,
-`acoustic_variation`, and `wide_asr_search`; profile parameters are stored as
-`factor_*` columns in wide and long metric outputs. TinyLlama, the Piper voice,
-and Faster-Whisper assets must be prepared locally because runtime fallback
-would invalidate paired comparisons.
-
-Parallel profile-array execution on Windows:
-
-```powershell
-.\scripts\run_tinyllama_piper_whisper_parallel.ps1 `
-  -MaxParallel 2 `
-  -ResultsDir results
-```
-
-Parallel profile-array execution on Linux:
-
-```bash
-MAX_PARALLEL=2 RESULTS_DIR=results \
-  bash scripts/run_tinyllama_piper_whisper_parallel.sh
-```
-
-The parallel variant consists of four ordinary `.job` shards, one per linked
-profile. It uses separate processes because language-model adapters, speech
-providers, and the generated transport network are not thread-safe shared
-state. Two concurrent shards are the default recommendation for a limited-RAM
-laptop. Every shard writes the same `metrics_long.csv/jsonl` schema and includes
-`factor_profile_key`, so rows can be concatenated without transformation.
-
-Faster-Whisper accepts either the exact CTranslate2 snapshot directory or the
-prepared parent cache directory. Preflight and runtime resolve the parent to
-the snapshot containing `model.bin` and `config.json`; a missing snapshot now
-fails before the first condition rather than during transcription.
-
-Full batch experiment:
-
-```powershell
-python -m coop_navigation_sds.batch `
-  --job-file jobs\audio_persona_matrix.job `
-  --agent-b-plugin simple `
-  --tts-engine file `
-  --asr-engine file `
-  --progress
-```
-
-Linux preset and preflight:
-
-```bash
-python scripts/check_offline_setup.py \
-  --preset linux_userlm_tinyllama_chattts_faster_whisper
-python -m coop_navigation_sds.batch \
-  --preset linux_userlm_tinyllama_chattts_faster_whisper --progress
-```
-
-The preset uses `agentA=userlm`, `agentB=TinyLlama`, `TTS=ChatTTS`, and
-`ASR=faster_whisper`. Provider environments and all model assets must exist
-before execution; the preparation utility creates and verifies them.
-
-Example LLM provider overrides:
-
-```powershell
-python -m coop_navigation_sds.batch `
-  --agent-b-plugin llm `
-  --model-provider ollama `
-  --model-name llama3.2:latest `
-  --model-base-url http://127.0.0.1:11434/api
-```
-
-Prepared paired-control matrix jobs:
-
-- `jobs/research_smoke.job`
-- `jobs/tinyllama_piper_faster_whisper_comparison.job`
-- `jobs/tinyllama_piper_faster_whisper_sequential.job`
-- `jobs/tinyllama_piper_faster_whisper_parallel_01_baseline.job`
-- `jobs/tinyllama_piper_faster_whisper_parallel_02_fast_speech.job`
-- `jobs/tinyllama_piper_faster_whisper_parallel_03_acoustic_variation.job`
-- `jobs/tinyllama_piper_faster_whisper_parallel_04_wide_asr.job`
-- `jobs/windows_agent_a_tinyllama_speech_llm_matrix.job`
-- `jobs/windows_agent_a_userlm_speech_llm_matrix.job`
-- `jobs/linux_agent_a_tinyllama_speech_llm_matrix.job`
-- `jobs/linux_agent_a_userlm_speech_llm_matrix.job`
-
-The speech matrix jobs cross the portable four-engine TTS and ASR sets with
-four local Ollama Agent B models: Llama 3.2 3B, Phi-3 Mini 3.8B, Qwen2.5 7B,
-and Llama 3.1 8B. The startup GUI also exposes the two small Transformers
-conditions for single runs and provider-specific batches. The `tinyllama`
-Agent A condition uses the TinyLlama 1.1B Chat model; `userlm` uses the
-selected condition model. Ollama models and speech-provider assets must be
-prepared locally before the batch starts.
-
-Install the base runtime and optional speech providers:
+Create and validate the prepared environment:
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -499,303 +627,239 @@ python scripts\prepare_test_environment.py
 python scripts\prepare_test_environment.py --check
 ```
 
-On Linux, install eSpeak NG through the distribution package manager when it
-is used. `setup_speech_providers.py` creates the provider manifest and all
-model destination directories. Provider preparation scripts download only the
-assets required by the selected setup action.
-Coqui should be installed in a compatible isolated Python environment and
-registered as a provider when the orchestration Python version is unsupported.
-Unselected optional providers are never imported or downloaded.
-
-Register an existing whisper.cpp build once, then select `whisper_cpp` in the
-configuration GUI or batch scripts:
+Platform preparation:
 
 ```powershell
-python scripts\setup_speech_providers.py `
-  --register-whisper-cpp `
-  --whisper-cpp-executable C:\path\to\whisper-cli.exe `
-  --whisper-cpp-model C:\path\to\ggml-base.en.bin
+scripts\prepare_windows_tests.ps1
 ```
 
-The same runtime is also discovered automatically from
-`.speech-providers\providers.json` or from
-`.speech-providers\whisper_cpp\bin` plus `.speech-providers\whisper_cpp\models`.
-Default audio personas use high-clarity speech with slower cadence, lower
-sampling variation, and longer punctuation pauses. Less clear delivery only
-comes from an explicitly selected audio persona or speech pattern. This keeps
-the default condition suitable for cooperative agent communication while every
-raw ASR output, domain correction, and understood transcript remains logged.
-
-### Batch ranges
-
-JSON `.job` files support explicit sets and inclusive numeric ranges. All
-fields are crossed with the normal scenario/persona/audio grid:
-
-```json
-{
-  "parameter_values": {
-    "ticket_modes": [["metro", "tram"], ["tram", "bus"]],
-    "network_seed": [43]
-  },
-  "parameter_ranges": {
-    "max_walking_min": {"start": 5, "stop": 10, "step": 5},
-    "asr_beam_size": {"start": 4, "stop": 8, "step": 2}
-  }
-}
+```bash
+bash scripts/prepare_linux_tests.sh
 ```
 
-Range endpoints are inclusive and decimal steps use stable decimal arithmetic.
-Runtime limits and `SpeechPipelineConfig` fields are applied per condition;
-other keys become scenario overrides. See `jobs/multimodal_access.job` for a
-complete batch definition.
+Prepared assets live under `.speech-providers/`. The platform manifest is
+`coop_navigation_sds/Configuration/platform_manifest.json`.
 
-Jobs may also grid `agent_b_models`, `test_cases`, scenario parameters,
-constraints, caller personas, both audio personas, `tts_engines`, and
-`asr_engines`. With `paired_audio_text_runs=true` (the batch default), every
-audio condition receives an otherwise identical deterministic text-only
-control. Both rows store `pair_id` and `run_type`. Audio-minus-text fields cover
-task success, route validity, constraint satisfaction, turn count, repair
-turns, and audio error. Text-only is a batch control condition, not a second
-interactive runtime mode.
+## Running Experiments
 
-## Metrics
-
-Metrics are calculated after dialogue completion from captured phase evidence.
-Batch runs first write one combined immutable `metric_inputs.json`, then
-rebuild every metric record from that evidence file.
-Every implemented catalog metric is obligatory; there is no per-run metric
-selection. Dependency preflight reports which metrics are immediately
-calculable and which required trace fields or
-estimators are missing. Missing or inapplicable metrics remain in
-`retrospective_metrics.json` with `null` values and calculation evidence
-explaining why they were not calculable; they are never converted to zero.
-
-Metric selection follows four thesis requirements: each measure must identify
-a specific pipeline construct, use evidence captured by the experiment, support
-comparison between conditions, and help distinguish an early phase failure
-from a final task failure. The per-metric meaning, rationale, evidence contract,
-formula, range, and interpretation are listed in
-[METRIC_REFERENCE.md](METRIC_REFERENCE.md). Exhaustive package, class, function,
-and method documentation is generated in [API_REFERENCE.md](API_REFERENCE.md).
-
-Learned and intrusive audio evaluators run when their local estimator or
-reference evidence exists. Otherwise their obligatory result is `null` with an
-explicit dependency reason. Evidence-backed metrics
-include:
-
-| Metric | Formula | Interpretation |
-| --- | --- | --- |
-| Domain correction yield | corrections / detected raw token errors | Effectiveness of conservative ASR term repair |
-| Valid proposals per 100 output tokens | `100 * valid proposals / output tokens` | Agent B generation economy; `null` without token evidence |
-| Memory trace coverage | memory snapshots / dialogue messages | Verifies that every turn has analyzable task-memory state |
-| Memory update rate | memory snapshots with additions / memory snapshots | Shows whether turns add remembered facts, routes, constraints, or repair state |
-| Route-memory retention rate | post-route snapshots retaining route memory in both agents / post-route snapshots | Detects whether route state is lost after a candidate enters the dialogue |
-| Constraint-induced route change rate | changed adjacent optima / stage transitions | Effect of progressive constraints on the target route |
-| Trace completeness rate | captured required collections / required collections | Suitability for retrospective analysis |
-| First deviation turn and phase | earliest ordered deviation in speech, ASR, NLU, policy, route, or final outcome | Localizes where success first became at risk |
-| Per-agent task-focus score | task-domain tokens / all tokens for that agent | Measures focus versus distraction by speaker |
-| Correction-turn and corrected-token rates | transparent corrections / speech turns or reference words | Measures repair burden caused by the speech pipeline |
-
-The console is split into three stages. Before the run it prints the selected
-configuration, backend initiation messages, and a phase-wise metric evidence
-plan. During the run it prints one compact chronological speech block per turn.
-Clean turns contain only the TTS speech and raw ASR result.
-`INTENDED` appears only when the audio persona changed generated text;
-`AGENT INPUT` and `ASR -> INPUT` appear only when configured normalization
-changed the ASR result. `TTS -> ASR` lists actual recognition differences.
-Debug console view additionally prints memory and phase events. After the run,
-metrics are printed by phase with one line per metric: name, value or
-not-calculable reason, valid range, endpoint meanings, and direction. Exact
-formulas, operands, and substitutions are retained in the result files and in
-the metric specification instead of repeated in live console output.
-
-```text
---- Turn 2: Agent B -> Agent A ---
-TTS SPEECH:    Take metro line M1 to Harbor.
-ASR HEARD:     Take metro line em one to harder.
-AGENT INPUT:   Take metro line M1 to Harbor.
-TTS -> ASR:    'M1' -> em one; 'Harbor' -> harder
-ASR -> INPUT:  em one -> M1; harder -> Harbor
-```
-
-Compact time repairs follow the same display contract:
-
-```text
---- Turn 5: Agent A -> Agent B ---
-TTS SPEECH:    eight oh seven.
-ASR HEARD:     8, 7.
-AGENT INPUT:   8, 7.
-TTS -> ASR:    'eight oh seven' -> 8, 7
-NLU SLOT:      departure_time = 08:07
-```
-
-Dialogue state and the next agent response use only `AGENT INPUT` (or the
-identical `ASR HEARD` value when no correction occurred), never generated
-speech or a hidden source-text fallback. When normalization changes a route
-entity, the listener explicitly asks what was meant and the original speaker
-confirms and restates the relevant answer. The correction is therefore visible
-in the dialogue and retained as a repair event, not only as hidden preprocessing.
-
-Before dialogue, the route planner calculates separate optimal baselines for:
-
-1. any valid connected route;
-2. the fastest valid route;
-3. the fastest route satisfying constraint 1;
-4. the fastest route satisfying constraints 1 and 2;
-5. the fastest route satisfying constraints 1, 2, and 3.
-
-Each layer retains earlier constraints and is stored under
-`optimal_routes_by_layer`. Each additional constraint selects the highest-ranked
-qualifying path that differs from the immediately preceding optimum. A layer is
-marked unavailable instead of repeating that route when no distinct qualifying
-path exists.
-
-The console and configuration preview print one layer per line. Complete paths
-label every edge with its service, for example:
-
-```text
-Valid connected route: Echo --tram T1 (India, Juliett)--> Victor --metro M3--> Zulu
-Fastest valid route: Echo --tram T2--> Lima --bus B4--> Zulu
-Constraint 1: fewer changes: Echo --tram T1 (India)--> Zulu
-```
-
-Walking edges use the same unambiguous form, such as
-`Alpha --walk 5 min--> Bravo`. Station arrays remain available as station
-sequences for analysis, but they are not treated as complete path displays.
-
-```text
-NISQA: 4.3376 (86.752% of maximum); non-intrusive synthesized-speech quality, 1 -> 5 (poor -> excellent); higher is better
-```
-
-The metric catalog records phase, evidence class, meaning, valid range,
-direction, unit, required trace fields, missing-data policy, and calculation
-method. Console and structured
-logs report the same phase-wise program flow: NLG, TTS, ASR, NLU, dialogue
-management, memory snapshots, warnings, and final retrospective metric
-calculations without duplicating the conversation transcript.
-
-The TTS phase includes NISQA v2 and DNSMOS as non-intrusive learned metrics.
-Aligned-reference runs can additionally calculate PESQ, STOI, and SI-SDR.
-POLQA values are accepted only from a licensed ITU-T P.863 implementation and
-remain unavailable otherwise; the software does not report a surrogate as
-POLQA.
-
-The ChatTTS adapter samples deterministic speaker tensors directly and caches
-them by configured speaker seed. This avoids ChatTTS's preset-9 LZMA speaker
-encoding, which can allocate excessive memory after model weights are loaded,
-while preserving stable Agent A and Agent B voices within a run.
-
-Each turn also reports a timing breakdown. Generation, synthesis, recognition,
-understanding, and dialogue-management values are processing latencies. Audio
-duration is the spoken stimulus length and is reported separately because it
-may already be included in speech-pipeline wall time during real-time playback.
-Observed turn time is generation plus speech delivery and measured downstream
-processing. Accounted processing time excludes standalone audio duration and
-therefore must not be added to audio duration unless the playback mode is known.
-The same records are stored once in the combined protocol's `phase_timing`
-array and summarized in the readable transcript and structured session log.
-
-See [AUTOMATIC_METRICS_SPEC.md](AUTOMATIC_METRICS_SPEC.md) for the complete
-catalog, [METRIC_PROPOSALS.md](METRIC_PROPOSALS.md) for implementable additions
-and their evidence requirements, and [REBUILD_SPEC.md](REBUILD_SPEC.md) for the
-normative system specification.
-
-## Results
-
-`results_root` is the only configurable output location. Relative values resolve
-against the repository root, independent of the launch directory. Each execution creates
-one flat timestamped directory beneath it. Runtime traces are consolidated in
-one protocol rather than repeated as phase-specific files.
-
-The flat run folder has two central contracts:
-
-- `metric_inputs.json` is written before metric calculation and retains raw
-  conversation, speech, timing, semantic, state, candidate, configuration,
-  backend, memory-snapshot, and environment evidence.
-- `run_manifest.json` records schema versions, run identity, sanitized resolved
-  configuration, network seed, Python/operating-system metadata, backend
-  profile, and canonical artifact paths.
-
-`*_protocol.json` is the combined trace. `retrospective_metrics.json` stores
-only calculated values grouped by phase plus formula evidence;
-`metrics_by_phase.jsonl` is the compact analysis stream; and `metrics.xlsx`
-provides summary, long-form, and phase-oriented tables. `metrics_long.csv` and
-`metrics_long.jsonl` contain one row per condition and metric, with factor
-columns, phase, value, availability, units, range, direction, rationale,
-formula, operands, substitution, and unavailable reason. This is the canonical
-graphing and cross-run join format. `metric_catalog.json` describes only metrics
-emitted by that run. Stored evidence can be re-evaluated with
-`ResultsAndArtifacts.artifacts.calculate_metrics_from_inputs` for single runs
-or `calculate_batch_metrics_from_inputs` for batch evidence without rerunning
-the dialogue.
-
-Batch runs also write `failure_indicators.json`. It performs a leakage-checked
-exploratory threshold search over pre-outcome phase metrics only. It excludes
-task-outcome, whole-dialogue, and metric-validity fields so the report cannot
-rediscover the final success label as a predictor. Treat the thresholds as
-research hypotheses unless validated on a held-out batch.
-
-Conversation text is stored as one complete transcript and speech as one
-complete WAV. Per-turn source WAV and sidecar transcript files are removed
-after successful compilation. Per-agent timing, speech, semantic parsing,
-candidate history, task-memory snapshots, runtime events, verification, and
-audio manifest remain distinguishable as named arrays in the combined protocol.
-
-By default, all run outputs are stored under the single top-level `results/`
-directory. Separate protocol, log, audio, metric, and network output roots are
-not supported; their files share the run folder and remain distinguishable by
-stable names and schemas. Legacy `protocol_log_dir` settings migrate to
-`results_root` when loaded.
-
-The result root contains `naming_scheme.json`, refreshed whenever a run folder
-is created. Its keys are compact abbreviations used in run folder names and
-batch condition identifiers, and its values describe the configuration setting.
-For example, `TL1` means `TinyLlama 1.1B Chat language model`, `TLA` means
-`Agent A TinyLlama caller`, and `ULM` means `Agent A UserLM caller using the
-selected language model`. The same naming scheme is embedded in each
-`run_manifest.json` and batch `experiment_manifest.json`.
-
-## Validation
-
-Run the complete unit and integration suite:
+Configuration GUI:
 
 ```powershell
-python -m pytest -q
+python -m coop_navigation_sds
 ```
 
-Run the deterministic end-to-end speech experiment:
+Scripted single run:
 
 ```powershell
 python scripts\run_from_script_config.py
 ```
 
-Run the dependency-light smoke path used for CI and local diagnosis:
+Dependency-light smoke run:
+
+```powershell
+python -m coop_navigation_sds --smoke --results-dir results
+```
+
+Paired batch smoke:
+
+```powershell
+python -m coop_navigation_sds.batch `
+  --job-file jobs\research_smoke.job `
+  --results-dir results `
+  --progress
+```
+
+TinyLlama, Piper, and Faster-Whisper sequential matrix:
+
+```powershell
+.\.venv\Scripts\python.exe -m coop_navigation_sds.batch `
+  --job-file jobs\tinyllama_piper_faster_whisper_sequential.job `
+  --results-dir results `
+  --progress
+```
+
+This matrix contains two scenarios, four linked speech/recognition profiles,
+two repetitions, and paired text/audio conditions.
+
+Parallel profile shards on Windows:
+
+```powershell
+.\scripts\run_tinyllama_piper_whisper_parallel.ps1 `
+  -MaxParallel 2 `
+  -ResultsDir results
+```
+
+Parallel profile shards on Linux:
+
+```bash
+MAX_PARALLEL=2 RESULTS_DIR=results \
+  bash scripts/run_tinyllama_piper_whisper_parallel.sh
+```
+
+Parallel execution uses independent processes because model runtimes, speech
+providers, and generated network state are not shared-thread-safe. Two
+concurrent shards are recommended for limited-memory systems.
+
+## Data Capture
+
+All evidence required for configured calculations is collected during runtime
+without calculating final metrics prematurely.
+
+### Per Turn
+
+- turn index, speaker, listener, and dialogue stage;
+- intended text, synthesized text, raw recognition, and listener input;
+- token-level misinterpretations and corrections;
+- generated WAV metadata and audio duration;
+- text-to-speech and recognition diagnostics;
+- generation, synthesis, recognition, understanding, policy, and total timing;
+- parsed intent, trip facts, constraints, and route;
+- route validity, destination reachability, and constraint status;
+- both perspective-specific memory snapshots and memory additions;
+- candidate route insertion, deduplication, revision, and comparison;
+- clarification, repair, warning, and progress events;
+- model/backend metadata and token counts where exposed.
+
+### Per Run
+
+- complete resolved configuration and random seeds;
+- operating system, Python runtime, process, and provider metadata;
+- network graph, station/line data, scenario, and staged optimal routes;
+- full transcript and compiled conversation WAV;
+- final route, outcome, satisfaction level, and failure diagnostics;
+- immutable metric inputs and retrospective calculation evidence.
+
+## Metric Overview
+
+Every registered metric is obligatory. A value is calculated after the
+dialogue when its evidence exists; otherwise it remains `null` with an explicit
+reason. The console prints one compact line per phase. Detailed formulas,
+operands, substitutions, ranges, and rationales are stored in result files.
+
+| Phase | Representative metrics | Evaluation purpose |
+| --- | --- | --- |
+| User simulation | violation catch rate, false acceptance, selection regret, caller latency | Determine whether Agent A verifies and closes correctly |
+| Audio and turn-taking | capture success, utterance duration, clipping, silence, turn latency | Separate audio/endpoint failures from language failures |
+| Automatic speech recognition | word/entity error, station F1, numeric preservation, correction yield, latency | Measure transcription fidelity and task-critical errors |
+| Language understanding | intent accuracy, slot F1, frame accuracy, route parse, origin/destination accuracy | Measure conversion from heard text into task state |
+| Dialogue state | joint goal accuracy, constraint retention, shared-state agreement, route-memory retention | Detect memory loss, drift, and agent disagreement |
+| Dialogue management | clarification calibration, repair success, progress, repetition, stopping accuracy | Evaluate policy decisions and recovery behavior |
+| Agent B grounding | route validity, grounded proposal score, hallucination, actionability, optimality | Measure useful and executable route proposals |
+| Natural-language generation | adequacy, faithfulness, slot error, conciseness, repetition | Evaluate realization of the selected system action |
+| Text-to-speech | synthesis success, pronunciation, round-trip intelligibility, NISQA, DNSMOS | Evaluate audio production and semantic preservation |
+| Task outcome | completion, route validity, duration quality, constraint satisfaction | Measure final and partial task success |
+| Whole dialogue | dialogue cost, task focus, repair burden, first deviation, failure localization | Explain interaction quality and earliest failure |
+| Metric validity | outcome correlation, confidence intervals, seed variance, rank stability | Test whether metrics generalize across conditions |
+
+NISQA and DNSMOS are non-intrusive audio estimates. PESQ, STOI, and SI-SDR
+require aligned clean-reference audio. POLQA is accepted only from a licensed
+ITU-T P.863 implementation.
+
+Full definitions are maintained in:
+
+- [METRIC_REFERENCE.md](METRIC_REFERENCE.md): one row per metric with meaning,
+  rationale, evidence, formula, range, and interpretation;
+- [AUTOMATIC_METRICS_SPEC.md](AUTOMATIC_METRICS_SPEC.md): metric methodology
+  and evidence classes;
+- [METRIC_PROPOSALS.md](METRIC_PROPOSALS.md): additional metrics and the data
+  required before implementation.
+
+## Result Structure
+
+`results/` is the single output root. Each execution creates one flat,
+timestamped run directory.
+
+| Artifact | Purpose |
+| --- | --- |
+| `run_manifest.json` or `experiment_manifest.json` | Reproducibility metadata and artifact index |
+| `metric_inputs.json` | Immutable raw evidence used for retrospective calculation |
+| `*_protocol.json` | Complete structured conversation and phase trace |
+| `*_conversation_transcript.txt` | Human-readable said/heard transcript |
+| `*_conversation.wav` | Combined dialogue audio |
+| `network_overview.json` | Machine-readable network |
+| `network_graph.svg` | Visual network representation |
+| `retrospective_metrics.json` | Metrics grouped by phase with detailed calculations |
+| `metric_catalog.json` | Metric definitions, evidence requirements, ranges, and rationale |
+| `metrics_by_phase.jsonl` | Compact phase-grouped analysis records |
+| `metrics_long.csv` | Canonical graphable row-per-condition-per-metric table |
+| `metrics_long.jsonl` | JSONL equivalent retaining typed structures |
+| `metrics.xlsx` or configured workbook name | Summary, long-form, and per-phase worksheets |
+| `failure_indicators.json` | Leakage-controlled exploratory failure thresholds for batches |
+
+`metrics_long.csv` is the recommended input for R, pandas, SPSS, or plotting
+tools. It includes condition identifiers, paired-run fields, experimental
+factors, phase, metric key, numeric/text value, availability, unit, direction,
+range, normalized percentage, selection rationale, formula, operands,
+substitution, and unavailable reason.
+
+## Console Views
+
+| View | Output |
+| --- | --- |
+| `compact` | Configuration, concise conversation, warnings, task summary, one metric line per phase |
+| `transcript` | Said/heard/corrected conversation only |
+| `debug` | Compact output plus memory, stage, and internal phase events |
+| `quiet` | Warnings and final summaries |
+
+Structured logging is independently configurable as `off`, `startup`,
+`runtime`, or `full`.
+
+## Project Structure
+
+```text
+coop_navigation_sds/
+  Configuration/                 schemas, GUI, jobs, paths, preflight
+  NaturalLanguageGeneration/     Agent A/B policies, prompts, LLM adapters
+  TextToSpeech/                  public TTS API and audio personas
+  AutomaticSpeechRecognition/    public ASR API
+  NaturalLanguageUnderstanding/  transcript repair and route interpretation
+  DialogManagement/              orchestration, stages, memory, speech transport
+  TransportNetwork/              network, routes, constraints, scenarios
+  EvaluationMetrics/             metric catalog and retrospective calculations
+  ResultsAndArtifacts/           protocols, long tables, XLSX, structured logs
+  app.py                         interactive controller
+  batch.py                       batch command-line controller
+  experiments.py                 reusable condition-grid runner
+  smoke.py                       dependency-light end-to-end validation
+jobs/                             reproducible experiment definitions
+scripts/                          preparation, launch, and documentation tools
+tests/                            unit, integration, provider, and pipeline tests
+results/                          single experiment output root
+```
+
+The generated [API_REFERENCE.md](API_REFERENCE.md) inventories every package
+module, class, function, and method. Regenerate API and metric references after
+structural changes:
+
+```powershell
+python scripts\generate_research_docs.py
+```
+
+## Validation
+
+Run the complete suite:
+
+```powershell
+python -m pytest
+```
+
+The suite covers configuration loading and inheritance, route and constraint
+validation, agent policies, memory isolation, transcript correction, speech
+providers, TTS/ASR combinations, result schemas, retrospective metrics, paired
+conditions, and end-to-end experiment execution.
+
+Run a fast end-to-end validation:
 
 ```powershell
 python -m coop_navigation_sds --smoke
 ```
 
-Run the paired-control batch smoke:
+Known limitations:
 
-```powershell
-python -m coop_navigation_sds.batch --job-file jobs\research_smoke.job --iterations 1 --progress
-```
-
-The end-to-end run verifies route preflight, both speech directions, staged
-constraint handling, candidate comparison, final selection, result writing,
-and retrospective metric calculation.
-
-Research questions directly supported by the current scope include:
-
-- Which phase first shows measurable deviation in failed dialogues?
-- Which pre-outcome metrics best separate successful and unsuccessful runs?
-- How much do ASR and domain correction errors change route validity and constraint satisfaction relative to paired file controls?
-- Does task focus by either agent predict fewer turns, fewer repairs, or better constraint satisfaction?
-- Do memory-update and route-retention metrics identify misunderstanding loops before final task failure?
-- Which Agent B model family or size tier improves route novelty without increasing hallucinated route content?
-- Which TTS and ASR pair preserves station and line entities with the lowest latency cost?
-
-Known limitations: POLQA requires an external licensed ITU-T P.863 result;
-PESQ, STOI, and SI-SDR require aligned reference audio; model token counts are
-available only when the provider reports or exposes them; API and local server
-availability remains an explicit preflight responsibility.
+- learned audio metrics require their prepared local estimators;
+- intrusive audio metrics require aligned references;
+- POLQA requires a licensed provider;
+- token metrics depend on provider token reporting;
+- large local model conditions remain constrained by available RAM and compute;
+- parallel batches intentionally use separate result folders and must be
+  concatenated through their common long-form schema.

@@ -31,6 +31,31 @@ from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
 from coop_navigation_sds.smoke import smoke_run_config
 
 
+def test_readme_documents_complete_experiment_network_contract():
+    readme = (Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8")
+
+    for heading in (
+        "### Network Parameters",
+        "### Structural Invariants",
+        "### Route Representation",
+        "### Fullness, Demand, and Delay",
+        "### Access and Constraint Evaluation",
+        "### Default Seed 42 Network",
+        "### Standard Scenarios",
+    ):
+        assert heading in readme
+    for required_value in (
+        "36",
+        "M1-M20",
+        "Near-capacity threshold",
+        "Default line-specific segment travel times",
+        "Default station coordinates, public modes, transfer times, and demand districts",
+        "`network_overview.json`",
+        "`network_graph.svg`",
+    ):
+        assert required_value in readme
+
+
 def test_settings_round_trip_excludes_credentials_and_transient_paths():
     with tempfile.TemporaryDirectory() as temporary:
         path = Path(temporary) / "settings.json"

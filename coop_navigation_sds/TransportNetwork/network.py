@@ -21,7 +21,9 @@ from coop_navigation_sds.Configuration.travel import (
     MODE_LINE_LIMITS,
     LINE_MIN_TRAVEL_TIME_MIN,
     LINE_MAX_TRAVEL_TIME_MIN,
+    WALKING_MIN_SEGMENT_TIME_MIN,
     WALKING_MAX_SEGMENT_TIME_MIN,
+    WALKING_BUS_MARGIN_MIN,
     NETWORK_SEED,
     LINE_FULLNESS_SEED,
     MIN_LINE_FULLNESS_PERCENT,
@@ -810,8 +812,27 @@ def travel_time_for_line(line_name, station_a, station_b, rng=None):
     mode = LINES.get(line_name, {}).get("mode", "bus")
     scale = MODE_TRAVEL_MINUTES_PER_MAP_UNIT.get(mode, LINE_TRAVEL_MINUTES_PER_MAP_UNIT)
     raw = map_distance(station_a, station_b) * scale + jitter
-    lower = 1 if mode == WALKING_MODE else max(MIN_TRAVEL_TIME_MIN, LINE_MIN_TRAVEL_TIME_MIN)
-    upper = WALKING_MAX_SEGMENT_TIME_MIN if mode == WALKING_MODE else min(MAX_TRAVEL_TIME_MIN, LINE_MAX_TRAVEL_TIME_MIN)
+    if mode == WALKING_MODE:
+        bus_raw = (
+            map_distance(station_a, station_b)
+            * MODE_TRAVEL_MINUTES_PER_MAP_UNIT["bus"]
+            + jitter
+        )
+        bus_minutes = max(
+            max(MIN_TRAVEL_TIME_MIN, LINE_MIN_TRAVEL_TIME_MIN),
+            min(
+                min(MAX_TRAVEL_TIME_MIN, LINE_MAX_TRAVEL_TIME_MIN),
+                int(round(bus_raw)),
+            ),
+        )
+        lower = max(
+            WALKING_MIN_SEGMENT_TIME_MIN,
+            bus_minutes + WALKING_BUS_MARGIN_MIN,
+        )
+        upper = WALKING_MAX_SEGMENT_TIME_MIN
+    else:
+        lower = max(MIN_TRAVEL_TIME_MIN, LINE_MIN_TRAVEL_TIME_MIN)
+        upper = min(MAX_TRAVEL_TIME_MIN, LINE_MAX_TRAVEL_TIME_MIN)
     return max(lower, min(upper, int(round(raw))))
 
 
@@ -837,6 +858,25 @@ def generate_travel_times(lines, seed=None):
                     override_key,
                     travel_time_for_line(line_name, a, b, rng),
                 )
+
+    # Preserve the physical ordering even when rounding, jitter, or an
+    # experiment override affects two services on the same station pair.
+    for a, b in line_stop_pairs("Walking", lines.get("Walking", {"stops": []})):
+        walking_key = line_segment_key("Walking", a, b)
+        bus_times = [
+            minutes
+            for (line_name, station_a, station_b), minutes in travel_times.items()
+            if {station_a, station_b} == {a, b}
+            and lines.get(line_name, {}).get("mode") == "bus"
+        ]
+        if bus_times:
+            travel_times[walking_key] = min(
+                WALKING_MAX_SEGMENT_TIME_MIN,
+                max(
+                    travel_times[walking_key],
+                    max(bus_times) + WALKING_BUS_MARGIN_MIN,
+                ),
+            )
 
     return travel_times
 

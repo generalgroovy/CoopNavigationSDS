@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import tempfile
 import unittest
+import xml.etree.ElementTree as ElementTree
 from unittest.mock import MagicMock, patch
 import wave
 from zipfile import ZipFile
@@ -293,6 +294,61 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertGreater(network_data["line_count"], 0)
         self.assertGreater(network_data["station_count"], 0)
         self.assertIn("<svg", graph_text)
+
+    def test_network_graph_contains_every_connection_and_external_index(self):
+        from coop_navigation_sds.TransportNetwork.network import LINES, line_stop_pairs
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            paths = write_network_research_artifacts(
+                480,
+                Path(tmpdir) / "research",
+                Path(tmpdir) / "graphs",
+            )
+            root = ElementTree.parse(paths["network_graph"]).getroot()
+
+        namespace = {"svg": "http://www.w3.org/2000/svg"}
+        connections = root.findall(".//svg:line[@class='network-connection']", namespace)
+        expected = sum(
+            len(line_stop_pairs(line_name, data))
+            for line_name, data in LINES.items()
+        )
+        self.assertEqual(len(connections), expected)
+        self.assertTrue(
+            all(
+                edge.get("data-line")
+                and edge.get("data-mode")
+                and edge.get("data-from")
+                and edge.get("data-to")
+                for edge in connections
+            )
+        )
+        walking = [edge for edge in connections if edge.get("data-mode") == "walking"]
+        self.assertTrue(walking)
+        self.assertTrue(all(edge.get("stroke-dasharray") for edge in walking))
+        self.assertIn("Line index", "".join(root.itertext()))
+
+        geometries_by_pair = {}
+        for edge in connections:
+            pair = tuple(sorted((edge.get("data-from"), edge.get("data-to"))))
+            geometry = tuple(
+                edge.get(attribute)
+                for attribute in ("x1", "y1", "x2", "y2")
+            )
+            geometries_by_pair.setdefault(pair, []).append(geometry)
+        self.assertTrue(
+            all(
+                len(geometries) == len(set(geometries))
+                for geometries in geometries_by_pair.values()
+            )
+        )
+
+        index_panel = root.find(".//svg:rect[@class='line-index-panel']", namespace)
+        self.assertIsNotNone(index_panel)
+        index_x = float(index_panel.get("x"))
+        self.assertLess(
+            max(max(float(edge.get("x1")), float(edge.get("x2"))) for edge in connections),
+            index_x,
+        )
 
     def test_create_execution_run_dir_uses_systematic_unique_labels(self):
         with tempfile.TemporaryDirectory() as tmpdir:
