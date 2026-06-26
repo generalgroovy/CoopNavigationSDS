@@ -70,14 +70,26 @@ def create_execution_run_dir(base_dir, label=None, timestamp=None):
     return candidate
 
 
-def write_metrics_csv(metrics, path):
+def _metric_export_context(output_dir, scope):
+    return {
+        "result_scope": scope,
+        "result_run_id": Path(output_dir).name,
+    }
+
+
+def write_metrics_csv(metrics, path, context=None):
     """Write flat metric rows as CSV."""
     records = list(metrics)
     if not records:
         return
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    rows = [record.as_dict() for record in records]
+    if context is None:
+        rows = [record.as_dict() for record in records]
+    else:
+        context_values = _metric_export_context(path.parent, "run")
+        context_values.update(dict(context or {}))
+        rows = [{**context_values, **record.as_dict()} for record in records]
     fieldnames = list(dict.fromkeys(key for row in rows for key in row))
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -85,26 +97,28 @@ def write_metrics_csv(metrics, path):
         writer.writerows(rows)
 
 
-def write_metrics_file(metrics, path):
+def write_metrics_file(metrics, path, context=None):
     """Write metrics as XLSX or CSV based on the requested file extension."""
     path = Path(path)
     records = list(metrics)
     if path.suffix.lower() == ".xlsx":
-        write_metrics_xlsx(records, path)
+        write_metrics_xlsx(records, path, context=context)
     else:
-        write_metrics_csv(records, path)
+        write_metrics_csv(records, path, context=context)
 
 
-def write_metric_phase_logs(metrics, output_dir):
+def write_metric_phase_logs(metrics, output_dir, *, result_scope="run"):
     """Write calculated phase metrics to one JSONL file and a matching catalog."""
     records = list(metrics)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    export_context = _metric_export_context(output_dir, result_scope)
     metric_path = output_dir / "metrics_by_phase.jsonl"
     emitted_by_phase = {}
     with metric_path.open("w", encoding="utf-8") as handle:
         for record in records:
             identifiers = {
+                **export_context,
                 "condition_id": record.condition_id,
                 "test_case_key": record.test_case_key,
                 "persona_key": record.persona_key,
@@ -158,7 +172,7 @@ def write_metric_phase_logs(metrics, output_dir):
     return {
         "phase_metrics": metric_path,
         "catalog": catalog_path,
-        **write_metric_long_exports(records, output_dir),
+        **write_metric_long_exports(records, output_dir, context=export_context),
     }
 
 
@@ -554,6 +568,64 @@ def calculate_batch_metrics_from_inputs(path):
     return records
 
 
+def build_retrospective_metrics_document(metrics, *, result_scope, input_inventory=None):
+    """Return a common retrospective metric document for single and batch runs."""
+    records = list(metrics)
+    conditions = [
+        {
+            "condition_id": record.condition_id,
+            "pair_id": getattr(record, "pair_id", ""),
+            "run_type": getattr(record, "run_type", "audio_variant"),
+            "test_case_key": record.test_case_key,
+            "persona_key": record.persona_key,
+            "scenario_key": record.scenario_key,
+            "speech_pattern_key": record.speech_pattern_key,
+            "agent_a_audio_persona": getattr(record, "agent_a_audio_persona", "unknown"),
+            "agent_b_audio_persona": getattr(record, "agent_b_audio_persona", "unknown"),
+            "model_name": record.model_name,
+            "model_param_key": record.model_param_key,
+            "metrics_by_phase": record.metric_families,
+            "calculation_evidence": record.metric_calculations,
+            "input_inventory": (input_inventory or {}).get(record.condition_id, {}),
+        }
+        for record in records
+    ]
+    document = {
+        "schema_version": RESULT_SCHEMA_VERSION,
+        "trace_schema_version": TRACE_SCHEMA_VERSION,
+        "result_scope": result_scope,
+        "condition_count": len(conditions),
+        "conditions": conditions,
+    }
+    if len(conditions) == 1:
+        document.update({
+            "condition_id": conditions[0]["condition_id"],
+            "test_case_key": conditions[0]["test_case_key"],
+            "scenario_key": conditions[0]["scenario_key"],
+            "model_name": conditions[0]["model_name"],
+            "metrics_by_phase": conditions[0]["metrics_by_phase"],
+            "calculation_evidence": conditions[0]["calculation_evidence"],
+            "input_inventory": conditions[0]["input_inventory"],
+        })
+    return document
+
+
+def write_retrospective_metrics_json(metrics, path, *, result_scope, input_inventory=None):
+    """Write common retrospective metric evidence for single or batch runs."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = build_retrospective_metrics_document(
+        metrics,
+        result_scope=result_scope,
+        input_inventory=input_inventory,
+    )
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=True, default=_json_default),
+        encoding="utf-8",
+    )
+    return path
+
+
 def write_conversation_protocol(result, output_dir):
     """Write detailed, parsable protocol data for one completed conversation."""
     output_dir = Path(output_dir)
@@ -675,25 +747,19 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
     metrics_file = run_dir / "metrics.xlsx"
     phase_log_dir = run_dir
     retrospective_json = run_dir / "retrospective_metrics.json"
-    write_metrics_file([metric], metrics_file)
-    metric_exports = write_metric_phase_logs([metric], phase_log_dir)
+    export_context = _metric_export_context(run_dir, "single_run")
+    write_metrics_file([metric], metrics_file, context=export_context)
+    metric_exports = write_metric_phase_logs([metric], phase_log_dir, result_scope="single_run")
     network_paths = write_network_research_artifacts(
         scenario["start_time_min"],
         run_dir,
         picture_dir=run_dir,
     )
-    retrospective_payload = {
-        "condition_id": metric.condition_id,
-        "test_case_key": metric.test_case_key,
-        "scenario_key": metric.scenario_key,
-        "model_name": metric.model_name,
-        "metrics_by_phase": metric.metric_families,
-        "calculation_evidence": metric.metric_calculations,
-        "input_inventory": result.extra.get("metric_input_inventory", {}),
-    }
-    retrospective_json.write_text(
-        json.dumps(retrospective_payload, indent=2, ensure_ascii=True),
-        encoding="utf-8",
+    write_retrospective_metrics_json(
+        [metric],
+        retrospective_json,
+        result_scope="single_run",
+        input_inventory={metric.condition_id: result.extra.get("metric_input_inventory", {})},
     )
     manifest = {
         "schema_version": RESULT_SCHEMA_VERSION,
@@ -722,6 +788,8 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
             "metric_catalog": str(run_dir / "metric_catalog.json"),
             "metrics_long_csv": str(metric_exports["metric_long_csv"]),
             "metrics_long_jsonl": str(metric_exports["metric_long_jsonl"]),
+            "metrics_wide_csv": str(metric_exports["metric_wide_csv"]),
+            "metrics_wide_jsonl": str(metric_exports["metric_wide_jsonl"]),
             "retrospective_metrics": str(retrospective_json),
         },
         "output_layout": {
@@ -928,8 +996,11 @@ def write_experiment_manifest(
             "phase_jsonl": "metrics_by_phase.jsonl",
             "long_csv": "metrics_long.csv",
             "long_jsonl": "metrics_long.jsonl",
+            "wide_csv": "metrics_wide.csv",
+            "wide_jsonl": "metrics_wide.jsonl",
             "metric_catalog": "metric_catalog.json",
             "raw_metric_inputs": "metric_inputs.json",
+            "retrospective_metrics": "retrospective_metrics.json",
             "failure_indicators": "failure_indicators.json",
         },
         "conditions": rows,

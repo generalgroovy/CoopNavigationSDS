@@ -11,7 +11,11 @@ from coop_navigation_sds.ResultsAndArtifacts.metric_tables import metric_long_ro
 
 
 IDENTIFIER_COLUMNS = [
+    "result_scope",
+    "result_run_id",
     "condition_id",
+    "pair_id",
+    "run_type",
     "test_case_key",
     "persona_key",
     "scenario_key",
@@ -23,7 +27,7 @@ IDENTIFIER_COLUMNS = [
 ]
 
 
-def write_metrics_xlsx(metrics, path):
+def write_metrics_xlsx(metrics, path, context=None):
     """Write metric records to an XLSX workbook with summary and per-phase sheets."""
     records = list(metrics)
     if not records:
@@ -31,8 +35,8 @@ def write_metrics_xlsx(metrics, path):
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    sheets = [("summary", _summary_rows(records))]
-    long_rows = metric_long_rows(records)
+    sheets = [("summary", _summary_rows(records, context=context))]
+    long_rows = metric_long_rows(records, context=context)
     if long_rows:
         columns = list(long_rows[0])
         sheets.append((
@@ -44,7 +48,7 @@ def write_metrics_xlsx(metrics, path):
     phase_names = [phase for phase in known_order if phase in present]
     phase_names.extend(sorted(present - set(known_order)))
     for phase in phase_names:
-        sheets.append((_sheet_name(phase), _phase_rows(records, phase)))
+        sheets.append((_sheet_name(phase), _phase_rows(records, phase, context=context)))
 
     with ZipFile(path, "w", ZIP_DEFLATED) as archive:
         archive.writestr("[Content_Types].xml", _content_types_xml(len(sheets)))
@@ -55,19 +59,31 @@ def write_metrics_xlsx(metrics, path):
             archive.writestr(f"xl/worksheets/sheet{index}.xml", _worksheet_xml(rows))
 
 
-def _summary_rows(records):
+def _summary_rows(records, context=None):
+    context = dict(context or {})
+    context_values = {
+        "result_scope": context.get("result_scope", "run"),
+        "result_run_id": context.get("result_run_id", ""),
+    }
     all_rows = [record.as_dict() for record in records]
+    all_rows = [{**context_values, **row} for row in all_rows]
     columns = list(all_rows[0])
     return [columns] + [[row.get(column) for column in columns] for row in all_rows]
 
 
-def _phase_rows(records, phase):
+def _phase_rows(records, phase, context=None):
+    context = dict(context or {})
+    context_values = {
+        "result_scope": context.get("result_scope", "run"),
+        "result_run_id": context.get("result_run_id", ""),
+    }
     metric_names = sorted({metric for record in records for metric in record.metric_families.get(phase, {})})
     columns = IDENTIFIER_COLUMNS + metric_names
     rows = [columns]
     for record in records:
         families = record.metric_families.get(phase, {})
         base = {column: getattr(record, column, None) for column in IDENTIFIER_COLUMNS}
+        base.update(context_values)
         rows.append([base.get(column, families.get(column)) if column in IDENTIFIER_COLUMNS else families.get(column) for column in columns])
     return rows
 

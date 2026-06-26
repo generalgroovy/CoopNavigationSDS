@@ -17,6 +17,8 @@ from coop_navigation_sds.EvaluationMetrics.catalog import (
 
 
 BASE_COLUMNS = (
+    "result_scope",
+    "result_run_id",
     "condition_id",
     "pair_id",
     "run_type",
@@ -31,16 +33,36 @@ BASE_COLUMNS = (
 )
 
 
-def metric_long_rows(records):
+def _context_columns(context=None):
+    context = dict(context or {})
+    return {
+        "result_scope": context.get("result_scope", "run"),
+        "result_run_id": context.get("result_run_id", ""),
+    }
+
+
+def metric_wide_rows(records, context=None):
+    """Return one normalized condition-level row per metric record."""
+    rows = []
+    context_values = _context_columns(context)
+    for record in records:
+        row = record.as_dict()
+        rows.append({**context_values, **row})
+    return rows
+
+
+def metric_long_rows(records, context=None):
     """Return one normalized row per condition and metric."""
     rows = []
     family_order = {phase_key(family): family["order"] for family in METRIC_FAMILY_SPECS}
     family_titles = {phase_key(family): family["title"] for family in METRIC_FAMILY_SPECS}
+    context_values = _context_columns(context)
     for record in records:
         identifiers = {
             column: getattr(record, column, None)
             for column in BASE_COLUMNS
         }
+        identifiers.update(context_values)
         factors = {
             f"factor_{key}": value
             for key, value in dict(getattr(record, "experimental_factors", {}) or {}).items()
@@ -93,13 +115,7 @@ def metric_long_rows(records):
     return rows
 
 
-def write_metric_long_exports(records, output_dir):
-    """Write matching CSV and JSONL long-form metric datasets."""
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    rows = metric_long_rows(list(records))
-    csv_path = output_dir / "metrics_long.csv"
-    jsonl_path = output_dir / "metrics_long.jsonl"
+def _write_table_exports(rows, csv_path, jsonl_path):
     fieldnames = list(dict.fromkeys(key for row in rows for key in row))
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
@@ -108,4 +124,24 @@ def write_metric_long_exports(records, output_dir):
     with jsonl_path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=True) + "\n")
-    return {"metric_long_csv": csv_path, "metric_long_jsonl": jsonl_path}
+
+
+def write_metric_long_exports(records, output_dir, context=None):
+    """Write matching long and wide metric datasets for graphing and joins."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    records = list(records)
+    rows = metric_long_rows(records, context=context)
+    csv_path = output_dir / "metrics_long.csv"
+    jsonl_path = output_dir / "metrics_long.jsonl"
+    wide_rows = metric_wide_rows(records, context=context)
+    wide_csv_path = output_dir / "metrics_wide.csv"
+    wide_jsonl_path = output_dir / "metrics_wide.jsonl"
+    _write_table_exports(rows, csv_path, jsonl_path)
+    _write_table_exports(wide_rows, wide_csv_path, wide_jsonl_path)
+    return {
+        "metric_long_csv": csv_path,
+        "metric_long_jsonl": jsonl_path,
+        "metric_wide_csv": wide_csv_path,
+        "metric_wide_jsonl": wide_jsonl_path,
+    }

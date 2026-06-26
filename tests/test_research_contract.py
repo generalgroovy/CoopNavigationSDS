@@ -23,6 +23,8 @@ from coop_navigation_sds.EvaluationMetrics.metrics import (
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     calculate_batch_metrics_from_inputs,
     calculate_metrics_from_inputs,
+    write_metric_phase_logs,
+    write_retrospective_metrics_json,
     write_batch_metric_inputs,
     write_metric_inputs,
 )
@@ -138,6 +140,78 @@ def test_metric_record_can_be_recalculated_from_persisted_raw_evidence():
     assert record.metric_families["whole_dialogue"]["first_deviation_phase"] == "task_outcome"
     assert len(batch_records) == 1
     assert batch_records[0].condition_id == "replay"
+
+
+def test_single_and_batch_metric_exports_share_graphable_schema():
+    scenario = get_test_case("morning_peak_cross_city").scenario
+    result = DialogResult(
+        condition_id="schema_check",
+        test_case_key="morning_peak_cross_city",
+        persona_key="focused_commuter",
+        scenario_key="morning_peak_cross_city",
+        speech_pattern_key="clean",
+        model_name="deterministic",
+        conversation=[("Agent A", "I need a route from Bravo to Harbor."), ("Agent B", "Take M1 from Bravo to Harbor.")],
+        route=[],
+        route_steps=[],
+        route_valid=False,
+        route_reaches_goal=False,
+        route_correct=False,
+        route_duration_min=None,
+        runtime_sec=0.1,
+        extra={
+            "messages": 2,
+            "agent_memories": {"Agent A": [], "Agent B": []},
+            "speech_turns": [],
+            "timing_turns": [],
+            "phase_timings": [],
+            "nlu_turns": [],
+            "runtime_events": [],
+            "candidate_events": [],
+            "resolved_scenario": scenario,
+            "pair_id": "pair-schema",
+            "run_type": "text_only",
+        },
+    )
+
+    with tempfile.TemporaryDirectory() as temporary:
+        single_input = write_metric_inputs(result, scenario, Path(temporary) / "single" / "metric_inputs.json")
+        batch_input = write_batch_metric_inputs([result], Path(temporary) / "batch" / "metric_inputs.json")
+        single_record = calculate_metrics_from_inputs(single_input)
+        batch_record = calculate_batch_metrics_from_inputs(batch_input)[0]
+        single_exports = write_metric_phase_logs([single_record], Path(temporary) / "single", result_scope="single_run")
+        batch_exports = write_metric_phase_logs([batch_record], Path(temporary) / "batch", result_scope="batch")
+        single_retrospective = write_retrospective_metrics_json(
+            [single_record],
+            Path(temporary) / "single" / "retrospective_metrics.json",
+            result_scope="single_run",
+        )
+        batch_retrospective = write_retrospective_metrics_json(
+            [batch_record],
+            Path(temporary) / "batch" / "retrospective_metrics.json",
+            result_scope="batch",
+        )
+
+        single_wide = (Path(single_exports["metric_wide_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
+        batch_wide = (Path(batch_exports["metric_wide_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
+        single_long = (Path(single_exports["metric_long_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
+        batch_long = (Path(batch_exports["metric_long_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
+        single_json = json.loads(single_retrospective.read_text(encoding="utf-8"))
+        batch_json = json.loads(batch_retrospective.read_text(encoding="utf-8"))
+
+    single_wide_row = json.loads(single_wide)
+    batch_wide_row = json.loads(batch_wide)
+    single_long_row = json.loads(single_long)
+    batch_long_row = json.loads(batch_long)
+
+    assert {"metric_long_csv", "metric_long_jsonl", "metric_wide_csv", "metric_wide_jsonl"} <= set(single_exports)
+    assert set(single_exports) == set(batch_exports)
+    assert set(single_wide_row) == set(batch_wide_row)
+    assert {"result_scope", "result_run_id", "condition_id", "factor_tts_engine", "factor_asr_engine"} <= set(single_wide_row)
+    assert {"result_scope", "result_run_id", "condition_id", "metric_key", "value", "formula"} <= set(single_long_row)
+    assert set(single_long_row) == set(batch_long_row)
+    assert single_json["condition_count"] == batch_json["condition_count"] == 1
+    assert single_json["conditions"][0]["condition_id"] == batch_json["conditions"][0]["condition_id"] == "schema_check"
 
 
 def test_smoke_configuration_has_no_heavy_backend_requirement():

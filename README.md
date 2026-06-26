@@ -767,7 +767,10 @@ Full definitions are maintained in:
 ## Result Structure
 
 `results/` is the single output root. Each execution creates one flat,
-timestamped run directory.
+timestamped run directory. Single runs and batch runs use the same analysis
+tables: a single run is represented as a one-condition dataset, so multiple
+single-run folders can be concatenated for graphing or statistical analysis
+without a conversion step.
 
 | Artifact | Purpose |
 | --- | --- |
@@ -783,6 +786,8 @@ timestamped run directory.
 | `metrics_by_phase.jsonl` | Compact phase-grouped analysis records |
 | `metrics_long.csv` | Canonical graphable row-per-condition-per-metric table |
 | `metrics_long.jsonl` | JSONL equivalent retaining typed structures |
+| `metrics_wide.csv` | One row per condition with scalar identifiers, task outcomes, and phase metrics |
+| `metrics_wide.jsonl` | JSONL equivalent for robust scripted joins |
 | `metrics.xlsx` or configured workbook name | Summary, long-form, and per-phase worksheets |
 | `failure_indicators.json` | Leakage-controlled exploratory failure thresholds for batches |
 
@@ -791,6 +796,13 @@ tools. It includes condition identifiers, paired-run fields, experimental
 factors, phase, metric key, numeric/text value, availability, unit, direction,
 range, normalized percentage, selection rationale, formula, operands,
 substitution, and unavailable reason.
+
+`metrics_wide.csv` is the recommended input for condition-level joins,
+regression tables, and quick comparisons across Agent B, text-to-speech,
+automatic speech recognition, scenario, persona, and constraint settings. Both
+long and wide tables include `result_scope` (`single_run` or `batch`) and
+`result_run_id` so rows remain traceable after files from multiple run folders
+are combined.
 
 ## Console Views
 

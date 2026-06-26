@@ -51,7 +51,7 @@ from coop_navigation_sds.Configuration.travel import (
 )
 from coop_navigation_sds.NaturalLanguageGeneration.models import available_model_provider_keys, model_profile_defaults
 from coop_navigation_sds.DialogManagement.manager import DEFAULT_MAX_TURN_ELAPSED_SEC
-from coop_navigation_sds.experiments import ExperimentRunner, build_condition_grid, write_metrics_file
+from coop_navigation_sds.experiments import ExperimentRunner, build_condition_grid
 from coop_navigation_sds.EvaluationMetrics.metrics import apply_cross_run_metrics, apply_paired_run_metrics
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     calculate_batch_metrics_from_inputs,
@@ -60,8 +60,10 @@ from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     write_experiment_manifest,
     write_failure_indicator_report,
     write_batch_metric_inputs,
+    write_metrics_file,
     write_metric_phase_logs,
     write_network_research_artifacts,
+    write_retrospective_metrics_json,
 )
 from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from coop_navigation_sds.Configuration.scenarios import DEFAULT_TEST_CASE
@@ -438,7 +440,20 @@ def main():
     metrics = calculate_batch_metrics_from_inputs(batch_metric_inputs)
     apply_cross_run_metrics(metrics)
     apply_paired_run_metrics(metrics)
-    write_metrics_file(metrics, metrics_output)
+    export_context = {
+        "result_scope": "batch",
+        "result_run_id": run_dir.name,
+    }
+    write_metrics_file(metrics, metrics_output, context=export_context)
+    retrospective_metrics_path = write_retrospective_metrics_json(
+        metrics,
+        run_dir / "retrospective_metrics.json",
+        result_scope="batch",
+        input_inventory={
+            result.condition_id: result.extra.get("metric_input_inventory", {})
+            for result in results
+        },
+    )
     failure_indicator_path = write_failure_indicator_report(
         metrics,
         run_dir / "failure_indicators.json",
@@ -495,11 +510,13 @@ def main():
             "require_stage_suboptimal_options": args.require_stage_suboptimal_options,
         },
     )
-    write_metric_phase_logs(metrics, phase_log_dir)
+    metric_exports = write_metric_phase_logs(metrics, phase_log_dir, result_scope="batch")
 
     print(f"Run folder: {run_dir}")
     print(f"Metrics: {len(metrics)} rows -> {metrics_output}")
+    print(f"Metric tables: long={metric_exports['metric_long_csv']}; wide={metric_exports['metric_wide_csv']}")
     print(f"Metric inputs: {batch_metric_inputs}")
+    print(f"Retrospective metrics: {retrospective_metrics_path}")
     print(f"Failure indicators: {failure_indicator_path}")
     print(f"Protocols: {len(protocol_paths)} files -> {protocol_dir}")
     print(f"Artifacts: manifest={manifest_path}; network={artifacts['network_json']}; graph={artifacts['network_graph']}")
