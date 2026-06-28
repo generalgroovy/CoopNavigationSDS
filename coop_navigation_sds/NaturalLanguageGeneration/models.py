@@ -26,6 +26,7 @@ from coop_navigation_sds.Configuration.travel import (
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,
 )
+from coop_navigation_sds.Configuration.model_matrix import AGENT_B_MODEL_SIZE_TREATMENTS
 
 
 @dataclass(frozen=True)
@@ -251,13 +252,13 @@ MODEL_PROFILE_SPECS = {
     "llama3_2_1b_ollama": ModelProfileSpec(
         "llama3_2_1b_ollama", "Llama 3.2 1B via Ollama", "ollama", "llama3.2:1b",
         "Quantized local service condition separating model behavior from Transformers runtime.", 3.0,
-        base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service", size_tier="medium",
+        base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service", size_tier="small",
         parameter_count_billion=1.0, family="Llama 3.2",
     ),
     "qwen2_5_1_5b_ollama": ModelProfileSpec(
         "qwen2_5_1_5b_ollama", "Qwen2.5 1.5B via Ollama", "ollama", "qwen2.5:1.5b",
         "Larger multilingual local model for quality-versus-latency comparison.", 4.0,
-        base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service", size_tier="medium",
+        base_url=OLLAMA_BASE_URL, optional_dependency="Ollama service", size_tier="small",
         parameter_count_billion=1.5, family="Qwen2.5",
     ),
     "llama3_2_3b_ollama": ModelProfileSpec(
@@ -323,14 +324,17 @@ def available_model_profile_keys():
 
 def research_model_profiles_by_tier():
     """Return the two primary Agent B model contrasts in each size tier."""
-    preferred = {
-        "small": ("smollm2_360m_transformers", "qwen2_5_0_5b_transformers"),
-        "medium": ("llama3_2_3b_ollama", "phi3_3_8b_ollama"),
-        "large": ("qwen2_5_7b_ollama", "llama3_1_8b_ollama"),
+    profile_by_model = {
+        spec.model: key for key, spec in MODEL_PROFILE_SPECS.items()
+        if spec.provider == "ollama"
     }
     return {
-        tier: tuple(key for key in keys if key in MODEL_PROFILE_SPECS)
-        for tier, keys in preferred.items()
+        tier: tuple(
+            profile_by_model[model]
+            for model in treatment.models
+            if model in profile_by_model
+        )
+        for tier, treatment in AGENT_B_MODEL_SIZE_TREATMENTS.items()
     }
 
 

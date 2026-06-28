@@ -13,7 +13,7 @@ import sys
 
 CONFIG_SCHEMA_VERSION = 4
 JOB_SCHEMA_VERSION = 1
-TRACE_SCHEMA_VERSION = 2
+TRACE_SCHEMA_VERSION = 3
 RESULT_SCHEMA_VERSION = 1
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULTS_ROOT = str(PROJECT_ROOT / "results")
@@ -47,6 +47,7 @@ RAW_TRACE_COLLECTIONS = (
     "semantic_parsing",
     "runtime_events",
     "candidate_routes",
+    "prompt_audits",
 )
 
 

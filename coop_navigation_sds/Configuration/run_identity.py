@@ -42,6 +42,9 @@ NAMING_SCHEME = {
     "M17": "Mistral 7B via Ollama language model",
     "QCP": "Qwen2.5 0.5B via llama.cpp language model",
     "CGM": "ChatGPT mini API language model",
+    "SML": "Small Agent B language-model size tier (1.0B-1.5B parameters)",
+    "MED": "Medium Agent B language-model size tier (3.0B-3.8B parameters)",
+    "LRG": "Large Agent B language-model size tier (7.0B-8.0B parameters)",
 }
 
 
@@ -93,6 +96,9 @@ COMPONENT_CODES = {
     "qwen2_5_0_5b_llama_cpp": "QCP",
     "chatgpt_mini_api": "CGM",
     "gpt-4.1-mini": "CGM",
+    "small": "SML",
+    "medium": "MED",
+    "large": "LRG",
 }
 
 

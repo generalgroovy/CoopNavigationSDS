@@ -171,6 +171,20 @@ class MetricFamilyTests(unittest.TestCase):
                     },
                 },
                 "condition_runtime_sec": 0.25,
+                "prompt_audits": [
+                    {
+                        "agent": "Agent B",
+                        "purpose": "response",
+                        "accepted": True,
+                        "delivery_source": "model",
+                    },
+                    {
+                        "agent": "Agent A",
+                        "purpose": "response",
+                        "accepted": False,
+                        "delivery_source": "deterministic_policy_fallback",
+                    },
+                ],
                 "runtime_events": [
                     {
                         "phase": "dialogue_state_tracking",
@@ -239,6 +253,12 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["agent_b_actionability_score"], 1.0)
         self.assertEqual(row["agent_a_false_acceptance_rate"], 0.0)
         self.assertEqual(row["nlg_faithfulness"], 1.0)
+        self.assertEqual(row["nlg_generation_acceptance_rate"], 0.5)
+        self.assertEqual(row["nlg_prompt_repair_rate"], 0.0)
+        self.assertEqual(row["nlg_model_delivery_rate"], 0.5)
+        self.assertEqual(row["nlg_guard_intervention_rate"], 0.5)
+        self.assertEqual(row["nlg_agent_a_guard_intervention_rate"], 1.0)
+        self.assertEqual(row["nlg_agent_b_guard_intervention_rate"], 0.0)
         self.assertEqual(row["tts_success_rate"], 1.0)
         self.assertEqual(row["tts_failure_count"], 0)
         self.assertEqual(row["tts_round_trip_semantic_intelligibility"], 1.0)

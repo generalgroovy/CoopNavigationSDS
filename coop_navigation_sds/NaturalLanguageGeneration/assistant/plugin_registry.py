@@ -107,6 +107,10 @@ class LlmAgentBPlugin:
     def run_agent_b(self, state):
         return self.pipeline.run_agent_b(state)
 
+    def consume_prompt_audits(self):
+        """Expose prompt evidence without coupling orchestration to pipeline internals."""
+        return self.pipeline.consume_prompt_audits()
+
 
 class SimplePlannerAgentBPlugin:
     """Small deterministic Agent B plugin for demos and tests."""

@@ -246,11 +246,6 @@ def main():
     args.asr_model = resolved_speech_assets["asr_model"]
     if args.llm_agent_a is not None:
         args.agent_a_type = AGENT_A_USERLM if args.llm_agent_a else AGENT_A_MINILLAMA
-    if args.agent_a_type == "tinyllama":
-        tinyllama_defaults = model_profile_defaults("tinyllama_1b_transformers")
-        args.model_provider = tinyllama_defaults["model_provider"]
-        args.model_name = tinyllama_defaults["model_name"]
-        args.model_base_url = tinyllama_defaults.get("model_base_url", args.model_base_url)
 
     test_case_keys = parse_csv_arg(args.test_cases, TEST_CASES)
     conditions = list(build_condition_grid(
@@ -308,18 +303,9 @@ def main():
 
     agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     model_adapter = None
+    agent_a_model_adapter = None
     model_adapter_factory = None
     if agent_b_config.needs_model or agent_a_uses_model(args.agent_a_type):
-        roles = []
-        if agent_a_uses_model(args.agent_a_type):
-            roles.append(f"Agent A {args.agent_a_type}")
-        if agent_b_config.needs_model:
-            roles.append("Agent B")
-        print(
-            "Loading language model for "
-            f"{', '.join(roles)}: {args.model_name} through {args.model_provider}.",
-            flush=True,
-        )
         if args.model_provider == "openai_compatible" and not args.model_api_key:
             raise SystemExit(
                 "ChatGPT/OpenAI-compatible batch runs require an API key. "
@@ -328,21 +314,15 @@ def main():
         try:
             from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_model_adapter
 
-            model_adapter = create_model_adapter(
-                args.model_provider,
-                model_name=args.model_name,
-                api_key=args.model_api_key,
-                base_url=args.model_base_url,
-                timeout_sec=args.model_timeout_sec,
-                device=args.model_device,
-                max_new_tokens=args.model_max_new_tokens,
-                max_input_tokens=args.model_max_input_tokens,
-                allow_model_download=args.allow_model_download,
-            )
-            def model_adapter_factory(model_name):
-                return create_model_adapter(
+            if agent_b_config.needs_model:
+                print(
+                    "Loading language model for Agent B: "
+                    f"{args.model_name} through {args.model_provider}.",
+                    flush=True,
+                )
+                model_adapter = create_model_adapter(
                     args.model_provider,
-                    model_name=model_name,
+                    model_name=args.model_name,
                     api_key=args.model_api_key,
                     base_url=args.model_base_url,
                     timeout_sec=args.model_timeout_sec,
@@ -351,6 +331,52 @@ def main():
                     max_input_tokens=args.model_max_input_tokens,
                     allow_model_download=args.allow_model_download,
                 )
+                def model_adapter_factory(model_name):
+                    return create_model_adapter(
+                        args.model_provider,
+                        model_name=model_name,
+                        api_key=args.model_api_key,
+                        base_url=args.model_base_url,
+                        timeout_sec=args.model_timeout_sec,
+                        device=args.model_device,
+                        max_new_tokens=args.model_max_new_tokens,
+                        max_input_tokens=args.model_max_input_tokens,
+                        allow_model_download=args.allow_model_download,
+                    )
+            if agent_a_uses_model(args.agent_a_type):
+                if args.agent_a_type == "tinyllama":
+                    agent_a_defaults = model_profile_defaults("tinyllama_1b_transformers")
+                    agent_a_provider = agent_a_defaults["model_provider"]
+                    agent_a_model_name = agent_a_defaults["model_name"]
+                    agent_a_base_url = agent_a_defaults.get("model_base_url", args.model_base_url)
+                else:
+                    agent_a_provider = args.model_provider
+                    agent_a_model_name = args.model_name
+                    agent_a_base_url = args.model_base_url
+                print(
+                    "Loading language model for "
+                    f"Agent A {args.agent_a_type}: {agent_a_model_name} through {agent_a_provider}.",
+                    flush=True,
+                )
+                if (
+                    agent_b_config.needs_model
+                    and agent_a_provider == args.model_provider
+                    and agent_a_model_name == args.model_name
+                    and agent_a_base_url == args.model_base_url
+                ):
+                    agent_a_model_adapter = model_adapter
+                else:
+                    agent_a_model_adapter = create_model_adapter(
+                        agent_a_provider,
+                        model_name=agent_a_model_name,
+                        api_key=args.model_api_key if agent_a_provider == "openai_compatible" else "",
+                        base_url=agent_a_base_url,
+                        timeout_sec=args.model_timeout_sec,
+                        device=args.model_device,
+                        max_new_tokens=args.model_max_new_tokens,
+                        max_input_tokens=args.model_max_input_tokens,
+                        allow_model_download=args.allow_model_download,
+                    )
         except Exception as exc:
             raise SystemExit(f"Preflight failed: Agent model assets are unavailable: {exc}") from exc
     runner = ExperimentRunner(
@@ -425,6 +451,7 @@ def main():
             "parameter_grid": job_parameter_grid(job),
         },
         model_adapter_factory=model_adapter_factory,
+        agent_a_model_adapter=agent_a_model_adapter,
     )
     results = []
     for condition in conditions:

@@ -20,6 +20,11 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (
 )
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_model_adapter
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import MODEL_CACHE_DIR, _prepared_model
+from coop_navigation_sds.Configuration.model_matrix import (
+    AGENT_B_MODEL_SIZE_TREATMENTS,
+    model_size_treatment,
+    models_for_size_treatments,
+)
 
 
 class FakeTensor:
@@ -66,6 +71,24 @@ class FakeModel:
 
 
 class TransformersModelAdapterTests(unittest.TestCase):
+    def test_agent_b_model_size_treatments_are_centralized_and_disjoint(self):
+        all_models = [
+            model
+            for treatment in AGENT_B_MODEL_SIZE_TREATMENTS.values()
+            for model in treatment.models
+        ]
+
+        self.assertEqual(set(AGENT_B_MODEL_SIZE_TREATMENTS), {"small", "medium", "large"})
+        self.assertEqual(len(all_models), len(set(all_models)))
+        self.assertEqual(model_size_treatment("phi3:mini"), "medium")
+        self.assertEqual(
+            models_for_size_treatments(("small", "large")),
+            (
+                "llama3.2:1b", "qwen2.5:1.5b",
+                "qwen2.5:7b", "llama3.1:8b",
+            ),
+        )
+
     def test_prepared_transformers_cache_is_independent_of_working_directory(self):
         resolved = Path(_prepared_model("TinyLlama/TinyLlama-1.1B-Chat-v1.0"))
 
@@ -137,6 +160,10 @@ class TransformersModelAdapterTests(unittest.TestCase):
         tiers = research_model_profiles_by_tier()
         self.assertEqual(set(tiers), {"small", "medium", "large"})
         self.assertTrue(all(len(profiles) == 2 for profiles in tiers.values()))
+        self.assertEqual(
+            tiers["small"],
+            ("llama3_2_1b_ollama", "qwen2_5_1_5b_ollama"),
+        )
         self.assertEqual(
             tiers["medium"],
             ("llama3_2_3b_ollama", "phi3_3_8b_ollama"),

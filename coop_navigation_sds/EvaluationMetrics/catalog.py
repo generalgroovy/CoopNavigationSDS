@@ -212,6 +212,12 @@ METRIC_FAMILY_SPECS = [
             ("nlg_formatting_violation_rate", "Formatting Violation Rate"),
             ("nlg_hidden_reasoning_leakage_rate", "Hidden-Reasoning Leakage Rate"),
             ("nlg_estimated_spoken_duration", "Estimated Spoken Duration"),
+            ("nlg_generation_acceptance_rate", "Generation Acceptance Rate"),
+            ("nlg_prompt_repair_rate", "Prompt Repair Rate"),
+            ("nlg_model_delivery_rate", "Model Delivery Rate"),
+            ("nlg_guard_intervention_rate", "Guard Intervention Rate"),
+            ("nlg_agent_a_guard_intervention_rate", "Agent A Guard Intervention Rate"),
+            ("nlg_agent_b_guard_intervention_rate", "Agent B Guard Intervention Rate"),
         ],
     },
     {
@@ -512,6 +518,12 @@ METRIC_MEANINGS = {
     "dialogue_state_memory_trace_coverage": "share of dialogue turns with recorded task-memory snapshots",
     "dialogue_state_memory_update_rate": "share of memory snapshots containing at least one new remembered task item",
     "dialogue_state_route_memory_retention_rate": "share of post-route snapshots where both agents retain a route candidate",
+    "nlg_generation_acceptance_rate": "share of language-model drafts accepted by deterministic output verification",
+    "nlg_prompt_repair_rate": "share of language-model calls made by the bounded repair prompt",
+    "nlg_model_delivery_rate": "share of model-backed delivered turns whose spoken text came directly from the model",
+    "nlg_guard_intervention_rate": "share of model-backed delivered turns replaced by a deterministic policy guard",
+    "nlg_agent_a_guard_intervention_rate": "share of model-backed Agent A deliveries replaced by its deterministic policy guard",
+    "nlg_agent_b_guard_intervention_rate": "share of model-backed Agent B deliveries replaced by its deterministic route guard",
 }
 
 METRIC_RANGES = {
@@ -740,6 +752,12 @@ def metric_calculation_method(key):
         "dialogue_state_route_memory_retention_rate": "post-route snapshots retaining route memory in both agents / post-route snapshots",
         "task_outcome_constraint_route_change_rate": "changed adjacent staged optima / eligible staged transitions",
         "whole_dialogue_trace_completeness_rate": "captured required trace collections / required trace collections",
+        "nlg_generation_acceptance_rate": "accepted model drafts / all model generation calls",
+        "nlg_prompt_repair_rate": "repair-prompt calls / all model generation calls",
+        "nlg_model_delivery_rate": "model-sourced deliveries / all model-backed deliveries",
+        "nlg_guard_intervention_rate": "deterministic guard deliveries / all model-backed deliveries",
+        "nlg_agent_a_guard_intervention_rate": "Agent A deterministic guard deliveries / Agent A model-backed deliveries",
+        "nlg_agent_b_guard_intervention_rate": "Agent B deterministic guard deliveries / Agent B model-backed deliveries",
         "tts_nisqa": "NISQA model inference over synthesized waveform",
         "tts_dnsmos": "DNSMOS model inference over synthesized waveform",
         "tts_pesq": "PESQ(reference waveform, synthesized waveform)",

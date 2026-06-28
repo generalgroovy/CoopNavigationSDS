@@ -7,6 +7,7 @@ import time
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import TemplateAgentAResponder
 from coop_navigation_sds.NaturalLanguageGeneration.caller.agents import fallback_reply
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import DialogState
+from coop_navigation_sds.NaturalLanguageGeneration.prompt_audit import PROMPT_POLICY_VERSION
 from coop_navigation_sds.DialogManagement.result import DialogResult
 from coop_navigation_sds.DialogManagement.memory import RouteProposalMemory
 from coop_navigation_sds.EvaluationMetrics.metrics import TASK_TERMS, COMPARISON_TERMS, COOPERATION_TERMS
@@ -208,6 +209,7 @@ class DialogManager:
         phase_timings = []
         nlu_turns = []
         runtime_events = []
+        prompt_audits = []
         candidate_events = []
         warning_count = 0
         conversation_word_count = 0
@@ -309,6 +311,14 @@ class DialogManager:
                     "payload": dict(payload or {}),
                 }
             )
+
+        def collect_prompt_audits(prompt_owner):
+            """Drain exact model-call evidence through the optional audit interface."""
+            drain = getattr(prompt_owner, "consume_prompt_audits", None)
+            if not callable(drain):
+                return
+            for audit in drain():
+                prompt_audits.append(dict(audit))
 
         previous_memory_snapshot = None
 
@@ -957,6 +967,7 @@ class DialogManager:
             )
             event_queue.put(("stage", state.stage))
             heard_trip_state = state.heard_trip_state
+            heard_constraint_state = state.heard_constraint_state
             record_runtime_event(
                 "dialogue_state_tracking",
                 "heard_trip_state",
@@ -968,6 +979,9 @@ class DialogManager:
                     "missing_slots": list(heard_trip_state.get("missing_slots") or []),
                     "missing_labels": list(heard_trip_state.get("missing_labels") or []),
                     "completeness": heard_trip_state.get("completeness"),
+                    "constraint_facts": dict(heard_constraint_state.get("facts") or {}),
+                    "constraint_evidence": dict(heard_constraint_state.get("evidence") or {}),
+                    "recognized_constraint_keys": list(state.recognized_constraint_keys),
                 },
             )
             record_runtime_event(
@@ -982,6 +996,7 @@ class DialogManager:
             generation_started_at = time.time()
             repair_confirmation = clarification_confirmation(agent_b_memory, last_agent_b_spoken)
             reply_b = repair_confirmation or self.agent_b_plugin.run_agent_b(state)
+            collect_prompt_audits(self.agent_b_plugin)
             if agent_b_attempted_closure(reply_b):
                 record_runtime_event(
                     "dialogue_management",
@@ -1264,6 +1279,7 @@ class DialogManager:
                     reply_a = self.agent_a_responder.reply(
                         route_round - 1, persona, scenario, agent_a_memory
                     )
+                    collect_prompt_audits(self.agent_a_responder)
                 if not early_stop_reason:
                     reply_a = guard_agent_a_progress(
                         reply_a,
@@ -1517,6 +1533,7 @@ class DialogManager:
                 "speech_transport": self.speech_transport.description,
                 "agent_a_responder": self.agent_a_responder.name,
                 "agent_b_plugin": getattr(self.agent_b_plugin, "name", type(self.agent_b_plugin).__name__),
+                "prompt_policy_version": PROMPT_POLICY_VERSION,
                 "agent_a_objective_mode": self.agent_a_objective_mode,
                 "messages": len(conversation),
                 "configured_num_turns": self.num_turns,
@@ -1602,6 +1619,7 @@ class DialogManager:
                 "timing_turns": timing_turns,
                 "phase_timings": phase_timings,
                 "nlu_turns": nlu_turns,
+                "prompt_audits": prompt_audits,
                 "runtime_events": runtime_events,
             },
         )

@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from coop_navigation_sds.Configuration.schema import JOB_SCHEMA_VERSION
+from coop_navigation_sds.Configuration.model_matrix import models_for_size_treatments
 
 
 def load_experiment_job(path, _seen=None):
@@ -48,6 +49,16 @@ def load_experiment_job(path, _seen=None):
         )
     config = {**inherited.get("config", {}), **raw_config}
     grid = {**inherited.get("grid", {}), **raw_grid}
+    model_size_treatments = grid.get("agent_b_model_tiers")
+    if model_size_treatments:
+        if not isinstance(model_size_treatments, (list, tuple)):
+            raise ValueError("Job grid 'agent_b_model_tiers' must be a list.")
+        grid["agent_b_model_tiers"] = [
+            str(value).strip().lower() for value in model_size_treatments
+        ]
+        grid["agent_b_models"] = list(
+            models_for_size_treatments(grid["agent_b_model_tiers"])
+        )
     parameter_values = {
         **inherited.get("parameter_values", {}),
         **raw_parameter_values,

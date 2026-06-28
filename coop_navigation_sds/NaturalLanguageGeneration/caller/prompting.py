@@ -237,7 +237,7 @@ def build_agent_a_system(persona, scenario):
     )
 
 
-def build_agent_b_system(scenario, persona=None):
+def build_agent_b_system(scenario, persona=None, stated_constraint_keys=()):
     return (
         "You are Agent B on a transit hotline. Reply naturally in one short sentence. "
         "Use only the verified route candidates below. Give one valid route first; later offer a distinct candidate that retains accepted constraints. "
@@ -249,7 +249,7 @@ def build_agent_b_system(scenario, persona=None):
         "If no distinct viable route remains, say so and recommend the best earlier compliant route instead of repeating it. "
         f"{preference_text(persona or {})} "
         "Say line legs and total time once. No reasoning, lists, or formatting. "
-        f"{compact_prompt_context(scenario, persona)}"
+        f"{compact_prompt_context(scenario, persona, stated_constraint_keys)}"
     )
 
 

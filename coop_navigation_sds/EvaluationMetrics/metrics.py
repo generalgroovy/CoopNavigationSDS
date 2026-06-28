@@ -676,6 +676,27 @@ class MetricComputer:
         speech_turns = result.extra.get("speech_turns", [])
         timing_turns = result.extra.get("timing_turns", [])
         nlu_turns = result.extra.get("nlu_turns", [])
+        prompt_audits = list(result.extra.get("prompt_audits", []))
+        delivered_prompt_audits = [
+            audit for audit in prompt_audits if audit.get("delivery_source")
+        ]
+        model_delivery_count = sum(
+            audit.get("delivery_source") == "model"
+            for audit in delivered_prompt_audits
+        )
+        guard_delivery_count = len(delivered_prompt_audits) - model_delivery_count
+
+        def agent_guard_intervention_rate(agent_name):
+            deliveries = [
+                audit
+                for audit in delivered_prompt_audits
+                if audit.get("agent") == agent_name
+            ]
+            return safe_ratio(
+                sum(audit.get("delivery_source") != "model" for audit in deliveries),
+                len(deliveries),
+            )
+
         model_parameters = result.extra.get("model_parameters", {})
         pipeline_failure = result.extra.get("pipeline_failure")
         pipeline_mode = next(
@@ -1725,7 +1746,7 @@ class MetricComputer:
         )
         trace_keys = (
             "agent_memories", "speech_turns", "timing_turns", "phase_timings", "nlu_turns",
-            "runtime_events", "candidate_events",
+            "runtime_events", "candidate_events", "prompt_audits",
         )
         captured_trace_collections = 1 + sum(key in result.extra for key in trace_keys)
         required_trace_collections = 1 + len(trace_keys)
@@ -1894,6 +1915,24 @@ class MetricComputer:
             "nlg_formatting_violation_rate": safe_ratio(formatting_violations, len(agent_b_messages)),
             "nlg_hidden_reasoning_leakage_rate": safe_ratio(reasoning_leaks, len(agent_b_messages)),
             "nlg_estimated_spoken_duration": estimated_spoken_duration,
+            "nlg_generation_acceptance_rate": safe_ratio(
+                sum(bool(audit.get("accepted")) for audit in prompt_audits),
+                len(prompt_audits),
+            ),
+            "nlg_prompt_repair_rate": safe_ratio(
+                sum(str(audit.get("purpose", "")).startswith("repair_") for audit in prompt_audits),
+                len(prompt_audits),
+            ),
+            "nlg_model_delivery_rate": safe_ratio(
+                model_delivery_count,
+                len(delivered_prompt_audits),
+            ),
+            "nlg_guard_intervention_rate": safe_ratio(
+                guard_delivery_count,
+                len(delivered_prompt_audits),
+            ),
+            "nlg_agent_a_guard_intervention_rate": agent_guard_intervention_rate("Agent A"),
+            "nlg_agent_b_guard_intervention_rate": agent_guard_intervention_rate("Agent B"),
             "tts_success_rate": tts_success_rate,
             "tts_failure_rate": safe_ratio(tts_failure_count, outgoing_enabled_count),
             "tts_audio_validity_rate": safe_ratio(valid_audio_count, outgoing_enabled_count),

@@ -462,6 +462,7 @@ def build_combined_protocol(result, summary, turns, speech_turns, timing_turns, 
         "agent_timing_summary": agent_timing_summary,
         "runtime_events": runtime_events,
         "candidate_routes": candidate_events,
+        "prompt_audits": list(result.extra.get("prompt_audits", [])),
         "retrospective_summary": result.metrics_text or "",
         "verification": verification,
         "audio_manifest": audio_manifest,
@@ -486,6 +487,7 @@ def build_metric_input_document(result, scenario):
             "semantic_parsing": list(result.extra.get("nlu_turns", [])),
             "runtime_events": list(result.extra.get("runtime_events", [])),
             "candidate_routes": list(result.extra.get("candidate_events", [])),
+            "prompt_audits": list(result.extra.get("prompt_audits", [])),
         },
     }
 

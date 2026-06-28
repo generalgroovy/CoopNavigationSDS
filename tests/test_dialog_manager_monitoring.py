@@ -27,6 +27,38 @@ def fast_text_transport():
 
 
 class DialogManagerMonitoringTests(unittest.TestCase):
+    def test_controller_persists_model_prompt_and_delivery_provenance(self):
+        test_case = get_test_case(DEFAULT_TEST_CASE)
+        valid_reply = route_text_from_steps(
+            candidate_time_routes(
+                test_case.scenario["start_station"],
+                test_case.scenario["destination_station"],
+                test_case.scenario["start_time_min"],
+                test_case.scenario["transfer_time_min"],
+                limit=1,
+            )[0][2]
+        )
+
+        class ValidRouteModel:
+            name = "prompt-audit-model"
+
+            def generate_messages(self, _messages):
+                return valid_reply
+
+        manager = DialogManager(
+            test_case,
+            create_agent_b_plugin("llm", ValidRouteModel()),
+            num_turns=2,
+            speech_transport=fast_text_transport(),
+            agent_a_responder=TemplateAgentAResponder(),
+        )
+
+        result = manager.run(NullEventQueue())
+
+        self.assertEqual(result.extra["prompt_policy_version"], "2026-06-28.1")
+        self.assertEqual(len(result.extra["prompt_audits"]), 1)
+        self.assertEqual(result.extra["prompt_audits"][0]["delivery_source"], "model")
+
     def test_missing_trip_slot_is_repaired_once_and_route_dialogue_resumes(self):
         class MissingStartTransport:
             description = "missing-start-speech"

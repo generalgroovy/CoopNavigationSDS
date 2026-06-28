@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from itertools import product
 from coop_navigation_sds.Configuration.component_catalog import apply_speech_engine_profiles
 from coop_navigation_sds.Configuration.run_identity import compact_code
+from coop_navigation_sds.Configuration.model_matrix import model_size_treatment
 
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
     LLMAgentAResponder,
@@ -103,6 +104,7 @@ class ExperimentRunner:
         log_dir=SESSION_LOG_DIR,
         scenario_overrides=None,
         model_adapter_factory=None,
+        agent_a_model_adapter=None,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -115,6 +117,7 @@ class ExperimentRunner:
         """
         self.model_adapter = model_adapter
         self.model_adapter_factory = model_adapter_factory
+        self.agent_a_model_adapter = agent_a_model_adapter
         self._model_adapter_cache = {}
         self.num_turns = num_turns
         self.agent_b_plugin_key = agent_b_plugin_key
@@ -200,8 +203,11 @@ class ExperimentRunner:
                     f"Condition '{condition.condition_id}' has insufficient viable route alternatives "
                     f"for conversation stage(s) {failed}."
                 )
-        model_adapter = self._model_adapter_for(condition)
-        self._configure_model_adapter_runtime(model_adapter, calculation_max_time_sec)
+        agent_b_model_adapter = self._model_adapter_for(condition)
+        agent_a_model_adapter = self.agent_a_model_adapter or agent_b_model_adapter
+        self._configure_model_adapter_runtime(agent_b_model_adapter, calculation_max_time_sec)
+        if agent_a_model_adapter is not agent_b_model_adapter:
+            self._configure_model_adapter_runtime(agent_a_model_adapter, calculation_max_time_sec)
         speech_config = {
             "pattern_key": condition.speech_pattern_key,
             "tts_engine": "file" if condition.run_type == "text_only" else (condition.tts_engine or self.tts_engine),
@@ -228,13 +234,13 @@ class ExperimentRunner:
         speech_transport = SpeechTransport(
             config=SpeechPipelineConfig(**speech_config)
         )
-        agent_b_plugin = create_agent_b_plugin(self.agent_b_plugin_key, model_adapter)
+        agent_b_plugin = create_agent_b_plugin(self.agent_b_plugin_key, agent_b_model_adapter)
         manager = DialogManager(
             test_case,
             agent_b_plugin,
             num_turns,
             speech_transport=speech_transport,
-            agent_a_responder=self._agent_a_responder_for(model_adapter),
+            agent_a_responder=self._agent_a_responder_for(agent_a_model_adapter),
             transfer_tolerance=transfer_tolerance,
             invalid_route_limit=invalid_route_limit,
             constraint_miss_limit=constraint_miss_limit,
@@ -286,13 +292,18 @@ class ExperimentRunner:
         model_roles = []
         if AgentBPluginConfig(self.agent_b_plugin_key).needs_model:
             model_roles.append("agent_b")
-        if agent_a_uses_model(self.agent_a_type):
+        if agent_a_uses_model(self.agent_a_type) and self.agent_a_model_adapter is None:
             model_roles.append("agent_a")
         result.extra["model_backend"] = model_adapter_runtime_metadata(
-            model_adapter,
+            agent_b_model_adapter,
             roles=model_roles,
         )
-        model_parameters = getattr(model_adapter, "model_parameters", None)
+        if self.agent_a_model_adapter is not None and agent_a_uses_model(self.agent_a_type):
+            result.extra["agent_a_model_backend"] = model_adapter_runtime_metadata(
+                agent_a_model_adapter,
+                roles=["agent_a"],
+            )
+        model_parameters = getattr(agent_b_model_adapter, "model_parameters", None)
         if model_parameters is not None:
             result.extra["model_parameters"] = asdict(model_parameters)
         metric = self.metric_computer.compute(result, test_case.scenario) if compute_metrics else None
@@ -447,6 +458,15 @@ def build_condition_grid(
             **dict(zip(parameter_names, parameter_combination)),
             **dict(parameter_profile),
         }
+        registered_size_treatment = model_size_treatment(agent_b_model)
+        if registered_size_treatment:
+            configured_size_treatment = parameter_values.get("agent_b_llm_size")
+            if configured_size_treatment not in {None, registered_size_treatment}:
+                raise ValueError(
+                    f"Agent B model '{agent_b_model}' belongs to size treatment "
+                    f"'{registered_size_treatment}', not '{configured_size_treatment}'."
+                )
+            parameter_values["agent_b_llm_size"] = registered_size_treatment
         profile_key = str(parameter_values.get("profile_key", "default"))
         parameter_label = "__".join(f"{key}-{value}" for key, value in parameter_values.items())
         base_id = (
@@ -457,7 +477,7 @@ def build_condition_grid(
         )
         digest = hashlib.sha256(base_id.encode("utf-8")).hexdigest()[:10]
         pair_id = f"P-{digest}"
-        condition_code = "-".join((
+        condition_parts = [
             "C",
             compact_code(test_case_key),
             compact_code(persona_key),
@@ -466,9 +486,11 @@ def build_condition_grid(
             compact_code(asr_engine or "default_asr"),
             compact_code(agent_b_model or "default_model"),
             compact_code(profile_key),
-            f"I{iteration}",
-            digest,
-        ))
+        ]
+        if parameter_values.get("agent_b_llm_size"):
+            condition_parts.append(compact_code(parameter_values["agent_b_llm_size"]))
+        condition_parts.extend((f"I{iteration}", digest))
+        condition_code = "-".join(condition_parts)
         base_case = test_case_cache.get(test_case_key)
         if base_case is None:
             base_case = get_test_case(test_case_key)

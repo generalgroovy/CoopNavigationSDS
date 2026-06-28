@@ -120,8 +120,9 @@ def test_metric_record_can_be_recalculated_from_persisted_raw_evidence():
             "phase_timings": [],
             "nlu_turns": [],
             "runtime_events": [],
-            "candidate_events": [],
-            "resolved_scenario": scenario,
+                "candidate_events": [],
+                "prompt_audits": [],
+                "resolved_scenario": scenario,
         },
     )
     with tempfile.TemporaryDirectory() as temporary:

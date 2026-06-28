@@ -4,6 +4,7 @@ import unittest
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.pipeline import (
     DialogState,
     VerbalTransformationPipeline,
+    heard_constraint_report,
     heard_trip_report,
     parse_heard_clock,
 )
@@ -19,6 +20,36 @@ class FailingModel:
 
 
 class HeardStateTests(unittest.TestCase):
+    def test_agent_b_constraint_state_comes_from_heard_words_not_hidden_truth(self):
+        state = self.state([
+            ("Agent A", "I am at Bravo at 08:07 going to Harbor."),
+            ("Agent B", "Take a valid route."),
+            ("Agent A", "I cannot take tram, and I can walk at most 12 minutes."),
+        ])
+        state.scenario["ticket_modes"] = ("metro", "tram")
+        state.scenario["max_walking_min"] = 5
+
+        heard = state.assistant_scenario
+
+        self.assertEqual(heard["ticket_modes"], ("metro", "bus"))
+        self.assertEqual(heard["max_walking_min"], 12)
+        self.assertEqual(set(state.recognized_constraint_keys), {"tickets", "walking"})
+        self.assertNotEqual(heard["ticket_modes"], state.scenario["ticket_modes"])
+        self.assertNotEqual(heard["max_walking_min"], state.scenario["max_walking_min"])
+
+    def test_unresolved_value_constraint_is_not_assumed(self):
+        conversation = [
+            ("Agent A", "I am at Bravo at 08:07 going to Harbor."),
+            ("Agent A", "Walking matters, and I have some transit tickets."),
+        ]
+        state = self.state(conversation)
+
+        self.assertEqual(heard_constraint_report(conversation)["facts"], {})
+        self.assertNotIn("max_walking_min", state.assistant_scenario)
+        self.assertNotIn("ticket_modes", state.assistant_scenario)
+        self.assertNotIn("walking", state.recognized_constraint_keys)
+        self.assertNotIn("tickets", state.recognized_constraint_keys)
+
     def state(self, conversation):
         return DialogState(
             test_case=SimpleNamespace(

@@ -13,6 +13,12 @@ from coop_navigation_sds.NaturalLanguageUnderstanding.clarification import (
 )
 from coop_navigation_sds.NaturalLanguageUnderstanding.interpreter import NaturalRouteInterpreter
 from coop_navigation_sds.DialogManagement.stages import agent_memory_view, dialog_context
+from coop_navigation_sds.NaturalLanguageGeneration.prompt_audit import (
+    begin_prompt_audit,
+    consume_prompt_audits,
+    finish_prompt_audit,
+    record_prompt_delivery,
+)
 
 
 _CLOCK_WORD_VALUES = {
@@ -29,6 +35,12 @@ TRIP_SLOT_LABELS = {
     "destination_station": "destination station",
     "start_time_min": "departure time",
 }
+PUBLIC_TRANSPORT_MODES = ("metro", "tram", "bus")
+PUBLIC_ASSISTANT_SCENARIO_KEYS = (
+    "name",
+    "transfer_time_min",
+    "acceptable_duration_ratio",
+)
 
 
 def _clock_token_value(token):
@@ -210,6 +222,54 @@ def heard_trip_facts(conversation):
     return heard_trip_report(conversation)["facts"]
 
 
+def heard_constraint_report(conversation):
+    """Extract value-bearing private constraints only from Agent A transcripts."""
+    facts = {}
+    evidence = {}
+    for turn_index, (speaker, raw_text) in enumerate(conversation or (), start=1):
+        if speaker != "Agent A":
+            continue
+        text = str(raw_text or "")
+        lower = text.casefold()
+
+        mentioned_modes = tuple(mode for mode in PUBLIC_TRANSPORT_MODES if mode in lower)
+        if "ticket" in lower and len(mentioned_modes) == 2:
+            facts["ticket_modes"] = mentioned_modes
+            evidence["ticket_modes"] = {
+                "turn": turn_index,
+                "text": text,
+                "method": "explicit_allowed_ticket_modes",
+            }
+        unavailable_match = re.search(
+            r"\b(?:cannot|can't|can not|no)\s+(?:(?:take|use)\s+)?(metro|tram|bus)\b",
+            lower,
+        )
+        if unavailable_match:
+            unavailable = unavailable_match.group(1)
+            facts["ticket_modes"] = tuple(
+                mode for mode in PUBLIC_TRANSPORT_MODES if mode != unavailable
+            )
+            evidence["ticket_modes"] = {
+                "turn": turn_index,
+                "text": text,
+                "method": "explicit_unavailable_mode",
+                "unavailable_mode": unavailable,
+            }
+
+        walking_match = re.search(
+            r"\b(?:walk|walking|on foot)\b.{0,32}?\b(\d{1,2})\s*(?:minutes?|mins?)\b",
+            lower,
+        )
+        if walking_match:
+            facts["max_walking_min"] = int(walking_match.group(1))
+            evidence["max_walking_min"] = {
+                "turn": turn_index,
+                "text": text,
+                "method": "explicit_walking_minutes",
+            }
+    return {"facts": facts, "evidence": evidence}
+
+
 @dataclass
 class DialogState:
     """Small state model passed between dialog controller stages for a single turn.
@@ -262,22 +322,39 @@ class DialogState:
     @property
     def assistant_scenario(self):
         """Return journey facts Agent B actually received through ASR."""
-        agent_a_text = " ".join(text for speaker, text in self.conversation if speaker == "Agent A")
         facts = self.heard_trip_state["facts"]
         if any(value is None for value in facts.values()):
             return None
 
-        heard = dict(self.scenario)
+        heard = {
+            key: self.scenario[key]
+            for key in PUBLIC_ASSISTANT_SCENARIO_KEYS
+            if key in self.scenario
+        }
         heard.update(facts)
         heard["destination_stations"] = [facts["destination_station"]]
         heard["max_transfer_miss_probability"] = 1.0
         heard["max_delay_probability"] = 1.0
-        lower = agent_a_text.lower()
-        if not any(keyword in lower for keyword in ("ticket", "cannot take", "no bus", "no tram", "no metro")):
-            heard.pop("ticket_modes", None)
-        if not any(keyword in lower for keyword in ("walking", "walk", "on foot")):
-            heard.pop("max_walking_min", None)
+        heard.update(self.heard_constraint_state["facts"])
         return heard
+
+    @property
+    def heard_constraint_state(self):
+        """Return private constraint values recoverable from Agent B's transcript."""
+        return heard_constraint_report(self.conversation)
+
+    @property
+    def recognized_constraint_keys(self):
+        """Return stated constraints whose required values were actually understood."""
+        from coop_navigation_sds.TransportNetwork.constraints import stated_constraint_keys
+
+        keys = list(stated_constraint_keys(self.conversation))
+        facts = self.heard_constraint_state["facts"]
+        if "tickets" in keys and "ticket_modes" not in facts:
+            keys.remove("tickets")
+        if "walking" in keys and "max_walking_min" not in facts:
+            keys.remove("walking")
+        return tuple(keys)
 
     @property
     def missing_trip_slots(self):
@@ -352,6 +429,7 @@ class VerbalTransformationPipeline:
         self.generator = ModelGenerationStage(model_adapter)
         self.cleaner = VerbalCleanupStage()
         self.route_interpreter = NaturalRouteInterpreter()
+        self.prompt_audits = []
 
     def run_agent_b(self, state: DialogState) -> str:
         """Run agent b method for this module's MVC responsibility.
@@ -367,31 +445,87 @@ class VerbalTransformationPipeline:
             return state.trip_clarification_prompt()
 
         messages = self.prompt_builder.run(state)
-        raw_reply = self.generator.run(messages)
+        raw_reply, audit = self._generate_with_audit(state, messages, "response")
 
         for attempt in range(MAX_REPAIR_ATTEMPTS + 1):
             reply = self.cleaner.run(raw_reply)
-            if reply and not STATION_PATTERN.search(reply):
-                reply = ""
-            if reply and not self.reply_reaches_goal(reply, scenario):
-                reply = ""
-            if reply and not self.cleaner.repeats_prior_agent_b(reply, state.conversation):
+            decision = self._reply_decision(reply, state, scenario)
+            accepted = decision == "accepted"
+            finish_prompt_audit(
+                audit,
+                raw_output=raw_reply,
+                cleaned_output=reply,
+                accepted=accepted,
+                decision=decision,
+            )
+            if accepted:
+                record_prompt_delivery(audit, reply, "model")
                 return reply
 
             if attempt >= MAX_REPAIR_ATTEMPTS:
                 break
 
             messages = self.prompt_builder.run_repair(state, reply)
-            raw_reply = self.generator.run(messages)
+            raw_reply, audit = self._generate_with_audit(
+                state,
+                messages,
+                f"repair_{attempt + 1}",
+            )
 
         phase_fallback = self.prompt_builder.phase_fallback(state)
         if not self.cleaner.repeats_prior_agent_b(phase_fallback, state.conversation):
+            record_prompt_delivery(
+                self.prompt_audits[-1],
+                phase_fallback,
+                "deterministic_route_fallback",
+            )
             return phase_fallback
 
-        return (
+        final_fallback = (
             "I have no new distinct viable route. The best earlier route "
             "still fits the current request."
         )
+        record_prompt_delivery(
+            self.prompt_audits[-1],
+            final_fallback,
+            "deterministic_no_alternative_fallback",
+        )
+        return final_fallback
+
+    def _generate_with_audit(self, state, messages, purpose):
+        audit = begin_prompt_audit(
+            agent="Agent B",
+            purpose=purpose,
+            stage=state.stage.value,
+            turn=len(state.conversation) + 1,
+            messages=messages,
+        )
+        self.prompt_audits.append(audit)
+        try:
+            return self.generator.run(messages), audit
+        except Exception as exc:
+            finish_prompt_audit(
+                audit,
+                accepted=False,
+                decision="generation_error",
+                error=repr(exc),
+            )
+            raise
+
+    def _reply_decision(self, reply, state, scenario):
+        if not reply:
+            return "empty_or_rejected_output"
+        if not STATION_PATTERN.search(reply):
+            return "missing_station"
+        if not self.reply_reaches_goal(reply, scenario):
+            return "incomplete_or_invalid_route"
+        if self.cleaner.repeats_prior_agent_b(reply, state.conversation):
+            return "repeated_reply"
+        return "accepted"
+
+    def consume_prompt_audits(self):
+        """Return exact prompt calls made since the previous controller read."""
+        return consume_prompt_audits(self)
 
     def reply_reaches_goal(self, reply, scenario):
         route = self.route_interpreter.interpret_reply(reply, scenario)
@@ -404,33 +538,42 @@ class VerbalTransformationPipeline:
 
 class AgentBPromptStage:
     def run(self, state: DialogState) -> str:
-        scenario = state.assistant_scenario
-        system_prompt = (
-            build_agent_b_system(scenario, None)
-            + " "
-            + build_agent_b_stage_instruction(state.stage, scenario["destination_station"])
-            + f" Current stage: {state.stage.label}. "
-            + " Resolve only the latest pending request. Do not repeat a prior route or clarification. "
-            + state.memory.prompt_summary()
-        )
-        return build_messages("Agent B", system_prompt, state.conversation)
+        return self._build_messages(state, repair=False)
 
     def run_repair(self, state: DialogState, repeated_reply: str) -> str:
-        scenario = state.assistant_scenario
-        system_prompt = (
-            build_agent_b_system(scenario, None)
-            + " "
-            + build_agent_b_stage_instruction(state.stage, scenario["destination_station"])
-            + f" Current stage: {state.stage.label}. "
-            + " The previous draft repeated information or lacked a complete route. "
-            + "Give one fresh connected candidate; if none remains, recommend the best earlier route."
-            + " "
-            + state.memory.prompt_summary()
-        )
+        system_prompt = self._system_prompt(state, repair=True)
         repair_history = list(state.conversation)
         if repeated_reply:
             repair_history.append(("Agent A", "That sounds like a repeat. Can you say it more clearly or update the route?"))
         return build_messages("Agent B", system_prompt, repair_history)
+
+    def _build_messages(self, state, repair):
+        return build_messages(
+            "Agent B",
+            self._system_prompt(state, repair=repair),
+            state.conversation,
+        )
+
+    @staticmethod
+    def _system_prompt(state, repair):
+        scenario = state.assistant_scenario
+        request = (
+            "The previous draft repeated information or lacked a complete route. "
+            "Give one fresh connected candidate; if none remains, recommend the best earlier route."
+            if repair
+            else "Resolve only the latest pending request. Do not repeat a prior route or clarification."
+        )
+        return " ".join((
+            build_agent_b_system(
+                scenario,
+                None,
+                stated_constraint_keys=state.recognized_constraint_keys,
+            ),
+            build_agent_b_stage_instruction(state.stage, scenario["destination_station"]),
+            f"Current stage: {state.stage.label}.",
+            request,
+            state.memory.prompt_summary(),
+        ))
 
     def phase_fallback(self, state: DialogState) -> str:
         return fallback_reply(

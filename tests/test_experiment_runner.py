@@ -147,6 +147,71 @@ class ExperimentRunnerTests(unittest.TestCase):
     @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
     @patch("coop_navigation_sds.experiments.DialogManager")
     @patch("coop_navigation_sds.experiments.get_test_case")
+    def test_run_condition_can_keep_agent_a_model_separate_from_agent_b_grid(
+        self,
+        get_test_case,
+        dialog_manager_cls,
+        create_agent_b_plugin,
+    ):
+        base_case = SimpleNamespace(
+            key="case",
+            name="Case",
+            persona_key="focused_commuter",
+            scenario_key="scenario",
+            scenario={
+                "name": "Scenario",
+                "start_station": "A",
+                "destination_station": "B",
+                "start_time_min": 0,
+                "transfer_time_min": 2,
+            },
+        )
+        base_case.with_persona = lambda persona_key: base_case
+        get_test_case.return_value = base_case
+
+        agent_b_base = FakeModelAdapter("agent-b-base")
+        agent_a_fixed = FakeModelAdapter("agent-a-tinyllama")
+        agent_b_condition = FakeModelAdapter("agent-b-comparison")
+        factory = MagicMock(return_value=agent_b_condition)
+        runner = ExperimentRunner(
+            agent_b_base,
+            num_turns=3,
+            agent_b_plugin_key="llm",
+            tts_engine="file",
+            asr_engine="file",
+            speech_playback_enabled=False,
+            speech_realtime_enabled=False,
+            agent_a_type="tinyllama",
+            model_adapter_factory=factory,
+            agent_a_model_adapter=agent_a_fixed,
+        )
+        runner.metric_computer.compute = MagicMock(return_value="metric")
+        result = SimpleNamespace(extra={})
+        dialog_manager_cls.return_value.run.return_value = result
+
+        condition = ExperimentCondition(
+            condition_id="separate_models",
+            test_case_key="case",
+            persona_key="focused_commuter",
+            scenario_key="scenario",
+            speech_pattern_key="clean",
+            model_param_key="greedy",
+            agent_b_model="agent-b-comparison",
+        )
+
+        runner.run_condition(condition)
+
+        factory.assert_called_once_with("agent-b-comparison")
+        self.assertEqual(create_agent_b_plugin.call_args.args[1].name, "agent-b-comparison")
+        agent_a_responder = dialog_manager_cls.call_args.kwargs["agent_a_responder"]
+        self.assertEqual(agent_a_responder.model_adapter.name, "agent-a-tinyllama")
+        self.assertEqual(result.extra["agent_b_model"], "agent-b-comparison")
+        self.assertEqual(result.extra["model_backend"]["model"], "agent-b-comparison")
+        self.assertEqual(result.extra["agent_a_model_backend"]["model"], "agent-a-tinyllama")
+
+    @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
+    @patch("coop_navigation_sds.experiments.DialogManager")
+    @patch("coop_navigation_sds.experiments.get_test_case")
     def test_run_condition_can_write_runtime_batch_logs(
         self,
         get_test_case,

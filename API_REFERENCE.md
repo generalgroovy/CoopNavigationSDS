@@ -276,6 +276,22 @@ Evaluation-layer configuration.
 
 No public runtime components are defined in this module.
 
+## `coop_navigation_sds/Configuration/model_matrix.py`
+
+Canonical Agent B model-size treatments used by research job matrices.
+
+### Class `ModelSizeTreatment`
+
+One controlled model-size tier with two family-diverse local models.
+
+### Function `models_for_size_treatments(treatment_keys)`
+
+Resolve ordered model names for one or more declared size treatments.
+
+### Function `model_size_treatment(model_name)`
+
+Return the configured size-treatment key for a model, if registered.
+
 ## `coop_navigation_sds/Configuration/pipeline.py`
 
 Shared configuration-pipeline, logging, and metric-dependency model.
@@ -1218,7 +1234,7 @@ Data model for one batch experiment condition.
 
 Batch controller for running one condition or a full condition grid.
 
-- `ExperimentRunner.__init__(self, model_adapter, num_turns, agent_b_plugin_key=AGENT_B_PLUGIN, tts_engine=SPEECH_TTS_ENGINE, asr_engine=SPEECH_ASR_ENGINE, speech_audio_dir=SPEECH_AUDIO_DIR, speech_playback_enabled=SPEECH_PLAYBACK_ENABLED, speech_realtime_enabled=SPEECH_REALTIME_ENABLED, speech_synthesis_config=None, transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE, invalid_route_limit=INVALID_ROUTE_LIMIT, constraint_miss_limit=CONSTRAINT_MISS_LIMIT, stagnation_limit=2, max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC, calculation_max_time_sec=GENERATION_MAX_TIME_SEC, llm_agent_a=LLM_AGENT_A, agent_a_type=None, log_profile=LOG_PROFILE_OFF, log_dir=SESSION_LOG_DIR, scenario_overrides=None, model_adapter_factory=None)`: init method for this module's MVC responsibility.
+- `ExperimentRunner.__init__(self, model_adapter, num_turns, agent_b_plugin_key=AGENT_B_PLUGIN, tts_engine=SPEECH_TTS_ENGINE, asr_engine=SPEECH_ASR_ENGINE, speech_audio_dir=SPEECH_AUDIO_DIR, speech_playback_enabled=SPEECH_PLAYBACK_ENABLED, speech_realtime_enabled=SPEECH_REALTIME_ENABLED, speech_synthesis_config=None, transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE, invalid_route_limit=INVALID_ROUTE_LIMIT, constraint_miss_limit=CONSTRAINT_MISS_LIMIT, stagnation_limit=2, max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC, calculation_max_time_sec=GENERATION_MAX_TIME_SEC, llm_agent_a=LLM_AGENT_A, agent_a_type=None, log_profile=LOG_PROFILE_OFF, log_dir=SESSION_LOG_DIR, scenario_overrides=None, model_adapter_factory=None, agent_a_model_adapter=None)`: init method for this module's MVC responsibility.
 - `ExperimentRunner.run_condition(self, condition: ExperimentCondition, *, compute_metrics=True)`: Run condition method for this module's MVC responsibility.
 - `ExperimentRunner._event_queue_for(self, condition: ExperimentCondition)`: Return a no-op queue by default, or a structured logger for batch audits.
 - `ExperimentRunner._configure_model_adapter_runtime(self, model_adapter, calculation_max_time_sec=None)`: Internal class operation.
@@ -1270,6 +1286,10 @@ Recover trip slots and evidence from Agent B's accumulated heard memory.
 
 Recover trip slots from Agent B's accumulated ASR-grounded memory.
 
+### Function `heard_constraint_report(conversation)`
+
+Extract value-bearing private constraints only from Agent A transcripts.
+
 ### Class `DialogState`
 
 Small state model passed between dialog controller stages for a single turn.
@@ -1280,6 +1300,8 @@ Small state model passed between dialog controller stages for a single turn.
 - `DialogState.memory(self)`: Return Agent B's persistent intended/heard memory view.
 - `DialogState.stage(self)`: Return the current explicit conversation stage.
 - `DialogState.assistant_scenario(self)`: Return journey facts Agent B actually received through ASR.
+- `DialogState.heard_constraint_state(self)`: Return private constraint values recoverable from Agent B's transcript.
+- `DialogState.recognized_constraint_keys(self)`: Return stated constraints whose required values were actually understood.
 - `DialogState.missing_trip_slots(self)`: Return trip facts still absent from Agent B's heard memory.
 - `DialogState.heard_trip_state(self)`: Return fact recovery state used by Agent B before planning.
 - `DialogState.trip_clarification_prompt(self)`: Return the shared repair prompt for every Agent B backend.
@@ -1291,6 +1313,9 @@ Transforms dialog state into a verbal Agent B response.
 
 - `VerbalTransformationPipeline.__init__(self, model_adapter)`: init method for this module's MVC responsibility.
 - `VerbalTransformationPipeline.run_agent_b(self, state: DialogState)`: Run agent b method for this module's MVC responsibility.
+- `VerbalTransformationPipeline._generate_with_audit(self, state, messages, purpose)`: Internal class operation.
+- `VerbalTransformationPipeline._reply_decision(self, reply, state, scenario)`: Internal class operation.
+- `VerbalTransformationPipeline.consume_prompt_audits(self)`: Return exact prompt calls made since the previous controller read.
 - `VerbalTransformationPipeline.reply_reaches_goal(self, reply, scenario)`: Internal class operation.
 
 ### Class `AgentBPromptStage`
@@ -1299,6 +1324,8 @@ Class component; see its typed members and call sites.
 
 - `AgentBPromptStage.run(self, state: DialogState)`: Internal class operation.
 - `AgentBPromptStage.run_repair(self, state: DialogState, repeated_reply: str)`: Internal class operation.
+- `AgentBPromptStage._build_messages(self, state, repair)`: Internal class operation.
+- `AgentBPromptStage._system_prompt(state, repair)`: Internal class operation.
 - `AgentBPromptStage.phase_fallback(self, state: DialogState)`: Internal class operation.
 
 ### Class `ModelGenerationStage`
@@ -1347,6 +1374,7 @@ Default CoopNavigationSDS Agent B backed by a configured model adapter.
 
 - `LlmAgentBPlugin.__init__(self, model_adapter)`: Internal class operation.
 - `LlmAgentBPlugin.run_agent_b(self, state)`: Internal class operation.
+- `LlmAgentBPlugin.consume_prompt_audits(self)`: Expose prompt evidence without coupling orchestration to pipeline internals.
 
 ### Class `SimplePlannerAgentBPlugin`
 
@@ -1464,15 +1492,15 @@ Prompt-context helpers that describe the current transit model and task rules to
 
 Return the shared station and line vocabulary known by both agents.
 
-### Function `compact_prompt_context(scenario, persona=None)`
+### Function `compact_prompt_context(scenario, persona=None, stated_constraint_keys=())`
 
-Compact prompt context function for this module's MVC responsibility.
+Return Agent B's verified candidates using only constraints heard so far.
 
 ### Function `caller_prompt_context(scenario, persona=None)`
 
 Return only the information a hotline caller plausibly knows.
 
-### Function `compact_route_candidate_text(scenario, persona=None, limit=3)`
+### Function `compact_route_candidate_text(scenario, persona=None, stated_constraint_keys=(), limit=3)`
 
 Return concise valid route candidates instead of the full network.
 
@@ -1500,7 +1528,7 @@ Return a compact repair request for a nonsensical Agent B answer.
 
 Internal module operation.
 
-### Function `build_agent_b_system(scenario, persona=None)`
+### Function `build_agent_b_system(scenario, persona=None, stated_constraint_keys=())`
 
 Internal module operation.
 
@@ -1588,6 +1616,7 @@ Agent A behavior backed by the same ModelAdapter interface as Agent B.
 
 - `LLMAgentAResponder.__init__(self, model_adapter)`: init method for this module's MVC responsibility.
 - `LLMAgentAResponder.reply(self, turn: int, persona: dict, scenario: dict, conversation: list)`: Reply method for this module's MVC responsibility.
+- `LLMAgentAResponder.consume_prompt_audits(self)`: Return exact prompt calls made since the previous controller read.
 
 ### Function `_closes_call(text)`
 
@@ -1743,6 +1772,30 @@ Adapter for a local Ollama `/api/chat` endpoint.
 
 Return provider-neutral audit metadata for an adapter actually used in a run.
 
+## `coop_navigation_sds/NaturalLanguageGeneration/prompt_audit.py`
+
+Exact, serializable provenance for language-model prompt calls.
+
+### Function `_message_document(message)`
+
+Internal module operation.
+
+### Function `begin_prompt_audit(*, agent, purpose, stage, turn, messages)`
+
+Create immutable prompt-call evidence before model generation starts.
+
+### Function `finish_prompt_audit(audit, *, raw_output=None, cleaned_output=None, accepted=False, decision, error=None)`
+
+Finalize one prompt audit with the model output and verifier decision.
+
+### Function `record_prompt_delivery(audit, output, source)`
+
+Record which guarded output was ultimately sent to text-to-speech.
+
+### Function `consume_prompt_audits(owner)`
+
+Return and clear an object's buffered audits without sharing mutable state.
+
 ## `coop_navigation_sds/NaturalLanguageUnderstanding/__init__.py`
 
 Recognition transcript interpretation and semantic route extraction.
@@ -1869,15 +1922,19 @@ Return a systematic identifier for one complete program execution.
 
 Create and return a unique output folder for one execution run.
 
-### Function `write_metrics_csv(metrics, path)`
+### Function `_metric_export_context(output_dir, scope)`
+
+Internal module operation.
+
+### Function `write_metrics_csv(metrics, path, context=None)`
 
 Write flat metric rows as CSV.
 
-### Function `write_metrics_file(metrics, path)`
+### Function `write_metrics_file(metrics, path, context=None)`
 
 Write metrics as XLSX or CSV based on the requested file extension.
 
-### Function `write_metric_phase_logs(metrics, output_dir)`
+### Function `write_metric_phase_logs(metrics, output_dir, *, result_scope='run')`
 
 Write calculated phase metrics to one JSONL file and a matching catalog.
 
@@ -1928,6 +1985,14 @@ Persist every completed condition before calculating batch metrics.
 ### Function `calculate_batch_metrics_from_inputs(path)`
 
 Reconstruct batch metrics solely from persisted immutable evidence.
+
+### Function `build_retrospective_metrics_document(metrics, *, result_scope, input_inventory=None)`
+
+Return a common retrospective metric document for single and batch runs.
+
+### Function `write_retrospective_metrics_json(metrics, path, *, result_scope, input_inventory=None)`
+
+Write common retrospective metric evidence for single or batch runs.
 
 ### Function `write_conversation_protocol(result, output_dir)`
 
@@ -2026,13 +2091,25 @@ Forward UI-compatible tuple events to a UI queue and structured logger.
 
 Canonical long-form metric tables for plotting, joins, and audit.
 
-### Function `metric_long_rows(records)`
+### Function `_context_columns(context=None)`
+
+Internal module operation.
+
+### Function `metric_wide_rows(records, context=None)`
+
+Return one normalized condition-level row per metric record.
+
+### Function `metric_long_rows(records, context=None)`
 
 Return one normalized row per condition and metric.
 
-### Function `write_metric_long_exports(records, output_dir)`
+### Function `_write_table_exports(rows, csv_path, jsonl_path)`
 
-Write matching CSV and JSONL long-form metric datasets.
+Internal module operation.
+
+### Function `write_metric_long_exports(records, output_dir, context=None)`
+
+Write matching long and wide metric datasets for graphing and joins.
 
 ## `coop_navigation_sds/ResultsAndArtifacts/speech_matrix.py`
 
@@ -2106,15 +2183,15 @@ Internal module operation.
 
 Small XLSX writer for dependency-free research metric exports.
 
-### Function `write_metrics_xlsx(metrics, path)`
+### Function `write_metrics_xlsx(metrics, path, context=None)`
 
 Write metric records to an XLSX workbook with summary and per-phase sheets.
 
-### Function `_summary_rows(records)`
+### Function `_summary_rows(records, context=None)`
 
 Internal module operation.
 
-### Function `_phase_rows(records, phase)`
+### Function `_phase_rows(records, phase, context=None)`
 
 Internal module operation.
 
@@ -2583,9 +2660,21 @@ Build complete network rows without view-layer calculations.
 
 Dependency-free network graph picture export.
 
+### Function `_connection_records()`
+
+Return every line-specific connection with a non-overlapping lane.
+
+### Function `_line_styles()`
+
+Assign a unique color-pattern combination to every service.
+
+### Function `_line_style(line_name, styles)`
+
+Internal module operation.
+
 ### Function `write_network_svg(path, *, title='CoopNavigationSDS transit network')`
 
-Write the current transit network as a standalone SVG picture file.
+Write every realized connection and an external line index to SVG.
 
 ## `coop_navigation_sds/TransportNetwork/routes.py`
 

@@ -25,10 +25,61 @@ from coop_navigation_sds.TransportNetwork.constraints import (
 )
 from coop_navigation_sds.TransportNetwork.routes import candidate_time_routes, route_text_from_steps
 from coop_navigation_sds.TransportNetwork import DEFAULT_TEST_CASE, get_test_case
+from coop_navigation_sds.NaturalLanguageGeneration.prompt_audit import PROMPT_POLICY_VERSION
 from coop_navigation_sds.TransportNetwork.scenarios import SCENARIOS
 
 
 class PromptingTests(unittest.TestCase):
+    def test_agent_b_prompt_audit_records_exact_messages_and_acceptance(self):
+        test_case = get_test_case(DEFAULT_TEST_CASE)
+        valid_reply = fallback_reply(
+            "Agent B",
+            test_case.scenario,
+            route_index=0,
+            persona=test_case.persona,
+        )
+
+        class ValidRouteModel:
+            def generate_messages(self, _messages):
+                return valid_reply
+
+        pipeline = VerbalTransformationPipeline(ValidRouteModel())
+        state = DialogState(
+            test_case,
+            [("Agent A", test_case.opening_utterance())],
+        )
+
+        self.assertEqual(pipeline.run_agent_b(state), valid_reply)
+        audits = pipeline.consume_prompt_audits()
+        self.assertEqual(len(audits), 1)
+        self.assertEqual(audits[0]["prompt_policy_version"], PROMPT_POLICY_VERSION)
+        self.assertEqual(audits[0]["agent"], "Agent B")
+        self.assertTrue(audits[0]["accepted"])
+        self.assertEqual(audits[0]["decision"], "accepted")
+        self.assertEqual(audits[0]["delivery_source"], "model")
+        self.assertEqual(audits[0]["messages"][0]["role"], "system")
+        self.assertEqual(len(audits[0]["prompt_sha256"]), 64)
+        self.assertEqual(pipeline.consume_prompt_audits(), [])
+
+    def test_agent_b_prompt_audit_preserves_rejected_model_drafts(self):
+        test_case = get_test_case(DEFAULT_TEST_CASE)
+
+        class InvalidRouteModel:
+            def generate_messages(self, _messages):
+                return "Take metro line M1 from Bravo to Alpha."
+
+        pipeline = VerbalTransformationPipeline(InvalidRouteModel())
+        pipeline.run_agent_b(
+            DialogState(test_case, [("Agent A", test_case.opening_utterance())])
+        )
+        audits = pipeline.consume_prompt_audits()
+
+        self.assertGreaterEqual(len(audits), 1)
+        self.assertEqual(audits[0]["raw_output"], "Take metro line M1 from Bravo to Alpha.")
+        self.assertFalse(audits[0]["accepted"])
+        self.assertEqual(audits[0]["decision"], "incomplete_or_invalid_route")
+        self.assertEqual(audits[-1]["delivery_source"], "deterministic_route_fallback")
+
     def setUp(self):
         self.persona = get_test_case(DEFAULT_TEST_CASE).persona
         self.scenario = {

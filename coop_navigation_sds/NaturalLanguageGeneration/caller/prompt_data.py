@@ -4,8 +4,7 @@ from coop_navigation_sds.TransportNetwork.network import LINES, STATIONS
 from coop_navigation_sds.TransportNetwork.constraints import (
     available_agent_a_constraints,
     constraint_request_text,
-    probability_class,
-    ranked_constraint_routes,
+    stage_route_options,
 )
 from coop_navigation_sds.TransportNetwork.routes import route_text_from_steps
 
@@ -17,15 +16,8 @@ def network_vocabulary_text():
     return f"Known station names: {station_names}. Known line names: {line_names}."
 
 
-def compact_prompt_context(scenario, persona=None):
-    """Compact prompt context function for this module's MVC responsibility.
-
-    Args:
-        scenario: Input value used by `compact_prompt_context`; see the function signature and caller context for the expected type.
-
-    Returns:
-        The computed value or side effect documented by the implementation.
-    """
+def compact_prompt_context(scenario, persona=None, stated_constraint_keys=()):
+    """Return Agent B's verified candidates using only constraints heard so far."""
     destinations = scenario.get("destination_stations") or [scenario["destination_station"]]
     destination_text = " to ".join(destinations) if len(destinations) > 1 else scenario["destination_station"]
     return (
@@ -33,7 +25,8 @@ def compact_prompt_context(scenario, persona=None):
         f"Start: {scenario['start_station']}. Destination: {destination_text}. "
         f"{network_vocabulary_text()} "
         "Use only these verified candidates and their stated facts. "
-        f"Candidates: {compact_route_candidate_text(scenario, persona)}"
+        "Candidate ordering uses only constraints recovered from the caller transcript. "
+        f"Candidates: {compact_route_candidate_text(scenario, persona, stated_constraint_keys)}"
     )
 
 
@@ -56,18 +49,28 @@ def caller_prompt_context(scenario, persona=None):
     )
 
 
-def compact_route_candidate_text(scenario, persona=None, limit=3):
+def compact_route_candidate_text(
+    scenario,
+    persona=None,
+    stated_constraint_keys=(),
+    limit=3,
+):
     """Return concise valid route candidates instead of the full network."""
     if scenario.get("start_station") not in STATIONS or scenario.get("destination_station") not in STATIONS:
         return "use the listed station names and constraints."
-    routes = ranked_constraint_routes(scenario, persona or {}, limit=limit)
+    routes = stage_route_options(
+        scenario,
+        persona or {},
+        stated_keys=stated_constraint_keys,
+        limit=max(limit, 20),
+    )[:limit]
     if not routes:
         return "no valid candidate found."
     parts = []
     for index, route in enumerate(routes, start=1):
         parts.append(
-            f"{index}) {route_text_from_steps(route.steps)} "
-            f"transfer risk {probability_class(route.transfer_miss_probability)}; "
-            f"delay risk {probability_class(route.delay_probability)}."
+            f"{index}) {route_text_from_steps(route['steps'])} "
+            f"transfer risk {route['transfer_miss_risk_class']}; "
+            f"delay risk {route['delay_risk_class']}."
         )
     return " ".join(parts)

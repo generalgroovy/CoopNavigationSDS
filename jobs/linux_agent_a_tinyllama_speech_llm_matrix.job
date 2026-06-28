@@ -1,30 +1,76 @@
 {
   "schema_version": 1,
   "name": "linux_agent_a_tinyllama_speech_llm_matrix",
-  "description": "Linux paired speech matrix using the staged TinyLlama-compatible caller and local Ollama models.",
+  "description": "Linux paired speech matrix using TinyLlama as Agent A. The grid is designed for provider comparison across caller personas, audio personas, text-to-speech engines, automatic speech recognition engines, and Agent B language-model size tiers while preserving paired text-only controls.",
   "iterations": 1,
   "config": {
     "agent_a_type": "tinyllama",
     "agent_b_plugin": "llm",
     "model_provider": "ollama",
+    "model_name": "llama3.2:1b",
     "model_base_url": "http://127.0.0.1:11434/api",
     "model_timeout_sec": 180,
+    "num_turns": 14,
+    "maximum_progressive_constraints": 3,
+    "minimum_compared_routes": 2,
     "paired_audio_text_runs": true,
     "speech_playback_enabled": false,
     "speech_realtime_enabled": false,
+    "log_profile": "runtime",
     "asr_end_silence_ms": 2500,
     "asr_ambiguous_end_silence_ms": 4500
   },
   "grid": {
     "test_cases": ["morning_peak_cross_city", "midday_transfer"],
-    "personas": ["focused_commuter"],
-    "agent_a_audio_personas": ["high_clarity_caller"],
-    "agent_b_audio_personas": ["high_clarity_operator"],
+    "personas": ["focused_commuter", "crowd_averse_rider", "risk_averse_novice"],
+    "agent_a_audio_personas": ["high_clarity_caller", "degraded_caller"],
+    "agent_b_audio_personas": ["high_clarity_operator", "degraded_operator"],
     "speech_patterns": ["clean"],
     "model_params": ["greedy"],
     "objective_modes": ["shortest_valid_route_with_constraints"],
     "tts_engines": ["chattts", "piper", "espeak_ng", "coqui"],
     "asr_engines": ["faster_whisper", "vosk", "whisper_cpp", "sherpa_onnx"],
-    "agent_b_models": ["llama3.2:3b", "phi3:mini", "qwen2.5:7b", "llama3.1:8b"]
-  }
+    "agent_b_model_tiers": ["small", "medium", "large"]
+  },
+  "parameter_profiles": [
+    {
+      "profile_key": "baseline",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.0,
+      "agent_b_speed": 1.0,
+      "agent_a_temperature": 0.12,
+      "agent_b_temperature": 0.12,
+      "agent_a_top_p": 0.45,
+      "agent_b_top_p": 0.45,
+      "asr_beam_size": 5,
+      "asr_compute_type": "int8"
+    },
+    {
+      "profile_key": "fast_compact_turns",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.16,
+      "agent_b_speed": 1.14,
+      "agent_a_temperature": 0.12,
+      "agent_b_temperature": 0.12,
+      "agent_a_top_p": 0.45,
+      "agent_b_top_p": 0.45,
+      "asr_beam_size": 5,
+      "asr_compute_type": "int8"
+    },
+    {
+      "profile_key": "wide_asr_search",
+      "agent_a_custom_audio": true,
+      "agent_b_custom_audio": true,
+      "agent_a_speed": 1.0,
+      "agent_b_speed": 1.0,
+      "agent_a_temperature": 0.12,
+      "agent_b_temperature": 0.12,
+      "agent_a_top_p": 0.45,
+      "agent_b_top_p": 0.45,
+      "asr_beam_size": 10,
+      "asr_compute_type": "float32"
+    }
+  ]
 }
