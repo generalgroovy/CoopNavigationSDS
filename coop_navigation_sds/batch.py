@@ -34,8 +34,10 @@ from coop_navigation_sds.Configuration.runtime import (
     RESULTS_DIR,
     SESSION_LOG_PROFILE,
 )
-from coop_navigation_sds.Configuration.schema import resolve_results_root
+from coop_navigation_sds.Configuration.schema import resolve_results_root, sanitized_config
+from coop_navigation_sds.Configuration.experiment import ExperimentSpecification
 from coop_navigation_sds.Configuration.run_identity import batch_run_label
+from coop_navigation_sds.Configuration.model_matrix import resolve_agent_b_model_store
 from coop_navigation_sds.Configuration.travel import (
     ACCEPTABLE_DURATION_RATIO,
     ALLOW_MODEL_DOWNLOAD,
@@ -64,6 +66,7 @@ from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     write_metric_phase_logs,
     write_network_research_artifacts,
     write_retrospective_metrics_json,
+    write_standard_run_summary,
 )
 from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from coop_navigation_sds.Configuration.scenarios import DEFAULT_TEST_CASE
@@ -74,7 +77,11 @@ from coop_navigation_sds.Configuration.jobs import (
     job_parameter_profiles,
     load_experiment_job,
 )
-from coop_navigation_sds.Configuration.pipeline import component_status, serializable_metric_dependency_report
+from coop_navigation_sds.Configuration.pipeline import (
+    component_status,
+    experiment_pipeline_contract,
+    serializable_metric_dependency_report,
+)
 from coop_navigation_sds.Configuration.component_catalog import apply_speech_engine_profiles
 from coop_navigation_sds.TransportNetwork.test_cases import TEST_CASES, get_test_case
 from coop_navigation_sds.DialogManagement.speech_pipeline import (
@@ -110,6 +117,29 @@ def parse_bool_flag(value):
     raise argparse.ArgumentTypeError("expected true or false")
 
 
+def preflight_agent_b_model_grid(
+    agent_b_config,
+    provider,
+    base_url,
+    conditions,
+    timeout_sec,
+    models_dir=None,
+):
+    """Verify every model-backed Agent B condition before batch artifacts exist."""
+    if not agent_b_config.needs_model or provider != "ollama":
+        return {}
+    from coop_navigation_sds.NaturalLanguageGeneration.models import (
+        ensure_ollama_models_ready,
+    )
+
+    return ensure_ollama_models_ready(
+        base_url,
+        sorted({condition.agent_b_model for condition in conditions}),
+        timeout_sec=timeout_sec,
+        models_dir=models_dir,
+    )
+
+
 def main():
     """Run the configured experiment grid and write metrics output."""
     settings_parser = argparse.ArgumentParser(add_help=False)
@@ -136,6 +166,11 @@ def main():
     parser.add_argument("--model-name", default=configured.get("model_name", MODEL))
     parser.add_argument("--model-api-key", default=configured.get("model_api_key", ""))
     parser.add_argument("--model-base-url", default=configured.get("model_base_url", ""))
+    parser.add_argument(
+        "--model-store-dir",
+        default=configured.get("model_store_dir", str(resolve_agent_b_model_store())),
+        help="Project-local Ollama model store for this operating system.",
+    )
     parser.add_argument("--model-device", default=configured.get("model_device", DEVICE))
     parser.add_argument("--model-timeout-sec", type=float, default=float(configured.get("model_timeout_sec", CHAT_TIMEOUT_SEC)))
     parser.add_argument("--model-max-new-tokens", type=int, default=int(configured.get("model_max_new_tokens", MAX_NEW_TOKENS)))
@@ -231,6 +266,7 @@ def main():
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
     args = parser.parse_args()
     args.results_dir = resolve_results_root(args.results_dir)
+    args.model_store_dir = str(resolve_agent_b_model_store(args.model_store_dir))
     resolved_speech_assets = apply_speech_engine_profiles({
         "tts_engine": args.tts_engine,
         "tts_model": args.tts_model,
@@ -271,6 +307,8 @@ def main():
         "asr_executable": args.asr_executable,
     }
     preflight_failures = []
+    agent_b_model_preflight = {}
+    agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     for kind, engines in (
         ("tts", sorted({condition.tts_engine or args.tts_engine for condition in conditions if condition.run_type == "audio_variant"})),
         ("asr", sorted({condition.asr_engine or args.asr_engine for condition in conditions if condition.run_type == "audio_variant"})),
@@ -283,8 +321,45 @@ def main():
             status = component_status(kind, engine, engine_config)
             if not status.available:
                 preflight_failures.append(f"{kind.upper()} {engine}: {status.reason}")
+    if agent_b_config.needs_model and args.model_provider == "ollama":
+        try:
+            agent_b_model_preflight = preflight_agent_b_model_grid(
+                agent_b_config,
+                args.model_provider,
+                args.model_base_url,
+                conditions,
+                args.model_timeout_sec,
+                args.model_store_dir,
+            )
+        except Exception as exc:
+            preflight_failures.append(f"Agent B model grid: {exc}")
     if preflight_failures:
         raise SystemExit("Preflight failed:\n  " + "\n  ".join(preflight_failures))
+    batch_specification = ExperimentSpecification.resolve(
+        sanitized_config({
+            **configured,
+            **vars(args),
+            "metric_data_dependencies": serializable_metric_dependency_report({
+                **configured,
+                "tts_engine": args.tts_engine,
+                "asr_engine": args.asr_engine,
+                "paired_audio_text_runs": args.paired_audio_text,
+                "batch_enabled": True,
+            }),
+            "pipeline_contract": experiment_pipeline_contract({
+                **configured,
+                "agent_a_type": args.agent_a_type,
+                "agent_b_plugin": args.agent_b_plugin,
+                "model_name": args.model_name,
+                "tts_engine": args.tts_engine,
+                "asr_engine": args.asr_engine,
+                "paired_audio_text_runs": args.paired_audio_text,
+                "batch_enabled": True,
+            }),
+            "agent_b_model_preflight": agent_b_model_preflight,
+        }),
+        source="batch_run",
+    )
     run_dir = create_execution_run_dir(
         args.results_dir,
         label=batch_run_label(len(conditions)),
@@ -301,7 +376,6 @@ def main():
     speech_audio_dir = run_dir
     session_log_dir = run_dir
 
-    agent_b_config = AgentBPluginConfig(args.agent_b_plugin)
     model_adapter = None
     agent_a_model_adapter = None
     model_adapter_factory = None
@@ -452,11 +526,20 @@ def main():
         },
         model_adapter_factory=model_adapter_factory,
         agent_a_model_adapter=agent_a_model_adapter,
+        experiment_specification=batch_specification,
     )
     results = []
     for condition in conditions:
         runner.speech_audio_dir = str(speech_audio_dir)
         result, _metric = runner.run_condition(condition, compute_metrics=False)
+        result.extra["agent_b_model_preflight"] = next(
+            (
+                record
+                for record in agent_b_model_preflight.get("model_records", ())
+                if record.get("name") == condition.agent_b_model
+            ),
+            {},
+        )
         results.append(result)
         if args.progress:
             print(f"completed {condition.condition_id}", flush=True)
@@ -505,7 +588,8 @@ def main():
         speech_scope="both",
         agent_b_plugin=args.agent_b_plugin,
         configuration={
-            **configured,
+            **batch_specification.to_dict(),
+            "configuration_provenance": batch_specification.provenance(),
             "metric_data_dependencies": serializable_metric_dependency_report({
                 **configured,
                 "tts_engine": args.tts_engine,
@@ -524,11 +608,13 @@ def main():
             "model_provider": args.model_provider,
             "model_name": args.model_name,
             "model_base_url": args.model_base_url,
+            "model_store_dir": args.model_store_dir,
             "model_device": args.model_device,
             "model_timeout_sec": args.model_timeout_sec,
             "model_max_new_tokens": args.model_max_new_tokens,
             "model_max_input_tokens": args.model_max_input_tokens,
             "allow_model_download": args.allow_model_download,
+            "agent_b_model_preflight": agent_b_model_preflight,
             "maximum_progressive_constraints": args.maximum_progressive_constraints,
             "minimum_compared_routes": args.minimum_compared_routes,
             "require_constraint_retention": args.require_constraint_retention,
@@ -538,9 +624,17 @@ def main():
         },
     )
     metric_exports = write_metric_phase_logs(metrics, phase_log_dir, result_scope="batch")
+    standard_summary = write_standard_run_summary(
+        results,
+        metrics,
+        run_dir,
+        result_scope="batch",
+        manifest_path=manifest_path,
+    )
 
     print(f"Run folder: {run_dir}")
     print(f"Metrics: {len(metrics)} rows -> {metrics_output}")
+    print(f"Summary: {standard_summary['summary']}")
     print(f"Metric tables: long={metric_exports['metric_long_csv']}; wide={metric_exports['metric_wide_csv']}")
     print(f"Metric inputs: {batch_metric_inputs}")
     print(f"Retrospective metrics: {retrospective_metrics_path}")

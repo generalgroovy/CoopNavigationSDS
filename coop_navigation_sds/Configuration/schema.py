@@ -9,12 +9,13 @@ from pathlib import Path
 import platform
 import re
 import sys
+from collections.abc import Mapping
 
 
-CONFIG_SCHEMA_VERSION = 4
+CONFIG_SCHEMA_VERSION = 5
 JOB_SCHEMA_VERSION = 1
 TRACE_SCHEMA_VERSION = 3
-RESULT_SCHEMA_VERSION = 1
+RESULT_SCHEMA_VERSION = 2
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULTS_ROOT = str(PROJECT_ROOT / "results")
 
@@ -71,8 +72,21 @@ class RunArtifactPaths:
 
 def sanitized_config(config):
     """Return a serializable configuration without persisted credentials."""
+    def serializable(value):
+        if isinstance(value, Mapping):
+            return {str(key): serializable(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple, set, frozenset)):
+            return [serializable(item) for item in value]
+        if isinstance(value, Path):
+            return str(value)
+        return value
+
     return {
-        key: ("<redacted>" if key in SECRET_CONFIG_FIELDS and value else value)
+        key: (
+            "<redacted>"
+            if key in SECRET_CONFIG_FIELDS and value
+            else serializable(value)
+        )
         for key, value in dict(config or {}).items()
         if key not in {"execution_run_dir"}
     }

@@ -39,6 +39,11 @@ from coop_navigation_sds.Configuration.schema import (
     sanitized_config,
 )
 from coop_navigation_sds.Configuration.run_identity import single_run_label
+from coop_navigation_sds.Configuration.model_matrix import resolve_agent_b_model_store
+from coop_navigation_sds.Configuration.experiment import (
+    ExperimentSpecification,
+    ensure_experiment_specification,
+)
 from coop_navigation_sds.Configuration.speech import (
     AGENT_B_PLUGIN,
     DEFAULT_SPEECH_PATTERN,
@@ -130,6 +135,7 @@ from coop_navigation_sds.TextToSpeech.personas import (
 from coop_navigation_sds.TransportNetwork.constraints import normalize_objective_mode
 from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
 from coop_navigation_sds.Configuration.pipeline import (
+    experiment_pipeline_contract,
     optimal_route_preview,
     serializable_metric_dependency_report,
 )
@@ -315,8 +321,10 @@ class ConsoleEventSink:
     @staticmethod
     def _print_configuration(config):
         dependency_report = None
+        pipeline_contract = None
         if isinstance(config, dict):
             dependency_report = config.get("__metric_dependency_report")
+            pipeline_contract = config.get("__pipeline_contract")
         print("\n=== Pre-Experiment Overview ===", flush=True)
         print("[Configuration]", flush=True)
         for label, value in config.items():
@@ -325,6 +333,13 @@ class ConsoleEventSink:
             print(f"{label}: {value}", flush=True)
         if dependency_report:
             ConsoleEventSink._print_metric_dependency_overview(dependency_report)
+        if pipeline_contract:
+            phases = pipeline_contract.get("phases") or []
+            print("\n[Pipeline Contract]", flush=True)
+            print(
+                " -> ".join(str(phase.get("label")) for phase in phases),
+                flush=True,
+            )
 
     @staticmethod
     def _print_metric_dependency_overview(report):
@@ -454,6 +469,7 @@ def default_run_config():
             if MODEL_PROVIDER in {"openai", "openai_compatible"}
             else OLLAMA_BASE_URL if MODEL_PROVIDER == "ollama" else ""
         ),
+        "model_store_dir": str(resolve_agent_b_model_store()),
         "model_device": DEVICE,
         "model_timeout_sec": 180.0 if MODEL_PROVIDER == "ollama" else CHAT_TIMEOUT_SEC,
         "model_max_new_tokens": MAX_NEW_TOKENS,
@@ -521,6 +537,7 @@ def default_run_config():
         "max_utterance_sec": DEFAULT_MAX_UTTERANCE_SEC,
         "provider_environment_dir": ".speech-providers",
         "gui_font_size": 11,
+        "gui_fullscreen": True,
         "console_view": "compact",
         "log_profile": SESSION_LOG_PROFILE,
         "paired_audio_text_runs": True,
@@ -566,11 +583,12 @@ def normalize_run_config(config):
         if selected_profile != "custom"
         else matching_model_profile(normalized["model_provider"], normalized["model_name"])
     )
-    if normalized["model_provider"] == "ollama" and normalized["model_name"] == "llama3.2:3b":
-        normalized["model_name"] = "llama3.2:latest"
     normalized["model_service_autostart"] = bool(normalized.get("model_service_autostart", True))
     normalized["model_api_key"] = str(normalized.get("model_api_key") or "").strip()
     normalized["model_base_url"] = str(normalized.get("model_base_url") or "").strip()
+    normalized["model_store_dir"] = str(
+        resolve_agent_b_model_store(normalized.get("model_store_dir"))
+    )
     normalized["model_device"] = str(normalized.get("model_device") or DEVICE).strip()
     normalized["model_timeout_sec"] = max(
         0.5, min(600.0, float(normalized["model_timeout_sec"]))
@@ -895,6 +913,7 @@ def validate_run_config_for_start(config):
                     autostart=normalized["model_service_autostart"],
                     timeout_sec=min(normalized["model_timeout_sec"], 180.0),
                     warm_model=True,
+                    models_dir=normalized["model_store_dir"],
                 )
             except RuntimeError as exc:
                 raise ValueError(str(exc)) from exc
@@ -1012,7 +1031,9 @@ def configured_test_case(run_config):
 
 
 def prepare_execution_run_config(run_config):
-    """Create one shallow result folder before any runtime stage starts."""
+    """Create paths once and freeze the complete runtime specification."""
+    if isinstance(run_config, ExperimentSpecification):
+        return run_config
     normalized = normalize_run_config(run_config)
     if not normalized.get("execution_run_dir"):
         run_dir = create_execution_run_dir(
@@ -1021,12 +1042,12 @@ def prepare_execution_run_config(run_config):
         )
         normalized["execution_run_dir"] = str(run_dir)
         normalized["speech_audio_dir"] = str(run_dir)
-    return normalized
+    return ensure_experiment_specification(normalized, source="single_run")
 
 
 def build_dialog_runtime(event_queue, model_adapter, run_config):
     """Build agents, speech stages, and dialogue orchestration."""
-    run_config = normalize_run_config(run_config)
+    run_config = prepare_execution_run_config(run_config)
     from coop_navigation_sds.TransportNetwork.network import rebuild_network
     rebuild_network(run_config["network_seed"])
     configure_model_adapter_runtime(model_adapter, run_config["calculation_max_time_sec"])
@@ -1165,6 +1186,9 @@ def conversation_worker(event_queue, model_adapter, run_config):
                 for layer in preview.get("layers", [])
             }
             event_queue.put(("configuration", {
+                "Specification": run_config.fingerprint[:16],
+                "Configuration schema": run_config.schema_version,
+                "Immutable runtime values": "yes",
                 "Scenario": test_case.name,
                 "Agent A": f"{manager.agent_a_responder.name} / {run_config['persona_key']}",
                 "Agent B": f"{getattr(agent_b_plugin, 'name', type(agent_b_plugin).__name__)} / {run_config['model_name']}",
@@ -1174,6 +1198,7 @@ def conversation_worker(event_queue, model_adapter, run_config):
                 "Speech": speech_transport.description,
                 **layer_configuration,
                 "__metric_dependency_report": serializable_metric_dependency_report(run_config),
+                "__pipeline_contract": experiment_pipeline_contract(run_config),
                 "Results": run_config["execution_run_dir"],
             }))
             health = speech_transport.health_check()
@@ -1204,6 +1229,8 @@ def conversation_worker(event_queue, model_adapter, run_config):
                 model_adapter,
             )
             result.extra["resolved_run_config"] = sanitized_config(run_config)
+            result.extra["configuration_provenance"] = run_config.provenance()
+            result.extra["pipeline_contract"] = experiment_pipeline_contract(run_config)
             result.extra["runtime_environment"] = runtime_environment_metadata()
             paths = write_single_run_research_outputs(
                 result,

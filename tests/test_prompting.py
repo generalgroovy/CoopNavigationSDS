@@ -152,7 +152,7 @@ class PromptingTests(unittest.TestCase):
             self.assertEqual(layer["route"][-1], self.real_scenario["destination_station"])
             for step in layer["steps"]:
                 if step.get("mode") != "walking":
-                    self.assertIn(f"--{step['mode']} {step['line']}", layer["path_text"])
+                    self.assertIn(f"({step['line']}", layer["path_text"])
             if layer["layer"].startswith("constraint_"):
                 constraint_paths.append(layer["path_text"])
         progressive_paths = [layer["path_text"] for layer in layers[1:]]

@@ -55,8 +55,9 @@ class RingLineTests(unittest.TestCase):
         complete_path = route_path_text_from_steps(steps)
         self.assertRegex(proposal, r"metro line M\d+ from \w+ to \w+")
         self.assertIn("minutes", proposal)
-        self.assertEqual(complete_path.count("-->"), 1)
-        self.assertIn(f"--{steps[0]['mode']} {steps[0]['line']}", complete_path)
+        self.assertEqual(complete_path.count(" -> "), 1)
+        self.assertIn("(M1", complete_path)
+        self.assertIn(f"({steps[0]['line']}", complete_path)
         self.assertTrue(complete_path.endswith(steps[-1]["to"]))
         if len(steps) > 1:
             self.assertIn(steps[0]["to"], complete_path)
@@ -81,7 +82,7 @@ class RingLineTests(unittest.TestCase):
         details = route_step_details(steps)
 
         self.assertIn("Walk 5 minutes from Alpha to Bravo", proposal)
-        self.assertEqual(complete_path, "Alpha --walk 5 min--> Bravo")
+        self.assertEqual(complete_path, "Alpha (walk: 5 min) -> Bravo")
         self.assertIsNone(details[0]["line"])
         self.assertEqual(details[0]["transport_type"], "walking")
 
@@ -94,7 +95,7 @@ class RingLineTests(unittest.TestCase):
 
         self.assertEqual(
             route_path_text_from_steps(steps),
-            "Bravo --tram T1 (Charlie, Delta)--> Gamma",
+            "Bravo (T1 : Charlie, Delta) -> Gamma",
         )
 
     def test_startup_constraint_route_is_available_for_proposal_comparison(self):

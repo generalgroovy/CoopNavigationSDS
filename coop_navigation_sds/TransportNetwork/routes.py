@@ -376,18 +376,18 @@ def route_station_sequence(steps):
 
 
 def route_path_text_from_steps(steps):
-    """Return a complete path with consecutive same-line edges condensed."""
+    """Return a concise station/line path with same-line stops condensed."""
     if not steps:
         return "No route found."
 
-    clauses = [steps[0]["from"]]
+    clauses = []
     index = 0
     while index < len(steps):
         first = steps[index]
         mode = step_transport_type(first)
         if mode == "walking":
             minutes = max(1, int(first["arrive"] - first["depart"]))
-            clauses.append(f"--walk {minutes} min--> {first['to']}")
+            clauses.append(f"{first['from']} (walk: {minutes} min)")
             index += 1
             continue
 
@@ -401,9 +401,10 @@ def route_path_text_from_steps(steps):
             destinations.append(following["to"])
             index += 1
         intermediate = destinations[:-1]
-        stop_text = f" ({', '.join(intermediate)})" if intermediate else ""
-        clauses.append(f"--{mode} {line}{stop_text}--> {destinations[-1]}")
-    return " ".join(clauses)
+        stop_text = f" : {', '.join(intermediate)}" if intermediate else ""
+        clauses.append(f"{first['from']} ({line}{stop_text})")
+    clauses.append(steps[-1]["to"])
+    return " -> ".join(clauses)
 
 
 def route_text_from_steps(steps):

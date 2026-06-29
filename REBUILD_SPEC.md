@@ -138,8 +138,16 @@ All experiment variables have defaults and can be overridden by:
 
 Legacy `MINILLAMA_*` variables and keys remain read-compatible only.
 
-The startup GUI is maximized and combines configuration plus relevant metrics
-inside chronological phase cards. Provider-specific fields are created only for
+The startup GUI is fullscreen and combines configuration plus relevant metrics
+inside eight independently scrollable chronological phase cards arranged in a
+two-by-four dashboard. Every card can be hidden or restored. Network and staged
+route previews, metric readiness, and the result/export plan remain visible.
+The horizontal sash between rows changes card heights; each row has three
+independent vertical sashes for card widths. All eight areas are therefore
+resizable in both dimensions by direct dragging. Text wraps automatically and
+explicit newlines are reserved for ordered multi-line evidence such as numbered
+route layers.
+Provider-specific fields are created only for
 the selected language-model, TTS, or ASR implementation. Named audio personas
 are the primary reproducible speech condition; only controls that materially
 affect the selected provider are shown. There is no runtime GUI.
@@ -156,6 +164,11 @@ records but are not exposed or persisted by new runs.
 Metrics are obligatory catalog entries rather than configuration settings.
 Each is calculated retrospectively when its evidence exists, or recorded as
 `null` with an explicit missing-evidence reason.
+
+After resolution and preflight, all values are stored in one recursively
+immutable experiment specification. It has a stable non-secret fingerprint,
+schema version, source, and resolution timestamp. Runtime phases may read but
+cannot mutate it. Batch condition parameter mappings are immutable as well.
 
 ## Provider Contract
 
@@ -244,6 +257,8 @@ and calculation methods. JSON and XLSX exports retain stable keys.
 Every run receives one timestamped folder directly under the configured result
 root. It contains:
 
+- `run_summary.json` and `conditions.jsonl` with an identical schema for single
+  and batch execution, suitable for concatenation across runs;
 - a root-level `naming_scheme.json` whose keys are compact abbreviations used
   in result folder and condition names and whose values describe the
   corresponding configuration setting; this file is refreshed when the naming
@@ -260,6 +275,10 @@ root. It contains:
 - metric catalog metadata;
 - phase logs;
 - analysis workbook.
+
+Manifest artifact paths are relative to the run folder. Detailed calculation
+evidence remains in retrospective and long-form exports; the summary and
+condition table provide the concise analysis entry point.
 
 Batch runs additionally include condition identifiers, iteration values, and
 cross-run validity metrics.

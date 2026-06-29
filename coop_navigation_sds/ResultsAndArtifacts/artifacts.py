@@ -779,20 +779,22 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         "model_name": result.model_name,
         "model_backend": result.extra.get("model_backend", {}),
         "configuration": result.extra.get("resolved_run_config", {}),
+        "configuration_provenance": result.extra.get("configuration_provenance", {}),
+        "pipeline_contract": result.extra.get("pipeline_contract", {}),
         "runtime_environment": result.extra.get("runtime_environment", {}),
         "random_seed": result.extra.get("resolved_run_config", {}).get("network_seed"),
         "artifacts": {
-            "metric_inputs": str(metric_inputs),
-            "protocol": str(protocol_paths["protocol"]),
-            "transcript": str(protocol_paths["transcript_txt"]),
-            "metrics": str(metrics_file),
-            "metrics_by_phase": str(run_dir / "metrics_by_phase.jsonl"),
-            "metric_catalog": str(run_dir / "metric_catalog.json"),
-            "metrics_long_csv": str(metric_exports["metric_long_csv"]),
-            "metrics_long_jsonl": str(metric_exports["metric_long_jsonl"]),
-            "metrics_wide_csv": str(metric_exports["metric_wide_csv"]),
-            "metrics_wide_jsonl": str(metric_exports["metric_wide_jsonl"]),
-            "retrospective_metrics": str(retrospective_json),
+            "metric_inputs": Path(metric_inputs).name,
+            "protocol": Path(protocol_paths["protocol"]).name,
+            "transcript": Path(protocol_paths["transcript_txt"]).name,
+            "metrics": metrics_file.name,
+            "metrics_by_phase": "metrics_by_phase.jsonl",
+            "metric_catalog": "metric_catalog.json",
+            "metrics_long_csv": Path(metric_exports["metric_long_csv"]).name,
+            "metrics_long_jsonl": Path(metric_exports["metric_long_jsonl"]).name,
+            "metrics_wide_csv": Path(metric_exports["metric_wide_csv"]).name,
+            "metrics_wide_jsonl": Path(metric_exports["metric_wide_jsonl"]).name,
+            "retrospective_metrics": retrospective_json.name,
         },
         "output_layout": {
             "layout": "flat",
@@ -804,6 +806,13 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
     }
     run_manifest = run_dir / "run_manifest.json"
     run_manifest.write_text(json.dumps(manifest, indent=2, ensure_ascii=True), encoding="utf-8")
+    standard_summary = write_standard_run_summary(
+        [result],
+        [metric],
+        run_dir,
+        result_scope="single_run",
+        manifest_path=run_manifest,
+    )
     return {
         "run_dir": run_dir,
         "metric": metric,
@@ -815,6 +824,8 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         "retrospective_json": retrospective_json,
         "network_json": network_paths["network_json"],
         "network_graph": network_paths["network_graph"],
+        "run_summary": standard_summary["summary"],
+        "conditions": standard_summary["conditions"],
     }
 
 
@@ -846,6 +857,85 @@ def write_jsonl(path, rows):
     with Path(path).open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=True) + "\n")
+
+
+def write_standard_run_summary(
+    results,
+    metrics,
+    output_dir,
+    *,
+    result_scope,
+    manifest_path,
+):
+    """Write the common human/machine entry point for single and batch runs."""
+    output_dir = Path(output_dir)
+    results = list(results)
+    metrics = list(metrics)
+    metric_by_condition = {metric.condition_id: metric for metric in metrics}
+    condition_rows = []
+    for result in results:
+        metric = metric_by_condition.get(result.condition_id)
+        extras = result.extra or {}
+        condition_rows.append({
+            "result_schema_version": RESULT_SCHEMA_VERSION,
+            "result_scope": result_scope,
+            "result_run_id": output_dir.name,
+            "condition_id": result.condition_id,
+            "pair_id": extras.get("pair_id"),
+            "run_type": extras.get("run_type", "audio_variant"),
+            "test_case_key": result.test_case_key,
+            "scenario_key": result.scenario_key,
+            "persona_key": result.persona_key,
+            "agent_a_type": extras.get("agent_a_type") or extras.get("resolved_run_config", {}).get("agent_a_type"),
+            "agent_b_plugin": extras.get("agent_b_plugin") or extras.get("resolved_run_config", {}).get("agent_b_plugin"),
+            "agent_b_model": extras.get("agent_b_model") or result.model_name,
+            "tts_engine": extras.get("tts_engine") or extras.get("resolved_run_config", {}).get("tts_engine"),
+            "asr_engine": extras.get("asr_engine") or extras.get("resolved_run_config", {}).get("asr_engine"),
+            "configuration_fingerprint": extras.get("configuration_provenance", {}).get("fingerprint_sha256"),
+            "route_valid": bool(result.route_valid),
+            "route_reaches_goal": bool(result.route_reaches_goal),
+            "route_correct": bool(result.route_correct),
+            "route_duration_min": result.route_duration_min,
+            "turn_count": int(extras.get("messages", len(result.conversation))),
+            "runtime_sec": result.runtime_sec,
+            "automatic_eval_score": getattr(metric, "automatic_eval_score", None),
+            "task_success": getattr(metric, "success", bool(result.route_correct)),
+        })
+    conditions_path = output_dir / "conditions.jsonl"
+    write_jsonl(conditions_path, condition_rows)
+    artifact_rows = []
+    for path in sorted(item for item in output_dir.iterdir() if item.is_file()):
+        artifact_rows.append({
+            "path": path.name,
+            "bytes": path.stat().st_size,
+            "extension": path.suffix.lower(),
+        })
+    summary = {
+        "schema_version": RESULT_SCHEMA_VERSION,
+        "result_scope": result_scope,
+        "result_run_id": output_dir.name,
+        "condition_count": len(condition_rows),
+        "successful_condition_count": sum(bool(row["task_success"]) for row in condition_rows),
+        "configuration_fingerprints": sorted({
+            row["configuration_fingerprint"]
+            for row in condition_rows
+            if row["configuration_fingerprint"]
+        }),
+        "manifest": Path(manifest_path).name,
+        "condition_table": conditions_path.name,
+        "recommended_analysis_tables": [
+            "metrics_long.csv",
+            "metrics_wide.csv",
+            conditions_path.name,
+        ],
+        "artifacts": artifact_rows,
+    }
+    summary_path = output_dir / "run_summary.json"
+    summary_path.write_text(
+        json.dumps(summary, indent=2, ensure_ascii=True),
+        encoding="utf-8",
+    )
+    return {"summary": summary_path, "conditions": conditions_path}
 
 
 def write_failure_indicator_report(metrics, path, minimum_per_outcome=3):
@@ -951,6 +1041,7 @@ def write_experiment_manifest(
         }
         for condition in conditions
     ]
+    configuration = dict(configuration or {})
     manifest = {
         "schema_version": RESULT_SCHEMA_VERSION,
         "naming_scheme": naming_scheme_document(),
@@ -972,7 +1063,9 @@ def write_experiment_manifest(
             "model_param_key",
             "objective_mode",
             "agent_b_plugin",
+            "agent_b_model",
             "parameter_values.profile_key",
+            "parameter_values.agent_b_llm_size",
         ],
         "dependent_metrics": [
             "route_valid",
@@ -991,8 +1084,10 @@ def write_experiment_manifest(
             "asr_engine": asr_engine or speech_engine,
             "speech_scope": speech_scope,
             "agent_b_plugin": agent_b_plugin,
-            "configuration": dict(configuration or {}),
+            "configuration": configuration,
         },
+        "configuration_provenance": configuration.get("configuration_provenance", {}),
+        "pipeline_contract": configuration.get("pipeline_contract", {}),
         "analysis_artifacts": {
             "wide_workbook": metrics_filename,
             "phase_jsonl": "metrics_by_phase.jsonl",

@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
+import pytest
 
 from coop_navigation_sds.Configuration.schema import (
     CONFIG_SCHEMA_VERSION,
@@ -14,6 +15,7 @@ from coop_navigation_sds.Configuration.component_catalog import startup_choices
 from coop_navigation_sds.Configuration.pipeline import ComponentStatus
 from coop_navigation_sds.Configuration.run_identity import naming_scheme_document, single_run_label
 from coop_navigation_sds.Configuration.settings import load_run_settings, save_run_settings
+from coop_navigation_sds.Configuration.experiment import ExperimentSpecification
 from coop_navigation_sds.app import default_run_config, normalize_run_config, prepare_execution_run_config
 from coop_navigation_sds.DialogManagement.result import DialogResult
 from coop_navigation_sds.EvaluationMetrics.metrics import (
@@ -27,6 +29,7 @@ from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     write_retrospective_metrics_json,
     write_batch_metric_inputs,
     write_metric_inputs,
+    write_standard_run_summary,
 )
 from coop_navigation_sds.ResultsAndArtifacts.logging import StructuredEvent
 from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
@@ -56,6 +59,17 @@ def test_readme_documents_complete_experiment_network_contract():
         "`network_graph.svg`",
     ):
         assert required_value in readme
+
+
+def test_readme_names_every_runtime_configuration_setting():
+    readme = (Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8")
+
+    undocumented = [
+        key for key in sorted(default_run_config())
+        if f"`{key}`" not in readme
+    ]
+
+    assert undocumented == []
 
 
 def test_settings_round_trip_excludes_credentials_and_transient_paths():
@@ -192,6 +206,14 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
             Path(temporary) / "batch" / "retrospective_metrics.json",
             result_scope="batch",
         )
+        single_summary = write_standard_run_summary(
+            [result], [single_record], Path(temporary) / "single",
+            result_scope="single_run", manifest_path=Path(temporary) / "single" / "run_manifest.json",
+        )
+        batch_summary = write_standard_run_summary(
+            [result], [batch_record], Path(temporary) / "batch",
+            result_scope="batch", manifest_path=Path(temporary) / "batch" / "experiment_manifest.json",
+        )
 
         single_wide = (Path(single_exports["metric_wide_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
         batch_wide = (Path(batch_exports["metric_wide_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
@@ -199,6 +221,8 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
         batch_long = (Path(batch_exports["metric_long_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
         single_json = json.loads(single_retrospective.read_text(encoding="utf-8"))
         batch_json = json.loads(batch_retrospective.read_text(encoding="utf-8"))
+        single_summary_json = json.loads(single_summary["summary"].read_text(encoding="utf-8"))
+        batch_summary_json = json.loads(batch_summary["summary"].read_text(encoding="utf-8"))
 
     single_wide_row = json.loads(single_wide)
     batch_wide_row = json.loads(batch_wide)
@@ -213,6 +237,8 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
     assert set(single_long_row) == set(batch_long_row)
     assert single_json["condition_count"] == batch_json["condition_count"] == 1
     assert single_json["conditions"][0]["condition_id"] == batch_json["conditions"][0]["condition_id"] == "schema_check"
+    assert set(single_summary_json) == set(batch_summary_json)
+    assert single_summary_json["condition_table"] == batch_summary_json["condition_table"] == "conditions.jsonl"
 
 
 def test_smoke_configuration_has_no_heavy_backend_requirement():
@@ -233,6 +259,10 @@ def test_single_results_root_contains_the_run_and_all_runtime_audio():
         run_dir = Path(prepared["execution_run_dir"])
 
         assert run_dir.parent == Path(temporary)
+        assert isinstance(prepared, ExperimentSpecification)
+        assert prepared.provenance()["immutable"] is True
+        with pytest.raises(TypeError):
+            prepared["network_seed"] = 99
         assert Path(prepared["speech_audio_dir"]) == run_dir
         assert "protocol_log_dir" not in prepared
         scheme = json.loads((Path(temporary) / "naming_scheme.json").read_text(encoding="utf-8"))

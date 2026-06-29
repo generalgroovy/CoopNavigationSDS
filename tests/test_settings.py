@@ -30,15 +30,15 @@ class RunSettingsTests(unittest.TestCase):
             }), encoding="utf-8")
             loaded = load_run_settings({}, path)
 
-        self.assertEqual(loaded["model_name"], "llama3.2:latest")
+        self.assertEqual(loaded["model_name"], "llama3.2:3b")
         self.assertEqual(loaded["model_timeout_sec"], 180.0)
 
-    def test_legacy_ollama_model_name_is_migrated(self):
+    def test_exact_ollama_model_tag_is_preserved(self):
         normalized = normalize_run_config({
             "model_provider": "ollama",
             "model_name": "llama3.2:3b",
         })
-        self.assertEqual(normalized["model_name"], "llama3.2:latest")
+        self.assertEqual(normalized["model_name"], "llama3.2:3b")
         self.assertTrue(normalized["model_service_autostart"])
 
     def test_normalization_repairs_blank_chattts_and_whisper_default_for_vosk(self):

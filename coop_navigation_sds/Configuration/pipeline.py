@@ -103,6 +103,17 @@ PIPELINE_PHASES = (
     ("batch_results", "Batch / Results"),
 )
 
+EXECUTION_PHASE_CONTRACT = (
+    ("preflight", "Scenario and backend preflight", "resolved configuration", "validated scenario, staged optima, provider readiness"),
+    ("agent_policy", "Agent policy and language generation", "private memory and heard state", "intended utterance and prompt audit"),
+    ("tts", "Text-to-speech", "intended utterance and audio persona", "waveform and synthesis diagnostics"),
+    ("asr", "Automatic speech recognition", "generated waveform", "raw transcript and recognition diagnostics"),
+    ("nlu", "Normalization and language understanding", "raw transcript", "listener input, semantic frame, transcript edits"),
+    ("dialogue_management", "Dialogue state and management", "semantic frame and private memory", "state transition, candidate evaluation, next speaker"),
+    ("capture", "Immutable evidence capture", "phase outputs and timings", "protocol and metric inputs"),
+    ("evaluation", "Retrospective evaluation and export", "completed immutable evidence", "metrics, calculations, tables, and manifest"),
+)
+
 LOGGED_DATA_FIELDS = {
     "network": (
         ("configuration", "Resolved experiment configuration"),
@@ -256,6 +267,41 @@ def serializable_metric_dependency_report(config):
     }
 
 
+def experiment_pipeline_contract(config):
+    """Return the selected phase contract and evidence readiness for manifests."""
+    report = metric_dependency_report(config)
+    metrics_by_phase = {}
+    for metric in report["metrics"].values():
+        phase = metric["phase"]
+        row = metrics_by_phase.setdefault(phase, {"total": 0, "calculable": 0})
+        row["total"] += 1
+        row["calculable"] += int(bool(metric["available"]))
+    return {
+        "selected_components": {
+            "agent_a": config.get("agent_a_type"),
+            "agent_b": config.get("agent_b_plugin"),
+            "language_model": config.get("model_name"),
+            "text_to_speech": config.get("tts_engine"),
+            "automatic_speech_recognition": config.get("asr_engine"),
+        },
+        "phases": [
+            {
+                "index": index,
+                "key": key,
+                "label": label,
+                "input": phase_input,
+                "output": phase_output,
+            }
+            for index, (key, label, phase_input, phase_output) in enumerate(
+                EXECUTION_PHASE_CONTRACT,
+                start=1,
+            )
+        ],
+        "captured_fields": list(report["collected_fields"]),
+        "metric_readiness_by_phase": metrics_by_phase,
+    }
+
+
 @dataclass(frozen=True)
 class ComponentStatus:
     key: str
@@ -302,6 +348,7 @@ def component_status(kind, key, config=None):
                     config.get("model_name"),
                     autostart=False,
                     timeout_sec=0.5,
+                    models_dir=config.get("model_store_dir"),
                 )
             except Exception as exc:
                 return ComponentStatus(key, False, str(exc))
@@ -412,10 +459,11 @@ def optimal_route_preview(config):
 
         summary = "\n".join(
             (
-                f"{layer['label']}: {layer['duration_min']} min | "
-                f"{change_text(layer)} | {layer['path_text']}"
-            ) if layer["available"] else f"{layer['label']}: unavailable"
-            for layer in layers
+                f"{index}. {layer['label']}:\n"
+                f"   {layer['duration_min']} min, {change_text(layer)}\n"
+                f"   {layer['path_text']}"
+            ) if layer["available"] else f"{index}. {layer['label']}: unavailable"
+            for index, layer in enumerate(layers, start=1)
         )
         return {
             "available": True,

@@ -1,6 +1,8 @@
 """Model-layer configuration."""
 import os
 
+from coop_navigation_sds.Configuration.model_matrix import AGENT_B_OLLAMA_BASE_URL
+
 
 def _environment(name, legacy_name, default):
     return os.environ.get(name, os.environ.get(legacy_name, default))
@@ -36,8 +38,8 @@ CHAT_TIMEOUT_SEC = float(
         os.environ.get("MINILLAMA_CHAT_TIMEOUT_SEC", "5"),
     )
 )
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:latest")
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434/api")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_BASE_URL = AGENT_B_OLLAMA_BASE_URL
 
 MAX_NEW_TOKENS = int(
     os.environ.get(

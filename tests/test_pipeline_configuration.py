@@ -20,13 +20,21 @@ def test_pipeline_order_and_optimal_preview():
     ]
     preview = optimal_route_preview(default_run_config())
     assert preview["available"]
+    assert "1. Valid connected route:\n" in preview["summary"]
+    assert " min, " in preview["summary"]
+    assert " -> " in preview["summary"]
     assert preview["duration_min"] > 0
     lines = preview["summary"].splitlines()
-    assert len(lines) == 5
+    assert len(lines) == 15
+    assert [lines[index][0] for index in range(0, 15, 3)] == ["1", "2", "3", "4", "5"]
     assert [layer["layer"] for layer in preview["layers"]] == [
         "validity", "time", "constraint_1", "constraint_2", "constraint_3",
     ]
-    assert all(re.search(r"--(?:(?:metro|tram|bus) [MTB]\d+(?: \([^)]*\))?|walk \d+ min)-->", line) for line in lines)
+    path_lines = lines[2::3]
+    assert all(
+        re.search(r"\((?:[MTB]\d+(?: : [^)]+)?|walk: \d+ min)\) ->", line)
+        for line in path_lines
+    )
     progressive_paths = [layer["path_text"] for layer in preview["layers"][1:]]
     assert all(
         previous != current

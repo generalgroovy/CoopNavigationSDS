@@ -337,6 +337,28 @@ class MainControllerTests(unittest.TestCase):
         text = output.getvalue()
         self.assertEqual(text, "")
 
+    def test_console_prints_immutable_identity_and_pipeline_contract_once(self):
+        sink = ConsoleEventSink("compact")
+        output = StringIO()
+        with redirect_stdout(output):
+            sink.put(("configuration", {
+                "Specification": "abc123",
+                "Immutable runtime values": "yes",
+                "__pipeline_contract": {
+                    "phases": [
+                        {"label": "Preflight"},
+                        {"label": "Speech"},
+                        {"label": "Evaluation"},
+                    ],
+                },
+            }))
+
+        text = output.getvalue()
+        self.assertIn("Specification: abc123", text)
+        self.assertIn("Immutable runtime values: yes", text)
+        self.assertIn("[Pipeline Contract]", text)
+        self.assertIn("Preflight -> Speech -> Evaluation", text)
+
     def test_configuration_gui_combines_configuration_and_metrics_by_phase(self):
         source = inspect.getsource(StartupConfigDialog)
 
@@ -356,7 +378,15 @@ class MainControllerTests(unittest.TestCase):
         self.assertIn('"console_view": tk.StringVar', source)
         self.assertIn('"log_profile": tk.StringVar', source)
         self.assertIn('"Console view"', source)
-        self.assertIn('"Structured log level"', source)
+        self.assertIn('"Log level"', source)
+        self.assertIn("_draw_network_preview", source)
+        self.assertIn("run_summary.json", source)
+        self.assertIn('self.root.attributes("-fullscreen", enabled)', source)
+        self.assertIn("_toggle_phase", source)
+        self.assertIn('scrollbar = ttk.Scrollbar(host, orient="vertical"', source)
+        self.assertIn('phase_canvas.configure(yscrollcommand=scrollbar.set)', source)
+        self.assertIn('ttk.Panedwindow(content, orient="vertical")', source)
+        self.assertIn('ttk.Panedwindow(vertical, orient="horizontal")', source)
         self.assertIn("This metric is obligatory", source)
         self.assertNotIn("self.metric_vars", source)
         self.assertNotIn("metric_tier_vars", source)
@@ -368,14 +398,12 @@ class MainControllerTests(unittest.TestCase):
         self.assertNotIn("laugh_level", source)
         self.assertNotIn("reference_audio", source)
 
-    def test_configuration_gui_splits_screen_into_eight_equal_phase_regions(self):
+    def test_configuration_gui_uses_two_by_four_phase_dashboard(self):
         self.assertEqual(len(GUI_PHASE_LAYOUT), 8)
         self.assertTrue(all(span == 1 for _row, _column, span in GUI_PHASE_LAYOUT.values()))
         self.assertEqual(set(GUI_PHASE_LAYOUT.values()), {
-            (0, 0, 1), (0, 1, 1),
-            (1, 0, 1), (1, 1, 1),
-            (2, 0, 1), (2, 1, 1),
-            (3, 0, 1), (3, 1, 1),
+            (0, 0, 1), (0, 1, 1), (0, 2, 1), (0, 3, 1),
+            (1, 0, 1), (1, 1, 1), (1, 2, 1), (1, 3, 1),
         })
 
     def test_component_catalog_exposes_plug_and_play_backends(self):

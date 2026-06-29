@@ -2,12 +2,19 @@
 """
 import time
 import hashlib
+from collections.abc import Mapping
 from contextlib import nullcontext
 from dataclasses import asdict, dataclass, field
 from itertools import product
 from coop_navigation_sds.Configuration.component_catalog import apply_speech_engine_profiles
 from coop_navigation_sds.Configuration.run_identity import compact_code
 from coop_navigation_sds.Configuration.model_matrix import model_size_treatment
+from coop_navigation_sds.Configuration.experiment import (
+    ExperimentSpecification,
+    ensure_experiment_specification,
+    freeze_value,
+)
+from coop_navigation_sds.Configuration.pipeline import experiment_pipeline_contract
 
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
     LLMAgentAResponder,
@@ -75,7 +82,10 @@ class ExperimentCondition:
     tts_engine: str = ""
     asr_engine: str = ""
     agent_b_model: str = ""
-    parameter_values: dict = field(default_factory=dict)
+    parameter_values: Mapping = field(default_factory=dict)
+
+    def __post_init__(self):
+        object.__setattr__(self, "parameter_values", freeze_value(self.parameter_values))
 
 
 class ExperimentRunner:
@@ -105,6 +115,7 @@ class ExperimentRunner:
         scenario_overrides=None,
         model_adapter_factory=None,
         agent_a_model_adapter=None,
+        experiment_specification=None,
     ):
         """  init   method for this module's MVC responsibility.
         
@@ -143,6 +154,14 @@ class ExperimentRunner:
         self.log_dir = log_dir
         self.scenario_overrides = dict(scenario_overrides or {})
         self.metric_computer = MetricComputer()
+        self.experiment_specification = (
+            ensure_experiment_specification(
+                experiment_specification,
+                source="batch_run",
+            )
+            if experiment_specification is not None
+            else None
+        )
 
     def run_condition(self, condition: ExperimentCondition, *, compute_metrics=True):
         """Run condition method for this module's MVC responsibility.
@@ -289,6 +308,12 @@ class ExperimentRunner:
         }
         result.extra["condition_runtime_sec"] = round(condition_runtime_sec, 6)
         result.extra["resolved_scenario"] = dict(test_case.scenario)
+        if self.experiment_specification is not None:
+            result.extra["resolved_run_config"] = self.experiment_specification.to_dict()
+            result.extra["configuration_provenance"] = self.experiment_specification.provenance()
+            result.extra["pipeline_contract"] = experiment_pipeline_contract(
+                self.experiment_specification
+            )
         model_roles = []
         if AgentBPluginConfig(self.agent_b_plugin_key).needs_model:
             model_roles.append("agent_b")

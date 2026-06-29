@@ -17,6 +17,7 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (
     model_provider_defaults,
     research_model_profiles_by_tier,
     ensure_ollama_ready,
+    ensure_ollama_models_ready,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_model_adapter
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import MODEL_CACHE_DIR, _prepared_model
@@ -98,24 +99,39 @@ class TransformersModelAdapterTests(unittest.TestCase):
 
     def test_ollama_preflight_accepts_installed_model(self):
         with patch(
-            "coop_navigation_sds.NaturalLanguageGeneration.models._ollama_model_names",
-            return_value=("llama3.2:latest",),
+            "coop_navigation_sds.NaturalLanguageGeneration.models._ollama_model_catalog",
+            return_value=({"name": "llama3.2:latest", "digest": "sha256:test"},),
         ):
             status = ensure_ollama_ready(
                 "http://127.0.0.1:11434/api",
                 "llama3.2:latest",
             )
         self.assertEqual(status["model"], "llama3.2:latest")
+        self.assertEqual(status["available_models"], ("llama3.2:latest",))
 
     def test_ollama_preflight_reports_missing_model_before_dialogue(self):
         with patch(
-            "coop_navigation_sds.NaturalLanguageGeneration.models._ollama_model_names",
-            return_value=("another-model:latest",),
+            "coop_navigation_sds.NaturalLanguageGeneration.models._ollama_model_catalog",
+            return_value=({"name": "another-model:latest", "digest": "sha256:test"},),
         ):
             with self.assertRaisesRegex(RuntimeError, "is not installed"):
                 ensure_ollama_ready(
                     "http://127.0.0.1:11434/api",
                     "llama3.2:latest",
+                )
+
+    def test_ollama_grid_preflight_reports_every_missing_model(self):
+        with patch(
+            "coop_navigation_sds.NaturalLanguageGeneration.models._ollama_model_catalog",
+            return_value=({"name": "llama3.2:1b", "digest": "sha256:test"},),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "qwen2.5:1.5b.*llama3.2:3b",
+            ):
+                ensure_ollama_models_ready(
+                    "http://127.0.0.1:11434/api",
+                    ("llama3.2:1b", "qwen2.5:1.5b", "llama3.2:3b"),
                 )
 
     def test_generation_uses_only_generation_config_for_length_settings(self):

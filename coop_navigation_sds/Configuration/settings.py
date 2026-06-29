@@ -36,6 +36,7 @@ FUNDAMENTAL_SETTING_KEYS = {
     "model_name",
     "model_device",
     "model_base_url",
+    "model_store_dir",
     "model_timeout_sec",
     "model_max_new_tokens",
     "allow_model_download",
@@ -77,6 +78,7 @@ FUNDAMENTAL_SETTING_KEYS = {
     "asr_domain_similarity_threshold",
     "results_root",
     "gui_font_size",
+    "gui_fullscreen",
     "paired_audio_text_runs",
     "console_view",
     "log_profile",
@@ -116,8 +118,6 @@ def load_run_settings(defaults=None, path=None):
     if "results_root" not in saved and saved.get("protocol_log_dir"):
         saved["results_root"] = saved.pop("protocol_log_dir")
     if int(document.get("schema_version", 0) or 0) < 2 and saved.get("model_provider") == "ollama":
-        if saved.get("model_name") == "llama3.2:3b":
-            saved["model_name"] = "llama3.2:latest"
         if float(saved.get("model_timeout_sec", 0) or 0) <= 5.0:
             saved["model_timeout_sec"] = 180.0
     if int(document.get("schema_version", 0) or 0) < 3:

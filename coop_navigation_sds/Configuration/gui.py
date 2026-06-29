@@ -27,6 +27,8 @@ from coop_navigation_sds.Configuration.pipeline import (
     metric_dependency_report,
     optimal_route_preview,
 )
+from coop_navigation_sds.Configuration.experiment import configuration_fingerprint
+from coop_navigation_sds.Configuration.schema import RESULT_SCHEMA_VERSION, TRACE_SCHEMA_VERSION
 
 
 COMBINED_GUI_PHASES = (
@@ -54,12 +56,12 @@ GUI_METRIC_FAMILIES = {
 GUI_PHASE_LAYOUT = {
     "network_task": (0, 0, 1),
     "agent_a": (0, 1, 1),
-    "agent_b_nlg": (1, 0, 1),
-    "tts": (1, 1, 1),
-    "asr": (2, 0, 1),
-    "nlu": (2, 1, 1),
-    "dialogue_management": (3, 0, 1),
-    "results": (3, 1, 1),
+    "agent_b_nlg": (0, 2, 1),
+    "tts": (0, 3, 1),
+    "asr": (1, 0, 1),
+    "nlu": (1, 1, 1),
+    "dialogue_management": (1, 2, 1),
+    "results": (1, 3, 1),
 }
 
 
@@ -77,6 +79,7 @@ SETTING_HELP = {
     "model_device": "Hardware used for local Transformers inference. Use cpu unless CUDA or another accelerator is installed and verified.",
     "model_timeout_sec": "Maximum seconds to wait for one response from an API or Ollama service before the turn fails.",
     "model_service_autostart": "Start a locally installed Ollama service during preflight when the configured loopback endpoint is not running.",
+    "model_store_dir": "Project-local Ollama model store. Windows and Linux use separate folders so provider assets remain isolated.",
     "model_max_new_tokens": "Maximum generated response length. Higher values allow more natural route explanations but can increase latency.",
     "allow_model_download": "Allow Transformers to download the selected model if it is not already prepared locally. Leave off for reproducible offline batches.",
     "num_turns": "Maximum total dialogue turns before the experiment stops.",
@@ -121,6 +124,7 @@ SETTING_HELP = {
     "results_root": "The single parent folder for all runs. Every execution writes all artifacts into one flat timestamped subfolder.",
     "console_view": "Controls live console detail. Compact shows conversation plus summaries, transcript shows only speech exchange, debug shows internal state events, and quiet minimizes console output.",
     "log_profile": "Controls structured event logging volume. Off disables structured logs, startup records setup only, runtime records experiment execution, and full records all available evidence.",
+    "gui_fullscreen": "Use the full display for the configuration dashboard. This has no effect on headless or batch execution.",
 }
 
 PROSODY_HELP = {
@@ -187,6 +191,13 @@ class StartupConfigDialog:
         self.phase_metric_panels = {}
         self.optimal_route_text = tk.StringVar(value="Calculating selected-condition baseline...")
         self.logging_status_text = tk.StringVar()
+        self.results_preview_text = tk.StringVar()
+        self.phase_cards = {}
+        self.phase_card_hosts = {}
+        self.phase_visible = {
+            key: tk.BooleanVar(value=True) for key, _label in COMBINED_GUI_PHASES
+        }
+        self.network_canvas = None
         self.vars = {
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
             "persona_key": tk.StringVar(value=defaults["persona_key"]),
@@ -196,6 +207,7 @@ class StartupConfigDialog:
             "model_name": tk.StringVar(value=defaults["model_name"]),
             "model_api_key": tk.StringVar(value=defaults["model_api_key"]),
             "model_base_url": tk.StringVar(value=defaults["model_base_url"]),
+            "model_store_dir": tk.StringVar(value=defaults["model_store_dir"]),
             "model_device": tk.StringVar(value=defaults["model_device"]),
             "model_timeout_sec": tk.DoubleVar(value=defaults["model_timeout_sec"]),
             "model_max_new_tokens": tk.IntVar(value=defaults["model_max_new_tokens"]),
@@ -261,6 +273,7 @@ class StartupConfigDialog:
             "console_view": tk.StringVar(value=defaults.get("console_view", "compact")),
             "log_profile": tk.StringVar(value=defaults.get("log_profile", "runtime")),
             "gui_font_size": tk.IntVar(value=defaults.get("gui_font_size", 11)),
+            "gui_fullscreen": tk.BooleanVar(value=defaults.get("gui_fullscreen", True)),
             "paired_audio_text_runs": tk.BooleanVar(value=defaults.get("paired_audio_text_runs", True)),
         }
         self.metric_status_vars = {}
@@ -288,6 +301,7 @@ class StartupConfigDialog:
         }
         self.colors = colors
         self.root.configure(background=colors["background"])
+        self._apply_fullscreen()
         for name in ("TkDefaultFont", "TkTextFont", "TkMenuFont"):
             tkfont.nametofont(name).configure(family=family, size=size)
         style.configure("TFrame", background=colors["surface"])
@@ -311,13 +325,32 @@ class StartupConfigDialog:
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
 
-        shell = ttk.Frame(self.root, padding=(6, 6, 6, 2))
+        shell = ttk.Frame(self.root, padding=(5, 4, 5, 2))
         shell.grid(row=0, column=0, sticky="nsew")
-        shell.rowconfigure(0, weight=1)
+        shell.rowconfigure(1, weight=1)
         shell.columnconfigure(0, weight=1)
 
+        visibility = ttk.Frame(shell)
+        visibility.grid(row=0, column=0, sticky="ew", pady=(0, 3))
+        ttk.Label(visibility, text="Visible phases:", style="MetricSummary.TLabel").pack(side="left")
+        for key, title in COMBINED_GUI_PHASES:
+            ttk.Checkbutton(
+                visibility,
+                text=title.split(" and ")[0],
+                variable=self.phase_visible[key],
+                command=lambda phase=key: self._toggle_phase(phase),
+            ).pack(side="left", padx=(6, 0))
+        fullscreen_toggle = ttk.Checkbutton(
+            visibility,
+            text="Fullscreen",
+            variable=self.vars["gui_fullscreen"],
+            command=self._apply_fullscreen,
+        )
+        fullscreen_toggle.pack(side="right")
+        self._help(fullscreen_toggle, "gui_fullscreen")
+
         workspace = ttk.Frame(shell, padding=0)
-        workspace.grid(row=0, column=0, sticky="nsew")
+        workspace.grid(row=1, column=0, sticky="nsew")
         workspace.rowconfigure(0, weight=1)
         workspace.columnconfigure(0, weight=1)
         self._build_combined_pipeline(workspace)
@@ -332,32 +365,87 @@ class StartupConfigDialog:
             variable.trace_add("write", self._schedule_pipeline_refresh)
         self.root.after_idle(self._refresh_pipeline_overview)
 
+    def _apply_fullscreen(self):
+        enabled = bool(self.vars.get("gui_fullscreen") and self.vars["gui_fullscreen"].get())
+        try:
+            self.root.attributes("-fullscreen", enabled)
+        except tk.TclError:
+            if enabled:
+                self.root.geometry(
+                    f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0"
+                )
+
+    def _toggle_phase(self, phase_key):
+        card = self.phase_cards.get(phase_key)
+        if card is None:
+            return
+        row = GUI_PHASE_LAYOUT[phase_key][0]
+        pane = self.phase_row_panes[row]
+        present = str(card) in pane.panes()
+        if self.phase_visible[phase_key].get():
+            if not present:
+                phase_order = [
+                    key for key, _title in COMBINED_GUI_PHASES
+                    if GUI_PHASE_LAYOUT[key][0] == row
+                ]
+                position = sum(
+                    self.phase_visible[key].get()
+                    for key in phase_order[:phase_order.index(phase_key)]
+                )
+                if position >= len(pane.panes()):
+                    pane.add(card, weight=1)
+                else:
+                    pane.insert(position, card, weight=1)
+        elif present:
+            pane.forget(card)
+
     def _build_combined_pipeline(self, parent):
         content = self._phase_grid(parent)
-        content.columnconfigure(0, weight=1, uniform="phase_column")
-        content.columnconfigure(1, weight=1, uniform="phase_column")
-        for row in range(4):
-            content.rowconfigure(row, weight=1, uniform="phase_row")
+        content.rowconfigure(0, weight=1)
+        content.columnconfigure(0, weight=1)
+        vertical = ttk.Panedwindow(content, orient="vertical")
+        vertical.grid(row=0, column=0, sticky="nsew")
+        top = ttk.Panedwindow(vertical, orient="horizontal")
+        bottom = ttk.Panedwindow(vertical, orient="horizontal")
+        vertical.add(top, weight=1)
+        vertical.add(bottom, weight=1)
+        self.phase_row_panes = {0: top, 1: bottom}
         cards = {
-            key: self._combined_phase_card(content, index, key, title)
+            key: self._combined_phase_card(
+                self.phase_row_panes[GUI_PHASE_LAYOUT[key][0]],
+                index,
+                key,
+                title,
+            )
             for index, (key, title) in enumerate(COMBINED_GUI_PHASES)
         }
+        self.phase_cards = self.phase_card_hosts
 
         network = cards["network_task"]
         self._combo(network, 2, "Scenario", "test_case_key", self.choices["test_case_keys"])
         self._number(network, 3, "Network seed", "network_seed", 0, 2147483647)
-        self._combo(network, 4, "Tickets", "agent_a_ticket_modes", ("metro,tram", "metro,bus", "tram,bus"))
-        self._number(network, 5, "Walking limit", "agent_a_max_walking_min", 0, 30)
-        self._number(network, 6, "Duration ratio", "acceptable_duration_ratio", 1.0, 3.0, 0.05)
-        ttk.Label(network, textvariable=self.optimal_route_text, wraplength=680, justify="left").grid(
-            row=7, column=0, columnspan=3, sticky="ew", pady=(5, 0)
+        self.network_canvas = tk.Canvas(
+            network,
+            height=135,
+            background=self.colors["surface"],
+            highlightthickness=1,
+            highlightbackground=self.colors["border"],
         )
+        self.network_canvas.grid(row=4, column=0, columnspan=3, sticky="nsew", pady=(4, 2))
+        self.network_canvas.bind("<Configure>", lambda _event: self._draw_network_preview())
+        ttk.Label(network, textvariable=self.optimal_route_text, wraplength=410, justify="left").grid(
+            row=5, column=0, columnspan=3, sticky="ew", pady=(2, 0)
+        )
+        network_more = self._collapsible(network, 6, "Constraints")
+        self._combo(network_more, 0, "Tickets", "agent_a_ticket_modes", ("metro,tram", "metro,bus", "tram,bus"))
+        self._number(network_more, 1, "Walking limit", "agent_a_max_walking_min", 0, 30)
+        self._number(network_more, 2, "Duration ratio", "acceptable_duration_ratio", 1.0, 3.0, 0.05)
 
         caller = cards["agent_a"]
         self._combo(caller, 2, "Persona", "persona_key", self.choices["persona_keys"], on_change=self._refresh_persona_detail)
         self._combo(caller, 3, "Implementation", "agent_a_type", self.choices["agent_a_types"], on_change=self._refresh_agent_selection)
         self._combo(caller, 4, "Objective", "agent_a_objective_mode", self.choices["agent_a_objective_modes"])
-        ttk.Label(caller, textvariable=self.persona_detail, wraplength=680, justify="left").grid(
+        ttk.Label(caller, textvariable=self.persona_detail, wraplength=410, justify="left").grid(
             row=5, column=0, columnspan=3, sticky="ew", pady=(5, 0)
         )
 
@@ -370,34 +458,37 @@ class StartupConfigDialog:
         self.agent_b_model_controls.grid(row=3, column=0, columnspan=3, sticky="ew")
         self.agent_b_model_controls.columnconfigure(1, weight=1)
         self._combo(
-            self.agent_b_model_controls, 0, "Model condition", "model_profile",
+            self.agent_b_model_controls, 0, "Model", "model_profile",
             self.choices["model_profiles"], on_change=self._select_model_profile,
         )
+        model_selection = self._collapsible(assistant, 4, "Provider details")
         self._combo(
-            self.agent_b_model_controls, 1, "Model provider", "model_provider",
+            model_selection, 0, "Provider", "model_provider",
             self.choices["model_providers"], on_change=self._select_model_provider,
         )
-        self._entry(self.agent_b_model_controls, 2, "Model", "model_name")
-        self.dynamic_frames["model"] = self._collapsible(assistant, 4, "Implementation settings")
+        self._entry(model_selection, 1, "Identifier", "model_name")
+        self.dynamic_frames["model"] = self._collapsible(assistant, 5, "Implementation settings")
         self.agent_b_model_advanced = self.dynamic_frames["model"].master
 
         tts = cards["tts"]
         self._combo(tts, 2, "Engine", "tts_engine", self.choices["tts_engines"], on_change=self._select_tts_engine)
         self._combo(tts, 3, "Agent A audio persona", "agent_a_audio_persona", self.choices["agent_a_audio_personas"], on_change=self._select_audio_persona)
         self._combo(tts, 4, "Agent B audio persona", "agent_b_audio_persona", self.choices["agent_b_audio_personas"], on_change=self._select_audio_persona)
-        self._combo(tts, 5, "Speech pattern", "speech_pattern_key", self.choices["speech_patterns"])
-        self._check(tts, 6, "Play synthesized speech", "speech_playback_enabled")
-        self._check(tts, 7, "Wait for speech before recognition", "speech_realtime_enabled")
-        self._number(tts, 8, "Maximum utterance seconds", "max_utterance_sec", 5, 40, 1)
-        self.dynamic_frames["tts"] = self._collapsible(tts, 9, "Implementation settings")
+        tts_more = self._collapsible(tts, 5, "Speech controls")
+        self._combo(tts_more, 0, "Pattern", "speech_pattern_key", self.choices["speech_patterns"])
+        self._check(tts_more, 1, "Play audio", "speech_playback_enabled")
+        self._check(tts_more, 2, "Real-time turn taking", "speech_realtime_enabled")
+        self._number(tts_more, 3, "Utterance limit", "max_utterance_sec", 5, 40, 1)
+        self.dynamic_frames["tts"] = self._collapsible(tts, 6, "Implementation settings")
 
         asr = cards["asr"]
         self._combo(asr, 2, "Engine", "asr_engine", self.choices["asr_engines"], on_change=self._select_asr_engine)
-        self._entry(asr, 3, "Language", "asr_language")
-        self._number(asr, 4, "Recognition search width", "asr_beam_size", 1, 16)
-        self._number(asr, 5, "End pause milliseconds", "asr_end_silence_ms", 500, 6000, 100)
-        self._number(asr, 6, "Ambiguous pause milliseconds", "asr_ambiguous_end_silence_ms", 1000, 8000, 100)
-        self.dynamic_frames["asr"] = self._collapsible(asr, 7, "Implementation settings")
+        asr_more = self._collapsible(asr, 3, "Recognition controls")
+        self._entry(asr_more, 0, "Language", "asr_language")
+        self._number(asr_more, 1, "Search width", "asr_beam_size", 1, 16)
+        self._number(asr_more, 2, "End pause ms", "asr_end_silence_ms", 500, 6000, 100)
+        self._number(asr_more, 3, "Ambiguous pause ms", "asr_ambiguous_end_silence_ms", 1000, 8000, 100)
+        self.dynamic_frames["asr"] = self._collapsible(asr, 4, "Implementation settings")
 
         nlu = cards["nlu"]
         self._check(nlu, 2, "Normalize transit terms", "asr_domain_normalization_enabled")
@@ -405,37 +496,70 @@ class StartupConfigDialog:
 
         dialogue = cards["dialogue_management"]
         self._number(dialogue, 2, "Maximum turns", "num_turns", 1, 100)
-        self._number(dialogue, 3, "Invalid route limit", "invalid_route_limit", 1, 20)
-        self._number(dialogue, 4, "Constraint miss limit", "constraint_miss_limit", 1, 20)
-        self._number(dialogue, 5, "Clarification attempts", "clarification_max_attempts", 1, 6)
-        self._number(dialogue, 6, "No-progress limit", "dialogue_stagnation_limit", 1, 6)
-        self._number(dialogue, 7, "Progressive constraints", "maximum_progressive_constraints", 0, 6)
-        self._number(dialogue, 8, "Routes compared", "minimum_compared_routes", 1, 10)
-        self._check(dialogue, 9, "Retain earlier constraints", "require_constraint_retention")
+        self._number(dialogue, 3, "Constraints", "maximum_progressive_constraints", 0, 6)
+        self._number(dialogue, 4, "Routes compared", "minimum_compared_routes", 1, 10)
+        dialogue_more = self._collapsible(dialogue, 5, "Policy limits")
+        self._number(dialogue_more, 0, "Invalid routes", "invalid_route_limit", 1, 20)
+        self._number(dialogue_more, 1, "Constraint misses", "constraint_miss_limit", 1, 20)
+        self._number(dialogue_more, 2, "Clarifications", "clarification_max_attempts", 1, 6)
+        self._number(dialogue_more, 3, "No progress", "dialogue_stagnation_limit", 1, 6)
+        self._check(dialogue_more, 4, "Retain constraints", "require_constraint_retention")
 
         results = cards["results"]
-        self._entry(results, 2, "Single results root", "results_root")
+        self._entry(results, 2, "Results root", "results_root")
         self._combo(results, 3, "Console view", "console_view", ("compact", "transcript", "debug", "quiet"))
-        self._combo(results, 4, "Structured log level", "log_profile", ("runtime", "startup", "full", "off"))
-        self._check(results, 5, "Pair audio with text control", "paired_audio_text_runs")
-        self._number(results, 6, "Interface font size", "gui_font_size", 9, 16)
-        self._build_logging_controls(results, 7)
+        self._combo(results, 4, "Log level", "log_profile", ("runtime", "startup", "full", "off"))
+        ttk.Label(results, textvariable=self.results_preview_text, wraplength=410, justify="left").grid(
+            row=5, column=0, columnspan=3, sticky="ew", pady=(4, 0)
+        )
+        results_more = self._collapsible(results, 6, "Evidence and export details")
+        self._check(results_more, 0, "Paired text control", "paired_audio_text_runs")
+        self._number(results_more, 1, "Font size", "gui_font_size", 9, 16)
+        self._build_logging_controls(results_more, 2)
 
         for key, card in cards.items():
             self._attach_phase_metrics(card, key, 80)
 
     def _combined_phase_card(self, parent, index, key, title):
-        card = ttk.LabelFrame(parent, text=f"{index + 1}. {title}", padding=7, style="Pipeline.TLabelframe")
-        row, column, column_span = GUI_PHASE_LAYOUT[key]
-        card.grid(
-            row=row,
-            column=column,
-            columnspan=column_span,
-            sticky="nsew",
-            padx=3,
-            pady=3,
+        host = ttk.LabelFrame(
+            parent,
+            text=f"{index + 1}. {title}",
+            padding=3,
+            style="Pipeline.TLabelframe",
         )
+        parent.add(host, weight=1)
+        host.rowconfigure(0, weight=1)
+        host.columnconfigure(0, weight=1)
+        phase_canvas = tk.Canvas(
+            host,
+            highlightthickness=0,
+            background=self.colors["surface"],
+        )
+        scrollbar = ttk.Scrollbar(host, orient="vertical", command=phase_canvas.yview)
+        card = ttk.Frame(phase_canvas, padding=(5, 3, 4, 5))
         card.columnconfigure(1, weight=1)
+        canvas_window = phase_canvas.create_window((0, 0), window=card, anchor="nw")
+        phase_canvas.configure(yscrollcommand=scrollbar.set)
+        phase_canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        card.bind(
+            "<Configure>",
+            lambda _event, canvas=phase_canvas: canvas.configure(scrollregion=canvas.bbox("all")),
+        )
+        phase_canvas.bind(
+            "<Configure>",
+            lambda event, canvas=phase_canvas, window=canvas_window: canvas.itemconfigure(
+                window,
+                width=event.width,
+            ),
+        )
+        phase_canvas.bind(
+            "<MouseWheel>",
+            lambda event, canvas=phase_canvas: canvas.yview_scroll(int(-event.delta / 120), "units"),
+        )
+        phase_canvas.bind("<Button-4>", lambda _event, canvas=phase_canvas: canvas.yview_scroll(-1, "units"))
+        phase_canvas.bind("<Button-5>", lambda _event, canvas=phase_canvas: canvas.yview_scroll(1, "units"))
+        self.phase_card_hosts[key] = host
         status = ttk.Label(
             card,
             textvariable=self.pipeline_summary_vars[key],
@@ -465,18 +589,23 @@ class StartupConfigDialog:
     def _expand_phase_metrics(self, host, phase_key):
         panel = self.phase_metric_panels[phase_key]
         if panel["viewport"] is not None:
-            panel["viewport"].grid()
+            panel["viewport"].deiconify()
+            panel["viewport"].lift()
             panel["toggle"].configure(
                 text="Hide metrics",
                 command=lambda key=phase_key: self._collapse_phase_metrics(key),
             )
             return
 
-        viewport = ttk.Frame(host)
-        viewport.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(5, 0))
+        viewport = tk.Toplevel(self.root)
+        title = dict(COMBINED_GUI_PHASES)[phase_key]
+        viewport.title(f"{title} Metrics")
+        viewport.geometry("760x620")
+        viewport.minsize(520, 360)
+        viewport.transient(self.root)
         viewport.rowconfigure(0, weight=1)
         viewport.columnconfigure(0, weight=1)
-        canvas = tk.Canvas(viewport, height=240, highlightthickness=0, background=self.colors["surface"])
+        canvas = tk.Canvas(viewport, highlightthickness=0, background=self.colors["surface"])
         scrollbar = ttk.Scrollbar(viewport, orient="vertical", command=canvas.yview)
         content = ttk.Frame(canvas, padding=(2, 0, 5, 2))
         content.columnconfigure(0, weight=1)
@@ -503,6 +632,7 @@ class StartupConfigDialog:
                 self._build_metric_row(content, row, metric_key, label)
                 row += 1
         panel["viewport"] = viewport
+        viewport.protocol("WM_DELETE_WINDOW", lambda key=phase_key: self._collapse_phase_metrics(key))
         panel["toggle"].configure(
             text="Hide metrics",
             command=lambda key=phase_key: self._collapse_phase_metrics(key),
@@ -511,7 +641,8 @@ class StartupConfigDialog:
 
     def _collapse_phase_metrics(self, phase_key):
         panel = self.phase_metric_panels[phase_key]
-        panel["viewport"].grid_remove()
+        if panel["viewport"] is not None:
+            panel["viewport"].withdraw()
         panel["toggle"].configure(
             text="Show metrics",
             command=lambda target=panel["host"], key=phase_key: self._expand_phase_metrics(target, key),
@@ -622,7 +753,19 @@ class StartupConfigDialog:
                 f"{len(phase_metrics)} obligatory | {phase_enabled} calculable"
                 + (f" | {phase_blocked} unavailable" if phase_blocked else "")
             )
-        self.optimal_route_text.set(optimal_route_preview(config)["summary"])
+        preview = optimal_route_preview(config)
+        self._latest_network_preview = preview
+        self.optimal_route_text.set(preview["summary"])
+        self._draw_network_preview()
+        fingerprint = configuration_fingerprint(config)[:12]
+        calculable_count = sum(item["available"] for item in report["metrics"].values())
+        self.results_preview_text.set(
+            f"Draft {fingerprint} | result schema {RESULT_SCHEMA_VERSION} | "
+            f"trace schema {TRACE_SCHEMA_VERSION}\n"
+            f"{calculable_count}/{len(report['metrics'])} metrics calculable | "
+            f"{len(report['collected_fields'])} evidence fields\n"
+            "run_summary.json | conditions.jsonl | long/wide metrics | protocol | audio"
+        )
         lines = []
         collected = report["collected_fields"]
         for phase, fields in LOGGED_DATA_FIELDS.items():
@@ -644,6 +787,53 @@ class StartupConfigDialog:
         else:
             self.dependency_tree.grid_remove()
             self.dependency_scrollbar.grid_remove()
+
+    def _draw_network_preview(self):
+        canvas = self.network_canvas
+        if canvas is None or not canvas.winfo_exists():
+            return
+        try:
+            from coop_navigation_sds.TransportNetwork.network import LINES, STATION_POS
+        except Exception:
+            return
+        canvas.delete("all")
+        width = max(280, canvas.winfo_width())
+        height = max(120, canvas.winfo_height())
+        coordinates = list(STATION_POS.values())
+        if not coordinates:
+            return
+        min_x = min(x for x, _y in coordinates)
+        max_x = max(x for x, _y in coordinates)
+        min_y = min(y for _x, y in coordinates)
+        max_y = max(y for _x, y in coordinates)
+        margin = 10
+        def point(station):
+            x, y = STATION_POS[station]
+            px = margin + (x - min_x) / max(1, max_x - min_x) * (width - 2 * margin)
+            py = margin + (y - min_y) / max(1, max_y - min_y) * (height - 2 * margin)
+            return px, py
+
+        palette = ("#315E86", "#176B5B", "#A06120", "#7A4E8A", "#697684")
+        for index, (_line_name, line) in enumerate(sorted(LINES.items())):
+            stops = line.get("stops", ())
+            color = palette[index % len(palette)]
+            for start, end in zip(stops, stops[1:]):
+                canvas.create_line(*point(start), *point(end), fill=color, width=1)
+        highlighted = set()
+        preview = getattr(self, "_latest_network_preview", {}) or {}
+        for layer in preview.get("layers", ()):
+            path_text = str(layer.get("path_text") or "")
+            highlighted.update(station for station in STATION_POS if station in path_text)
+        for station in STATION_POS:
+            x, y = point(station)
+            active = station in highlighted
+            radius = 3 if active else 2
+            canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius,
+                fill="#C33C35" if active else "#FFFFFF",
+                outline="#202A35",
+                width=1,
+            )
 
     def _refresh_dependency_tree(self, report):
         tree = self.dependency_tree
@@ -832,9 +1022,10 @@ class StartupConfigDialog:
             self._number(frame, 4, "Maximum response tokens", "model_max_new_tokens", 8, 512, 8)
         elif provider == "ollama":
             self._entry(frame, 1, "Ollama API URL", "model_base_url")
-            self._check(frame, 2, "Start local Ollama service when needed", "model_service_autostart")
-            self._number(frame, 3, "Request timeout seconds", "model_timeout_sec", 1, 300, 1)
-            self._number(frame, 4, "Maximum response tokens", "model_max_new_tokens", 8, 512, 8)
+            self._entry(frame, 2, "Project model store", "model_store_dir")
+            self._check(frame, 3, "Start local Ollama service when needed", "model_service_autostart")
+            self._number(frame, 4, "Request timeout seconds", "model_timeout_sec", 1, 300, 1)
+            self._number(frame, 5, "Maximum response tokens", "model_max_new_tokens", 8, 512, 8)
 
     def _rebuild_tts_settings(self):
         frame = self.dynamic_frames.get("tts")

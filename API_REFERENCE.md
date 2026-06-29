@@ -89,7 +89,7 @@ Build the standardized case with all caller and stage overrides.
 
 ### Function `prepare_execution_run_config(run_config)`
 
-Create one shallow result folder before any runtime stage starts.
+Create paths once and freeze the complete runtime specification.
 
 ### Function `build_dialog_runtime(event_queue, model_adapter, run_config)`
 
@@ -134,6 +134,10 @@ Parse a comma-separated CLI argument into a list.
 ### Function `parse_bool_flag(value)`
 
 Parse CLI booleans.
+
+### Function `preflight_agent_b_model_grid(agent_b_config, provider, base_url, conditions, timeout_sec, models_dir=None)`
+
+Verify every model-backed Agent B condition before batch artifacts exist.
 
 ### Function `main()`
 
@@ -185,6 +189,37 @@ Complete a configuration without carrying settings across backends.
 
 Return implementation choices, optionally restricted to ready providers.
 
+## `coop_navigation_sds/Configuration/experiment.py`
+
+Immutable resolved experiment specifications and provenance.
+
+### Function `freeze_value(value)`
+
+Recursively convert configuration data into immutable containers.
+
+### Function `thaw_value(value)`
+
+Return a JSON-compatible copy of recursively frozen data.
+
+### Function `configuration_fingerprint(values)`
+
+Return a stable SHA-256 identity for resolved non-secret values.
+
+### Class `ExperimentSpecification`
+
+Read-only configuration used by every phase of one experiment run.
+
+- `ExperimentSpecification.resolve(cls, values, *, source='runtime')`: Internal class operation.
+- `ExperimentSpecification.__getitem__(self, key)`: Internal class operation.
+- `ExperimentSpecification.__iter__(self)`: Internal class operation.
+- `ExperimentSpecification.__len__(self)`: Internal class operation.
+- `ExperimentSpecification.to_dict(self)`: Internal class operation.
+- `ExperimentSpecification.provenance(self)`: Internal class operation.
+
+### Function `ensure_experiment_specification(values, *, source='runtime')`
+
+Return an existing specification or resolve one immutable snapshot.
+
 ## `coop_navigation_sds/Configuration/experimental_defaults.py`
 
 Research-oriented defaults shared by GUI, scripts, and batch runs.
@@ -211,6 +246,8 @@ Collect one interactive run configuration.
 
 - `StartupConfigDialog.__init__(self, choices, defaults, validator=None)`: Internal class operation.
 - `StartupConfigDialog._build(self)`: Internal class operation.
+- `StartupConfigDialog._apply_fullscreen(self)`: Internal class operation.
+- `StartupConfigDialog._toggle_phase(self, phase_key)`: Internal class operation.
 - `StartupConfigDialog._build_combined_pipeline(self, parent)`: Internal class operation.
 - `StartupConfigDialog._combined_phase_card(self, parent, index, key, title)`: Internal class operation.
 - `StartupConfigDialog._attach_phase_metrics(self, card, phase_key, row)`: Internal class operation.
@@ -222,6 +259,7 @@ Collect one interactive run configuration.
 - `StartupConfigDialog._schedule_pipeline_refresh(self, *_args)`: Internal class operation.
 - `StartupConfigDialog._current_config_snapshot(self)`: Internal class operation.
 - `StartupConfigDialog._refresh_pipeline_overview(self)`: Internal class operation.
+- `StartupConfigDialog._draw_network_preview(self)`: Internal class operation.
 - `StartupConfigDialog._refresh_dependency_tree(self, report)`: Internal class operation.
 - `StartupConfigDialog._help(self, widget, key, text=None)`: Internal class operation.
 - `StartupConfigDialog._combo(self, parent, row, label, key, values, editable=False, on_change=None)`: Internal class operation.
@@ -284,6 +322,26 @@ Canonical Agent B model-size treatments used by research job matrices.
 
 One controlled model-size tier with two family-diverse local models.
 
+### Function `model_store_platform(system_name=None)`
+
+Return the stable project-folder key for a supported operating system.
+
+### Function `agent_b_model_platform_dir(system_name=None, *, project_root=PROJECT_ROOT)`
+
+Return the platform-specific root containing model data and its catalog.
+
+### Function `agent_b_ollama_store_dir(system_name=None, *, project_root=PROJECT_ROOT)`
+
+Return the platform-specific Ollama blob and manifest store.
+
+### Function `resolve_agent_b_model_store(path=None, system_name=None, *, project_root=PROJECT_ROOT)`
+
+Resolve an optional model-store setting against the repository root.
+
+### Function `model_catalog_folder(model_name)`
+
+Return a size-first, stable catalog path for one registered model.
+
 ### Function `models_for_size_treatments(treatment_keys)`
 
 Resolve ordered model names for one or more declared size treatments.
@@ -323,6 +381,10 @@ Return metric-by-field availability used by GUI, preflight, and manifests.
 ### Function `serializable_metric_dependency_report(config)`
 
 Return the dependency report in stable JSON-ready form.
+
+### Function `experiment_pipeline_contract(config)`
+
+Return the selected phase contract and evidence readiness for manifests.
 
 ### Class `ComponentStatus`
 
@@ -1230,11 +1292,13 @@ Queue adapter that discards human-readable batch events.
 
 Data model for one batch experiment condition.
 
+- `ExperimentCondition.__post_init__(self)`: Internal class operation.
+
 ### Class `ExperimentRunner`
 
 Batch controller for running one condition or a full condition grid.
 
-- `ExperimentRunner.__init__(self, model_adapter, num_turns, agent_b_plugin_key=AGENT_B_PLUGIN, tts_engine=SPEECH_TTS_ENGINE, asr_engine=SPEECH_ASR_ENGINE, speech_audio_dir=SPEECH_AUDIO_DIR, speech_playback_enabled=SPEECH_PLAYBACK_ENABLED, speech_realtime_enabled=SPEECH_REALTIME_ENABLED, speech_synthesis_config=None, transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE, invalid_route_limit=INVALID_ROUTE_LIMIT, constraint_miss_limit=CONSTRAINT_MISS_LIMIT, stagnation_limit=2, max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC, calculation_max_time_sec=GENERATION_MAX_TIME_SEC, llm_agent_a=LLM_AGENT_A, agent_a_type=None, log_profile=LOG_PROFILE_OFF, log_dir=SESSION_LOG_DIR, scenario_overrides=None, model_adapter_factory=None, agent_a_model_adapter=None)`: init method for this module's MVC responsibility.
+- `ExperimentRunner.__init__(self, model_adapter, num_turns, agent_b_plugin_key=AGENT_B_PLUGIN, tts_engine=SPEECH_TTS_ENGINE, asr_engine=SPEECH_ASR_ENGINE, speech_audio_dir=SPEECH_AUDIO_DIR, speech_playback_enabled=SPEECH_PLAYBACK_ENABLED, speech_realtime_enabled=SPEECH_REALTIME_ENABLED, speech_synthesis_config=None, transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE, invalid_route_limit=INVALID_ROUTE_LIMIT, constraint_miss_limit=CONSTRAINT_MISS_LIMIT, stagnation_limit=2, max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC, calculation_max_time_sec=GENERATION_MAX_TIME_SEC, llm_agent_a=LLM_AGENT_A, agent_a_type=None, log_profile=LOG_PROFILE_OFF, log_dir=SESSION_LOG_DIR, scenario_overrides=None, model_adapter_factory=None, agent_a_model_adapter=None, experiment_specification=None)`: init method for this module's MVC responsibility.
 - `ExperimentRunner.run_condition(self, condition: ExperimentCondition, *, compute_metrics=True)`: Run condition method for this module's MVC responsibility.
 - `ExperimentRunner._event_queue_for(self, condition: ExperimentCondition)`: Return a no-op queue by default, or a structured logger for batch audits.
 - `ExperimentRunner._configure_model_adapter_runtime(self, model_adapter, calculation_max_time_sec=None)`: Internal class operation.
@@ -1662,6 +1726,10 @@ Model backend adapter interfaces and Hugging Face transformer implementation use
 
 Provider-neutral chat message.
 
+### Function `_ollama_model_catalog(base_url, timeout_sec=5.0)`
+
+Internal module operation.
+
 ### Function `_ollama_model_names(base_url, timeout_sec=5.0)`
 
 Internal module operation.
@@ -1670,13 +1738,21 @@ Internal module operation.
 
 Internal module operation.
 
-### Function `_ollama_executable()`
+### Function `ollama_executable()`
 
-Internal module operation.
+Return the installed Ollama command path for Windows or Linux.
 
-### Function `ensure_ollama_ready(base_url, model, *, autostart=True, timeout_sec=10.0, warm_model=False)`
+### Function `ollama_model_inventory(base_url, *, autostart=True, timeout_sec=10.0, models_dir=None)`
 
-Ensure a loopback Ollama service is reachable and contains the selected model.
+Return one reachable Ollama service and its installed model names.
+
+### Function `ensure_ollama_models_ready(base_url, models, *, autostart=True, timeout_sec=10.0, warm_models=False, models_dir=None)`
+
+Verify every requested Ollama model before an experiment starts.
+
+### Function `ensure_ollama_ready(base_url, model, *, autostart=True, timeout_sec=10.0, warm_model=False, models_dir=None)`
+
+Ensure a loopback Ollama service is reachable and contains one model.
 
 ### Class `ModelAdapter`
 
@@ -2009,6 +2085,10 @@ Write protocol artifacts for all completed conversations.
 ### Function `write_jsonl(path, rows)`
 
 Internal module operation.
+
+### Function `write_standard_run_summary(results, metrics, output_dir, *, result_scope, manifest_path)`
+
+Write the common human/machine entry point for single and batch runs.
 
 ### Function `write_failure_indicator_report(metrics, path, minimum_per_outcome=3)`
 
@@ -2758,7 +2838,7 @@ Route station sequence function for this module's MVC responsibility.
 
 ### Function `route_path_text_from_steps(steps)`
 
-Return a complete path with consecutive same-line edges condensed.
+Return a concise station/line path with same-line stops condensed.
 
 ### Function `route_text_from_steps(steps)`
 

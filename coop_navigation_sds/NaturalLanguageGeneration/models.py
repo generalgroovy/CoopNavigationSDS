@@ -26,7 +26,10 @@ from coop_navigation_sds.Configuration.travel import (
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,
 )
-from coop_navigation_sds.Configuration.model_matrix import AGENT_B_MODEL_SIZE_TREATMENTS
+from coop_navigation_sds.Configuration.model_matrix import (
+    AGENT_B_MODEL_SIZE_TREATMENTS,
+    resolve_agent_b_model_store,
+)
 
 
 @dataclass(frozen=True)
@@ -36,15 +39,25 @@ class ChatMessage:
     content: str
 
 
-def _ollama_model_names(base_url, timeout_sec=5.0):
+def _ollama_model_catalog(base_url, timeout_sec=5.0):
     endpoint = f"{str(base_url).rstrip('/')}/tags"
     with request.urlopen(endpoint, timeout=timeout_sec) as response:
         payload = json.loads(response.read().decode("utf-8"))
     return tuple(
-        str(item.get("name") or item.get("model") or "")
+        {
+            "name": str(item.get("name") or item.get("model") or ""),
+            "digest": item.get("digest"),
+            "size_bytes": item.get("size"),
+            "modified_at": item.get("modified_at"),
+            "details": dict(item.get("details") or {}),
+        }
         for item in payload.get("models", [])
         if item.get("name") or item.get("model")
     )
+
+
+def _ollama_model_names(base_url, timeout_sec=5.0):
+    return tuple(item["name"] for item in _ollama_model_catalog(base_url, timeout_sec))
 
 
 def _warm_ollama_model(base_url, model, timeout_sec):
@@ -65,7 +78,8 @@ def _warm_ollama_model(base_url, model, timeout_sec):
         response.read()
 
 
-def _ollama_executable():
+def ollama_executable():
+    """Return the installed Ollama command path for Windows or Linux."""
     executable = shutil.which("ollama")
     if executable:
         return executable
@@ -76,16 +90,21 @@ def _ollama_executable():
     return None
 
 
-def ensure_ollama_ready(base_url, model, *, autostart=True, timeout_sec=10.0, warm_model=False):
-    """Ensure a loopback Ollama service is reachable and contains the selected model."""
+def ollama_model_inventory(
+    base_url,
+    *,
+    autostart=True,
+    timeout_sec=10.0,
+    models_dir=None,
+):
+    """Return one reachable Ollama service and its installed model names."""
     base_url = str(base_url or OLLAMA_BASE_URL).rstrip("/")
-    model = str(model or OLLAMA_MODEL).strip()
     try:
-        names = _ollama_model_names(base_url, min(float(timeout_sec), 5.0))
+        model_records = _ollama_model_catalog(base_url, min(float(timeout_sec), 5.0))
     except (OSError, error.URLError, TimeoutError):
         parsed = parse.urlparse(base_url)
         local = parsed.hostname in {"localhost", "127.0.0.1", "::1"}
-        executable = _ollama_executable() if autostart and local else None
+        executable = ollama_executable() if autostart and local else None
         if not executable:
             raise RuntimeError(
                 f"Ollama is not reachable at {base_url}. Start `ollama serve` or correct the service URL."
@@ -93,6 +112,9 @@ def ensure_ollama_ready(base_url, model, *, autostart=True, timeout_sec=10.0, wa
         environment = dict(os.environ)
         if parsed.netloc:
             environment["OLLAMA_HOST"] = parsed.netloc
+        resolved_models_dir = resolve_agent_b_model_store(models_dir)
+        resolved_models_dir.mkdir(parents=True, exist_ok=True)
+        environment["OLLAMA_MODELS"] = str(resolved_models_dir)
         kwargs = {
             "stdout": subprocess.DEVNULL,
             "stderr": subprocess.DEVNULL,
@@ -106,7 +128,7 @@ def ensure_ollama_ready(base_url, model, *, autostart=True, timeout_sec=10.0, wa
         deadline = time.monotonic() + max(1.0, float(timeout_sec))
         while True:
             try:
-                names = _ollama_model_names(base_url, 2.0)
+                model_records = _ollama_model_catalog(base_url, 2.0)
                 break
             except (OSError, error.URLError, TimeoutError) as exc:
                 if time.monotonic() >= deadline:
@@ -114,21 +136,94 @@ def ensure_ollama_ready(base_url, model, *, autostart=True, timeout_sec=10.0, wa
                         f"Ollama was started but did not become ready at {base_url}."
                     ) from exc
                 time.sleep(0.25)
-    if model not in names:
-        available = ", ".join(names) or "none"
+    return {
+        "base_url": base_url,
+        "models_dir": str(resolve_agent_b_model_store(models_dir)),
+        "available_models": tuple(record["name"] for record in model_records),
+        "model_records": model_records,
+    }
+
+
+def ensure_ollama_models_ready(
+    base_url,
+    models,
+    *,
+    autostart=True,
+    timeout_sec=10.0,
+    warm_models=False,
+    models_dir=None,
+):
+    """Verify every requested Ollama model before an experiment starts."""
+    requested = tuple(dict.fromkeys(str(model).strip() for model in models if str(model).strip()))
+    inventory = ollama_model_inventory(
+        base_url,
+        autostart=autostart,
+        timeout_sec=timeout_sec,
+        models_dir=models_dir,
+    )
+    installed = set(inventory["available_models"])
+    missing = tuple(model for model in requested if model not in installed)
+    if missing:
+        commands = " ".join(f"--model {model}" for model in missing)
+        raise RuntimeError(
+            "Ollama model grid is incomplete. Missing: "
+            f"{', '.join(missing)}. Prepare only the missing models with: "
+            f"python scripts/setup_agent_b_models.py --pull {commands}"
+        )
+    if warm_models:
+        for model in requested:
+            try:
+                _warm_ollama_model(inventory["base_url"], model, timeout_sec)
+            except (OSError, error.URLError, TimeoutError) as exc:
+                raise RuntimeError(
+                    f"Ollama model '{model}' did not become generation-ready within "
+                    f"{float(timeout_sec):g} seconds."
+                ) from exc
+    return {
+        **inventory,
+        "requested_models": requested,
+        "missing_models": (),
+    }
+
+
+def ensure_ollama_ready(
+    base_url,
+    model,
+    *,
+    autostart=True,
+    timeout_sec=10.0,
+    warm_model=False,
+    models_dir=None,
+):
+    """Ensure a loopback Ollama service is reachable and contains one model."""
+    model = str(model or OLLAMA_MODEL).strip()
+    inventory = ollama_model_inventory(
+        base_url,
+        autostart=autostart,
+        timeout_sec=timeout_sec,
+        models_dir=models_dir,
+    )
+    if model not in inventory["available_models"]:
+        available = ", ".join(inventory["available_models"]) or "none"
         raise RuntimeError(
             f"Ollama model '{model}' is not installed. Available models: {available}. "
-            f"Install it before the experiment with `ollama pull {model}`."
+            "Install it in the project store with "
+            f"`python scripts/setup_agent_b_models.py --pull --model {model}`."
         )
     if warm_model:
         try:
-            _warm_ollama_model(base_url, model, timeout_sec)
+            _warm_ollama_model(inventory["base_url"], model, timeout_sec)
         except (OSError, error.URLError, TimeoutError) as exc:
             raise RuntimeError(
                 f"Ollama model '{model}' did not become generation-ready within "
                 f"{float(timeout_sec):g} seconds."
             ) from exc
-    return {"base_url": base_url, "model": model, "available_models": names}
+    return {
+        "base_url": inventory["base_url"],
+        "model": model,
+        "models_dir": inventory["models_dir"],
+        "available_models": inventory["available_models"],
+    }
 
 
 class ModelAdapter(Protocol):

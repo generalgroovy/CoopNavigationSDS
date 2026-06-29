@@ -2,6 +2,7 @@ import inspect
 import tempfile
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from coop_navigation_sds.app import default_run_config, normalize_run_config
 from coop_navigation_sds.Configuration.gui import StartupConfigDialog, ToolTip
@@ -14,11 +15,37 @@ from coop_navigation_sds.Configuration.assets import (
     resolve_faster_whisper_model,
 )
 from coop_navigation_sds.experiments import build_condition_grid
+from coop_navigation_sds.batch import preflight_agent_b_model_grid
+from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import AgentBPluginConfig
 from coop_navigation_sds.TextToSpeech.personas import audio_persona_keys, synthesis_values
 from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import normalize_agent_a_type
 
 
 class AudioPersonaAndJobTests(unittest.TestCase):
+    @patch("coop_navigation_sds.NaturalLanguageGeneration.models.ensure_ollama_models_ready")
+    def test_batch_preflight_checks_every_unique_agent_b_model(self, ensure_models):
+        ensure_models.return_value = {"available_models": ()}
+        conditions = [
+            type("Condition", (), {"agent_b_model": model})()
+            for model in ("phi3:mini", "llama3.2:3b", "phi3:mini")
+        ]
+
+        status = preflight_agent_b_model_grid(
+            AgentBPluginConfig("llm"),
+            "ollama",
+            "http://127.0.0.1:11434/api",
+            conditions,
+            30.0,
+        )
+
+        self.assertEqual(status, {"available_models": ()})
+        ensure_models.assert_called_once_with(
+            "http://127.0.0.1:11434/api",
+            ["llama3.2:3b", "phi3:mini"],
+            timeout_sec=30.0,
+            models_dir=None,
+        )
+
     def test_role_specific_audio_personas_are_available(self):
         callers = audio_persona_keys("caller")
         assistants = audio_persona_keys("assistant")
