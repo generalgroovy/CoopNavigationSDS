@@ -1816,6 +1816,8 @@ class FasterWhisperSpeechToText:
             "asr_language": getattr(info, "language", self.language),
             "asr_language_probability": getattr(info, "language_probability", None),
             "asr_model": self.model_name,
+            "asr_search_width": self.beam_size,
+            "asr_search_width_applied": True,
         })
         if not transcript:
             raise SpeechPipelineError(
@@ -1862,10 +1864,12 @@ class VoskSpeechToText:
         self,
         model_name="",
         language="en-US",
+        search_width=1,
         model_cache_dir=".speech-providers/models/vosk",
     ):
         self.model_name = str(model_name or "").strip()
         self.language = str(language or "en-US").lower()
+        self.search_width = max(1, int(search_width))
         self.model_cache_dir = Path(model_cache_dir)
         self._model = None
 
@@ -1909,10 +1913,11 @@ class VoskSpeechToText:
                 )
             recognizer = KaldiRecognizer(self._load_model(), wav_file.getframerate())
             recognizer.SetWords(True)
+            recognizer.SetMaxAlternatives(self.search_width)
             while data := wav_file.readframes(4000):
                 if recognizer.AcceptWaveform(data):
-                    chunks.append(json.loads(recognizer.Result()).get("text", ""))
-            chunks.append(json.loads(recognizer.FinalResult()).get("text", ""))
+                    chunks.append(self._result_text(json.loads(recognizer.Result())))
+            chunks.append(self._result_text(json.loads(recognizer.FinalResult())))
         transcript = " ".join(chunk.strip() for chunk in chunks if chunk.strip())
         return _record_asr_diagnostics(
             signal,
@@ -1920,7 +1925,17 @@ class VoskSpeechToText:
             transcript,
             asr_model=self.model_name or self.language,
             asr_language=self.language,
+            asr_search_width=self.search_width,
+            asr_search_width_applied=True,
         )
+
+    @staticmethod
+    def _result_text(payload):
+        """Read Vosk's ordinary or N-best result structure."""
+        if payload.get("text"):
+            return payload["text"]
+        alternatives = payload.get("alternatives") or ()
+        return alternatives[0].get("text", "") if alternatives else ""
 
 
 class SherpaOnnxSpeechToText:
@@ -1928,9 +1943,10 @@ class SherpaOnnxSpeechToText:
 
     name = "sherpa-onnx-asr"
 
-    def __init__(self, model_name="", language="en-US"):
+    def __init__(self, model_name="", language="en-US", search_width=1):
         self.model_name = str(model_name or "").strip()
         self.language = str(language or "en-US")
+        self.search_width = max(1, int(search_width))
         self._recognizer = None
 
     @staticmethod
@@ -1966,26 +1982,36 @@ class SherpaOnnxSpeechToText:
             raise SpeechPipelineError("sherpa-onnx model directory has no tokens file.")
         common = {"tokens": str(tokens), "num_threads": 2, "debug": False}
         if encoder and decoder and joiner:
+            decoding_method = (
+                "greedy_search" if self.search_width == 1 else "modified_beam_search"
+            )
             self._recognizer = sherpa_onnx.OfflineRecognizer.from_transducer(
-                encoder=str(encoder), decoder=str(decoder), joiner=str(joiner), **common
+                encoder=str(encoder), decoder=str(decoder), joiner=str(joiner),
+                decoding_method=decoding_method,
+                max_active_paths=self.search_width,
+                **common,
             )
             model_type = "transducer"
+            search_width_applied = True
         elif encoder and decoder:
             self._recognizer = sherpa_onnx.OfflineRecognizer.from_whisper(
                 encoder=str(encoder), decoder=str(decoder), language=self.language.split("-")[0], **common
             )
             model_type = "whisper"
+            search_width_applied = False
         elif paraformer:
             self._recognizer = sherpa_onnx.OfflineRecognizer.from_paraformer(
                 paraformer=str(paraformer), **common
             )
             model_type = "paraformer"
+            search_width_applied = False
         else:
             raise SpeechPipelineError(
                 "Unsupported sherpa-onnx model directory layout.",
                 {"asr_model": str(root), "troubleshooting": self.install_hint()},
             )
         self._model_type = model_type
+        self._search_width_applied = search_width_applied
         return self._recognizer
 
     def transcribe(self, signal: SpeechSignal) -> str:
@@ -2013,6 +2039,8 @@ class SherpaOnnxSpeechToText:
             asr_model=self.model_name,
             asr_language=self.language,
             sherpa_model_type=getattr(self, "_model_type", "unknown"),
+            asr_search_width=self.search_width,
+            asr_search_width_applied=getattr(self, "_search_width_applied", False),
         )
 
     @staticmethod
@@ -2031,6 +2059,7 @@ class WhisperCppSpeechToText:
         executable="",
         language="en",
         vad_model="",
+        search_width=1,
         timeout_sec=60.0,
         provider_environment_dir=".speech-providers",
     ):
@@ -2038,6 +2067,7 @@ class WhisperCppSpeechToText:
         self.executable = str(executable or "").strip()
         self.language = str(language or "en").split("-")[0].lower()
         self.vad_model = str(vad_model or "").strip()
+        self.search_width = max(1, int(search_width))
         self.timeout_sec = max(1.0, float(timeout_sec))
         self.provider_environment_dir = str(provider_environment_dir or ".speech-providers")
 
@@ -2079,6 +2109,8 @@ class WhisperCppSpeechToText:
             str(output_base),
             "--no-timestamps",
             "--no-prints",
+            "--beam-size",
+            str(self.search_width),
         ]
         if resolved["vad_model"]:
             command.extend(["--vad", "--vad-model", resolved["vad_model"]])
@@ -2108,6 +2140,8 @@ class WhisperCppSpeechToText:
             resolved_executable=executable,
             resolved_model=str(model_path),
             command=command,
+            asr_search_width=self.search_width,
+            asr_search_width_applied=True,
         )
 
 
@@ -2412,6 +2446,7 @@ class SpeechTransport:
             return VoskSpeechToText(
                 model_name=self.config.asr_model,
                 language=self.config.asr_language,
+                search_width=self.config.asr_beam_size,
                 model_cache_dir=str(
                     Path(self.config.provider_environment_dir) / "models" / "vosk"
                 ),
@@ -2420,6 +2455,7 @@ class SpeechTransport:
             return SherpaOnnxSpeechToText(
                 model_name=self.config.asr_model,
                 language=self.config.asr_language,
+                search_width=self.config.asr_beam_size,
             )
         if engine in {"whisper_cpp", "whisper.cpp", "whisper-cpp"}:
             return WhisperCppSpeechToText(
@@ -2427,6 +2463,7 @@ class SpeechTransport:
                 executable=self.config.asr_executable,
                 language=self.config.asr_language,
                 vad_model=self.config.asr_vad_model,
+                search_width=self.config.asr_beam_size,
                 timeout_sec=self.config.asr_timeout_sec,
                 provider_environment_dir=self.config.provider_environment_dir,
             )

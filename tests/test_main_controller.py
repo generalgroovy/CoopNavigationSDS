@@ -13,7 +13,7 @@ from coop_navigation_sds.app import (
     default_run_config,
     normalize_run_config,
 )
-from coop_navigation_sds.Configuration.gui import GUI_PHASE_LAYOUT, StartupConfigDialog
+from coop_navigation_sds.Configuration.gui import GUI_CARD_LAYOUT, StartupConfigDialog
 from coop_navigation_sds.Configuration.component_catalog import startup_choices
 from coop_navigation_sds.Configuration.experimental_defaults import numeric_range
 from coop_navigation_sds.DialogManagement.speech_pipeline import SpeechPipelineError
@@ -382,11 +382,13 @@ class MainControllerTests(unittest.TestCase):
         self.assertIn("_draw_network_preview", source)
         self.assertIn("run_summary.json", source)
         self.assertIn('self.root.attributes("-fullscreen", enabled)', source)
-        self.assertIn("_toggle_phase", source)
+        self.assertIn("_scrollable_card", source)
+        self.assertIn("_phase_section", source)
+        self.assertIn("_update_selected_route_preview", source)
+        self.assertIn("route_layer_selector", source)
         self.assertIn('scrollbar = ttk.Scrollbar(host, orient="vertical"', source)
-        self.assertIn('phase_canvas.configure(yscrollcommand=scrollbar.set)', source)
-        self.assertIn('ttk.Panedwindow(content, orient="vertical")', source)
-        self.assertIn('ttk.Panedwindow(vertical, orient="horizontal")', source)
+        self.assertIn('card_canvas.configure(yscrollcommand=scrollbar.set)', source)
+        self.assertIn('ttk.Panedwindow(content, orient="horizontal")', source)
         self.assertIn("This metric is obligatory", source)
         self.assertNotIn("self.metric_vars", source)
         self.assertNotIn("metric_tier_vars", source)
@@ -398,13 +400,11 @@ class MainControllerTests(unittest.TestCase):
         self.assertNotIn("laugh_level", source)
         self.assertNotIn("reference_audio", source)
 
-    def test_configuration_gui_uses_two_by_four_phase_dashboard(self):
-        self.assertEqual(len(GUI_PHASE_LAYOUT), 8)
-        self.assertTrue(all(span == 1 for _row, _column, span in GUI_PHASE_LAYOUT.values()))
-        self.assertEqual(set(GUI_PHASE_LAYOUT.values()), {
-            (0, 0, 1), (0, 1, 1), (0, 2, 1), (0, 3, 1),
-            (1, 0, 1), (1, 1, 1), (1, 2, 1), (1, 3, 1),
-        })
+    def test_configuration_gui_uses_two_resizable_cards(self):
+        self.assertEqual(GUI_CARD_LAYOUT, (
+            ("network_model", "1. Scenario, Network, and Optimal Routes"),
+            ("dialogue_metrics", "2. Dialogue Pipeline and Metrics"),
+        ))
 
     def test_component_catalog_exposes_plug_and_play_backends(self):
         choices = startup_choices()

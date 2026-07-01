@@ -1,5 +1,6 @@
 """Batch experiment entry point for automatic evaluation of speech-dialog conditions."""
 import argparse
+import json
 from pathlib import Path
 
 from coop_navigation_sds.Configuration.speech import AGENT_B_PLUGIN
@@ -32,7 +33,6 @@ from coop_navigation_sds.Configuration.runtime import (
     NUM_TURNS,
     REQUIRE_CONSTRAINT_RETENTION,
     RESULTS_DIR,
-    SESSION_LOG_PROFILE,
 )
 from coop_navigation_sds.Configuration.schema import resolve_results_root, sanitized_config
 from coop_navigation_sds.Configuration.experiment import ExperimentSpecification
@@ -53,7 +53,11 @@ from coop_navigation_sds.Configuration.travel import (
 )
 from coop_navigation_sds.NaturalLanguageGeneration.models import available_model_provider_keys, model_profile_defaults
 from coop_navigation_sds.DialogManagement.manager import DEFAULT_MAX_TURN_ELAPSED_SEC
-from coop_navigation_sds.experiments import ExperimentRunner, build_condition_grid
+from coop_navigation_sds.experiments import (
+    ExperimentRunner,
+    build_condition_grid,
+    condition_coverage_report,
+)
 from coop_navigation_sds.EvaluationMetrics.metrics import apply_cross_run_metrics, apply_paired_run_metrics
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     calculate_batch_metrics_from_inputs,
@@ -73,6 +77,7 @@ from coop_navigation_sds.Configuration.scenarios import DEFAULT_TEST_CASE
 from coop_navigation_sds.Configuration.settings import default_settings_path, load_run_settings
 from coop_navigation_sds.Configuration.jobs import (
     job_grid_value,
+    job_linked_profiles,
     job_parameter_grid,
     job_parameter_profiles,
     load_experiment_job,
@@ -241,6 +246,12 @@ def main():
     parser.add_argument("--agent-a-type", default=configured_agent_a_type, choices=available_agent_a_types(), help="Agent A implementation: staged, tinyllama, or userlm.")
     parser.add_argument("--llm-agent-a", action=argparse.BooleanOptionalAction, default=None, help="Deprecated compatibility alias; --llm-agent-a selects UserLM.")
     parser.add_argument("--iterations", type=int, default=int(job.get("iterations", 1)))
+    parser.add_argument(
+        "--coverage-strategy",
+        default=job.get("coverage_strategy", "full_factorial"),
+        choices=("full_factorial", "pairwise"),
+        help="Condition expansion: complete Cartesian product or deterministic strength-two pairwise coverage.",
+    )
     parser.add_argument("--num-turns", type=int, default=int(configured.get("num_turns", NUM_TURNS)))
     parser.add_argument("--invalid-route-limit", type=int, default=int(configured.get("invalid_route_limit", INVALID_ROUTE_LIMIT)))
     parser.add_argument("--constraint-miss-limit", type=int, default=int(configured.get("constraint_miss_limit", CONSTRAINT_MISS_LIMIT)))
@@ -262,7 +273,12 @@ def main():
     parser.add_argument("--calculation-max-time-sec", type=float, default=float(configured.get("calculation_max_time_sec", GENERATION_MAX_TIME_SEC)))
     parser.add_argument("--output", default="automatic_eval_metrics.xlsx", help="Metrics workbook filename inside the run folder.")
     parser.add_argument("--results-dir", dest="results_dir", default=configured.get("results_root", configured.get("protocol_log_dir", RESULTS_DIR)), help="Single results root. Every execution writes one flat run folder inside it.")
-    parser.add_argument("--log-profile", default=SESSION_LOG_PROFILE, choices=("off", "startup", "runtime", "full"), help="Structured batch logging level.")
+    parser.add_argument(
+        "--log-profile",
+        default="full",
+        choices=("full",),
+        help="Batch logging is fixed to full so every condition retains complete audit evidence.",
+    )
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
     args = parser.parse_args()
     args.results_dir = resolve_results_root(args.results_dir)
@@ -298,8 +314,23 @@ def main():
         iterations=args.iterations,
         parameter_grid=job_parameter_grid(job),
         parameter_profiles=job_parameter_profiles(job),
+        linked_profiles=job_linked_profiles(job),
+        coverage_strategy=args.coverage_strategy,
         pair_audio_with_text=args.paired_audio_text,
     ))
+    coverage_report = condition_coverage_report(conditions)
+    if args.coverage_strategy == "pairwise" and coverage_report["missing_pairs"]:
+        raise SystemExit(
+            "Pairwise coverage generation failed: "
+            f"{len(coverage_report['missing_pairs'])} factor-level pairs are absent."
+        )
+    if args.progress:
+        print(
+            f"Coverage: {args.coverage_strategy} | {len(conditions)} runs | "
+            f"{coverage_report['covered_pair_count']}/"
+            f"{coverage_report['expected_pair_count']} factor pairs",
+            flush=True,
+        )
     preflight_config = {
         "tts_model": args.tts_model,
         "tts_executable": args.tts_executable,
@@ -369,6 +400,17 @@ def main():
             Path(args.job_file).read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+    (run_dir / "coverage_plan.json").write_text(
+        json.dumps(
+            {
+                "coverage_strategy": args.coverage_strategy,
+                **coverage_report,
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
     metrics_output = run_dir / Path(args.output).name
     protocol_dir = run_dir
     phase_log_dir = run_dir
@@ -599,6 +641,8 @@ def main():
             }),
             "job_file": args.job_file,
             "iterations": args.iterations,
+            "coverage_strategy": args.coverage_strategy,
+            "coverage_plan": coverage_report,
             "invalid_route_limit": args.invalid_route_limit,
             "constraint_miss_limit": args.constraint_miss_limit,
             "dialogue_stagnation_limit": args.dialogue_stagnation_limit,

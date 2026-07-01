@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "extends": "requested_tinyllama_piper_faster_whisper.job",
+  "name": "requested_tinyllama_piper_vosk",
+  "description": "Matched bounded validation batch changing only Faster-Whisper to Vosk.",
+  "config": {
+    "asr_engine": "vosk",
+    "asr_model": ".speech-providers/models/vosk/vosk-model-small-en-us-0.15"
+  },
+  "grid": {
+    "asr_engines": ["vosk"]
+  },
+  "parameter_values": {
+    "asr_beam_size": [6]
+  }
+}

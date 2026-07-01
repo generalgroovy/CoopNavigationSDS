@@ -138,15 +138,14 @@ All experiment variables have defaults and can be overridden by:
 
 Legacy `MINILLAMA_*` variables and keys remain read-compatible only.
 
-The startup GUI is fullscreen and combines configuration plus relevant metrics
-inside eight independently scrollable chronological phase cards arranged in a
-two-by-four dashboard. Every card can be hidden or restored. Network and staged
-route previews, metric readiness, and the result/export plan remain visible.
-The horizontal sash between rows changes card heights; each row has three
-independent vertical sashes for card widths. All eight areas are therefore
-resizable in both dimensions by direct dragging. Text wraps automatically and
-explicit newlines are reserved for ordered multi-line evidence such as numbered
-route layers.
+The startup GUI is fullscreen and uses two horizontally resizable, independently
+scrollable cards. The first owns scenario/network data, graph visualization,
+constraints, and selectable staged optimal routes. Selecting a route layer
+compares it with the preceding layer and highlights retained, added, and removed
+segments. The second owns the chronological Agent A, Agent B/NLG, TTS, ASR, NLU,
+dialogue-management, metric, logging, and result controls. Text wraps
+automatically and explicit newlines are reserved for ordered multi-line evidence
+such as numbered route layers.
 Provider-specific fields are created only for
 the selected language-model, TTS, or ASR implementation. Named audio personas
 are the primary reproducible speech condition; only controls that materially

@@ -25,6 +25,27 @@ calculation, and tests are implemented in the runtime catalog:
 5. Test success, missing evidence, and inapplicable-run behavior.
 6. Emit the value only when calculation succeeds.
 
+## Immediate Low-Cost Candidates
+
+These additions have the highest value-to-effort ratio because their primary
+operands already exist in route candidates, phase traces, private memory
+snapshots, transcript edits, and staged optima.
+
+| Metric | Exact retrospective calculation | Existing evidence | Small addition, if any | Research value |
+| --- | --- | --- | --- | --- |
+| Candidate Pareto-domination rate | Proposed routes dominated by an earlier route on duration and every active constraint divided by all valid proposals | Ordered candidate validations, duration, transfers, fullness, delay, walking, active constraints | None | Detects Agent B turns that are valid but cannot improve the caller's decision. |
+| Constraint negotiation lag | Turns and seconds from a constraint-reveal event to the first distinct proposal satisfying all active constraints | Constraint activation, candidate status, turn and phase timestamps | None | Measures how efficiently cooperation adapts after requirements change. |
+| Optimality improvement per revision | Mean reduction in active-stage duration/utility gap between consecutive distinct valid candidates | Candidate sequence and staged optimum | Persist the active optimum identifier with each candidate | Distinguishes productive route refinement from merely different proposals. |
+| Repair-target accuracy | Clarification actions aimed at a genuinely corrupted critical slot divided by all clarification actions | Raw/normalized ASR changes, slot frame, clarification target | Stable target-slot key on each clarification action | Separates appropriate repair from unnecessary misunderstanding loops. |
+| Memory disagreement area | Sum over turns of mismatching task-critical slots between Agent A and Agent B | Existing perspective-specific memory snapshots | Normalize slot names before export | Captures both severity and duration of state divergence instead of one final agreement value. |
+| Error-propagation depth | Number of downstream phase boundaries affected before the originating error is corrected | Phase trace, first-deviation phase, correction events | Shared trace/error identifier across phase records | Localizes whether an ASR/NLU error is contained or contaminates dialogue and task decisions. |
+| Constraint-transition explanation coverage | Changed route attributes correctly mentioned by Agent B divided by machine-computed changed attributes between staged optima | Selected/previous optimum, Agent B utterance, parsed facts | Store the route-delta object shown by the configuration GUI | Tests whether Agent B communicates why a new constraint changes the route. |
+| Useful information per Agent B second | New grounded route facts plus resolved critical slots divided by Agent B generation and speech seconds | Grounded facts, resolved slots, NLG/TTS timing | None | Combines actionability with latency without rewarding longer answers. |
+
+Recommended implementation order: Pareto-domination rate, constraint
+negotiation lag, optimality improvement per revision, and repair-target
+accuracy. They need no audio aligner, human rating, or new model dependency.
+
 ## Proposals By Phase
 
 | Phase | Proposed metric | Calculation and interpretation | Required data | Best runtime capture |

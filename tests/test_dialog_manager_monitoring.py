@@ -397,7 +397,10 @@ class DialogManagerMonitoringTests(unittest.TestCase):
             self.assertIn("[Execution]", result.metrics_text)
             self.assertIn("Selected route:", result.metrics_text)
             self.assertIn("Optimal route:", result.metrics_text)
-            self.assertRegex(result.metrics_text, r"Selected route: .+--(?:metro|tram|bus) [MTB]\d+")
+            self.assertRegex(
+                result.metrics_text,
+                r"Selected route: .+\([MTB]\d+(?: : [^)]+)?\) ->",
+            )
             self.assertIn("Task success:", result.metrics_text)
             self.assertIn("Constraints satisfied:", result.metrics_text)
             self.assertLessEqual(len(result.metrics_text.splitlines()), 30)

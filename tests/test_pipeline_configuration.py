@@ -5,6 +5,7 @@ from coop_navigation_sds.Configuration.pipeline import (
     PIPELINE_PHASES,
     metric_dependency_report,
     optimal_route_preview,
+    route_layer_comparison,
 )
 from coop_navigation_sds.EvaluationMetrics.metrics import apply_paired_run_metrics
 from coop_navigation_sds.app import default_run_config
@@ -42,6 +43,14 @@ def test_pipeline_order_and_optimal_preview():
     )
     constraint_paths = [layer["path_text"] for layer in preview["layers"][2:]]
     assert len(constraint_paths) == len(set(constraint_paths))
+    comparison = route_layer_comparison(preview["layers"], 2)
+    assert comparison["selected"]["layer"] == "constraint_1"
+    assert comparison["previous"]["layer"] == "time"
+    assert comparison["added_edges"]
+    assert comparison["removed_edges"]
+    assert comparison["duration_delta_min"] == (
+        preview["layers"][2]["duration_min"] - preview["layers"][1]["duration_min"]
+    )
 
 
 def test_gui_assigns_each_metric_family_to_exactly_one_program_phase():

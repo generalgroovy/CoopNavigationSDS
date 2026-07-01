@@ -26,6 +26,7 @@ from coop_navigation_sds.Configuration.pipeline import (
     component_status,
     metric_dependency_report,
     optimal_route_preview,
+    route_layer_comparison,
 )
 from coop_navigation_sds.Configuration.experiment import configuration_fingerprint
 from coop_navigation_sds.Configuration.schema import RESULT_SCHEMA_VERSION, TRACE_SCHEMA_VERSION
@@ -53,16 +54,10 @@ GUI_METRIC_FAMILIES = {
     "results": ("metric_validity",),
 }
 
-GUI_PHASE_LAYOUT = {
-    "network_task": (0, 0, 1),
-    "agent_a": (0, 1, 1),
-    "agent_b_nlg": (0, 2, 1),
-    "tts": (0, 3, 1),
-    "asr": (1, 0, 1),
-    "nlu": (1, 1, 1),
-    "dialogue_management": (1, 2, 1),
-    "results": (1, 3, 1),
-}
+GUI_CARD_LAYOUT = (
+    ("network_model", "1. Scenario, Network, and Optimal Routes"),
+    ("dialogue_metrics", "2. Dialogue Pipeline and Metrics"),
+)
 
 
 SETTING_HELP = {
@@ -176,9 +171,19 @@ class StartupConfigDialog:
         self.defaults = defaults
         self.validator = validator
         self.result = None
-        self.root = tk.Tk()
+        try:
+            self.root = tk.Tk()
+        except tk.TclError as exc:
+            raise RuntimeError(
+                "The configuration GUI could not open. On Linux, install the "
+                "python3-tk package and run in a graphical session with DISPLAY or "
+                "WAYLAND_DISPLAY set. Batch execution remains available without Tk."
+            ) from exc
         self.root.title("CoopNavigationSDS Experiment Configuration")
-        self.root.minsize(1180, 760)
+        self.root.minsize(
+            min(1180, max(720, self.root.winfo_screenwidth() - 80)),
+            min(760, max(560, self.root.winfo_screenheight() - 80)),
+        )
         self.persona_detail = tk.StringVar()
         self.dynamic_frames = {}
         self._last_tts_engine = str(defaults["tts_engine"])
@@ -190,13 +195,12 @@ class StartupConfigDialog:
         self.phase_status_widgets = {}
         self.phase_metric_panels = {}
         self.optimal_route_text = tk.StringVar(value="Calculating selected-condition baseline...")
+        self.network_summary_text = tk.StringVar()
+        self.route_layer_var = tk.StringVar()
         self.logging_status_text = tk.StringVar()
         self.results_preview_text = tk.StringVar()
-        self.phase_cards = {}
-        self.phase_card_hosts = {}
-        self.phase_visible = {
-            key: tk.BooleanVar(value=True) for key, _label in COMBINED_GUI_PHASES
-        }
+        self.route_layer_lookup = {}
+        self.card_hosts = {}
         self.network_canvas = None
         self.vars = {
             "test_case_key": tk.StringVar(value=defaults["test_case_key"]),
@@ -286,7 +290,7 @@ class StartupConfigDialog:
         style = ttk.Style(self.root)
         if "clam" in style.theme_names():
             style.theme_use("clam")
-        family = "Segoe UI" if self.root.tk.call("tk", "windowingsystem") == "win32" else "DejaVu Sans"
+        family = self._font_family()
         size = int(self.defaults.get("gui_font_size", 11))
         colors = {
             "background": "#F3F5F7",
@@ -332,14 +336,11 @@ class StartupConfigDialog:
 
         visibility = ttk.Frame(shell)
         visibility.grid(row=0, column=0, sticky="ew", pady=(0, 3))
-        ttk.Label(visibility, text="Visible phases:", style="MetricSummary.TLabel").pack(side="left")
-        for key, title in COMBINED_GUI_PHASES:
-            ttk.Checkbutton(
-                visibility,
-                text=title.split(" and ")[0],
-                variable=self.phase_visible[key],
-                command=lambda phase=key: self._toggle_phase(phase),
-            ).pack(side="left", padx=(6, 0))
+        ttk.Label(
+            visibility,
+            text="Experiment configuration and retrospective metric readiness",
+            style="MetricSummary.TLabel",
+        ).pack(side="left")
         fullscreen_toggle = ttk.Checkbutton(
             visibility,
             text="Fullscreen",
@@ -375,81 +376,92 @@ class StartupConfigDialog:
                     f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0"
                 )
 
-    def _toggle_phase(self, phase_key):
-        card = self.phase_cards.get(phase_key)
-        if card is None:
-            return
-        row = GUI_PHASE_LAYOUT[phase_key][0]
-        pane = self.phase_row_panes[row]
-        present = str(card) in pane.panes()
-        if self.phase_visible[phase_key].get():
-            if not present:
-                phase_order = [
-                    key for key, _title in COMBINED_GUI_PHASES
-                    if GUI_PHASE_LAYOUT[key][0] == row
-                ]
-                position = sum(
-                    self.phase_visible[key].get()
-                    for key in phase_order[:phase_order.index(phase_key)]
-                )
-                if position >= len(pane.panes()):
-                    pane.add(card, weight=1)
-                else:
-                    pane.insert(position, card, weight=1)
-        elif present:
-            pane.forget(card)
+    def _font_family(self):
+        """Choose an installed, readable UI font without assuming an operating system."""
+        available = {name.casefold(): name for name in tkfont.families(self.root)}
+        window_system = str(self.root.tk.call("tk", "windowingsystem")).casefold()
+        preferred = (
+            ("Segoe UI", "Arial", "TkDefaultFont")
+            if window_system == "win32"
+            else ("DejaVu Sans", "Noto Sans", "Liberation Sans", "TkDefaultFont")
+        )
+        for candidate in preferred:
+            if candidate == "TkDefaultFont":
+                return tkfont.nametofont(candidate).actual("family")
+            installed = available.get(candidate.casefold())
+            if installed:
+                return installed
+        return tkfont.nametofont("TkDefaultFont").actual("family")
+
+    @staticmethod
+    def _scroll_wheel(canvas, event):
+        """Normalize Windows, X11, and Wayland mouse-wheel event magnitudes."""
+        delta = int(getattr(event, "delta", 0) or 0)
+        if delta:
+            canvas.yview_scroll(-1 if delta > 0 else 1, "units")
 
     def _build_combined_pipeline(self, parent):
         content = self._phase_grid(parent)
         content.rowconfigure(0, weight=1)
         content.columnconfigure(0, weight=1)
-        vertical = ttk.Panedwindow(content, orient="vertical")
-        vertical.grid(row=0, column=0, sticky="nsew")
-        top = ttk.Panedwindow(vertical, orient="horizontal")
-        bottom = ttk.Panedwindow(vertical, orient="horizontal")
-        vertical.add(top, weight=1)
-        vertical.add(bottom, weight=1)
-        self.phase_row_panes = {0: top, 1: bottom}
-        cards = {
-            key: self._combined_phase_card(
-                self.phase_row_panes[GUI_PHASE_LAYOUT[key][0]],
-                index,
-                key,
-                title,
-            )
-            for index, (key, title) in enumerate(COMBINED_GUI_PHASES)
-        }
-        self.phase_cards = self.phase_card_hosts
+        cards = ttk.Panedwindow(content, orient="horizontal")
+        cards.grid(row=0, column=0, sticky="nsew")
+        self.card_pane = cards
+        model_card = self._scrollable_card(cards, GUI_CARD_LAYOUT[0][0], GUI_CARD_LAYOUT[0][1])
+        dialogue_card = self._scrollable_card(cards, GUI_CARD_LAYOUT[1][0], GUI_CARD_LAYOUT[1][1])
 
-        network = cards["network_task"]
+        network = self._phase_section(model_card, 0, "network_task", "Scenario and Network Model")
         self._combo(network, 2, "Scenario", "test_case_key", self.choices["test_case_keys"])
         self._number(network, 3, "Network seed", "network_seed", 0, 2147483647)
+        ttk.Label(
+            network,
+            textvariable=self.network_summary_text,
+            wraplength=620,
+            justify="left",
+            style="PhaseSummary.TLabel",
+        ).grid(row=4, column=0, columnspan=3, sticky="ew", pady=(3, 2))
         self.network_canvas = tk.Canvas(
             network,
-            height=135,
+            height=360,
             background=self.colors["surface"],
             highlightthickness=1,
             highlightbackground=self.colors["border"],
         )
-        self.network_canvas.grid(row=4, column=0, columnspan=3, sticky="nsew", pady=(4, 2))
+        self.network_canvas.grid(row=5, column=0, columnspan=3, sticky="nsew", pady=(4, 3))
         self.network_canvas.bind("<Configure>", lambda _event: self._draw_network_preview())
-        ttk.Label(network, textvariable=self.optimal_route_text, wraplength=410, justify="left").grid(
-            row=5, column=0, columnspan=3, sticky="ew", pady=(2, 0)
+        route_selection = ttk.Frame(network)
+        route_selection.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(2, 0))
+        route_selection.columnconfigure(1, weight=1)
+        ttk.Label(route_selection, text="Displayed optimum").grid(row=0, column=0, sticky="w", padx=(0, 6))
+        self.route_layer_selector = ttk.Combobox(
+            route_selection,
+            textvariable=self.route_layer_var,
+            state="readonly",
         )
-        network_more = self._collapsible(network, 6, "Constraints")
+        self.route_layer_selector.grid(row=0, column=1, sticky="ew")
+        self.route_layer_selector.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self._update_selected_route_preview(),
+        )
+        ttk.Label(network, textvariable=self.optimal_route_text, wraplength=410, justify="left").grid(
+            row=7, column=0, columnspan=3, sticky="ew", pady=(3, 0)
+        )
+        network_more = self._collapsible(network, 8, "Scenario and constraint controls")
         self._combo(network_more, 0, "Tickets", "agent_a_ticket_modes", ("metro,tram", "metro,bus", "tram,bus"))
         self._number(network_more, 1, "Walking limit", "agent_a_max_walking_min", 0, 30)
         self._number(network_more, 2, "Duration ratio", "acceptable_duration_ratio", 1.0, 3.0, 0.05)
+        self._attach_phase_metrics(network, "network_task", 80)
 
-        caller = cards["agent_a"]
+        caller = self._phase_section(dialogue_card, 0, "agent_a", "Agent A")
         self._combo(caller, 2, "Persona", "persona_key", self.choices["persona_keys"], on_change=self._refresh_persona_detail)
         self._combo(caller, 3, "Implementation", "agent_a_type", self.choices["agent_a_types"], on_change=self._refresh_agent_selection)
         self._combo(caller, 4, "Objective", "agent_a_objective_mode", self.choices["agent_a_objective_modes"])
-        ttk.Label(caller, textvariable=self.persona_detail, wraplength=410, justify="left").grid(
+        ttk.Label(caller, textvariable=self.persona_detail, wraplength=650, justify="left").grid(
             row=5, column=0, columnspan=3, sticky="ew", pady=(5, 0)
         )
+        self._attach_phase_metrics(caller, "agent_a", 80)
 
-        assistant = cards["agent_b_nlg"]
+        assistant = self._phase_section(dialogue_card, 1, "agent_b_nlg", "Agent B and Natural Language Generation")
         self._combo(
             assistant, 2, "Policy", "agent_b_plugin", self.choices["agent_b_plugins"],
             editable=True, on_change=self._refresh_agent_selection,
@@ -469,8 +481,9 @@ class StartupConfigDialog:
         self._entry(model_selection, 1, "Identifier", "model_name")
         self.dynamic_frames["model"] = self._collapsible(assistant, 5, "Implementation settings")
         self.agent_b_model_advanced = self.dynamic_frames["model"].master
+        self._attach_phase_metrics(assistant, "agent_b_nlg", 80)
 
-        tts = cards["tts"]
+        tts = self._phase_section(dialogue_card, 2, "tts", "Audio Persona and Text to Speech")
         self._combo(tts, 2, "Engine", "tts_engine", self.choices["tts_engines"], on_change=self._select_tts_engine)
         self._combo(tts, 3, "Agent A audio persona", "agent_a_audio_persona", self.choices["agent_a_audio_personas"], on_change=self._select_audio_persona)
         self._combo(tts, 4, "Agent B audio persona", "agent_b_audio_persona", self.choices["agent_b_audio_personas"], on_change=self._select_audio_persona)
@@ -480,8 +493,9 @@ class StartupConfigDialog:
         self._check(tts_more, 2, "Real-time turn taking", "speech_realtime_enabled")
         self._number(tts_more, 3, "Utterance limit", "max_utterance_sec", 5, 40, 1)
         self.dynamic_frames["tts"] = self._collapsible(tts, 6, "Implementation settings")
+        self._attach_phase_metrics(tts, "tts", 80)
 
-        asr = cards["asr"]
+        asr = self._phase_section(dialogue_card, 3, "asr", "Automatic Speech Recognition")
         self._combo(asr, 2, "Engine", "asr_engine", self.choices["asr_engines"], on_change=self._select_asr_engine)
         asr_more = self._collapsible(asr, 3, "Recognition controls")
         self._entry(asr_more, 0, "Language", "asr_language")
@@ -489,12 +503,14 @@ class StartupConfigDialog:
         self._number(asr_more, 2, "End pause ms", "asr_end_silence_ms", 500, 6000, 100)
         self._number(asr_more, 3, "Ambiguous pause ms", "asr_ambiguous_end_silence_ms", 1000, 8000, 100)
         self.dynamic_frames["asr"] = self._collapsible(asr, 4, "Implementation settings")
+        self._attach_phase_metrics(asr, "asr", 80)
 
-        nlu = cards["nlu"]
+        nlu = self._phase_section(dialogue_card, 4, "nlu", "Natural Language Understanding")
         self._check(nlu, 2, "Normalize transit terms", "asr_domain_normalization_enabled")
         self._number(nlu, 3, "Normalization similarity", "asr_domain_similarity_threshold", 0.70, 1.0, 0.01)
+        self._attach_phase_metrics(nlu, "nlu", 80)
 
-        dialogue = cards["dialogue_management"]
+        dialogue = self._phase_section(dialogue_card, 5, "dialogue_management", "Dialogue Management")
         self._number(dialogue, 2, "Maximum turns", "num_turns", 1, 100)
         self._number(dialogue, 3, "Constraints", "maximum_progressive_constraints", 0, 6)
         self._number(dialogue, 4, "Routes compared", "minimum_compared_routes", 1, 10)
@@ -504,8 +520,9 @@ class StartupConfigDialog:
         self._number(dialogue_more, 2, "Clarifications", "clarification_max_attempts", 1, 6)
         self._number(dialogue_more, 3, "No progress", "dialogue_stagnation_limit", 1, 6)
         self._check(dialogue_more, 4, "Retain constraints", "require_constraint_retention")
+        self._attach_phase_metrics(dialogue, "dialogue_management", 80)
 
-        results = cards["results"]
+        results = self._phase_section(dialogue_card, 6, "results", "Metrics, Logging, and Results")
         self._entry(results, 2, "Results root", "results_root")
         self._combo(results, 3, "Console view", "console_view", ("compact", "transcript", "debug", "quiet"))
         self._combo(results, 4, "Log level", "log_profile", ("runtime", "startup", "full", "off"))
@@ -516,54 +533,58 @@ class StartupConfigDialog:
         self._check(results_more, 0, "Paired text control", "paired_audio_text_runs")
         self._number(results_more, 1, "Font size", "gui_font_size", 9, 16)
         self._build_logging_controls(results_more, 2)
+        self._attach_phase_metrics(results, "results", 80)
 
-        for key, card in cards.items():
-            self._attach_phase_metrics(card, key, 80)
-
-    def _combined_phase_card(self, parent, index, key, title):
+    def _scrollable_card(self, parent, key, title):
         host = ttk.LabelFrame(
             parent,
-            text=f"{index + 1}. {title}",
+            text=title,
             padding=3,
             style="Pipeline.TLabelframe",
         )
         parent.add(host, weight=1)
         host.rowconfigure(0, weight=1)
         host.columnconfigure(0, weight=1)
-        phase_canvas = tk.Canvas(
+        card_canvas = tk.Canvas(
             host,
             highlightthickness=0,
             background=self.colors["surface"],
         )
-        scrollbar = ttk.Scrollbar(host, orient="vertical", command=phase_canvas.yview)
-        card = ttk.Frame(phase_canvas, padding=(5, 3, 4, 5))
-        card.columnconfigure(1, weight=1)
-        canvas_window = phase_canvas.create_window((0, 0), window=card, anchor="nw")
-        phase_canvas.configure(yscrollcommand=scrollbar.set)
-        phase_canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar = ttk.Scrollbar(host, orient="vertical", command=card_canvas.yview)
+        card = ttk.Frame(card_canvas, padding=(5, 3, 4, 5))
+        card.columnconfigure(0, weight=1)
+        canvas_window = card_canvas.create_window((0, 0), window=card, anchor="nw")
+        card_canvas.configure(yscrollcommand=scrollbar.set)
+        card_canvas.grid(row=0, column=0, sticky="nsew")
         scrollbar.grid(row=0, column=1, sticky="ns")
         card.bind(
             "<Configure>",
-            lambda _event, canvas=phase_canvas: canvas.configure(scrollregion=canvas.bbox("all")),
+            lambda _event, canvas=card_canvas: canvas.configure(scrollregion=canvas.bbox("all")),
         )
-        phase_canvas.bind(
+        card_canvas.bind(
             "<Configure>",
-            lambda event, canvas=phase_canvas, window=canvas_window: canvas.itemconfigure(
+            lambda event, canvas=card_canvas, window=canvas_window: canvas.itemconfigure(
                 window,
                 width=event.width,
             ),
         )
-        phase_canvas.bind(
+        card_canvas.bind(
             "<MouseWheel>",
-            lambda event, canvas=phase_canvas: canvas.yview_scroll(int(-event.delta / 120), "units"),
+            lambda event, canvas=card_canvas: self._scroll_wheel(canvas, event),
         )
-        phase_canvas.bind("<Button-4>", lambda _event, canvas=phase_canvas: canvas.yview_scroll(-1, "units"))
-        phase_canvas.bind("<Button-5>", lambda _event, canvas=phase_canvas: canvas.yview_scroll(1, "units"))
-        self.phase_card_hosts[key] = host
+        card_canvas.bind("<Button-4>", lambda _event, canvas=card_canvas: canvas.yview_scroll(-1, "units"))
+        card_canvas.bind("<Button-5>", lambda _event, canvas=card_canvas: canvas.yview_scroll(1, "units"))
+        self.card_hosts[key] = host
+        return card
+
+    def _phase_section(self, parent, row, key, title):
+        card = ttk.LabelFrame(parent, text=title, padding=(5, 3))
+        card.grid(row=row, column=0, sticky="ew", pady=(0, 5))
+        card.columnconfigure(1, weight=1)
         status = ttk.Label(
             card,
             textvariable=self.pipeline_summary_vars[key],
-            wraplength=520,
+            wraplength=650,
             justify="left",
             style="PhaseWarning.TLabel",
         )
@@ -615,7 +636,7 @@ class StartupConfigDialog:
         scrollbar.grid(row=0, column=1, sticky="ns")
         content.bind("<Configure>", lambda _event: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.bind("<Configure>", lambda event: canvas.itemconfigure(window, width=event.width))
-        canvas.bind("<MouseWheel>", lambda event: canvas.yview_scroll(int(-event.delta / 120), "units"))
+        canvas.bind("<MouseWheel>", lambda event: self._scroll_wheel(canvas, event))
         canvas.bind("<Button-4>", lambda _event: canvas.yview_scroll(-1, "units"))
         canvas.bind("<Button-5>", lambda _event: canvas.yview_scroll(1, "units"))
 
@@ -755,8 +776,7 @@ class StartupConfigDialog:
             )
         preview = optimal_route_preview(config)
         self._latest_network_preview = preview
-        self.optimal_route_text.set(preview["summary"])
-        self._draw_network_preview()
+        self._update_route_layer_options(config)
         fingerprint = configuration_fingerprint(config)[:12]
         calculable_count = sum(item["available"] for item in report["metrics"].values())
         self.results_preview_text.set(
@@ -788,6 +808,80 @@ class StartupConfigDialog:
             self.dependency_tree.grid_remove()
             self.dependency_scrollbar.grid_remove()
 
+    def _update_route_layer_options(self, config=None):
+        preview = getattr(self, "_latest_network_preview", {}) or {}
+        layers = list(preview.get("layers", ()))
+        self.route_layer_lookup = {
+            f"{index}. {layer['label']}": (index - 1, layer)
+            for index, layer in enumerate(layers, start=1)
+        }
+        labels = tuple(self.route_layer_lookup)
+        self.route_layer_selector.configure(values=labels)
+        if labels and self.route_layer_var.get() not in self.route_layer_lookup:
+            self.route_layer_var.set(labels[-1])
+        if not labels:
+            self.route_layer_var.set("")
+
+        try:
+            from coop_navigation_sds.TransportNetwork.network import (
+                LINES,
+                STATIONS,
+                capacity_status,
+                line_fullness_percent,
+            )
+            from coop_navigation_sds.TransportNetwork.routes import fmt_time
+            from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
+
+            snapshot = config or self._current_config_snapshot()
+            case = get_test_case(snapshot["test_case_key"]).with_persona(snapshot["persona_key"])
+            scenario = case.scenario
+            public_lines = [name for name, line in LINES.items() if line.get("kind") != "walking"]
+            fullness = {
+                capacity_status(line_fullness_percent(name, scenario["start_time_min"]))
+                for name in public_lines
+            }
+            self.network_summary_text.set(
+                f"{scenario['start_station']} to {scenario['destination_station']} at "
+                f"{fmt_time(scenario['start_time_min'])} | {len(STATIONS)} stations | "
+                f"{len(public_lines)} public lines | fullness states: {', '.join(sorted(fullness))}"
+            )
+        except Exception as exc:
+            self.network_summary_text.set(f"Network summary unavailable: {exc}")
+        self._update_selected_route_preview()
+
+    def _update_selected_route_preview(self):
+        selected = self.route_layer_lookup.get(self.route_layer_var.get())
+        if selected is None:
+            preview = getattr(self, "_latest_network_preview", {}) or {}
+            self.optimal_route_text.set(preview.get("summary", "No route preview available."))
+            self._draw_network_preview()
+            return
+        index, layer = selected
+        layers = list((getattr(self, "_latest_network_preview", {}) or {}).get("layers", ()))
+        previous = layers[index - 1] if index > 0 else None
+        if not layer.get("available"):
+            self.optimal_route_text.set(f"{self.route_layer_var.get()}: unavailable")
+            self._draw_network_preview()
+            return
+
+        change_count = int(layer.get("line_change_count", 0))
+        lines = [
+            f"{self.route_layer_var.get()}:",
+            f"{layer['duration_min']} min, {change_count} {'change' if change_count == 1 else 'changes'}",
+            layer["path_text"],
+        ]
+        if previous and previous.get("available"):
+            comparison = route_layer_comparison(layers, index)
+            lines.append(
+                f"Compared with {index}. {previous['label']}: "
+                f"{comparison['duration_delta_min']:+d} min, "
+                f"{comparison['line_change_delta']:+d} line changes, "
+                f"{len(comparison['added_edges'])} added and "
+                f"{len(comparison['removed_edges'])} removed segments."
+            )
+        self.optimal_route_text.set("\n".join(lines))
+        self._draw_network_preview()
+
     def _draw_network_preview(self):
         canvas = self.network_canvas
         if canvas is None or not canvas.winfo_exists():
@@ -806,34 +900,80 @@ class StartupConfigDialog:
         max_x = max(x for x, _y in coordinates)
         min_y = min(y for _x, y in coordinates)
         max_y = max(y for _x, y in coordinates)
-        margin = 10
+        horizontal_margin = 28
+        top_margin = 48
+        bottom_margin = 28
         def point(station):
             x, y = STATION_POS[station]
-            px = margin + (x - min_x) / max(1, max_x - min_x) * (width - 2 * margin)
-            py = margin + (y - min_y) / max(1, max_y - min_y) * (height - 2 * margin)
+            px = horizontal_margin + (x - min_x) / max(1, max_x - min_x) * (
+                width - 2 * horizontal_margin
+            )
+            py = top_margin + (y - min_y) / max(1, max_y - min_y) * (
+                height - top_margin - bottom_margin
+            )
             return px, py
 
-        palette = ("#315E86", "#176B5B", "#A06120", "#7A4E8A", "#697684")
-        for index, (_line_name, line) in enumerate(sorted(LINES.items())):
+        for _line_name, line in sorted(LINES.items()):
             stops = line.get("stops", ())
-            color = palette[index % len(palette)]
             for start, end in zip(stops, stops[1:]):
-                canvas.create_line(*point(start), *point(end), fill=color, width=1)
-        highlighted = set()
-        preview = getattr(self, "_latest_network_preview", {}) or {}
-        for layer in preview.get("layers", ()):
-            path_text = str(layer.get("path_text") or "")
-            highlighted.update(station for station in STATION_POS if station in path_text)
+                canvas.create_line(*point(start), *point(end), fill="#C8D0D8", width=1)
+
+        selected_entry = self.route_layer_lookup.get(self.route_layer_var.get())
+        selected_index, selected_layer = selected_entry if selected_entry else (None, None)
+        layers = list((getattr(self, "_latest_network_preview", {}) or {}).get("layers", ()))
+        comparison = route_layer_comparison(layers, selected_index) if selected_entry else None
+        shared_edges = comparison["retained_edges"] if comparison else frozenset()
+        added_edges = comparison["added_edges"] if comparison else frozenset()
+        removed_edges = comparison["removed_edges"] if comparison else frozenset()
+        selected_edges = shared_edges | added_edges
+        previous_edges = shared_edges | removed_edges
+
+        for start, end, _service in removed_edges:
+            canvas.create_line(
+                *point(start), *point(end), fill="#C46A2B", width=4, dash=(6, 4)
+            )
+        for start, end, _service in shared_edges:
+            canvas.create_line(*point(start), *point(end), fill="#246B8E", width=4)
+        for start, end, _service in added_edges:
+            canvas.create_line(*point(start), *point(end), fill="#17845E", width=5)
+
+        canvas.create_line(12, 12, 36, 12, fill="#246B8E", width=4)
+        canvas.create_text(42, 12, text="retained", anchor="w", fill="#202A35")
+        canvas.create_line(110, 12, 134, 12, fill="#17845E", width=5)
+        canvas.create_text(140, 12, text="added", anchor="w", fill="#202A35")
+        canvas.create_line(204, 12, 228, 12, fill="#C46A2B", width=4, dash=(6, 4))
+        canvas.create_text(234, 12, text="removed", anchor="w", fill="#202A35")
+
+        selected_stations = {
+            station
+            for edge in selected_edges
+            for station in edge[:2]
+        }
+        previous_stations = {
+            station
+            for edge in previous_edges
+            for station in edge[:2]
+        }
         for station in STATION_POS:
             x, y = point(station)
-            active = station in highlighted
-            radius = 3 if active else 2
+            active = station in selected_stations
+            removed = station in previous_stations and not active
+            radius = 5 if active or removed else 2
             canvas.create_oval(
                 x - radius, y - radius, x + radius, y + radius,
-                fill="#C33C35" if active else "#FFFFFF",
+                fill="#17845E" if active else ("#C46A2B" if removed else "#FFFFFF"),
                 outline="#202A35",
                 width=1,
             )
+            if active or removed:
+                canvas.create_text(
+                    x + 7,
+                    y - 7,
+                    text=station,
+                    anchor="sw",
+                    fill="#202A35",
+                    font=(tkfont.nametofont("TkDefaultFont").actual("family"), 8),
+                )
 
     def _refresh_dependency_tree(self, report):
         tree = self.dependency_tree

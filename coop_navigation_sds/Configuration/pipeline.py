@@ -475,3 +475,43 @@ def optimal_route_preview(config):
         }
     except Exception as exc:
         return {"available": False, "summary": f"Preview unavailable: {exc}"}
+
+
+def route_layer_comparison(layers, selected_index):
+    """Return edge and cost differences between one optimum and its predecessor."""
+    layers = list(layers or ())
+    if not 0 <= int(selected_index) < len(layers):
+        return None
+    selected_index = int(selected_index)
+    selected = layers[selected_index]
+    previous = layers[selected_index - 1] if selected_index > 0 else None
+
+    def edges(layer):
+        return frozenset(
+            (
+                step.get("from"),
+                step.get("to"),
+                step.get("line") or step.get("mode") or "walking",
+            )
+            for step in (layer or {}).get("steps", ())
+            if step.get("from") and step.get("to")
+        )
+
+    selected_edges = edges(selected)
+    previous_edges = edges(previous)
+    retained = selected_edges if previous is None else selected_edges & previous_edges
+    return {
+        "selected": selected,
+        "previous": previous,
+        "retained_edges": retained,
+        "added_edges": frozenset() if previous is None else selected_edges - previous_edges,
+        "removed_edges": previous_edges - selected_edges,
+        "duration_delta_min": (
+            selected.get("duration_min", 0) - previous.get("duration_min", 0)
+            if previous else None
+        ),
+        "line_change_delta": (
+            selected.get("line_change_count", 0) - previous.get("line_change_count", 0)
+            if previous else None
+        ),
+    }

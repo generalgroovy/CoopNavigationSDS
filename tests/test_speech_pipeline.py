@@ -170,6 +170,8 @@ class SpeechPipelineTests(unittest.TestCase):
             def from_transducer(cls, **kwargs):
                 self.assertTrue(kwargs["encoder"].endswith("encoder.onnx"))
                 self.assertTrue(kwargs["tokens"].endswith("tokens.txt"))
+                self.assertEqual(kwargs["decoding_method"], "modified_beam_search")
+                self.assertEqual(kwargs["max_active_paths"], 6)
                 return recognizer
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -179,11 +181,12 @@ class SpeechPipelineTests(unittest.TestCase):
             with patch.dict(sys.modules, {
                 "sherpa_onnx": SimpleNamespace(OfflineRecognizer=FakeOfflineRecognizer),
             }):
-                engine = SherpaOnnxSpeechToText(str(root))
+                engine = SherpaOnnxSpeechToText(str(root), search_width=6)
                 loaded = engine._load_model()
 
         self.assertIs(loaded, recognizer)
         self.assertEqual(engine._model_type, "transducer")
+        self.assertTrue(engine._search_width_applied)
 
     def test_chattts_loads_prepared_local_weights_without_compilation(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -426,6 +429,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 model_name=str(model_path),
                 executable=str(executable),
                 language="en-US",
+                search_width=11,
             )
             signal = SpeechSignal("Agent A", "", audio={"path": str(wav_path)}, diagnostics={})
 
@@ -438,6 +442,7 @@ class SpeechPipelineTests(unittest.TestCase):
                 transcript = engine.transcribe(signal)
             self.assertEqual(transcript, "Need Bravo to Harbor.")
             self.assertEqual(Path(run.call_args.args[0][0]), executable.resolve())
+            self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--beam-size") + 1], "11")
 
     def test_whisper_cpp_resolves_manifest_registered_runtime(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -481,13 +486,16 @@ class SpeechPipelineTests(unittest.TestCase):
                 def SetWords(self, _enabled):
                     pass
 
+                def SetMaxAlternatives(self, width):
+                    self.search_width = width
+
                 def AcceptWaveform(self, _data):
                     return False
 
                 def FinalResult(self):
                     return '{"text": "need bravo"}'
 
-            engine = VoskSpeechToText(model_name="test-model")
+            engine = VoskSpeechToText(model_name="test-model", search_width=6)
             signal = SpeechSignal("Agent A", "", audio={"path": str(wav_path)}, diagnostics={})
             with (
                 patch.object(engine, "_load_model", return_value=object()),
@@ -496,6 +504,8 @@ class SpeechPipelineTests(unittest.TestCase):
                 transcript = engine.transcribe(signal)
             self.assertEqual(transcript, "need bravo")
             self.assertEqual(signal.diagnostics["asr_engine"], "vosk-asr")
+            self.assertEqual(signal.diagnostics["asr_search_width"], 6)
+            self.assertTrue(signal.diagnostics["asr_search_width_applied"])
 
     def test_parakeet_and_qwen3_asr_record_model_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmpdir:

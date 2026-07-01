@@ -247,9 +247,11 @@ Collect one interactive run configuration.
 - `StartupConfigDialog.__init__(self, choices, defaults, validator=None)`: Internal class operation.
 - `StartupConfigDialog._build(self)`: Internal class operation.
 - `StartupConfigDialog._apply_fullscreen(self)`: Internal class operation.
-- `StartupConfigDialog._toggle_phase(self, phase_key)`: Internal class operation.
+- `StartupConfigDialog._font_family(self)`: Choose an installed, readable UI font without assuming an operating system.
+- `StartupConfigDialog._scroll_wheel(canvas, event)`: Normalize Windows, X11, and Wayland mouse-wheel event magnitudes.
 - `StartupConfigDialog._build_combined_pipeline(self, parent)`: Internal class operation.
-- `StartupConfigDialog._combined_phase_card(self, parent, index, key, title)`: Internal class operation.
+- `StartupConfigDialog._scrollable_card(self, parent, key, title)`: Internal class operation.
+- `StartupConfigDialog._phase_section(self, parent, row, key, title)`: Internal class operation.
 - `StartupConfigDialog._attach_phase_metrics(self, card, phase_key, row)`: Internal class operation.
 - `StartupConfigDialog._expand_phase_metrics(self, host, phase_key)`: Internal class operation.
 - `StartupConfigDialog._collapse_phase_metrics(self, phase_key)`: Internal class operation.
@@ -259,6 +261,8 @@ Collect one interactive run configuration.
 - `StartupConfigDialog._schedule_pipeline_refresh(self, *_args)`: Internal class operation.
 - `StartupConfigDialog._current_config_snapshot(self)`: Internal class operation.
 - `StartupConfigDialog._refresh_pipeline_overview(self)`: Internal class operation.
+- `StartupConfigDialog._update_route_layer_options(self, config=None)`: Internal class operation.
+- `StartupConfigDialog._update_selected_route_preview(self)`: Internal class operation.
 - `StartupConfigDialog._draw_network_preview(self)`: Internal class operation.
 - `StartupConfigDialog._refresh_dependency_tree(self, report)`: Internal class operation.
 - `StartupConfigDialog._help(self, widget, key, text=None)`: Internal class operation.
@@ -307,6 +311,10 @@ Return arbitrary condition parameters from value lists and ranges.
 ### Function `job_parameter_profiles(job)`
 
 Return linked named treatments without forming a parameter cross product.
+
+### Function `job_linked_profiles(job)`
+
+Return named linked factors whose fields move together as one treatment.
 
 ## `coop_navigation_sds/Configuration/metrics.py`
 
@@ -397,6 +405,10 @@ Return offline availability without importing or downloading models.
 ### Function `optimal_route_preview(config)`
 
 Calculate a concise selected-condition baseline for the startup GUI.
+
+### Function `route_layer_comparison(layers, selected_index)`
+
+Return edge and cost differences between one optimum and its predecessor.
 
 ## `coop_navigation_sds/Configuration/run_identity.py`
 
@@ -873,15 +885,16 @@ Internal module operation.
 
 Offline Vosk recognizer for mono PCM WAV artifacts.
 
-- `VoskSpeechToText.__init__(self, model_name='', language='en-US', model_cache_dir='.speech-providers/models/vosk')`: Internal class operation.
+- `VoskSpeechToText.__init__(self, model_name='', language='en-US', search_width=1, model_cache_dir='.speech-providers/models/vosk')`: Internal class operation.
 - `VoskSpeechToText._load_model(self)`: Internal class operation.
 - `VoskSpeechToText.transcribe(self, signal: SpeechSignal)`: Internal class operation.
+- `VoskSpeechToText._result_text(payload)`: Read Vosk's ordinary or N-best result structure.
 
 ### Class `SherpaOnnxSpeechToText`
 
 Offline sherpa-onnx adapter with model-directory auto-detection.
 
-- `SherpaOnnxSpeechToText.__init__(self, model_name='', language='en-US')`: Internal class operation.
+- `SherpaOnnxSpeechToText.__init__(self, model_name='', language='en-US', search_width=1)`: Internal class operation.
 - `SherpaOnnxSpeechToText._first(root, patterns)`: Internal class operation.
 - `SherpaOnnxSpeechToText._load_model(self)`: Internal class operation.
 - `SherpaOnnxSpeechToText.transcribe(self, signal: SpeechSignal)`: Internal class operation.
@@ -891,7 +904,7 @@ Offline sherpa-onnx adapter with model-directory auto-detection.
 
 Portable whisper.cpp adapter using the official whisper-cli executable.
 
-- `WhisperCppSpeechToText.__init__(self, model_name='', executable='', language='en', vad_model='', timeout_sec=60.0, provider_environment_dir='.speech-providers')`: Internal class operation.
+- `WhisperCppSpeechToText.__init__(self, model_name='', executable='', language='en', vad_model='', search_width=1, timeout_sec=60.0, provider_environment_dir='.speech-providers')`: Internal class operation.
 - `WhisperCppSpeechToText.transcribe(self, signal: SpeechSignal)`: Internal class operation.
 
 ### Class `ParakeetSpeechToText`
@@ -1306,7 +1319,15 @@ Batch controller for running one condition or a full condition grid.
 - `ExperimentRunner._model_adapter_for(self, condition: ExperimentCondition)`: model adapter for method for this module's MVC responsibility.
 - `ExperimentRunner.run_grid(self, conditions, collect_results=True)`: Run grid method for this module's MVC responsibility.
 
-### Function `build_condition_grid(test_case_keys=None, persona_keys=None, speech_pattern_keys=None, model_param_keys=None, objective_modes=None, agent_a_audio_persona_keys=None, agent_b_audio_persona_keys=None, tts_engine_keys=None, asr_engine_keys=None, agent_b_model_keys=None, iterations=1, parameter_grid=None, parameter_profiles=None, pair_audio_with_text=False)`
+### Function `pairwise_factor_rows(factors)`
+
+Return deterministic strength-two rows covering every pair of factor levels.
+
+### Function `condition_coverage_report(conditions)`
+
+Summarize value and pair coverage from expanded audio conditions.
+
+### Function `build_condition_grid(test_case_keys=None, persona_keys=None, speech_pattern_keys=None, model_param_keys=None, objective_modes=None, agent_a_audio_persona_keys=None, agent_b_audio_persona_keys=None, tts_engine_keys=None, asr_engine_keys=None, agent_b_model_keys=None, iterations=1, parameter_grid=None, parameter_profiles=None, linked_profiles=None, coverage_strategy='full_factorial', pair_audio_with_text=False)`
 
 Build condition grid function for this module's MVC responsibility.
 
@@ -2101,6 +2122,62 @@ Return validation checks for research-grade protocol completeness.
 ### Function `write_experiment_manifest(conditions, output_dir, *, num_turns, speech_engine, speech_scope, agent_b_plugin, tts_engine=None, asr_engine=None, metrics_filename='metrics.xlsx', configuration=None)`
 
 Write a scientific-method manifest describing the experiment design.
+
+## `coop_navigation_sds/ResultsAndArtifacts/comparison.py`
+
+Combine completed experiment runs into portable comparison tables and charts.
+
+### Function `discover_run_directories(paths)`
+
+Return unique standard run directories found at or below ``paths``.
+
+### Function `_read_jsonl(path)`
+
+Internal module operation.
+
+### Function `_read_csv(path)`
+
+Internal module operation.
+
+### Function `_write_csv(path, rows)`
+
+Internal module operation.
+
+### Function `_number(value)`
+
+Internal module operation.
+
+### Function `load_comparison_data(run_directories)`
+
+Load and join canonical condition and long-form metric records.
+
+### Function `summarize_metrics(metrics)`
+
+Aggregate each numeric metric by run and experimental component tuple.
+
+### Function `calculate_run_deltas(summaries)`
+
+Calculate pairwise mean differences for matching metrics and run types.
+
+### Function `_selected_chart_rows(summaries, limit=12)`
+
+Internal module operation.
+
+### Function `_bar_svg(rows)`
+
+Internal module operation.
+
+### Function `write_html_report(path, run_directories, conditions, summaries, deltas)`
+
+Write a dependency-free HTML report with inline SVG comparisons.
+
+### Function `compare_runs(inputs, output_directory)`
+
+Build a complete comparison dataset and return its artifact paths.
+
+### Function `main(argv=None)`
+
+Internal module operation.
 
 ## `coop_navigation_sds/ResultsAndArtifacts/logging.py`
 

@@ -8,6 +8,9 @@ from coop_navigation_sds.Configuration.schema import JOB_SCHEMA_VERSION
 from coop_navigation_sds.Configuration.model_matrix import models_for_size_treatments
 
 
+COVERAGE_STRATEGIES = ("full_factorial", "pairwise")
+
+
 def load_experiment_job(path, _seen=None):
     """Load and minimally validate a JSON ``.job`` experiment definition."""
     if not path:
@@ -34,6 +37,7 @@ def load_experiment_job(path, _seen=None):
     raw_grid = document.get("grid", {})
     raw_parameter_values = document.get("parameter_values", {})
     raw_parameter_ranges = document.get("parameter_ranges", {})
+    raw_linked_profiles = document.get("linked_profiles", {})
     if not all(
         isinstance(value, dict)
         for value in (
@@ -41,11 +45,12 @@ def load_experiment_job(path, _seen=None):
             raw_grid,
             raw_parameter_values,
             raw_parameter_ranges,
+            raw_linked_profiles,
         )
     ):
         raise ValueError(
             "Experiment job 'config', 'grid', 'parameter_values', and "
-            "'parameter_ranges' values must be JSON objects."
+            "'parameter_ranges', and 'linked_profiles' values must be JSON objects."
         )
     config = {**inherited.get("config", {}), **raw_config}
     grid = {**inherited.get("grid", {}), **raw_grid}
@@ -83,6 +88,36 @@ def load_experiment_job(path, _seen=None):
         raise ValueError("Every parameter profile requires a non-empty 'profile_key'.")
     if len(profile_keys) != len(set(profile_keys)):
         raise ValueError("Parameter profile keys must be unique.")
+    linked_profiles = {
+        **inherited.get("linked_profiles", {}),
+        **raw_linked_profiles,
+    }
+    for group, profiles in linked_profiles.items():
+        if not isinstance(profiles, list) or not profiles or not all(
+            isinstance(profile, dict) for profile in profiles
+        ):
+            raise ValueError(
+                f"Linked profile group '{group}' must be a non-empty list of JSON objects."
+            )
+        key_name = f"{group}_profile_key"
+        keys = [str(profile.get(key_name, "")).strip() for profile in profiles]
+        if any(not key for key in keys):
+            raise ValueError(
+                f"Every linked profile in group '{group}' requires '{key_name}'."
+            )
+        if len(keys) != len(set(keys)):
+            raise ValueError(f"Linked profile keys in group '{group}' must be unique.")
+    coverage_strategy = str(
+        document.get(
+            "coverage_strategy",
+            inherited.get("coverage_strategy", "full_factorial"),
+        )
+    ).strip().lower()
+    if coverage_strategy not in COVERAGE_STRATEGIES:
+        raise ValueError(
+            f"Unsupported coverage strategy '{coverage_strategy}'. "
+            f"Use one of: {', '.join(COVERAGE_STRATEGIES)}."
+        )
     return {
         "schema_version": version,
         "name": str(document.get("name", inherited.get("name", job_path.stem))),
@@ -92,6 +127,11 @@ def load_experiment_job(path, _seen=None):
         "parameter_values": dict(parameter_values),
         "parameter_ranges": dict(parameter_ranges),
         "parameter_profiles": [dict(profile) for profile in parameter_profiles],
+        "linked_profiles": {
+            str(group): [dict(profile) for profile in profiles]
+            for group, profiles in linked_profiles.items()
+        },
+        "coverage_strategy": coverage_strategy,
         "iterations": max(1, int(document.get("iterations", inherited.get("iterations", 1)))),
         "source": str(job_path),
     }
@@ -141,3 +181,11 @@ def job_parameter_profiles(job):
     """Return linked named treatments without forming a parameter cross product."""
     profiles = list(job.get("parameter_profiles") or [])
     return profiles or [{"profile_key": "default"}]
+
+
+def job_linked_profiles(job):
+    """Return named linked factors whose fields move together as one treatment."""
+    return {
+        str(group): [dict(profile) for profile in profiles]
+        for group, profiles in (job.get("linked_profiles") or {}).items()
+    }

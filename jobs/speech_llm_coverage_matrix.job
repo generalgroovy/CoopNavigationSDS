@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "name": "speech_llm_coverage_matrix",
+  "description": "Canonical OS-neutral strength-two matrix for speech providers, recognition search, Agent B models, personas, and route tasks. Platform, Agent A, and Agent B size jobs inherit this design and override only their declared treatment.",
+  "coverage_strategy": "pairwise",
+  "iterations": 1,
+  "config": {
+    "agent_a_type": "tinyllama",
+    "agent_b_plugin": "llm",
+    "model_provider": "ollama",
+    "model_name": "llama3.2:1b",
+    "model_base_url": "http://127.0.0.1:11435/api",
+    "model_timeout_sec": 180,
+    "num_turns": 20,
+    "maximum_progressive_constraints": 3,
+    "minimum_compared_routes": 2,
+    "paired_audio_text_runs": true,
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "log_profile": "full"
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter"],
+    "agent_a_audio_personas": [
+      "high_clarity_caller", "neutral_caller", "hurried_caller",
+      "hesitant_caller", "soft_spoken_caller", "deliberate_caller",
+      "degraded_caller", "barely_understandable_caller"
+    ],
+    "agent_b_audio_personas": [
+      "clear_operator", "high_clarity_operator", "brisk_operator",
+      "reassuring_operator", "deliberate_operator", "degraded_operator",
+      "barely_understandable_operator"
+    ],
+    "speech_patterns": [
+      "clean", "mostly_clean", "hesitant", "long_pauses",
+      "stutter_light", "stutter_heavy", "filler_words", "compressed",
+      "noisy_station", "clipped_words", "misheard_station"
+    ],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"],
+    "tts_engines": ["chattts", "piper", "espeak_ng", "coqui"],
+    "asr_engines": ["faster_whisper", "vosk", "whisper_cpp", "sherpa_onnx"],
+    "agent_b_model_tiers": ["small", "medium", "large"]
+  },
+  "parameter_values": {
+    "matrix_family": ["speech_llm_coverage_v1"],
+    "experiment_platform": ["current"]
+  },
+  "linked_profiles": {
+    "task": [
+      {"task_profile_key": "morning_focused", "test_case_key": "morning_peak_cross_city", "persona_key": "focused_commuter"},
+      {"task_profile_key": "midday_distracted", "test_case_key": "midday_transfer", "persona_key": "distracted_multitasker"},
+      {"task_profile_key": "late_verbose", "test_case_key": "late_event", "persona_key": "verbose_planner"},
+      {"task_profile_key": "midday_hesitant", "test_case_key": "midday_transfer", "persona_key": "hesitant_speaker"},
+      {"task_profile_key": "late_adversarial", "test_case_key": "late_event", "persona_key": "adversarial_tester"},
+      {"task_profile_key": "morning_non_native", "test_case_key": "morning_peak_cross_city", "persona_key": "non_native_speaker"},
+      {"task_profile_key": "airport_frustrated", "test_case_key": "airport_connection", "persona_key": "frustrated_user"},
+      {"task_profile_key": "crowded_crowd_averse", "test_case_key": "crowded_event_exit", "persona_key": "crowd_averse_rider"},
+      {"task_profile_key": "airport_delay_sensitive", "test_case_key": "airport_connection", "persona_key": "delay_sensitive_traveler"},
+      {"task_profile_key": "hospital_accessibility", "test_case_key": "hospital_appointment", "persona_key": "accessibility_rider"},
+      {"task_profile_key": "errands_multi_stop", "test_case_key": "multi_destination_errands", "persona_key": "multi_stop_errand_runner"},
+      {"task_profile_key": "late_budget", "test_case_key": "late_event", "persona_key": "budget_simplifier"},
+      {"task_profile_key": "evening_low_effort", "test_case_key": "evening_outbound", "persona_key": "low_effort_traveler"},
+      {"task_profile_key": "crowded_transfer_confident", "test_case_key": "crowded_event_exit", "persona_key": "transfer_confident_traveler"},
+      {"task_profile_key": "evening_risk_averse", "test_case_key": "evening_outbound", "persona_key": "risk_averse_novice"}
+    ],
+    "recognition": [
+      {
+        "recognition_profile_key": "search_width_1", "asr_beam_size": 1,
+        "asr_compute_type": "int8", "asr_end_silence_ms": 2500,
+        "asr_ambiguous_end_silence_ms": 4500
+      },
+      {
+        "recognition_profile_key": "search_width_6", "asr_beam_size": 6,
+        "asr_compute_type": "int8", "asr_end_silence_ms": 2500,
+        "asr_ambiguous_end_silence_ms": 4500
+      },
+      {
+        "recognition_profile_key": "search_width_11", "asr_beam_size": 11,
+        "asr_compute_type": "int8", "asr_end_silence_ms": 2500,
+        "asr_ambiguous_end_silence_ms": 4500
+      },
+      {
+        "recognition_profile_key": "search_width_16", "asr_beam_size": 16,
+        "asr_compute_type": "int8", "asr_end_silence_ms": 2500,
+        "asr_ambiguous_end_silence_ms": 4500
+      }
+    ]
+  }
+}

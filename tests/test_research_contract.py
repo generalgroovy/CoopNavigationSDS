@@ -186,6 +186,21 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
             "resolved_scenario": scenario,
             "pair_id": "pair-schema",
             "run_type": "text_only",
+            "agent_a_type": "tinyllama",
+            "agent_a_audio_persona": "neutral_caller",
+            "agent_b_audio_persona": "clear_operator",
+            "agent_b_model": "llama3.2:1b",
+            "model_param_key": "greedy",
+            "objective_mode": "shortest_valid_route_with_constraints",
+            "iteration": 0,
+            "tts_engine": "piper",
+            "asr_engine": "faster_whisper",
+            "parameter_values": {
+                "agent_b_llm_size": "small",
+                "asr_beam_size": 6,
+                "matrix_family": "speech_llm_coverage_v1",
+                "experiment_platform": "linux",
+            },
         },
     )
 
@@ -223,6 +238,9 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
         batch_json = json.loads(batch_retrospective.read_text(encoding="utf-8"))
         single_summary_json = json.loads(single_summary["summary"].read_text(encoding="utf-8"))
         batch_summary_json = json.loads(batch_summary["summary"].read_text(encoding="utf-8"))
+        condition_row = json.loads(
+            Path(batch_summary["conditions"]).read_text(encoding="utf-8").splitlines()[0]
+        )
 
     single_wide_row = json.loads(single_wide)
     batch_wide_row = json.loads(batch_wide)
@@ -239,6 +257,13 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
     assert single_json["conditions"][0]["condition_id"] == batch_json["conditions"][0]["condition_id"] == "schema_check"
     assert set(single_summary_json) == set(batch_summary_json)
     assert single_summary_json["condition_table"] == batch_summary_json["condition_table"] == "conditions.jsonl"
+    assert {
+        "speech_pattern_key", "agent_a_audio_persona", "agent_b_audio_persona",
+        "agent_b_llm_size", "model_param_key", "objective_mode", "iteration",
+        "asr_search_width", "matrix_family", "experiment_platform",
+    } <= set(condition_row)
+    assert condition_row["matrix_family"] == "speech_llm_coverage_v1"
+    assert condition_row["experiment_platform"] == "linux"
 
 
 def test_smoke_configuration_has_no_heavy_backend_requirement():

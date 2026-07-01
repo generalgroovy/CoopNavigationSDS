@@ -15,7 +15,31 @@ text-to-speech systems, automatic speech recognition systems, personas,
 scenarios, and speech conditions. It records raw phase evidence during the
 dialogue and calculates all registered metrics retrospectively.
 
-## Research Scope
+## Reader Guide
+
+| Chapter | Purpose |
+| --- | --- |
+| [1. Research Scope](#1-research-scope) | Thesis questions, boundaries, and intended inference |
+| [2. Program Specification](#2-program-specification) | Normative functional, knowledge, lifecycle, and schema contracts |
+| [3. Documentation Map](#3-documentation-map) | Authority of README, metric, API, and rebuild documents |
+| [4. Engineering Practices](#4-engineering-practices) | DRY, KISS, SOLID, evidence, and prompt-design decisions |
+| [5. Pipeline](#5-pipeline) | Chronological speech-dialogue phases and component lanes |
+| [6. Experiment Integrity](#6-experiment-integrity) | Isolation, traceability, reproducibility, and failure controls |
+| [7. Transport Network and Dialogue Task](#7-transport-network-and-dialogue-task) | Network, routes, constraints, stages, and optimal baselines |
+| [8. Components and Frameworks](#8-components-and-frameworks) | Agent, LLM, TTS, ASR, NLU, and dialogue implementations |
+| [9. Configuration](#9-configuration) | GUI, saved settings, immutable resolution, and setting reference |
+| [10. Setup](#10-setup) | Windows/Linux environments, providers, models, and preflight |
+| [11. Single-Run Execution](#11-single-run-execution) | GUI, scripted, and smoke-test runs |
+| [12. Job Files and Batch Execution](#12-job-files-and-batch-execution) | Canonical hierarchy, grids, pairing, coverage, and process shards |
+| [13. Batch Comparison and Visualization](#13-batch-comparison-and-visualization) | Combined tables, controlled deltas, and HTML reports |
+| [14. Data Capture](#14-data-capture) | Turn, phase, timing, memory, task, and audio evidence |
+| [15. Metric Overview](#15-metric-overview) | Metric phases, evidence classes, and retrospective calculation |
+| [16. Result Structure](#16-result-structure) | Standard artifacts, identities, and analysis tables |
+| [17. Console Views](#17-console-views) | Startup, dialogue, and retrospective console output |
+| [18. Project Structure](#18-project-structure) | Package responsibilities and generated references |
+| [19. Validation](#19-validation) | Test commands, scope, and known limitations |
+
+## 1. Research Scope
 
 The software supports research questions such as:
 
@@ -36,7 +60,7 @@ The experiment is not a generic chatbot benchmark. It measures cooperation in
 a bounded task with machine-verifiable routes, progressively revealed
 constraints, known optimal baselines, and explicit success criteria.
 
-## Program Specification
+## 2. Program Specification
 
 This section is the normative software specification. Later sections explain
 the network, providers, metrics, commands, and artifacts in greater depth.
@@ -200,7 +224,7 @@ The precise stop reason is stored independently from this outcome label.
 Schema versions are stored with artifacts. A schema change must either remain
 backward compatible or include an explicit migration in configuration loading.
 
-## Documentation Map
+## 3. Documentation Map
 
 | Document | Authority |
 | --- | --- |
@@ -211,7 +235,7 @@ backward compatible or include an explicit migration in configuration loading.
 | `API_REFERENCE.md` | Generated package/module/class/function inventory |
 | `REBUILD_SPEC.md` | Historical reconstruction requirements; not runtime configuration |
 
-## Engineering Practices
+## 4. Engineering Practices
 
 Experiment integrity takes precedence over convenience, apparent success rate,
 or permissive fallback behavior. Engineering decisions are evaluated by whether
@@ -267,7 +291,7 @@ formulas, or condition naming are treated as experimental changes:
 5. update this README and the metric reference when analysis meaning changes;
 6. run focused tests and then the broad non-live suite before publishing.
 
-## Prompt Specification
+## 4.1 Prompt Specification
 
 Prompt design controls agent behavior and is therefore part of the experiment,
 not incidental application text. The active policy is versioned as
@@ -400,7 +424,7 @@ must separate those turns from `delivery_source = model`.
 - Prompt hashes support equality checks but do not prove that different model
   tokenizers interpreted equivalent text identically.
 
-## Pipeline
+## 5. Pipeline
 
 Every production turn traverses the complete speech dialogue pipeline:
 
@@ -448,7 +472,7 @@ readiness. The same contract appears once in the pre-experiment console output,
 in the resolved configuration, and in result manifests. A backend or evidence-
 path deviation is therefore observable instead of implicit.
 
-## Experiment Integrity
+## 6. Experiment Integrity
 
 The implementation enforces the following research contracts.
 
@@ -519,7 +543,7 @@ stores:
 This isolates the effect of the speech channel from the task, model, persona,
 scenario, and decoding condition.
 
-## Transport Network and Dialogue Task
+## 7. Transport Network and Dialogue Task
 
 The transport network is a deterministic, seed-controlled experimental model.
 It is generated before each condition and then becomes authoritative for route
@@ -859,7 +883,7 @@ Scenarios verify that each stage has a viable route and the configured number
 of suboptimal alternatives. Progressive constraints are designed to change the
 best qualifying route, making cooperation and comparison necessary.
 
-## Components and Frameworks
+## 8. Components and Frameworks
 
 ### Language Models
 
@@ -1104,31 +1128,41 @@ provider when required.
 No provider is silently installed or downloaded during an experiment. Asset
 preparation and experiment execution are separate operations.
 
-## Configuration
+## 9. Configuration
 
-The optional startup GUI is a fullscreen two-by-four dashboard containing eight
-independently scrollable phase regions:
+The optional startup GUI is a fullscreen two-card workspace:
 
 ```text
-Network/Task -> Agent A -> Agent B/NLG -> TTS -> ASR -> NLU
-             -> Dialogue Management -> Results/Logging
+1. Scenario, Network, and Optimal Routes
+2. Dialogue Pipeline and Metrics
 ```
 
-Every region combines its high-priority configuration with the number of
-obligatory and currently calculable metrics. The network region includes a
-live schematic and every staged optimum; the results region previews schema
-versions, evidence-field count, metric readiness, and expected exports. A
-visibility bar can hide or restore any phase region, and fullscreen mode is
-configurable. Drag the horizontal sash between the two rows to adjust every
-card's vertical allocation; drag the three vertical sashes in either row to
-adjust those four card widths independently. Thus every area can be resized on
-both axes without a separate scaling mode. Provider-specific controls, metric
-lists, logging evidence, and the metric dependency matrix remain collapsible.
-Detailed metric lists open in closable, scrollable windows, so the dashboard
-geometry does not shift. Ordinary descriptions rely on automatic wrapping;
-explicit newlines are reserved for ordered evidence such as staged routes. The
-GUI closes before model loading and runtime execution; batch and script
-execution remain fully GUI-free.
+Both cards are independently scrollable and separated by a draggable sash. The
+left card contains scenario selection, network seed and data, the network graph,
+constraints, and staged optimal-route comparison. Its route selector switches
+between validity, time, and constraints 1-3. The graph draws retained route
+segments in blue, segments added by the selected constraint in green, and
+segments removed from the preceding optimum in dashed orange. The displayed
+duration, line changes, compact route, and numeric delta update with selection.
+
+The right card keeps Agent A, Agent B/NLG, TTS, ASR, NLU, dialogue management,
+and results/metrics in chronological sections. Each section shows obligatory
+metric readiness and opens its detailed metrics in a closable, scrollable
+window. Provider controls, logging evidence, and the dependency matrix remain
+collapsible. Ordinary descriptions rely on automatic wrapping; explicit
+newlines are reserved for ordered evidence such as staged routes. The GUI
+closes before model loading and runtime execution; batch and script execution
+remain fully GUI-free.
+
+### Linux GUI Requirements
+
+The configuration window uses only Python Tk and portable `ttk` widgets. It
+selects an installed font from DejaVu Sans, Noto Sans, Liberation Sans, or the
+Tk default; supports X11 and Wayland wheel events; and bounds its minimum size
+to the active display. Install the distribution Tk package before launch, for
+example `sudo apt install python3-tk` on Debian/Ubuntu. A graphical session must
+expose `DISPLAY` or `WAYLAND_DISPLAY`. Otherwise startup fails with an
+actionable message while GUI-free batch execution remains available.
 
 Important defaults:
 
@@ -1449,7 +1483,7 @@ no memory object is shared between agents.
 | Setting | Meaning and runtime effect |
 | --- | --- |
 | `console_view` | `compact` prints setup, speech exchange, task summary, and phase metric lines; `transcript` limits live output to speech; `debug` adds memory/stage/timing events; `quiet` prints warnings and final summaries. |
-| `log_profile` | `off`, `startup`, `runtime`, or `full` structured event capture. Raw metric inputs and required research outputs remain independent of cosmetic console verbosity. |
+| `log_profile` | Single runs accept `off`, `startup`, `runtime`, or `full`. Batch execution is fixed to `full` so every condition retains complete audit evidence. |
 | `results_root` | Single parent for all execution folders. It is excluded from the experimental fingerprint. |
 | `paired_audio_text_runs` | For batch grids, emits a text-only control with identical non-audio factors for every audio condition and assigns a common `pair_id`. |
 | `gui_font_size` | Startup dashboard font size only; it does not alter experiment behavior. |
@@ -1464,9 +1498,10 @@ operands, substitutions, ranges, and missing reasons are retained afterward.
 
 Batch-only job fields include `iterations`, factor arrays under `grid`, linked
 `parameter_profiles`, independent `parameter_grid` values, inclusive
-`parameter_ranges`, and `extends` inheritance. Expansion creates immutable
-`ExperimentCondition` records. `pair_id`, `run_type`, `iteration`, profile,
-model size, scenario, personas, TTS, and ASR remain explicit analysis columns.
+`parameter_ranges`, grouped `linked_profiles`, `coverage_strategy`, and
+`extends` inheritance. Expansion creates immutable `ExperimentCondition`
+records. `pair_id`, `run_type`, `iteration`, profile, model size, scenario,
+personas, TTS, and ASR remain explicit analysis columns.
 
 ### Job File Semantics
 
@@ -1475,6 +1510,7 @@ model size, scenario, personas, TTS, and ASR remain explicit analysis columns.
   "schema_version": 1,
   "name": "example_matrix",
   "extends": "parent.job",
+  "coverage_strategy": "pairwise",
   "iterations": 2,
   "config": {
     "agent_a_type": "userlm",
@@ -1491,24 +1527,41 @@ model size, scenario, personas, TTS, and ASR remain explicit analysis columns.
   "parameter_profiles": [
     {"profile_key": "clear", "agent_a_speed": 1.0},
     {"profile_key": "fast", "agent_a_speed": 1.15}
-  ]
+  ],
+  "linked_profiles": {
+    "task": [
+      {
+        "task_profile_key": "morning_focused",
+        "test_case_key": "morning_peak_cross_city",
+        "persona_key": "focused_commuter"
+      }
+    ]
+  }
 }
 ```
 
-- Entries in `grid` and `parameter_ranges` form a Cartesian product.
+- `coverage_strategy=full_factorial` forms the complete Cartesian product and
+  remains the default for small or confirmatory jobs.
+- `coverage_strategy=pairwise` builds a deterministic strength-two covering
+  array. Every declared value occurs and every pair of values from different
+  factors occurs, but redundant higher-order combinations are omitted.
 - `agent_b_model_tiers` resolves through the canonical typed model-treatment
   catalog; resolved conditions automatically store `agent_b_llm_size`.
 - Entries in `parameter_profiles` are linked treatments; their fields vary
   together and do not form a product with one another.
+- `linked_profiles` defines one or more named factors whose fields must move
+  together. Each group requires `<group>_profile_key`. This is used for valid
+  scenario/persona task profiles and coherent recognition treatments.
 - `iterations` repeats every expanded condition with a distinct iteration
   index.
 - `extends` is resolved relative to the child job and is cycle-checked.
 - Child `config`, `grid`, values, and ranges override matching parent keys;
-  profiles are inherited unless the child supplies its own profile list.
+  parameter and linked profiles are inherited unless the child supplies the
+  corresponding replacement.
 - With paired controls enabled, every audio condition produces one `-A`
   condition and one otherwise matched `-T` condition sharing a `pair_id`.
 
-The condition count is therefore:
+For full-factorial expansion, the condition count is:
 
 ```text
 product(grid lengths)
@@ -1517,6 +1570,12 @@ product(grid lengths)
 * iterations
 * (2 when paired audio/text controls are enabled, otherwise 1)
 ```
+
+For pairwise expansion, condition count is determined by the covering-array
+algorithm and is printed before model loading. The runner writes
+`coverage_plan.json` with every factor level, expected pair count, covered pair
+count, ratio, and any missing pairs. A pairwise job fails before execution if
+that file would contain a missing declared pair.
 
 ### Preflight Specification
 
@@ -1538,7 +1597,7 @@ default and can be enabled with `allow_model_download` or
 scripts or their provider tooling. Experiments never substitute a different
 model or engine when preparation fails.
 
-## Setup
+## 10. Setup
 
 ### Runtime Prerequisites
 
@@ -1549,24 +1608,54 @@ model or engine when preparation fails.
 - optional provider executables such as Ollama, eSpeak NG, or whisper.cpp when
   those conditions are selected.
 
-The base requirements install the orchestration, local language-model, audio,
+The base requirements install orchestration, local language-model, audio,
 ONNX, and metric libraries. Speech providers remain separately pinned because
 their binary and Python-version constraints differ.
 
-Create and validate the prepared environment:
+### Base Environment on Windows
 
 ```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pip install -r requirements-speech-optional.txt
+```
+
+If PowerShell blocks activation, invoke `.venv\Scripts\python.exe` explicitly
+in every command. This is also the least ambiguous approach in PyCharm.
+
+### Base Environment on Linux
+
+Install the interpreter, virtual-environment support, Tk, and selected system
+provider packages through the distribution package manager. Then:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-speech-optional.txt
+```
+
+The optional configuration GUI also requires a graphical session and the
+distribution's `python3-tk` package. Headless batch execution does not.
+
+### Speech Provider and Asset Preparation
+
+Inspect provider environments, prepare declared local assets, then verify them
+without downloading:
+
+```powershell
 python scripts\setup_speech_providers.py --status
 python scripts\prepare_test_environment.py
 python scripts\prepare_test_environment.py --check
 ```
 
-Platform preparation:
+Platform helper scripts combine the expected provider setup steps:
 
 ```powershell
-scripts\prepare_windows_tests.ps1
+.\scripts\prepare_windows_tests.ps1
 ```
 
 ```bash
@@ -1574,7 +1663,11 @@ bash scripts/prepare_linux_tests.sh
 ```
 
 Prepared assets live under `.speech-providers/`. The platform manifest is
-`coop_navigation_sds/Configuration/platform_manifest.json`.
+`coop_navigation_sds/Configuration/platform_manifest.json`. Preparation may
+download or build declared assets; experiment execution does not silently
+replace speech providers.
+
+### Agent Model Preparation
 
 Agent B model assets use the separate project-local `.model-providers/agent_b/`
 store. Prepare them before model-grid execution:
@@ -1589,35 +1682,238 @@ bash scripts/download_agent_b_models_linux.sh
 python3 scripts/setup_agent_b_models.py --json
 ```
 
+`setup_agent_b_models.py` is non-mutating unless `--pull` is supplied. Use
+`--tier small`, `--tier medium`, `--tier large`, or repeated `--model` values
+to restrict preparation. Transformers models use their configured local cache;
+runtime download is allowed only when `allow_model_download=true` is explicit.
+
+### Final Setup Verification
+
 Single-run configuration and batch jobs resolve `model_store_dir` to the
 current platform folder by default. The GUI exposes this path only with the
 Ollama implementation-specific settings. Batch preflight queries the complete
 requested model grid once and fails before artifacts are created if any digest
 is unavailable.
 
-`--check` is non-mutating. Preparation may download or build requested assets;
-normal experiment execution only downloads a Transformers model when the
-resolved configuration explicitly permits it.
+Before a thesis batch, record these checks with the experiment notes:
 
-## Running Experiments
+```powershell
+python scripts\prepare_test_environment.py --check
+python scripts\setup_agent_b_models.py --json
+python -m coop_navigation_sds --smoke --results-dir results
+```
 
-Configuration GUI:
+The first two commands are non-mutating. The smoke command creates a standard
+result folder and confirms runtime logging and retrospective exports.
+
+## 11. Single-Run Execution
+
+Single-run commands are intended for configuration checks, interactive
+inspection, and one-condition debugging. Thesis comparisons should use job
+files so every factor and repetition is declared before execution.
+
+### Configuration GUI
 
 ```powershell
 python -m coop_navigation_sds
 ```
 
-Scripted single run:
+The startup-only GUI validates the selected network, scenario, agents, speech
+providers, metric dependencies, and output location. It closes before model
+loading and does not participate in the measured dialogue.
+
+### Scripted Single Run
 
 ```powershell
 python scripts\run_from_script_config.py
 ```
 
-Dependency-light smoke run:
+Use the script as a template for repeatable one-condition runs without Tk. Its
+settings pass through the same normalization, validation, runtime, logging,
+and retrospective metric path as GUI-selected settings.
+
+### Dependency-Light Smoke Run
 
 ```powershell
 python -m coop_navigation_sds --smoke --results-dir results
 ```
+
+The smoke mode uses deterministic lightweight agents and requires no external
+model download. It verifies route construction, dialogue orchestration, raw
+evidence capture, retrospective calculation, and standard result exports.
+
+## 12. Job Files and Batch Execution
+
+A `.job` file is the preregistered, scriptable definition of a condition
+family. It separates the experimental design from the batch controller and is
+plain JSON so it can be versioned, reviewed, generated, and scheduled on
+Windows or Linux. The runner resolves the job completely before the first
+condition and writes the resolved definition to `experiment_job.json`.
+
+Every shipped batch job resolves `num_turns=20` and `log_profile=full`.
+Twenty is a maximum rather than a required dialogue length: Agent A may close
+earlier when the task succeeds. Full logging is enforced by the batch CLI and
+cannot be reduced with a job or command-line override.
+
+### Batch Setup Checklist
+
+1. Create the base and optional speech environments described in Chapter 10.
+2. Prepare every selected language-model, synthesis, and recognition asset.
+3. Run `python scripts/prepare_test_environment.py --check`.
+4. Run `python scripts/setup_agent_b_models.py --json` for Ollama grids; omit
+   `--pull` to perform the non-mutating status check.
+5. Validate the job with a small iteration/profile or the bounded example jobs.
+6. Estimate expanded condition count and available disk/RAM before a full run.
+7. Use one fixed project-level `results/` root for all invocations.
+
+Preflight never substitutes a provider. A missing model, executable, Python
+module, or unreadable asset stops the batch before dialogue execution and
+identifies the failed component.
+
+### Job Document Structure
+
+| Field | Role | Expansion behavior |
+| --- | --- | --- |
+| `schema_version` | Job format version; currently `1` | Must match the supported schema |
+| `name`, `description` | Human-readable experiment identity and intent | Stored with the resolved job |
+| `extends` | Parent job path, resolved relative to the child | Parent dictionaries are inherited; child values override matching keys |
+| `config` | Scalar defaults shared by every condition | Does not create additional conditions |
+| `grid` | Named experimental factor levels such as scenario, model, TTS, and ASR | Crossed or pairwise-covered according to `coverage_strategy` |
+| `parameter_values` | Additional arbitrary factor value lists | Cartesian factor levels |
+| `parameter_ranges` | Inclusive numeric `{start, stop, step}` ranges | Expanded with stable decimal arithmetic |
+| `parameter_profiles` | Named multi-setting treatments with `profile_key` | Each profile is one treatment level; fields move together |
+| `linked_profiles` | Named groups such as validated scenario/persona combinations | Each record is one linked level, preventing invalid blind cross-products |
+| `coverage_strategy` | `full_factorial` or deterministic strength-two `pairwise` | Controls selection from declared factor levels |
+| `iterations` | Repetitions per selected condition | Adds an iteration identifier and repeats the complete condition |
+
+Minimal paired speech job:
+
+```json
+{
+  "schema_version": 1,
+  "name": "tinyllama_piper_vosk_baseline",
+  "iterations": 2,
+  "config": {
+    "agent_a_type": "tinyllama",
+    "agent_b_plugin": "llm",
+    "model_profile": "tinyllama_1b_transformers",
+    "model_provider": "transformers",
+    "model_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "paired_audio_text_runs": true,
+    "tts_engine": "piper",
+    "tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx",
+    "asr_engine": "vosk",
+    "asr_model": ".speech-providers/models/vosk/vosk-model-small-en-us-0.15"
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter"],
+    "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"],
+    "tts_engines": ["piper"],
+    "asr_engines": ["vosk"]
+  }
+}
+```
+
+The complete available keys are demonstrated by jobs under `jobs/`; active
+scalar meanings are defined in Chapter 9. Unknown schema versions, cyclic
+inheritance, duplicate profile keys, invalid ranges, and malformed linked
+profiles fail during loading.
+
+Inheritance is intentionally shallow and explicit. `config`, `grid`,
+`parameter_values`, `parameter_ranges`, and linked-profile groups merge by key;
+a child value replaces the same parent key. A child `parameter_profiles` list
+replaces the parent list as one treatment definition. `iterations` and
+`coverage_strategy` inherit unless explicitly overridden. This makes a child
+job's effective differences small enough to review directly.
+
+### Resolution and Condition Expansion
+
+The batch controller applies settings in this order: project defaults, saved
+settings, parent job, child job, then explicit command-line overrides. It then:
+
+1. expands ordinary grid factors, parameter values/ranges, named treatments,
+   linked profiles, and iterations;
+2. applies full-factorial or pairwise condition selection;
+3. creates an audio condition and, when enabled, an otherwise matched
+   text-only control with a common `pair_id`;
+4. assigns a stable, readable `condition_id` containing compact factor codes;
+5. verifies declared pair coverage and writes `coverage_plan.json`;
+6. validates scenario viability, staged route alternatives, providers, and
+   all requested Agent B models;
+7. freezes the resolved specification before executing conditions.
+
+For a full factorial, the unpaired count is the product of all independent
+factor-level counts, linked/profile treatment counts, and iterations. Paired
+audio/text execution doubles that count. Pairwise mode selects a deterministic
+subset that covers every declared two-factor value pair; it does not estimate
+higher-order interactions as completely as a full factorial.
+
+### Paired Controls
+
+With `paired_audio_text_runs=true`, each audio condition receives one text-only
+control with identical task, agents, model, persona, seed, decoding, and
+dialogue limits. Only the speech channel changes. Results store `pair_id`,
+`run_type`, and paired deltas for task success, route validity, constraint
+satisfaction, turn count, repairs, and audio-error effect. A text control is
+not a replacement for failed audio; both are independent measured conditions.
+
+### Included Job Families
+
+| Job family | Intended use | Typical scale |
+| --- | --- | ---: |
+| `speech_llm_coverage_matrix.job` | Single OS-neutral authoritative matrix covering every registered TTS, ASR, Agent B model, persona, pattern, task profile, and search-width pair with TinyLlama Agent A | 330 conditions |
+| `research_smoke.job` | Fast schema, logging, metric, and export verification without heavy providers | Minimal |
+| `requested_tinyllama_piper_*.job` | Bounded real-provider validation with one matched audio/text pair | 2 conditions |
+| `tinyllama_piper_*_comparison.job` | Matched Piper/recognizer experiments over all speech patterns, operator audio personas, synthesis profiles, search widths, scenarios, and paired controls | 308 conditions |
+| `linux_agent_a_*_speech_llm_matrix.job` | Canonical Linux cross-component covering array | 330 paired runs per Agent A |
+| `windows_agent_a_*_speech_llm_matrix.job` | Windows-labelled equivalent using the same experimental factors | 330 paired runs per Agent A |
+| `*_agent_b_<small|medium|large>_llm_matrix.job` | Isolated Agent B model-size treatments with two models per tier | Tier subset |
+| `*_parallel_*.job` | Independent profile shards for process-level parallel execution | One profile per shard |
+
+Counts depend on inherited grids and iterations. Trust the runner's printed
+coverage/count summary and persisted `coverage_plan.json`, not the filename.
+
+### Provider Roles
+
+TTS and ASR providers are not interchangeable. The configuration rejects a
+provider placed in the wrong phase.
+
+| Pipeline role | Implementations in the canonical job |
+| --- | --- |
+| Text-to-speech | ChatTTS, Piper, eSpeak NG, Coqui |
+| Automatic speech recognition | Faster-Whisper, Vosk, whisper.cpp, sherpa-onnx |
+
+Therefore, use combinations such as **Piper + Faster-Whisper** or
+**Piper + Vosk**. "Vosk for TTS" is invalid because Vosk only recognizes audio.
+
+### Canonical Job Hierarchy
+
+```text
+speech_llm_coverage_matrix.job
+|-- linux_agent_a_tinyllama_speech_llm_matrix.job
+|   |-- linux Agent B small / medium / large jobs
+|   `-- linux_agent_a_userlm_speech_llm_matrix.job
+|       `-- linux UserLM Agent B small / medium / large jobs
+`-- windows_agent_a_tinyllama_speech_llm_matrix.job
+    |-- windows Agent B small / medium / large jobs
+    `-- windows_agent_a_userlm_speech_llm_matrix.job
+        `-- windows UserLM Agent B small / medium / large jobs
+```
+
+The OS-neutral parent is the only owner of task profiles, personas, speech
+patterns, TTS providers, ASR providers, search widths, and Agent B models.
+Platform children override only `experiment_platform`; UserLM children override
+only `agent_a_type`; size children override only `agent_b_model_tiers`. This
+keeps comparisons matched and makes each experimental difference reviewable.
+
+Agent A is deliberately fixed within one batch invocation. Its adapter,
+prompt policy, and perspective-specific memory are initialized once and reused
+across conditions. Mixing TinyLlama and UserLM inside the same process would
+couple caller changes to model lifecycle and resource state. Matched child jobs
+provide the same coverage with one controlled caller difference instead.
+
+### Running a Batch
 
 Paired batch smoke:
 
@@ -1628,6 +1924,36 @@ python -m coop_navigation_sds.batch `
   --progress
 ```
 
+The same command form works on Linux with `/` paths and `python3` or the
+project virtual-environment interpreter. Display every supported override:
+
+```bash
+python -m coop_navigation_sds.batch --help
+```
+
+Command-line values override job defaults for controlled one-off changes. For
+example, `--iterations 3`, `--coverage-strategy pairwise`, or
+`--no-speech-playback` changes the resolved invocation without editing the job.
+The manifest stores the source job, resolved configuration, coverage plan, and
+configuration fingerprint, so the effective condition remains auditable.
+
+Do not use ad hoc overrides when conditions must be preregistered or reviewed;
+create a child job with `extends` instead. Child jobs make the changed factor
+visible in version control and prevent accidental differences between runs.
+
+Run the single canonical matrix on the current Windows or Linux host:
+
+```bash
+python -m coop_navigation_sds.batch \
+  --job-file jobs/speech_llm_coverage_matrix.job \
+  --results-dir results \
+  --progress
+```
+
+This selects TinyLlama Agent A and all six Agent B models. Use explicit
+platform children for published experiments because they store `linux` or
+`windows`, rather than `current`, in every condition row.
+
 TinyLlama, Piper, and Faster-Whisper sequential matrix:
 
 ```powershell
@@ -1637,8 +1963,28 @@ TinyLlama, Piper, and Faster-Whisper sequential matrix:
   --progress
 ```
 
-This matrix contains two scenarios, four linked speech/recognition profiles,
-two repetitions, and paired text/audio conditions.
+This pairwise matrix contains 308 conditions: 154 audio and 154 matched text
+controls. It covers 2 scenarios, all 11 speech patterns, all 7 Agent B audio
+personas, 4 synthesis profiles, Faster-Whisper widths `1/6/11/16`, and 2
+iterations. All 274 declared factor-level pairs are present.
+
+Matched bounded validation batches for limited-memory development machines:
+
+```powershell
+.\.venv\Scripts\python.exe -m coop_navigation_sds.batch `
+  --job-file jobs\requested_tinyllama_piper_faster_whisper.job `
+  --results-dir results --progress
+
+.\.venv\Scripts\python.exe -m coop_navigation_sds.batch `
+  --job-file jobs\requested_tinyllama_piper_vosk.job `
+  --results-dir results --progress
+```
+
+Each bounded job uses the same TinyLlama caller, TinyLlama assistant, Piper
+voice, scenario, baseline profile, seed, turn budget, and audio/text pairing.
+Only the recognition provider and its local asset differ. Use the full
+`tinyllama_piper_faster_whisper_comparison.job` and matched
+`tinyllama_piper_vosk_comparison.job` for unattended thesis runs.
 
 Linux Agent A TinyLlama speech and LLM comparison matrix:
 
@@ -1649,13 +1995,101 @@ python -m coop_navigation_sds.batch \
   --progress
 ```
 
-This exemplary matrix keeps Agent A fixed as TinyLlama and varies Agent B
-across six local Ollama models, four text-to-speech providers, four automatic
-speech recognition providers, three caller personas, two caller audio personas,
-two operator audio personas, and three linked speech/recognition profiles. Each
-audio condition has a matched text-only run, which makes provider effects easier
-to separate from task, persona, and model effects in `metrics_long.csv` and
-`metrics_wide.csv`.
+This is the Linux TinyLlama execution of the canonical comprehensive-coverage
+job. It uses a deterministic strength-two covering array over the following
+complete registered factor sets:
+
+| Factor | Levels | Coverage |
+| --- | ---: | --- |
+| Valid task profiles | 15 | All 15 task personas and all 8 standard scenarios |
+| Agent A audio persona | 8 | Every profile marked `caller` |
+| Agent B audio persona | 7 | Every profile marked `assistant` |
+| Speech pattern | 11 | Clean, mostly clean, hesitation, long pauses, two stutter levels, fillers, compressed, station noise, clipping, and station substitution |
+| Text-to-speech provider | 4 | ChatTTS, Piper, eSpeak NG, and Coqui |
+| Recognition provider | 4 | Faster-Whisper, Vosk, whisper.cpp, and sherpa-onnx |
+| Recognition treatment | 4 | Provider-native search widths `1`, `6`, `11`, and `16` |
+| Agent B model | 6 | Two small, two medium, and two large local models |
+| Agent B decoding | 1 | Greedy control |
+| Route objective | 1 | Shortest valid route with progressive constraints |
+
+The covering-array contract explicitly verifies:
+
+- all `4 * 11 = 44` TTS-provider x speech-pattern pairs;
+- all `4 * 4 = 16` ASR-provider x search-width pairs;
+- all `6 * 7 = 42` Agent-B-model x Agent-B-audio-persona pairs.
+
+The two largest factors require `15 * 11 = 165` audio conditions. The generated
+array covers all **1,588** declared cross-factor value pairs with no missing
+pair. Paired controls produce 165 otherwise identical text conditions, for 330
+runs per Agent A implementation. A literal full factorial would require
+3,548,160 audio conditions or 7,096,320 paired runs per Agent A; it adds
+unmanageable higher-order replication without improving main-effect or
+two-factor coverage.
+
+Search width has a provider-native implementation: Faster-Whisper uses beam
+size, Vosk uses maximum alternatives, whisper.cpp receives `--beam-size`, and
+sherpa-onnx transducers use maximum active paths. Sherpa Whisper/Paraformer
+layouts record the requested width with `asr_search_width_applied=false`
+because their adapter API does not expose an equivalent control. This prevents
+an unavailable treatment from being reported as applied.
+
+The same job can still request every higher-order combination explicitly:
+
+```bash
+python -m coop_navigation_sds.batch \
+  --job-file jobs/linux_agent_a_tinyllama_speech_llm_matrix.job \
+  --coverage-strategy full_factorial \
+  --results-dir results
+```
+
+This override is intended for count verification or unusually large compute
+clusters, not ordinary thesis execution. It preserves the 15 validated linked
+task profiles and expands every combination with all remaining factors.
+
+#### Task and Constraint Coverage
+
+Scenario and persona are linked into validated task profiles rather than
+crossed blindly. Every task profile passes connectivity, alternative-route, and
+three-stage optimum-change preflight. Arbitrary scenario/persona products are
+not legitimate conditions when a persona's next private constraint cannot
+change the optimum in that scenario.
+
+| Task profile | Scenario | Persona | First three progressive constraints |
+| --- | --- | --- | --- |
+| `morning_focused` | Morning peak | Focused commuter | transfer risk, tickets, walking |
+| `midday_distracted` | Midday transfer | Distracted multitasker | transfers, fullness, transfer risk |
+| `late_verbose` | Late event | Verbose planner | fullness, transfer risk, tickets |
+| `midday_hesitant` | Midday transfer | Hesitant speaker | transfers, fullness, transfer risk |
+| `late_adversarial` | Late event | Adversarial tester | transfers, fullness, transfer risk |
+| `morning_non_native` | Morning peak | Non-native speaker | transfers, transfer risk, tickets |
+| `airport_frustrated` | Airport connection | Frustrated user | transfers, fullness, transfer risk |
+| `crowded_crowd_averse` | Crowded event exit | Crowd-averse rider | transfers, fullness, delay risk |
+| `airport_delay_sensitive` | Airport connection | Delay-sensitive traveler | fullness, delay risk, transfer risk |
+| `hospital_accessibility` | Hospital appointment | Accessibility rider | transfers, transfer risk, tickets |
+| `errands_multi_stop` | Multi-destination errands | Multi-stop errand runner | fullness, delay risk, transfer risk |
+| `late_budget` | Late event | Budget simplifier | fullness, transfer risk, tickets |
+| `evening_low_effort` | Evening outbound | Low-effort traveler | transfers, transfer risk, tickets |
+| `crowded_transfer_confident` | Crowded event exit | Transfer-confident traveler | transfer risk, tickets, walking |
+| `evening_risk_averse` | Evening outbound | Risk-averse novice | transfers, delay risk, transfer risk |
+
+Together these profiles exercise all six implemented constraint classes:
+line changes, near-capacity fullness, delay risk, transfer-time/missed-connection
+risk, ticket availability, and cumulative walking time. Morning, midday,
+evening, late-event, airport, hospital, crowded-event, and multi-destination
+conditions expose different time-dependent line fullness and delay states. The
+realized line fullness, near-capacity classification, segment delay class,
+station transfer time, and transfer-risk class remain logged per candidate;
+analysis therefore uses measured route evidence rather than scenario labels as
+a proxy. At default seed 42, the selected scenario times jointly contain both
+experiment fullness outcomes (`near capacity`, `not near capacity`), all three
+line-delay classes (`low`, `moderate`, `high`), and station transfer times from
+2 through 7 minutes. Raw fullness percentages remain evidence, but the task
+constraint intentionally uses only the preregistered near-capacity binary
+classification.
+
+Each audio condition has a matched text-only run, making speech-channel effects
+separable from task, persona, model, and decoding effects in
+`metrics_long.csv`, `metrics_wide.csv`, and `coverage_plan.json`.
 
 Equivalent clones select UserLM as Agent A while retaining the complete source
 matrix through job inheritance:
@@ -1673,6 +2107,12 @@ override is `agent_a_type=userlm`; scenarios, personas, audio conditions,
 speech providers, recognition providers, Agent B models, and parameter profiles
 remain identical to the corresponding TinyLlama Agent A matrix.
 
+Run both Agent A jobs for the matched 660-run comparison. Condition factors and
+pair coverage are identical; only caller implementation changes. TinyLlama uses
+the fixed TinyLlama 1.1B caller backend. UserLM uses the job's fixed configured
+caller model (`llama3.2:1b` in this matrix) while Agent B varies independently;
+both backend identities are retained in every result.
+
 ### Agent B Model-Size Jobs
 
 The full matrix has tier-specific child jobs for both operating-system labels
@@ -1685,6 +2125,12 @@ experimental factor.
 | `small` | 1.0B-1.5B | `llama3.2:1b`, `qwen2.5:1.5b` | `SML` |
 | `medium` | 3.0B-3.8B | `llama3.2:3b`, `phi3:mini` | `MED` |
 | `large` | 7.0B-8.0B | `qwen2.5:7b`, `llama3.1:8b` | `LRG` |
+
+The complete tier design contains 2 platforms x 2 Agent A implementations x 3
+Agent B tiers = 12 jobs. Each job contains 165 audio and 165 matched text
+conditions and covers all 1,368 applicable factor-level pairs. Keeping two
+models in each tier permits within-tier family variation while preserving the
+same speech, persona, task, and recognition coverage across tiers.
 
 Naming pattern:
 
@@ -1706,6 +2152,19 @@ recognition engines, decoding profiles, repetitions, and paired controls from
 the full matrix. They override only Agent A when required, the two Agent B
 models, and the explicit `agent_b_llm_size` parameter.
 
+### Sequential and Parallel Execution
+
+One `coop_navigation_sds.batch` process executes its expanded conditions
+sequentially. This allows one loaded model adapter to be reused safely and
+avoids competing speech-provider state. Use sequential execution when RAM is
+limited, when comparing latency, or when provider libraries are not safe to
+load concurrently.
+
+Parallel execution is implemented as independent job shards and operating-
+system processes, not threads inside one experiment. Each shard writes its own
+standard run folder. Keep every shard's non-sharded factors equal and combine
+completed folders through Chapter 13.
+
 Parallel profile shards on Windows:
 
 ```powershell
@@ -1725,7 +2184,86 @@ Parallel execution uses independent processes because model runtimes, speech
 providers, and generated network state are not shared-thread-safe. Two
 concurrent shards are recommended for limited-memory systems.
 
-## Data Capture
+Each current Piper/Faster-Whisper shard gives one synthesis profile complete
+pairwise coverage over patterns, Agent B audio personas, and all four search
+widths. A shard therefore contains 308 conditions; running all four produces
+1,232 conditions and offers profile-specific replication. The four shards are
+an expanded design, not a partition of the 308-condition sequential matrix.
+
+### Progress, Failure, and Restart Semantics
+
+`--progress` prints each completed condition identifier. Raw per-condition
+traces are written while a condition runs; final metric tables and
+`run_summary.json` are written only after every condition completes and
+retrospective calculation succeeds.
+
+The batch runner intentionally has no in-place resume or silent condition
+skip. A backend failure stops the invocation so later conditions cannot be
+mistaken for a complete balanced design. An interrupted run folder may contain
+diagnostic traces but lacks a final standard summary and must not be included
+in analysis. Fix the reported cause and rerun the same job; the new invocation
+gets a new run identifier while preserving condition identities and factors.
+
+### Batch Result Contract
+
+Every completed batch writes one self-contained folder under `results/` with:
+
+- the resolved job, manifest, coverage plan, environment, and provider data;
+- one condition row and complete protocol per executed condition;
+- paired identifiers and audio/text comparison values where configured;
+- immutable metric inputs followed by retrospective calculations;
+- long, wide, JSONL, XLSX, transcript, audio, and network artifacts;
+- explicit warnings, errors, unavailable-metric reasons, and failure analysis.
+
+Start analysis with `run_summary.json`, verify `condition_count` against
+`coverage_plan.json`, then join `conditions.jsonl` with `metrics_long.csv` by
+`condition_id`. Chapter 16 defines every artifact in detail.
+
+The standard condition table carries analysis factors directly:
+
+| Factor group | Stored fields |
+| --- | --- |
+| Matrix identity | `matrix_family`, `experiment_platform`, `configuration_fingerprint` |
+| Agents | `agent_a_type`, `agent_b_model`, `agent_b_llm_size`, `agent_b_plugin` |
+| Speech | `tts_engine`, `asr_engine`, `asr_search_width`, `speech_pattern_key` |
+| Personas | `persona_key`, `agent_a_audio_persona`, `agent_b_audio_persona` |
+| Task/design | `scenario_key`, `objective_mode`, `model_param_key`, `iteration` |
+| Pairing/outcome | `pair_id`, `run_type`, route flags, turns, runtime, task success |
+
+These fields are also propagated into long-form metric factors. Independent
+Windows/Linux, TinyLlama/UserLM, and small/medium/large jobs can therefore be
+concatenated and grouped without decoding filenames. The comparison utility
+matches non-provider factors before calculating deltas, preventing averages
+from silently mixing scenarios, personas, search widths, or model tiers.
+
+## 13. Batch Comparison and Visualization
+
+Completed single or batch runs share one schema and can be compared without
+loading model or speech dependencies:
+
+```powershell
+python -m coop_navigation_sds.ResultsAndArtifacts.comparison `
+  results\<faster-whisper-run> results\<vosk-run> `
+  --output results\comparison_fwh_vosk
+```
+
+The command also accepts a result root and discovers valid runs recursively.
+It reads only `run_summary.json`, `conditions.jsonl`, and `metrics_long.csv`.
+
+| Artifact | Analysis role |
+| --- | --- |
+| `combined_conditions.csv` | Joined condition factors and headline outcomes |
+| `combined_metrics_long.csv` | Lossless joined long-form metric evidence |
+| `metric_summary.csv` | Count, mean, standard deviation, minimum, and maximum by run/provider/metric |
+| `metric_deltas.csv` | Pairwise mean differences and direction-adjusted improvement |
+| `comparison_report.html` | Portable overview tables and inline SVG charts with no external assets |
+
+The report is descriptive. A provider delta is causal only when jobs match on
+every non-provider factor. Statistical inference should use the long-form rows,
+retain `pair_id`, account for repetitions and scenarios, and avoid treating
+correlated turn metrics as independent observations.
+
+## 14. Data Capture
 
 All evidence required for configured calculations is collected during runtime
 without calculating final metrics prematurely.
@@ -1801,7 +2339,7 @@ failure-propagation measurements from one trace.
 - Cross-run latency comparisons require equivalent hardware and playback mode;
   environment metadata is retained to detect invalid comparisons.
 
-## Metric Overview
+## 15. Metric Overview
 
 Every registered metric is obligatory. A value is calculated after the
 dialogue when its evidence exists; otherwise it remains `null` with an explicit
@@ -1834,7 +2372,10 @@ Full definitions are maintained in:
 - [AUTOMATIC_METRICS_SPEC.md](AUTOMATIC_METRICS_SPEC.md): metric methodology
   and evidence classes;
 - [METRIC_PROPOSALS.md](METRIC_PROPOSALS.md): additional metrics and the data
-  required before implementation.
+  required before implementation. The prioritized low-cost set covers candidate
+  Pareto domination, constraint negotiation lag, revision improvement,
+  repair-target accuracy, memory-disagreement area, error-propagation depth,
+  constraint-transition explanation, and useful information per Agent B second.
 
 ### Retrospective Calculation Contract
 
@@ -1869,7 +2410,7 @@ Automatic metrics are evidence classes rather than interchangeable scores:
 Proxy scores must not be reported as ground-truth human judgments. Batch-level
 correlations and thresholds are exploratory unless evaluated on held-out runs.
 
-## Result Structure
+## 16. Result Structure
 
 `results/` is the single output root. Each execution creates one flat,
 timestamped run directory. Single runs and batch runs use the same analysis
@@ -1939,7 +2480,7 @@ long and wide tables include `result_scope` (`single_run` or `batch`) and
 `result_run_id` so rows remain traceable after files from multiple run folders
 are combined.
 
-## Console Views
+## 17. Console Views
 
 | View | Output |
 | --- | --- |
@@ -1958,7 +2499,7 @@ only mutable speech/recognition/correction state is printed. Detailed phase
 timings and retrospective calculations remain in structured result files,
 preventing immutable configuration boilerplate from repeating per turn.
 
-## Project Structure
+## 18. Project Structure
 
 ```text
 coop_navigation_sds/
@@ -1970,7 +2511,7 @@ coop_navigation_sds/
   DialogManagement/              orchestration, stages, memory, speech transport
   TransportNetwork/              network, routes, constraints, scenarios
   EvaluationMetrics/             metric catalog and retrospective calculations
-  ResultsAndArtifacts/           protocols, long tables, XLSX, structured logs
+  ResultsAndArtifacts/           protocols, tables, comparison reports, XLSX, logs
   app.py                         interactive controller
   batch.py                       batch command-line controller
   experiments.py                 reusable condition-grid runner
@@ -1990,7 +2531,7 @@ structural changes:
 python scripts\generate_research_docs.py
 ```
 
-## Validation
+## 19. Validation
 
 Run the complete suite:
 

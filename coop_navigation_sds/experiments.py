@@ -130,6 +130,8 @@ class ExperimentRunner:
         self.model_adapter_factory = model_adapter_factory
         self.agent_a_model_adapter = agent_a_model_adapter
         self._model_adapter_cache = {}
+        self._active_network_seed = None
+        self._viability_cache = {}
         self.num_turns = num_turns
         self.agent_b_plugin_key = agent_b_plugin_key
         self.tts_engine = tts_engine or platform_default_tts_engine()
@@ -174,9 +176,11 @@ class ExperimentRunner:
         """
         parameters = dict(condition.parameter_values)
         network_seed = parameters.get("network_seed", self.scenario_overrides.get("network_seed"))
-        if network_seed is not None:
+        if network_seed is not None and network_seed != self._active_network_seed:
             from coop_navigation_sds.TransportNetwork.network import rebuild_network
             rebuild_network(network_seed)
+            self._active_network_seed = network_seed
+            self._viability_cache.clear()
         base_case = get_test_case(condition.test_case_key)
         test_case = base_case.with_persona(condition.persona_key)
         num_turns = max(1, int(parameters.get("num_turns", self.num_turns)))
@@ -192,7 +196,8 @@ class ExperimentRunner:
         runtime_parameter_keys = {
             "network_seed", "num_turns", "transfer_tolerance", "invalid_route_limit",
             "constraint_miss_limit", "dialogue_stagnation_limit", "max_turn_elapsed_sec",
-            "calculation_max_time_sec", "profile_key",
+            "calculation_max_time_sec", "profile_key", "agent_b_llm_size",
+            "matrix_family", "experiment_platform",
         }
         speech_parameter_keys = set(SpeechPipelineConfig.__dataclass_fields__)
         with_overrides = getattr(test_case, "with_scenario_overrides", None)
@@ -201,7 +206,9 @@ class ExperimentRunner:
                 **self.scenario_overrides,
                 **{
                     key: value for key, value in parameters.items()
-                    if key not in runtime_parameter_keys and key not in speech_parameter_keys
+                    if key not in runtime_parameter_keys
+                    and not key.endswith("_profile_key")
+                    and key not in speech_parameter_keys
                 },
             }
             overrides.pop("network_seed", None)
@@ -215,7 +222,26 @@ class ExperimentRunner:
             test_case.scenario.get("destination_station"),
         }.issubset(STATIONS):
             from coop_navigation_sds.TransportNetwork.constraints import stage_viability_report
-            viability = stage_viability_report(test_case.scenario, test_case.persona)
+            max_constraints = max(
+                0,
+                int(test_case.scenario.get("maximum_progressive_constraints", 2)),
+            )
+            viability_key = (
+                network_seed,
+                test_case.key,
+                max_constraints,
+                transfer_tolerance,
+                repr(sorted(test_case.scenario.items())),
+            )
+            viability = self._viability_cache.get(viability_key)
+            if viability is None:
+                viability = stage_viability_report(
+                    test_case.scenario,
+                    test_case.persona,
+                    transfer_tolerance=transfer_tolerance,
+                    max_constraints=max_constraints,
+                )
+                self._viability_cache[viability_key] = viability
             if not viability["all_stage_requirements_satisfied"]:
                 failed = [stage["stage"] for stage in viability["stages"] if not stage["requirement_satisfied"]]
                 raise ValueError(
@@ -406,6 +432,143 @@ class ExperimentRunner:
         return (results if results is not None else []), metrics
 
 
+def pairwise_factor_rows(factors):
+    """Return deterministic strength-two rows covering every pair of factor levels."""
+    normalized = []
+    for name, values in factors:
+        levels = list(values)
+        if levels:
+            normalized.append((str(name), levels))
+    if not normalized:
+        return [{}]
+    if len(normalized) == 1:
+        name, values = normalized[0]
+        return [{name: value} for value in values]
+
+    # Largest factors first minimizes vertical-growth rows without changing coverage.
+    ordered = sorted(
+        enumerate(normalized),
+        key=lambda item: (-len(item[1][1]), item[0]),
+    )
+    ordered_factors = [factor for _index, factor in ordered]
+    rows = [
+        [left, right]
+        for left in range(len(ordered_factors[0][1]))
+        for right in range(len(ordered_factors[1][1]))
+    ]
+
+    for new_index in range(2, len(ordered_factors)):
+        new_level_count = len(ordered_factors[new_index][1])
+        uncovered = {
+            (prior_index, prior_level, new_level)
+            for prior_index in range(new_index)
+            for prior_level in range(len(ordered_factors[prior_index][1]))
+            for new_level in range(new_level_count)
+        }
+
+        for row in rows:
+            selected = max(
+                range(new_level_count),
+                key=lambda level: (
+                    sum(
+                        (prior_index, row[prior_index], level) in uncovered
+                        for prior_index in range(new_index)
+                    ),
+                    -level,
+                ),
+            )
+            row.append(selected)
+            for prior_index in range(new_index):
+                uncovered.discard((prior_index, row[prior_index], selected))
+
+        while uncovered:
+            anchor_index, anchor_level, new_level = min(uncovered)
+            row = [None] * new_index + [new_level]
+            row[anchor_index] = anchor_level
+            for prior_index in range(new_index):
+                if row[prior_index] is None:
+                    row[prior_index] = max(
+                        range(len(ordered_factors[prior_index][1])),
+                        key=lambda level: (
+                            int((prior_index, level, new_level) in uncovered),
+                            -level,
+                        ),
+                    )
+                uncovered.discard((prior_index, row[prior_index], new_level))
+            rows.append(row)
+
+    return [
+        {
+            name: values[row[index]]
+            for index, (name, values) in enumerate(ordered_factors)
+        }
+        for row in rows
+    ]
+
+
+def condition_coverage_report(conditions):
+    """Summarize value and pair coverage from expanded audio conditions."""
+    source = [condition for condition in conditions if condition.run_type == "audio_variant"]
+    rows = []
+    for condition in source:
+        parameters = dict(condition.parameter_values)
+        task_profile = parameters.get("task_profile_key")
+        row = {
+            "task_profile" if task_profile else "test_case": task_profile or condition.test_case_key,
+            "speech_pattern": condition.speech_pattern_key,
+            "model_parameters": condition.model_param_key,
+            "objective": condition.objective_mode,
+            "agent_a_audio_persona": condition.agent_a_audio_persona,
+            "agent_b_audio_persona": condition.agent_b_audio_persona,
+            "text_to_speech": condition.tts_engine,
+            "automatic_speech_recognition": condition.asr_engine,
+            "agent_b_model": condition.agent_b_model,
+        }
+        if not task_profile:
+            row["persona"] = condition.persona_key
+        for key, value in parameters.items():
+            if key.endswith("_profile_key") and key not in {"task_profile_key"}:
+                row[key.removesuffix("_key")] = value
+        rows.append(row)
+
+    factor_names = sorted({name for row in rows for name in row})
+    levels = {
+        name: sorted({str(row[name]) for row in rows if name in row})
+        for name in factor_names
+    }
+    expected_pairs = set()
+    observed_pairs = set()
+    for left_index, left in enumerate(factor_names):
+        for right in factor_names[left_index + 1:]:
+            expected_pairs.update(
+                (left, left_value, right, right_value)
+                for left_value in levels[left]
+                for right_value in levels[right]
+            )
+            observed_pairs.update(
+                (left, str(row[left]), right, str(row[right]))
+                for row in rows
+                if left in row and right in row
+            )
+    missing = sorted(expected_pairs - observed_pairs)
+    return {
+        "audio_condition_count": len(source),
+        "factor_count": len(factor_names),
+        "levels": levels,
+        "expected_pair_count": len(expected_pairs),
+        "covered_pair_count": len(expected_pairs) - len(missing),
+        "pair_coverage_ratio": (
+            round((len(expected_pairs) - len(missing)) / len(expected_pairs), 6)
+            if expected_pairs else 1.0
+        ),
+        "missing_pairs": [
+            {"left_factor": left, "left_value": left_value,
+             "right_factor": right, "right_value": right_value}
+            for left, left_value, right, right_value in missing
+        ],
+    }
+
+
 def build_condition_grid(
     test_case_keys=None,
     persona_keys=None,
@@ -420,6 +583,8 @@ def build_condition_grid(
     iterations=1,
     parameter_grid=None,
     parameter_profiles=None,
+    linked_profiles=None,
+    coverage_strategy="full_factorial",
     pair_audio_with_text=False,
 ):
     """Build condition grid function for this module's MVC responsibility.
@@ -445,44 +610,71 @@ def build_condition_grid(
     asr_engine_keys = asr_engine_keys or [""]
     agent_b_model_keys = agent_b_model_keys or [""]
     parameter_grid = dict(parameter_grid or {})
-    parameter_names = tuple(sorted(parameter_grid))
-    parameter_combinations = list(product(*(parameter_grid[name] for name in parameter_names))) if parameter_names else [()]
     parameter_profiles = list(parameter_profiles or [{"profile_key": "default"}])
+    linked_profiles = dict(linked_profiles or {})
+    coverage_strategy = str(coverage_strategy or "full_factorial").strip().lower()
+    if coverage_strategy not in {"full_factorial", "pairwise"}:
+        raise ValueError(f"Unsupported coverage strategy '{coverage_strategy}'.")
+
+    factors = [
+        ("test_case_key", test_case_keys),
+        ("persona_key", persona_keys),
+        ("speech_pattern_key", speech_pattern_keys),
+        ("model_param_key", model_param_keys),
+        ("objective_mode", objective_modes),
+        ("agent_a_audio_persona", agent_a_audio_persona_keys),
+        ("agent_b_audio_persona", agent_b_audio_persona_keys),
+        ("tts_engine", tts_engine_keys),
+        ("asr_engine", asr_engine_keys),
+        ("agent_b_model", agent_b_model_keys),
+        *(
+            (f"linked::{group}", profiles)
+            for group, profiles in sorted(linked_profiles.items())
+        ),
+        *((f"parameter::{name}", parameter_grid[name]) for name in sorted(parameter_grid)),
+        ("parameter_profile", parameter_profiles),
+    ]
+    if coverage_strategy == "pairwise":
+        factor_rows = pairwise_factor_rows(factors)
+    else:
+        factor_rows = [
+            dict(zip((name for name, _values in factors), values))
+            for values in product(*(values for _name, values in factors))
+        ]
 
     test_case_cache = {}
-    for (
-        test_case_key,
-        persona_key,
-        speech_pattern_key,
-        model_param_key,
-        objective_mode,
-        agent_a_audio_persona,
-        agent_b_audio_persona,
-        tts_engine,
-        asr_engine,
-        agent_b_model,
-        iteration,
-        parameter_combination,
-        parameter_profile,
-    ) in product(
-        test_case_keys,
-        persona_keys,
-        speech_pattern_keys,
-        model_param_keys,
-        objective_modes,
-        agent_a_audio_persona_keys,
-        agent_b_audio_persona_keys,
-        tts_engine_keys,
-        asr_engine_keys,
-        agent_b_model_keys,
-        range(iterations),
-        parameter_combinations,
-        parameter_profiles,
-    ):
+    for row, iteration in product(factor_rows, range(iterations)):
         parameter_values = {
-            **dict(zip(parameter_names, parameter_combination)),
-            **dict(parameter_profile),
+            **{
+                name.removeprefix("parameter::"): value
+                for name, value in row.items()
+                if name.startswith("parameter::")
+            },
+            **dict(row["parameter_profile"]),
         }
+        for name, value in row.items():
+            if name.startswith("linked::"):
+                parameter_values.update(dict(value))
+
+        core_values = {
+            key: parameter_values.pop(key, row[key])
+            for key in (
+                "test_case_key", "persona_key", "speech_pattern_key",
+                "model_param_key", "objective_mode", "agent_a_audio_persona",
+                "agent_b_audio_persona", "tts_engine", "asr_engine",
+                "agent_b_model",
+            )
+        }
+        test_case_key = core_values["test_case_key"]
+        persona_key = core_values["persona_key"]
+        speech_pattern_key = core_values["speech_pattern_key"]
+        model_param_key = core_values["model_param_key"]
+        objective_mode = core_values["objective_mode"]
+        agent_a_audio_persona = core_values["agent_a_audio_persona"]
+        agent_b_audio_persona = core_values["agent_b_audio_persona"]
+        tts_engine = core_values["tts_engine"]
+        asr_engine = core_values["asr_engine"]
+        agent_b_model = core_values["agent_b_model"]
         registered_size_treatment = model_size_treatment(agent_b_model)
         if registered_size_treatment:
             configured_size_treatment = parameter_values.get("agent_b_llm_size")

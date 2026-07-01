@@ -876,6 +876,7 @@ def write_standard_run_summary(
     for result in results:
         metric = metric_by_condition.get(result.condition_id)
         extras = result.extra or {}
+        parameters = dict(extras.get("parameter_values") or {})
         condition_rows.append({
             "result_schema_version": RESULT_SCHEMA_VERSION,
             "result_scope": result_scope,
@@ -886,11 +887,21 @@ def write_standard_run_summary(
             "test_case_key": result.test_case_key,
             "scenario_key": result.scenario_key,
             "persona_key": result.persona_key,
+            "speech_pattern_key": result.speech_pattern_key,
             "agent_a_type": extras.get("agent_a_type") or extras.get("resolved_run_config", {}).get("agent_a_type"),
+            "agent_a_audio_persona": extras.get("agent_a_audio_persona"),
+            "agent_b_audio_persona": extras.get("agent_b_audio_persona"),
             "agent_b_plugin": extras.get("agent_b_plugin") or extras.get("resolved_run_config", {}).get("agent_b_plugin"),
             "agent_b_model": extras.get("agent_b_model") or result.model_name,
+            "agent_b_llm_size": parameters.get("agent_b_llm_size"),
+            "model_param_key": extras.get("model_param_key"),
+            "objective_mode": extras.get("objective_mode"),
+            "iteration": extras.get("iteration"),
             "tts_engine": extras.get("tts_engine") or extras.get("resolved_run_config", {}).get("tts_engine"),
             "asr_engine": extras.get("asr_engine") or extras.get("resolved_run_config", {}).get("asr_engine"),
+            "asr_search_width": parameters.get("asr_beam_size"),
+            "matrix_family": parameters.get("matrix_family"),
+            "experiment_platform": parameters.get("experiment_platform"),
             "configuration_fingerprint": extras.get("configuration_provenance", {}).get("fingerprint_sha256"),
             "route_valid": bool(result.route_valid),
             "route_reaches_goal": bool(result.route_reaches_goal),
