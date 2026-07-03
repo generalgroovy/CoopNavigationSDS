@@ -261,6 +261,9 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
         "speech_pattern_key", "agent_a_audio_persona", "agent_b_audio_persona",
         "agent_b_llm_size", "model_param_key", "objective_mode", "iteration",
         "asr_search_width", "matrix_family", "experiment_platform",
+        "configured_tts_engine", "configured_asr_engine",
+        "experiment_seed", "repetition", "run_mode",
+        "slurm_condition_index", "slurm_grid_name",
     } <= set(condition_row)
     assert condition_row["matrix_family"] == "speech_llm_coverage_v1"
     assert condition_row["experiment_platform"] == "linux"

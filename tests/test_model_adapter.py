@@ -20,7 +20,11 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (
     ensure_ollama_models_ready,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_model_adapter
-from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import MODEL_CACHE_DIR, _prepared_model
+from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import (
+    MODEL_CACHE_DIR,
+    _prepared_model,
+    _trust_remote_code,
+)
 from coop_navigation_sds.Configuration.model_matrix import (
     AGENT_B_MODEL_SIZE_TREATMENTS,
     model_size_treatment,
@@ -72,6 +76,13 @@ class FakeModel:
 
 
 class TransformersModelAdapterTests(unittest.TestCase):
+    def test_userlm_profile_uses_official_model_and_remote_code_contract(self):
+        metadata = model_profile_metadata("userlm_8b_transformers")
+        self.assertEqual(metadata["model"], "microsoft/UserLM-8b")
+        self.assertEqual(metadata["provider"], "transformers")
+        self.assertTrue(_trust_remote_code("microsoft/UserLM-8b"))
+        self.assertFalse(_trust_remote_code("TinyLlama/TinyLlama-1.1B-Chat-v1.0"))
+
     def test_agent_b_model_size_treatments_are_centralized_and_disjoint(self):
         all_models = [
             model

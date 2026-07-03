@@ -197,7 +197,9 @@ class ExperimentRunner:
             "network_seed", "num_turns", "transfer_tolerance", "invalid_route_limit",
             "constraint_miss_limit", "dialogue_stagnation_limit", "max_turn_elapsed_sec",
             "calculation_max_time_sec", "profile_key", "agent_b_llm_size",
-            "matrix_family", "experiment_platform",
+            "matrix_family", "experiment_platform", "experiment_seed",
+            "repetition", "slurm_condition_index", "slurm_grid_name", "run_mode",
+            "agent_b_model_role",
         }
         speech_parameter_keys = set(SpeechPipelineConfig.__dataclass_fields__)
         with_overrides = getattr(test_case, "with_scenario_overrides", None)
@@ -325,6 +327,8 @@ class ExperimentRunner:
         result.extra["run_type"] = condition.run_type
         result.extra["tts_engine"] = speech_config["tts_engine"]
         result.extra["asr_engine"] = speech_config["asr_engine"]
+        result.extra["configured_tts_engine"] = condition.tts_engine or self.tts_engine
+        result.extra["configured_asr_engine"] = condition.asr_engine or self.asr_engine
         result.extra["agent_b_model"] = condition.agent_b_model
         result.extra["agent_a_type"] = self.agent_a_type
         result.extra["agent_b_plugin"] = self.agent_b_plugin_key

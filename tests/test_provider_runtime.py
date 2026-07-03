@@ -2,13 +2,16 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from coop_navigation_sds.DialogManagement.speech_pipeline import SpeechPipelineConfig, SpeechTransport
 from coop_navigation_sds.DialogManagement.provider_runtime import (
     IsolatedSpeechToText,
     IsolatedTextToSpeech,
+    ProviderProcessClient,
+    ProviderProcessStoppedError,
     _worker_config,
     resolve_provider_python,
 )
@@ -17,6 +20,22 @@ from coop_navigation_sds.TextToSpeech.setup import PROVIDER_PROFILES
 
 
 class ProviderRuntimeTests(unittest.TestCase):
+    def test_provider_process_restarts_once_after_unexpected_exit(self):
+        client = object.__new__(ProviderProcessClient)
+        client.lock = threading.Lock()
+        client.responses = None
+        client.close = Mock()
+        client._request_once = Mock(side_effect=[
+            ProviderProcessStoppedError("crashed"),
+            {"ok": True, "diagnostics": {}},
+        ])
+
+        response = client.request({"command": "probe"})
+
+        self.assertEqual(response["provider_restart_count"], 1)
+        self.assertEqual(client._request_once.call_count, 2)
+        client.close.assert_called_once()
+
     def test_tts_worker_never_owns_playback_or_realtime_waiting(self):
         config = SpeechPipelineConfig(playback_enabled=True, realtime_enabled=True)
         worker = _worker_config(config, "tts", "chattts")
@@ -37,6 +56,7 @@ class ProviderRuntimeTests(unittest.TestCase):
                 "text": "Take metro line M1 to Harbor.",
                 "audio": {"path": str(wav), "duration_sec": 1.0},
                 "diagnostics": {},
+                "provider_restart_count": 1,
             }
             with patch(
                 "coop_navigation_sds.DialogManagement.speech_pipeline.WaveFileTextToSpeech._play_wave",
@@ -47,6 +67,7 @@ class ProviderRuntimeTests(unittest.TestCase):
         playback.assert_called_once()
         self.assertTrue(signal.audio["played"])
         self.assertTrue(signal.audio["waited"])
+        self.assertEqual(signal.diagnostics["provider_restart_count"], 1)
 
     def test_manifest_resolves_shared_profile_interpreter(self):
         with tempfile.TemporaryDirectory() as tmpdir:

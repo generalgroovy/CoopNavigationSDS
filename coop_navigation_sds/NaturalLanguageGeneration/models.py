@@ -330,6 +330,13 @@ MODEL_PROFILE_SPECS = {
         optional_dependency="transformers, torch", size_tier="small",
         parameter_count_billion=1.1, family="Llama-derived",
     ),
+    "userlm_8b_transformers": ModelProfileSpec(
+        "userlm_8b_transformers", "Microsoft UserLM 8B", "transformers",
+        "microsoft/UserLM-8b",
+        "Dedicated research user simulator trained to predict user turns.", 34.0,
+        optional_dependency="transformers, torch; approximately 32.1 GB model repository",
+        size_tier="large", parameter_count_billion=8.0, family="UserLM/Llama 3",
+    ),
     "qwen2_5_0_5b_transformers": ModelProfileSpec(
         "qwen2_5_0_5b_transformers", "Qwen2.5 0.5B Instruct", "transformers",
         "Qwen/Qwen2.5-0.5B-Instruct",

@@ -12,6 +12,7 @@ from coop_navigation_sds.app import default_run_config
 from coop_navigation_sds.Configuration.gui import COMBINED_GUI_PHASES, GUI_METRIC_FAMILIES
 from coop_navigation_sds.EvaluationMetrics.catalog import METRIC_FAMILY_SPECS
 from coop_navigation_sds.experiments import build_condition_grid
+from coop_navigation_sds.batch import select_condition_shard
 
 
 def test_pipeline_order_and_optimal_preview():
@@ -101,3 +102,17 @@ def test_paired_grid_and_audio_minus_text_deltas():
     assert audio.paired_task_success_delta == -1.0
     assert audio.paired_turn_count_delta == 2.0
     assert audio.paired_audio_error_effect == 0.25
+
+
+def test_condition_shards_are_ordered_bounded_and_validated():
+    rows = list(range(12))
+    assert select_condition_shard(rows, start=3, count=4) == [3, 4, 5, 6]
+    assert select_condition_shard(rows, start=10, count=5) == [10, 11]
+    assert select_condition_shard(rows, start=12) == []
+    for start, count in ((-1, 2), (13, 2), (0, 0)):
+        try:
+            select_condition_shard(rows, start=start, count=count)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError((start, count))

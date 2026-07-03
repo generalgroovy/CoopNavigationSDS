@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "extends": "small_agent_b_speech_grid.job",
+  "name": "small_agent_b_speech_grid_userlm",
+  "description": "Matched UserLM caller comparison for the expanded TinyLlama Agent B speech grid.",
+  "config": {
+    "agent_a_type": "userlm",
+    "agent_a_model_provider": "transformers",
+    "agent_a_model_name": "microsoft/UserLM-8b",
+    "agent_a_model_base_url": "",
+    "allow_model_download": false,
+    "result_group": "agent_b/support/00-small-tinyllama/userlm"
+  }
+}

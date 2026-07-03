@@ -21,6 +21,9 @@ DISPLAY_METRIC_HINTS = (
     "turn_count",
     "automatic_eval",
 )
+OUTLIER_EXCLUDED_PHASES = frozenset({"task_outcome", "whole_dialogue", "metric_validity"})
+OUTLIER_MINIMUM_SAMPLES = 5
+OUTLIER_MODIFIED_Z_THRESHOLD = 3.5
 
 
 def discover_run_directories(paths):
@@ -195,6 +198,149 @@ def calculate_run_deltas(summaries):
     return deltas
 
 
+def identify_metric_outliers(
+    metrics,
+    conditions,
+    minimum_samples=OUTLIER_MINIMUM_SAMPLES,
+    modified_z_threshold=OUTLIER_MODIFIED_Z_THRESHOLD,
+):
+    """Find robust pre-outcome metric outliers and relate them to task outcomes.
+
+    Detection uses the median absolute deviation within metric, phase, and run
+    type. Labels are descriptive associations, not validated failure predictors.
+    """
+    outcomes = {
+        (str(row.get("source_run", "")), str(row.get("condition_id", ""))): row
+        for row in conditions
+    }
+    grouped = defaultdict(list)
+    for row in metrics:
+        phase = str(row.get("phase", ""))
+        if phase in OUTLIER_EXCLUDED_PHASES:
+            continue
+        if str(row.get("available", "true")).casefold() not in {"true", "1", "yes"}:
+            continue
+        value = _number(row.get("value_numeric"))
+        if value is None:
+            continue
+        key = (str(row.get("metric_key", "")), phase, str(row.get("run_type", "")))
+        grouped[key].append((row, value))
+
+    outliers = []
+    for observations in grouped.values():
+        if len(observations) < int(minimum_samples):
+            continue
+        values = [value for _row, value in observations]
+        median = statistics.median(values)
+        deviations = [abs(value - median) for value in values]
+        mad = statistics.median(deviations)
+        if mad <= 0:
+            continue
+        for row, value in observations:
+            modified_z = 0.67448975 * (value - median) / mad
+            if abs(modified_z) < float(modified_z_threshold):
+                continue
+            higher_is_better = str(row.get("higher_is_better", "")).casefold()
+            high_outlier = value > median
+            if higher_is_better in {"true", "1", "yes"}:
+                direction = "favorable" if high_outlier else "adverse"
+            elif higher_is_better in {"false", "0", "no"}:
+                direction = "adverse" if high_outlier else "favorable"
+            else:
+                direction = "unknown"
+            outcome = outcomes.get(
+                (str(row.get("source_run", "")), str(row.get("condition_id", ""))),
+                {},
+            )
+            succeeded = bool(outcome.get("task_success"))
+            if direction == "adverse" and not succeeded:
+                signal = "failure_aligned"
+            elif direction == "favorable" and succeeded:
+                signal = "success_aligned"
+            elif direction == "unknown":
+                signal = "direction_unknown"
+            else:
+                signal = "outcome_contradicting"
+            outliers.append({
+                "source_run": row.get("source_run", ""),
+                "source_path": row.get("source_path", ""),
+                "condition_id": row.get("condition_id", ""),
+                "run_type": row.get("run_type", ""),
+                "task_success": succeeded,
+                "route_valid": bool(outcome.get("route_valid")),
+                "metric_key": row.get("metric_key", ""),
+                "metric_label": row.get("metric_label", row.get("metric_key", "")),
+                "phase": row.get("phase", ""),
+                "value": value,
+                "reference_median": median,
+                "median_absolute_deviation": mad,
+                "modified_z_score": modified_z,
+                "threshold": float(modified_z_threshold),
+                "higher_is_better": row.get("higher_is_better", ""),
+                "outlier_direction": direction,
+                "outcome_alignment": signal,
+                "interpretation": "descriptive association; not a validated causal failure indicator",
+            })
+    return sorted(
+        outliers,
+        key=lambda row: (str(row["source_run"]), str(row["condition_id"]), -abs(row["modified_z_score"])),
+    )
+
+
+def summarize_run_outcomes(conditions, outliers=()):
+    """Summarize condition-level task outcomes and aligned metric signals per run."""
+    grouped = defaultdict(list)
+    for row in conditions:
+        grouped[(str(row.get("source_run", "")), str(row.get("source_path", "")))].append(row)
+    signal_counts = defaultdict(lambda: defaultdict(int))
+    for row in outliers:
+        signal_counts[str(row.get("source_run", ""))][str(row.get("outcome_alignment", ""))] += 1
+    output = []
+    for (run_id, source_path), rows in sorted(grouped.items()):
+        successes = sum(bool(row.get("task_success")) for row in rows)
+        failures = len(rows) - successes
+        status = "all_successful" if not failures else "all_failed" if not successes else "mixed"
+        output.append({
+            "source_run": run_id,
+            "source_path": source_path,
+            "condition_count": len(rows),
+            "successful_condition_count": successes,
+            "failed_condition_count": failures,
+            "task_success_rate": successes / len(rows) if rows else None,
+            "task_outcome_status": status,
+            "failure_aligned_metric_outliers": signal_counts[run_id]["failure_aligned"],
+            "success_aligned_metric_outliers": signal_counts[run_id]["success_aligned"],
+            "contradicting_metric_outliers": signal_counts[run_id]["outcome_contradicting"],
+        })
+    return output
+
+
+def summarize_metric_indicators(outliers):
+    """Aggregate which metric outliers align with observed success or failure."""
+    grouped = defaultdict(list)
+    for row in outliers:
+        grouped[(str(row.get("phase", "")), str(row.get("metric_key", "")))].append(row)
+    output = []
+    for (phase, metric_key), rows in sorted(grouped.items()):
+        failure_aligned = sum(row.get("outcome_alignment") == "failure_aligned" for row in rows)
+        success_aligned = sum(row.get("outcome_alignment") == "success_aligned" for row in rows)
+        contradicting = sum(row.get("outcome_alignment") == "outcome_contradicting" for row in rows)
+        aligned = failure_aligned + success_aligned
+        output.append({
+            "phase": phase,
+            "metric_key": metric_key,
+            "metric_label": rows[0].get("metric_label", metric_key),
+            "outlier_count": len(rows),
+            "failure_aligned_count": failure_aligned,
+            "success_aligned_count": success_aligned,
+            "contradicting_count": contradicting,
+            "direction_unknown_count": sum(row.get("outcome_alignment") == "direction_unknown" for row in rows),
+            "outcome_alignment_rate": aligned / len(rows),
+            "interpretation": "descriptive outlier alignment; requires held-out validation",
+        })
+    return output
+
+
 def _selected_chart_rows(summaries, limit=12):
     audio = [row for row in summaries if row.get("run_type") == "audio_variant"]
     preferred = [
@@ -232,7 +378,10 @@ def _bar_svg(rows):
     return "".join(fragments)
 
 
-def write_html_report(path, run_directories, conditions, summaries, deltas):
+def write_html_report(
+    path, run_directories, conditions, summaries, deltas,
+    run_outcomes, outliers, metric_indicators,
+):
     """Write a dependency-free HTML report with inline SVG comparisons."""
     chart_rows = _selected_chart_rows(summaries)
     by_metric = defaultdict(list)
@@ -242,22 +391,44 @@ def write_html_report(path, run_directories, conditions, summaries, deltas):
         f"<section><h3>{html.escape(metric)}</h3>{_bar_svg(rows)}</section>"
         for metric, rows in by_metric.items()
     ) or "<p>No available numeric audio metrics were found.</p>"
-    outcome_rows = defaultdict(lambda: {"conditions": 0, "success": 0, "valid": 0})
-    for row in conditions:
-        key = (row.get("source_run", ""), row.get("asr_engine", ""), row.get("run_type", ""))
-        outcome_rows[key]["conditions"] += 1
-        outcome_rows[key]["success"] += int(bool(row.get("task_success")))
-        outcome_rows[key]["valid"] += int(bool(row.get("route_valid")))
     table_rows = "".join(
-        "<tr>" + "".join(f"<td>{html.escape(str(value))}</td>" for value in (*key, data["conditions"], data["success"], data["valid"])) + "</tr>"
-        for key, data in sorted(outcome_rows.items())
+        f'<tr class="{html.escape(row["task_outcome_status"])}">'
+        + "".join(f"<td>{html.escape(str(value))}</td>" for value in (
+            row["source_run"], row["task_outcome_status"], row["condition_count"],
+            row["successful_condition_count"], row["failed_condition_count"],
+            f'{100.0 * row["task_success_rate"]:.1f}%',
+            row["failure_aligned_metric_outliers"], row["success_aligned_metric_outliers"],
+        )) + "</tr>"
+        for row in run_outcomes
     )
+    outlier_rows = "".join(
+        f'<tr class="{html.escape(row["outcome_alignment"])}">'
+        + "".join(f"<td>{html.escape(str(value))}</td>" for value in (
+            row["source_run"], row["condition_id"], "success" if row["task_success"] else "failure",
+            row["phase"], row["metric_label"], f'{row["value"]:.4g}',
+            f'{row["reference_median"]:.4g}', f'{row["modified_z_score"]:.2f}',
+            row["outlier_direction"], row["outcome_alignment"],
+        )) + "</tr>"
+        for row in outliers
+    ) or '<tr><td colspan="10">No robust pre-outcome metric outliers detected.</td></tr>'
+    indicator_rows = "".join(
+        f'<tr class="{"success_aligned" if row["outcome_alignment_rate"] >= 0.75 else "mixed" if row["outcome_alignment_rate"] >= 0.5 else "failure_aligned"}">'
+        + "".join(f"<td>{html.escape(str(value))}</td>" for value in (
+            row["phase"], row["metric_label"], row["outlier_count"],
+            row["failure_aligned_count"], row["success_aligned_count"],
+            row["contradicting_count"], f'{100.0 * row["outcome_alignment_rate"]:.1f}%',
+        )) + "</tr>"
+        for row in metric_indicators
+    ) or '<tr><td colspan="7">No metric indicator summary is available.</td></tr>'
     document = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CoopNavigationSDS batch comparison</title>
-<style>body{{font:15px system-ui,sans-serif;color:#202A35;background:#F3F5F7;margin:0}}main{{max-width:1180px;margin:auto;padding:24px}}section{{background:white;border:1px solid #CBD3DC;border-radius:6px;padding:16px;margin:12px 0}}h1,h2,h3{{margin:0 0 12px}}table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #DCE2E8;padding:7px;text-align:left}}th{{background:#EAF1EF}}svg{{width:100%;max-height:420px}}</style></head>
+<style>body{{font:15px system-ui,sans-serif;color:#202A35;background:#F3F5F7;margin:0}}main{{max-width:1500px;margin:auto;padding:24px}}section{{background:white;border:1px solid #CBD3DC;border-radius:6px;padding:16px;margin:12px 0;overflow:auto}}h1,h2,h3{{margin:0 0 12px}}table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #DCE2E8;padding:7px;text-align:left;white-space:nowrap}}th{{background:#EAF1EF}}.all_successful,.success_aligned{{background:#DFF1E7}}.mixed{{background:#FFF0C9}}.all_failed,.failure_aligned{{background:#F7DADA}}.outcome_contradicting,.direction_unknown{{background:#E8E5F2}}.legend span{{display:inline-block;padding:4px 8px;margin-right:6px;border:1px solid #CBD3DC}}svg{{width:100%;max-height:420px}}</style></head>
 <body><main><h1>Batch comparison</h1><p>{len(run_directories)} runs, {len(conditions)} conditions, {len(summaries)} metric aggregates, {len(deltas)} pairwise deltas.</p>
-<section><h2>Outcome counts</h2><table><thead><tr><th>Run</th><th>ASR</th><th>Type</th><th>Conditions</th><th>Task success</th><th>Valid route</th></tr></thead><tbody>{table_rows}</tbody></table></section>
+<p class="legend"><span class="all_successful">All successful</span><span class="mixed">Mixed</span><span class="all_failed">All failed</span><span class="outcome_contradicting">Outlier contradicts outcome</span></p>
+<section><h2>Run task outcomes</h2><table><thead><tr><th>Run</th><th>Status</th><th>Conditions</th><th>Task success count</th><th>Task failure count</th><th>Success rate</th><th>Failure-aligned outliers</th><th>Success-aligned outliers</th></tr></thead><tbody>{table_rows}</tbody></table></section>
+<section><h2>Metric outliers and outcome alignment</h2><p>Modified z-score uses the median absolute deviation within metric, phase, and run type. Only pre-outcome phases with at least {OUTLIER_MINIMUM_SAMPLES} observations are eligible. Color denotes descriptive alignment, not causation or validated prediction.</p><table><thead><tr><th>Run</th><th>Condition</th><th>Task outcome</th><th>Phase</th><th>Metric</th><th>Value</th><th>Median</th><th>Modified z</th><th>Direction</th><th>Alignment</th></tr></thead><tbody>{outlier_rows}</tbody></table></section>
+<section><h2>Metrics indicating observed outcomes</h2><p>Counts summarize how often each metric's robust outliers aligned with failure or success. Green means at least 75% alignment, amber at least 50%, and red below 50%; this is descriptive and must be validated on held-out runs.</p><table><thead><tr><th>Phase</th><th>Metric</th><th>Outliers</th><th>Failure-aligned</th><th>Success-aligned</th><th>Contradicting</th><th>Alignment rate</th></tr></thead><tbody>{indicator_rows}</tbody></table></section>
 <h2>Selected audio metrics</h2>{charts}
 <section><h2>Analysis files</h2><p>Use <code>metric_summary.csv</code> for aggregate plots and <code>metric_deltas.csv</code> for provider contrasts. Raw joined evidence remains in the combined CSV files.</p></section>
 </main></body></html>"""
@@ -274,18 +445,30 @@ def compare_runs(inputs, output_directory):
     conditions, metrics = load_comparison_data(run_directories)
     summaries = summarize_metrics(metrics)
     deltas = calculate_run_deltas(summaries)
+    outliers = identify_metric_outliers(metrics, conditions)
+    run_outcomes = summarize_run_outcomes(conditions, outliers)
+    metric_indicators = summarize_metric_indicators(outliers)
     paths = {
         "conditions": output / "combined_conditions.csv",
         "metrics": output / "combined_metrics_long.csv",
         "summary": output / "metric_summary.csv",
         "deltas": output / "metric_deltas.csv",
+        "outliers": output / "metric_outliers.csv",
+        "run_outcomes": output / "run_outcomes.csv",
+        "metric_indicators": output / "metric_indicator_summary.csv",
         "report": output / "comparison_report.html",
     }
     _write_csv(paths["conditions"], conditions)
     _write_csv(paths["metrics"], metrics)
     _write_csv(paths["summary"], summaries)
     _write_csv(paths["deltas"], deltas)
-    write_html_report(paths["report"], run_directories, conditions, summaries, deltas)
+    _write_csv(paths["outliers"], outliers)
+    _write_csv(paths["run_outcomes"], run_outcomes)
+    _write_csv(paths["metric_indicators"], metric_indicators)
+    write_html_report(
+        paths["report"], run_directories, conditions, summaries, deltas,
+        run_outcomes, outliers, metric_indicators,
+    )
     return paths
 
 

@@ -34,7 +34,7 @@ from coop_navigation_sds.Configuration.runtime import (
     REQUIRE_CONSTRAINT_RETENTION,
     RESULTS_DIR,
 )
-from coop_navigation_sds.Configuration.schema import resolve_results_root, sanitized_config
+from coop_navigation_sds.Configuration.schema import resolve_result_group, resolve_results_root, sanitized_config
 from coop_navigation_sds.Configuration.experiment import ExperimentSpecification
 from coop_navigation_sds.Configuration.run_identity import batch_run_label
 from coop_navigation_sds.Configuration.model_matrix import resolve_agent_b_model_store
@@ -72,6 +72,7 @@ from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     write_retrospective_metrics_json,
     write_standard_run_summary,
 )
+from coop_navigation_sds.ResultsAndArtifacts.coverage import update_experiment_coverage
 from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from coop_navigation_sds.Configuration.scenarios import DEFAULT_TEST_CASE
 from coop_navigation_sds.Configuration.settings import default_settings_path, load_run_settings
@@ -110,6 +111,20 @@ def parse_csv_arg(value, all_values=None):
     if any(item.lower() == "all" for item in items):
         return list(all_values or [])
     return items
+
+
+def select_condition_shard(conditions, start=0, count=None):
+    """Return one validated contiguous condition shard without changing order."""
+    rows = list(conditions)
+    start = int(start or 0)
+    if start < 0 or start > len(rows):
+        raise ValueError(f"Condition start {start} is outside 0..{len(rows)}.")
+    if count is None:
+        return rows[start:]
+    count = int(count)
+    if count < 1:
+        raise ValueError("Condition count must be at least 1.")
+    return rows[start:start + count]
 
 
 def parse_bool_flag(value):
@@ -180,6 +195,10 @@ def main():
     parser.add_argument("--model-timeout-sec", type=float, default=float(configured.get("model_timeout_sec", CHAT_TIMEOUT_SEC)))
     parser.add_argument("--model-max-new-tokens", type=int, default=int(configured.get("model_max_new_tokens", MAX_NEW_TOKENS)))
     parser.add_argument("--model-max-input-tokens", type=int, default=int(configured.get("model_max_input_tokens", MAX_INPUT_TOKENS)))
+    parser.add_argument("--agent-a-model-provider", default=configured.get("agent_a_model_provider", "ollama"), choices=available_model_provider_keys(), help="Fixed UserLM provider, independent of Agent B.")
+    parser.add_argument("--agent-a-model-name", default=configured.get("agent_a_model_name", "microsoft/UserLM-8b"), help="Fixed UserLM model, independent of Agent B.")
+    parser.add_argument("--agent-a-model-base-url", default=configured.get("agent_a_model_base_url", configured.get("model_base_url", "")))
+    parser.add_argument("--agent-a-model-device", default=configured.get("agent_a_model_device", configured.get("model_device", DEVICE)))
     parser.add_argument("--allow-model-download", type=parse_bool_flag, default=bool(configured.get("allow_model_download", ALLOW_MODEL_DOWNLOAD)), help="Allow Transformers to download missing model files during this batch.")
     parser.add_argument("--test-cases", default=job_grid_value(job, "test_cases", configured.get("test_case_key", "morning_peak_cross_city,midday_transfer,evening_outbound,late_event")))
     parser.add_argument("--personas", default=job_grid_value(job, "personas", configured.get("persona_key", "focused_commuter")))
@@ -272,7 +291,8 @@ def main():
     parser.add_argument("--max-turn-elapsed-sec", type=float, default=float(configured.get("max_turn_elapsed_sec", DEFAULT_MAX_TURN_ELAPSED_SEC)))
     parser.add_argument("--calculation-max-time-sec", type=float, default=float(configured.get("calculation_max_time_sec", GENERATION_MAX_TIME_SEC)))
     parser.add_argument("--output", default="automatic_eval_metrics.xlsx", help="Metrics workbook filename inside the run folder.")
-    parser.add_argument("--results-dir", dest="results_dir", default=configured.get("results_root", configured.get("protocol_log_dir", RESULTS_DIR)), help="Single results root. Every execution writes one flat run folder inside it.")
+    parser.add_argument("--results-dir", dest="results_dir", default=configured.get("results_root", configured.get("protocol_log_dir", RESULTS_DIR)), help="Single results root. A result group may organize the run beneath it.")
+    parser.add_argument("--result-group", default=configured.get("result_group", ""), help="Optional model/caller grouping beneath --results-dir.")
     parser.add_argument(
         "--log-profile",
         default="full",
@@ -280,8 +300,23 @@ def main():
         help="Batch logging is fixed to full so every condition retains complete audit evidence.",
     )
     parser.add_argument("--progress", action="store_true", help="Print each completed condition id.")
+    parser.add_argument("--condition-start", type=int, default=0, help="Zero-based first expanded condition for a sequential shard.")
+    parser.add_argument("--condition-count", type=int, help="Maximum conditions to execute from --condition-start.")
+    parser.add_argument(
+        "--update-coverage-registry",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Rebuild the results-root coverage registry after finalization.",
+    )
     args = parser.parse_args()
-    args.results_dir = resolve_results_root(args.results_dir)
+    try:
+        coverage_results_root = resolve_results_root(args.results_dir)
+        args.results_dir = resolve_result_group(
+            coverage_results_root,
+            args.result_group,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     args.model_store_dir = str(resolve_agent_b_model_store(args.model_store_dir))
     resolved_speech_assets = apply_speech_engine_profiles({
         "tts_engine": args.tts_engine,
@@ -318,7 +353,8 @@ def main():
         coverage_strategy=args.coverage_strategy,
         pair_audio_with_text=args.paired_audio_text,
     ))
-    coverage_report = condition_coverage_report(conditions)
+    full_conditions = conditions
+    coverage_report = condition_coverage_report(full_conditions)
     if args.coverage_strategy == "pairwise" and coverage_report["missing_pairs"]:
         raise SystemExit(
             "Pairwise coverage generation failed: "
@@ -326,9 +362,25 @@ def main():
         )
     if args.progress:
         print(
-            f"Coverage: {args.coverage_strategy} | {len(conditions)} runs | "
+            f"Coverage: {args.coverage_strategy} | {len(full_conditions)} runs | "
             f"{coverage_report['covered_pair_count']}/"
             f"{coverage_report['expected_pair_count']} factor pairs",
+            flush=True,
+        )
+    try:
+        conditions = select_condition_shard(
+            full_conditions,
+            start=args.condition_start,
+            count=args.condition_count,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    if not conditions:
+        raise SystemExit("Selected condition shard is empty.")
+    if len(conditions) != len(full_conditions):
+        print(
+            f"Shard: conditions {args.condition_start}-"
+            f"{args.condition_start + len(conditions) - 1} of {len(full_conditions)}",
             flush=True,
         )
     preflight_config = {
@@ -404,6 +456,9 @@ def main():
         json.dumps(
             {
                 "coverage_strategy": args.coverage_strategy,
+                "condition_start": args.condition_start,
+                "selected_condition_count": len(conditions),
+                "full_condition_count": len(full_conditions),
                 **coverage_report,
             },
             indent=2,
@@ -466,9 +521,9 @@ def main():
                     agent_a_model_name = agent_a_defaults["model_name"]
                     agent_a_base_url = agent_a_defaults.get("model_base_url", args.model_base_url)
                 else:
-                    agent_a_provider = args.model_provider
-                    agent_a_model_name = args.model_name
-                    agent_a_base_url = args.model_base_url
+                    agent_a_provider = args.agent_a_model_provider
+                    agent_a_model_name = args.agent_a_model_name
+                    agent_a_base_url = args.agent_a_model_base_url
                 print(
                     "Loading language model for "
                     f"Agent A {args.agent_a_type}: {agent_a_model_name} through {agent_a_provider}.",
@@ -488,7 +543,11 @@ def main():
                         api_key=args.model_api_key if agent_a_provider == "openai_compatible" else "",
                         base_url=agent_a_base_url,
                         timeout_sec=args.model_timeout_sec,
-                        device=args.model_device,
+                        device=(
+                            args.model_device
+                            if args.agent_a_type == "tinyllama"
+                            else args.agent_a_model_device
+                        ),
                         max_new_tokens=args.model_max_new_tokens,
                         max_input_tokens=args.model_max_input_tokens,
                         allow_model_download=args.allow_model_download,
@@ -643,6 +702,9 @@ def main():
             "iterations": args.iterations,
             "coverage_strategy": args.coverage_strategy,
             "coverage_plan": coverage_report,
+            "condition_start": args.condition_start,
+            "condition_count": len(conditions),
+            "full_condition_count": len(full_conditions),
             "invalid_route_limit": args.invalid_route_limit,
             "constraint_miss_limit": args.constraint_miss_limit,
             "dialogue_stagnation_limit": args.dialogue_stagnation_limit,
@@ -657,6 +719,10 @@ def main():
             "model_timeout_sec": args.model_timeout_sec,
             "model_max_new_tokens": args.model_max_new_tokens,
             "model_max_input_tokens": args.model_max_input_tokens,
+            "agent_a_model_provider": args.agent_a_model_provider,
+            "agent_a_model_name": args.agent_a_model_name,
+            "agent_a_model_base_url": args.agent_a_model_base_url,
+            "agent_a_model_device": args.agent_a_model_device,
             "allow_model_download": args.allow_model_download,
             "agent_b_model_preflight": agent_b_model_preflight,
             "maximum_progressive_constraints": args.maximum_progressive_constraints,
@@ -675,6 +741,11 @@ def main():
         result_scope="batch",
         manifest_path=manifest_path,
     )
+    coverage_registry = (
+        update_experiment_coverage(coverage_results_root)
+        if args.update_coverage_registry
+        else None
+    )
 
     print(f"Run folder: {run_dir}")
     print(f"Metrics: {len(metrics)} rows -> {metrics_output}")
@@ -685,6 +756,8 @@ def main():
     print(f"Failure indicators: {failure_indicator_path}")
     print(f"Protocols: {len(protocol_paths)} files -> {protocol_dir}")
     print(f"Artifacts: manifest={manifest_path}; network={artifacts['network_json']}; graph={artifacts['network_graph']}")
+    if coverage_registry:
+        print(f"Coverage registry: {coverage_registry['report']}")
     print(f"All artifacts: {run_dir}")
 
 

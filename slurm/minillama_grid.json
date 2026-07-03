@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "name": "minillama_agent_b_grid",
+  "agent_b": ["simple", "minillama"],
+  "personas": "all",
+  "test_cases": "all",
+  "run_modes": ["pure_text"],
+  "seeds": [11, 29, 47],
+  "repetitions": 1,
+  "agent_a_type": "staged",
+  "base_config": {
+    "num_turns": 20,
+    "maximum_progressive_constraints": 0,
+    "allow_model_download": false,
+    "model_max_new_tokens": 32
+  }
+}

@@ -100,6 +100,8 @@ headless batch therefore follows the same runtime path as an interactive run.
 | FR-10 | Allow only Agent A to close the dialogue; suppress Agent B closure attempts | Closure-suppression event and final stop reason |
 | FR-11 | Store raw metric inputs before retrospective computation | `metric_inputs.json` and protocol timestamp ordering |
 | FR-12 | Export single and batch runs through compatible long and wide analysis schemas | `metrics_long.*` and `metrics_wide.*` |
+| FR-13 | Maintain a results-root matrix of planned and completed experimental combinations | `experiment_coverage_*` tables and report |
+| FR-14 | Map every local or Slurm array index to one immutable Agent B condition and collision-safe result folder | exported `condition.json` and `task_summary.json` |
 
 ### Non-Functional Requirements
 
@@ -1786,12 +1788,13 @@ identifies the failed component.
 | `coverage_strategy` | `full_factorial` or deterministic strength-two `pairwise` | Controls selection from declared factor levels |
 | `iterations` | Repetitions per selected condition | Adds an iteration identifier and repeats the complete condition |
 
-Minimal paired speech job:
+Expanded paired speech job (`jobs/support/small_agent_b_speech_grid.job`):
 
 ```json
 {
   "schema_version": 1,
-  "name": "tinyllama_piper_vosk_baseline",
+  "name": "small_agent_b_speech_grid",
+  "coverage_strategy": "pairwise",
   "iterations": 2,
   "config": {
     "agent_a_type": "tinyllama",
@@ -1799,6 +1802,7 @@ Minimal paired speech job:
     "model_profile": "tinyllama_1b_transformers",
     "model_provider": "transformers",
     "model_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "num_turns": 20,
     "paired_audio_text_runs": true,
     "tts_engine": "piper",
     "tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx",
@@ -1806,14 +1810,41 @@ Minimal paired speech job:
     "asr_model": ".speech-providers/models/vosk/vosk-model-small-en-us-0.15"
   },
   "grid": {
-    "test_cases": ["morning_peak_cross_city"],
-    "personas": ["focused_commuter"],
+    "test_cases": ["morning_peak_cross_city", "midday_transfer", "airport_connection"],
+    "personas": ["focused_commuter", "distracted_multitasker", "delay_sensitive_traveler"],
+    "agent_a_audio_personas": ["high_clarity_caller", "hesitant_caller"],
+    "agent_b_audio_personas": ["clear_operator", "degraded_operator"],
+    "speech_patterns": ["clean", "hesitant", "noisy_station"],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"],
     "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"],
-    "tts_engines": ["piper"],
-    "asr_engines": ["vosk"]
+    "tts_engines": ["piper", "espeak_ng"],
+    "asr_engines": ["vosk", "faster_whisper"]
+  },
+  "parameter_values": {
+    "asr_beam_size": [1, 6],
+    "network_seed": [11, 29]
+  },
+  "linked_profiles": {
+    "task": [
+      {"task_profile_key": "morning_focused", "test_case_key": "morning_peak_cross_city", "persona_key": "focused_commuter"},
+      {"task_profile_key": "midday_distracted", "test_case_key": "midday_transfer", "persona_key": "distracted_multitasker"},
+      {"task_profile_key": "airport_delay", "test_case_key": "airport_connection", "persona_key": "delay_sensitive_traveler"}
+    ]
   }
 }
 ```
+
+The task profiles move scenario and persona together, preventing invalid blind
+cross-products. Pairwise selection covers every declared two-factor value pair
+while the two iterations and matched text controls provide repetition and a
+speech-channel baseline. Agent B remains fixed so this job isolates speech,
+persona, and scenario effects rather than confounding them with model changes.
+The matched `jobs/support/small_agent_b_speech_grid_userlm.job` inherits the
+complete design and changes only Agent A to the official
+`microsoft/UserLM-8b` Transformers model and its result group. The full model
+repository is approximately 32.1 GB and therefore requires a prepared
+high-memory experiment host.
 
 The complete available keys are demonstrated by jobs under `jobs/`; active
 scalar meanings are defined in Chapter 9. Unknown schema versions, cyclic
@@ -1858,383 +1889,361 @@ dialogue limits. Only the speech channel changes. Results store `pair_id`,
 satisfaction, turn count, repairs, and audio-error effect. A text control is
 not a replacement for failed audio; both are independent measured conditions.
 
-### Included Job Families
+### Focused Agent B Experiment
 
-| Job family | Intended use | Typical scale |
-| --- | --- | ---: |
-| `speech_llm_coverage_matrix.job` | Single OS-neutral authoritative matrix covering every registered TTS, ASR, Agent B model, persona, pattern, task profile, and search-width pair with TinyLlama Agent A | 330 conditions |
-| `research_smoke.job` | Fast schema, logging, metric, and export verification without heavy providers | Minimal |
-| `requested_tinyllama_piper_*.job` | Bounded real-provider validation with one matched audio/text pair | 2 conditions |
-| `tinyllama_piper_*_comparison.job` | Matched Piper/recognizer experiments over all speech patterns, operator audio personas, synthesis profiles, search widths, scenarios, and paired controls | 308 conditions |
-| `linux_agent_a_*_speech_llm_matrix.job` | Canonical Linux cross-component covering array | 330 paired runs per Agent A |
-| `windows_agent_a_*_speech_llm_matrix.job` | Windows-labelled equivalent using the same experimental factors | 330 paired runs per Agent A |
-| `*_agent_b_<small|medium|large>_llm_matrix.job` | Isolated Agent B model-size treatments with two models per tier | Tier subset |
-| `*_parallel_*.job` | Independent profile shards for process-level parallel execution | One profile per shard |
+The authoritative batch design is under `jobs/agent_b_llm/`. It evaluates one
+primary model at each size and one different-family comparison at the same
+approximate size. This gives a scale contrast without treating one model family
+as synonymous with model size.
 
-Counts depend on inherited grids and iterations. Trust the runner's printed
-coverage/count summary and persisted `coverage_plan.json`, not the filename.
+| Size | Primary Agent B | Family comparison | Experimental contrast |
+| --- | --- | --- | --- |
+| Small | `llama3.2:1b` | `qwen2.5:1.5b` | compact instruction models |
+| Medium | `llama3.2:3b` | `phi3:mini` | mid-size family and training differences |
+| Large | `llama3.1:8b` | `qwen2.5:7b` | higher-capacity local models |
 
-### Provider Roles
+Every Agent B treatment has two otherwise matched caller jobs:
 
-TTS and ASR providers are not interchangeable. The configuration rejects a
-provider placed in the wrong phase.
+- **UserLM** uses the fixed `microsoft/UserLM-8b` Transformers caller model.
+  Agent B varies independently through the six Ollama model treatments.
+- **TinyLlama comparison** uses the fixed
+  `TinyLlama/TinyLlama-1.1B-Chat-v1.0` Transformers caller.
 
-| Pipeline role | Implementations in the canonical job |
-| --- | --- |
-| Text-to-speech | ChatTTS, Piper, eSpeak NG, Coqui |
-| Automatic speech recognition | Faster-Whisper, Vosk, whisper.cpp, sherpa-onnx |
+The caller contrast measures whether Agent B findings remain stable across a
+task-oriented user simulator and a small generative caller. It is not mixed
+inside one process: each caller/model combination is an explicit child job.
 
-Therefore, use combinations such as **Piper + Faster-Whisper** or
-**Piper + Vosk**. "Vosk for TTS" is invalid because Vosk only recognizes audio.
+### Controlled Condition Design
 
-### Canonical Job Hierarchy
+`jobs/agent_b_llm/base.template.json` is the single owner of shared settings.
+It fixes 20 turns, three progressive constraints, greedy decoding, full
+logging, Piper synthesis, Faster-Whisper recognition, and paired audio/text
+execution. It varies four validated task/persona profiles, two caller audio
+personas, two operator audio personas, three speech patterns, recognition beam
+widths 1 and 6, and network seeds 11 and 29.
+
+Deterministic pairwise expansion produces 13 audio conditions and 13 matched
+text controls per job. Thus:
+
+| Scope | Jobs | Conditions |
+| --- | ---: | ---: |
+| UserLM primary scale | 3 | 78 |
+| UserLM family comparisons | 3 | 78 |
+| TinyLlama caller primary comparisons | 3 | 78 |
+| TinyLlama caller family comparisons | 3 | 78 |
+| Complete design | 12 | 312 |
+
+Pairwise coverage estimates main effects and two-factor interactions with a
+bounded run count. It does not provide exhaustive higher-order interaction
+coverage. The generated `coverage_plan.json` records the selected rows and
+must be retained with the results.
+
+### Job and Manifest Structure
 
 ```text
-speech_llm_coverage_matrix.job
-|-- linux_agent_a_tinyllama_speech_llm_matrix.job
-|   |-- linux Agent B small / medium / large jobs
-|   `-- linux_agent_a_userlm_speech_llm_matrix.job
-|       `-- linux UserLM Agent B small / medium / large jobs
-`-- windows_agent_a_tinyllama_speech_llm_matrix.job
-    |-- windows Agent B small / medium / large jobs
-    `-- windows_agent_a_userlm_speech_llm_matrix.job
-        `-- windows UserLM Agent B small / medium / large jobs
+jobs/
+|-- agent_b_llm/
+|   |-- README.md
+|   |-- base.template.json
+|   |-- batches/
+|   |   |-- 01-userlm-primary.json
+|   |   |-- 02-userlm-model-comparison.json
+|   |   |-- 03-tinyllama-primary-comparison.json
+|   |   |-- 04-tinyllama-model-comparison.json
+|   |   `-- all.json
+|   |-- userlm/{primary,model_comparison}/
+|   `-- tinyllama_comparison/{primary,model_comparison}/
+`-- support/
+    |-- research_smoke.job
+    |-- audio_persona_matrix.job
+    `-- multimodal_access.job
 ```
 
-The OS-neutral parent is the only owner of task profiles, personas, speech
-patterns, TTS providers, ASR providers, search widths, and Agent B models.
-Platform children override only `experiment_platform`; UserLM children override
-only `agent_a_type`; size children override only `agent_b_model_tiers`. This
-keeps comparisons matched and makes each experimental difference reviewable.
+Primary and model-comparison jobs differ only in Agent B model, model role, and
+model size. The TinyLlama caller jobs inherit their matching UserLM jobs and
+override only `agent_a_type` and `result_group`. Reviewing a child file is
+therefore sufficient to identify its intended treatment.
 
-Agent A is deliberately fixed within one batch invocation. Its adapter,
-prompt policy, and perspective-specific memory are initialized once and reused
-across conditions. Mixing TinyLlama and UserLM inside the same process would
-couple caller changes to model lifecycle and resource state. Matched child jobs
-provide the same coverage with one controlled caller difference instead.
+### Previewing and Running Batches
 
-### Running a Batch
-
-Paired batch smoke:
-
-```powershell
-python -m coop_navigation_sds.batch `
-  --job-file jobs\research_smoke.job `
-  --results-dir results `
-  --progress
-```
-
-The same command form works on Linux with `/` paths and `python3` or the
-project virtual-environment interpreter. Display every supported override:
+Preview the complete experiment without loading models:
 
 ```bash
-python -m coop_navigation_sds.batch --help
-```
-
-Command-line values override job defaults for controlled one-off changes. For
-example, `--iterations 3`, `--coverage-strategy pairwise`, or
-`--no-speech-playback` changes the resolved invocation without editing the job.
-The manifest stores the source job, resolved configuration, coverage plan, and
-configuration fingerprint, so the effective condition remains auditable.
-
-Do not use ad hoc overrides when conditions must be preregistered or reviewed;
-create a child job with `extends` instead. Child jobs make the changed factor
-visible in version control and prevent accidental differences between runs.
-
-Run the single canonical matrix on the current Windows or Linux host:
-
-```bash
-python -m coop_navigation_sds.batch \
-  --job-file jobs/speech_llm_coverage_matrix.job \
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/all.json \
   --results-dir results \
-  --progress
+  --preview
 ```
 
-This selects TinyLlama Agent A and all six Agent B models. Use explicit
-platform children for published experiments because they store `linux` or
-`windows`, rather than `current`, in every condition row.
-
-TinyLlama, Piper, and Faster-Whisper sequential matrix:
-
-```powershell
-.\.venv\Scripts\python.exe -m coop_navigation_sds.batch `
-  --job-file jobs\tinyllama_piper_faster_whisper_sequential.job `
-  --results-dir results `
-  --progress
-```
-
-This pairwise matrix contains 308 conditions: 154 audio and 154 matched text
-controls. It covers 2 scenarios, all 11 speech patterns, all 7 Agent B audio
-personas, 4 synthesis profiles, Faster-Whisper widths `1/6/11/16`, and 2
-iterations. All 274 declared factor-level pairs are present.
-
-Matched bounded validation batches for limited-memory development machines:
-
-```powershell
-.\.venv\Scripts\python.exe -m coop_navigation_sds.batch `
-  --job-file jobs\requested_tinyllama_piper_faster_whisper.job `
-  --results-dir results --progress
-
-.\.venv\Scripts\python.exe -m coop_navigation_sds.batch `
-  --job-file jobs\requested_tinyllama_piper_vosk.job `
-  --results-dir results --progress
-```
-
-Each bounded job uses the same TinyLlama caller, TinyLlama assistant, Piper
-voice, scenario, baseline profile, seed, turn budget, and audio/text pairing.
-Only the recognition provider and its local asset differ. Use the full
-`tinyllama_piper_faster_whisper_comparison.job` and matched
-`tinyllama_piper_vosk_comparison.job` for unattended thesis runs.
-
-Linux Agent A TinyLlama speech and LLM comparison matrix:
+Run one primary scale series sequentially:
 
 ```bash
-python -m coop_navigation_sds.batch \
-  --job-file jobs/linux_agent_a_tinyllama_speech_llm_matrix.job \
-  --results-dir results \
-  --progress
-```
-
-This is the Linux TinyLlama execution of the canonical comprehensive-coverage
-job. It uses a deterministic strength-two covering array over the following
-complete registered factor sets:
-
-| Factor | Levels | Coverage |
-| --- | ---: | --- |
-| Valid task profiles | 15 | All 15 task personas and all 8 standard scenarios |
-| Agent A audio persona | 8 | Every profile marked `caller` |
-| Agent B audio persona | 7 | Every profile marked `assistant` |
-| Speech pattern | 11 | Clean, mostly clean, hesitation, long pauses, two stutter levels, fillers, compressed, station noise, clipping, and station substitution |
-| Text-to-speech provider | 4 | ChatTTS, Piper, eSpeak NG, and Coqui |
-| Recognition provider | 4 | Faster-Whisper, Vosk, whisper.cpp, and sherpa-onnx |
-| Recognition treatment | 4 | Provider-native search widths `1`, `6`, `11`, and `16` |
-| Agent B model | 6 | Two small, two medium, and two large local models |
-| Agent B decoding | 1 | Greedy control |
-| Route objective | 1 | Shortest valid route with progressive constraints |
-
-The covering-array contract explicitly verifies:
-
-- all `4 * 11 = 44` TTS-provider x speech-pattern pairs;
-- all `4 * 4 = 16` ASR-provider x search-width pairs;
-- all `6 * 7 = 42` Agent-B-model x Agent-B-audio-persona pairs.
-
-The two largest factors require `15 * 11 = 165` audio conditions. The generated
-array covers all **1,588** declared cross-factor value pairs with no missing
-pair. Paired controls produce 165 otherwise identical text conditions, for 330
-runs per Agent A implementation. A literal full factorial would require
-3,548,160 audio conditions or 7,096,320 paired runs per Agent A; it adds
-unmanageable higher-order replication without improving main-effect or
-two-factor coverage.
-
-Search width has a provider-native implementation: Faster-Whisper uses beam
-size, Vosk uses maximum alternatives, whisper.cpp receives `--beam-size`, and
-sherpa-onnx transducers use maximum active paths. Sherpa Whisper/Paraformer
-layouts record the requested width with `asr_search_width_applied=false`
-because their adapter API does not expose an equivalent control. This prevents
-an unavailable treatment from being reported as applied.
-
-The same job can still request every higher-order combination explicitly:
-
-```bash
-python -m coop_navigation_sds.batch \
-  --job-file jobs/linux_agent_a_tinyllama_speech_llm_matrix.job \
-  --coverage-strategy full_factorial \
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/01-userlm-primary.json \
   --results-dir results
 ```
 
-This override is intended for count verification or unusually large compute
-clusters, not ordinary thesis execution. It preserves the 15 validated linked
-task profiles and expands every combination with all remaining factors.
+Run all 12 jobs sequentially:
 
-#### Task and Constraint Coverage
+```bash
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/all.json \
+  --results-dir results
+```
 
-Scenario and persona are linked into validated task profiles rather than
-crossed blindly. Every task profile passes connectivity, alternative-route, and
-three-stage optimum-change preflight. Arbitrary scenario/persona products are
-not legitimate conditions when a persona's next private constraint cannot
-change the optimum in that scenario.
+Run only the six Agent B treatments with the official UserLM-8b caller:
 
-| Task profile | Scenario | Persona | First three progressive constraints |
-| --- | --- | --- | --- |
-| `morning_focused` | Morning peak | Focused commuter | transfer risk, tickets, walking |
-| `midday_distracted` | Midday transfer | Distracted multitasker | transfers, fullness, transfer risk |
-| `late_verbose` | Late event | Verbose planner | fullness, transfer risk, tickets |
-| `midday_hesitant` | Midday transfer | Hesitant speaker | transfers, fullness, transfer risk |
-| `late_adversarial` | Late event | Adversarial tester | transfers, fullness, transfer risk |
-| `morning_non_native` | Morning peak | Non-native speaker | transfers, transfer risk, tickets |
-| `airport_frustrated` | Airport connection | Frustrated user | transfers, fullness, transfer risk |
-| `crowded_crowd_averse` | Crowded event exit | Crowd-averse rider | transfers, fullness, delay risk |
-| `airport_delay_sensitive` | Airport connection | Delay-sensitive traveler | fullness, delay risk, transfer risk |
-| `hospital_accessibility` | Hospital appointment | Accessibility rider | transfers, transfer risk, tickets |
-| `errands_multi_stop` | Multi-destination errands | Multi-stop errand runner | fullness, delay risk, transfer risk |
-| `late_budget` | Late event | Budget simplifier | fullness, transfer risk, tickets |
-| `evening_low_effort` | Evening outbound | Low-effort traveler | transfers, transfer risk, tickets |
-| `crowded_transfer_confident` | Crowded event exit | Transfer-confident traveler | transfer risk, tickets, walking |
-| `evening_risk_averse` | Evening outbound | Risk-averse novice | transfers, delay risk, transfer risk |
+```bash
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/05-userlm-all-models.json \
+  --results-dir results
+```
 
-Together these profiles exercise all six implemented constraint classes:
-line changes, near-capacity fullness, delay risk, transfer-time/missed-connection
-risk, ticket availability, and cumulative walking time. Morning, midday,
-evening, late-event, airport, hospital, crowded-event, and multi-destination
-conditions expose different time-dependent line fullness and delay states. The
-realized line fullness, near-capacity classification, segment delay class,
-station transfer time, and transfer-risk class remain logged per candidate;
-analysis therefore uses measured route evidence rather than scenario labels as
-a proxy. At default seed 42, the selected scenario times jointly contain both
-experiment fullness outcomes (`near capacity`, `not near capacity`), all three
-line-delay classes (`low`, `moderate`, `high`), and station transfer times from
-2 through 7 minutes. Raw fullness percentages remain evidence, but the task
-constraint intentionally uses only the preregistered near-capacity binary
-classification.
+Prepare or preview the expanded speech-grid equivalents (52 conditions per
+Agent B model, 312 total):
 
-Each audio condition has a matched text-only run, making speech-channel effects
-separable from task, persona, model, and decoding effects in
-`metrics_long.csv`, `metrics_wide.csv`, and `coverage_plan.json`.
+```bash
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/06-userlm-speech-grid-all-models.json \
+  --results-dir results \
+  --preview
+```
 
-Equivalent clones select UserLM as Agent A while retaining the complete source
-matrix through job inheritance:
+The UserLM jobs deliberately default to offline preflight. Prepare the official
+32.1 GB repository before submission on a host with sufficient storage and
+accelerator/RAM:
+
+```bash
+python -c "from huggingface_hub import snapshot_download; snapshot_download(repo_id='microsoft/UserLM-8b', local_dir='.speech-providers/models/huggingface/microsoft--UserLM-8b')"
+```
+
+The loader uses the model's required remote-code contract during preparation
+and execution. `--allow-model-download true` is available for explicitly
+authorized runs, but downloading during a measured batch is discouraged
+because it contaminates startup timing and can fail after partial transfer.
+
+The manifest runner writes and updates
+`results/agent_b/experiment_run_table.csv`. A failed job is marked explicitly
+and stops the sequence unless `--continue-on-error` is supplied.
+
+After all selected jobs finish, the runner automatically creates the combined
+color-coded report under `results/agent_b/comparison/`. Its run and metric
+tables use all finalized model-grouped result folders discovered recursively.
+
+Individual jobs remain runnable through the existing CLI:
 
 ```bash
 python -m coop_navigation_sds.batch \
-  --job-file jobs/linux_agent_a_userlm_speech_llm_matrix.job \
+  --job-file jobs/agent_b_llm/userlm/primary/01-small-llama3.2-1b.job \
   --results-dir results \
   --progress
 ```
 
-On Windows, use
-`jobs/windows_agent_a_userlm_speech_llm_matrix.job`. The only configuration
-override is `agent_a_type=userlm`; scenarios, personas, audio conditions,
-speech providers, recognition providers, Agent B models, and parameter profiles
-remain identical to the corresponding TinyLlama Agent A matrix.
+The lightweight pipeline smoke job moved to
+`jobs/support/research_smoke.job`. It validates schemas and exports without
+being part of the Agent B comparison design.
 
-Run both Agent A jobs for the matched 660-run comparison. Condition factors and
-pair coverage are identical; only caller implementation changes. TinyLlama uses
-the fixed TinyLlama 1.1B caller backend. UserLM uses the job's fixed configured
-caller model (`llama3.2:1b` in this matrix) while Agent B varies independently;
-both backend identities are retained in every result.
+### Model-Grouped Results
 
-### Agent B Model-Size Jobs
-
-The full matrix has tier-specific child jobs for both operating-system labels
-and both Agent A implementations. Job filenames and condition identifiers
-carry the size tier, and every result stores `agent_b_llm_size` as an
-experimental factor.
-
-| Tier | Parameter range | Agent B models | Condition code |
-| --- | ---: | --- | --- |
-| `small` | 1.0B-1.5B | `llama3.2:1b`, `qwen2.5:1.5b` | `SML` |
-| `medium` | 3.0B-3.8B | `llama3.2:3b`, `phi3:mini` | `MED` |
-| `large` | 7.0B-8.0B | `qwen2.5:7b`, `llama3.1:8b` | `LRG` |
-
-The complete tier design contains 2 platforms x 2 Agent A implementations x 3
-Agent B tiers = 12 jobs. Each job contains 165 audio and 165 matched text
-conditions and covers all 1,368 applicable factor-level pairs. Keeping two
-models in each tier permits within-tier family variation while preserving the
-same speech, persona, task, and recognition coverage across tiers.
-
-Naming pattern:
+There is one top-level result root. Child jobs set a validated relative
+`result_group`; absolute paths and traversal are rejected.
 
 ```text
-jobs/<platform>_agent_a_<tinyllama|userlm>_agent_b_<small|medium|large>_llm_matrix.job
+results/
+`-- agent_b/
+    |-- experiment_run_table.csv
+    |-- primary/
+    |   `-- <size-model>/<userlm|tinyllama>/<run-id>/
+    `-- model_comparison/
+        `-- <size-model>/<userlm|tinyllama>/<run-id>/
 ```
 
-Example:
+A run folder remains self-contained and uses the standard schemas:
+`run_summary.json`, `conditions.jsonl`, `metrics_long.csv`,
+`metrics_wide.csv`, protocols, transcripts, audio, network evidence, warnings,
+and environment metadata. Grouping changes only the parent path. Coverage and
+aggregation discover result summaries recursively, so nested completed runs
+remain part of the project-level analysis.
+
+The condition tables carry `agent_a_type`, fixed caller model identity,
+`agent_b_model`, `agent_b_llm_size`, `agent_b_model_role`, task factors,
+speech factors, `pair_id`, and `run_type`. Results from separate jobs can
+therefore be concatenated without parsing folder names.
+
+### Progress, Failure, and Coverage Semantics
+
+A batch condition is complete only after raw evidence, retrospective metrics,
+and the final summary are written. Interrupted folders lacking
+`run_summary.json` are diagnostic artifacts and are not counted as completed.
+The runner never silently replaces a requested model or speech provider.
+
+The coverage registry scans all job subdirectories and all nested result
+groups. Rebuild it explicitly with:
 
 ```bash
-python -m coop_navigation_sds.batch \
-  --job-file jobs/linux_agent_a_userlm_agent_b_medium_llm_matrix.job \
-  --results-dir results \
-  --progress
+python scripts/update_experiment_coverage.py --results-dir results
 ```
 
-Tier jobs inherit scenarios, personas, audio personas, synthesis engines,
-recognition engines, decoding profiles, repetitions, and paired controls from
-the full matrix. They override only Agent A when required, the two Agent B
-models, and the explicit `agent_b_llm_size` parameter.
+It produces graphable condition, run, and matrix tables plus a human-readable
+HTML overview. Status is derived from finalized standard results only:
+`planned`, `completed`, or `observed_unplanned`.
 
-### Sequential and Parallel Execution
+### Slurm Array Execution
 
-One `coop_navigation_sds.batch` process executes its expanded conditions
-sequentially. This allows one loaded model adapter to be reused safely and
-avoids competing speech-provider state. Use sequential execution when RAM is
-limited, when comparing latency, or when provider libraries are not safe to
-load concurrently.
-
-Parallel execution is implemented as independent job shards and operating-
-system processes, not threads inside one experiment. Each shard writes its own
-standard run folder. Keep every shard's non-sharded factors equal and combine
-completed folders through Chapter 13.
-
-Parallel profile shards on Windows:
-
-```powershell
-.\scripts\run_tinyllama_piper_whisper_parallel.ps1 `
-  -MaxParallel 2 `
-  -ResultsDir results
-```
-
-Parallel profile shards on Linux:
+Slurm support is an orchestration layer over the existing batch runtime, not a
+second experiment implementation. `scripts/run_slurm_condition.py` resolves
+one stable array index, atomically reserves its task folder, exports the exact
+condition, and launches:
 
 ```bash
-MAX_PARALLEL=2 RESULTS_DIR=results \
-  bash scripts/run_tinyllama_piper_whisper_parallel.sh
+python -m minillama.orchestration.run_experiments \
+  --condition-file <task-folder>/condition.json \
+  --results-dir <task-folder>
 ```
 
-Parallel execution uses independent processes because model runtimes, speech
-providers, and generated network state are not shared-thread-safe. Two
-concurrent shards are recommended for limited-memory systems.
+The `minillama` namespace is a narrow compatibility entry point. It translates
+the scheduler condition into a one-row `.job` and delegates execution to
+`python -m coop_navigation_sds.batch`; dialogue, metrics, validation, and
+result schemas therefore remain identical to local experiments.
 
-Each current Piper/Faster-Whisper shard gives one synthesis profile complete
-pairwise coverage over patterns, Agent B audio personas, and all four search
-widths. A shard therefore contains 308 conditions; running all four produces
-1,232 conditions and offers profile-specific replication. The four shards are
-an expanded design, not a partition of the 308-condition sequential matrix.
+#### Included Grids
 
-### Progress, Failure, and Restart Semantics
+| Grid | Factors | Conditions | Array range |
+| --- | --- | ---: | --- |
+| `minillama_smoke.json` | Simple and TinyLlama Agent B; one persona, test case, seed; pure text | 2 | `0-1` |
+| `minillama_grid.json` | Both Agent B treatments; all 15 personas, all 8 test cases, 3 seeds; pure text | 720 | `0-719` |
+| `minillama_speech_grid.json` | Both treatments; all personas/test cases; Piper to Faster-Whisper; 3 speech patterns | 720 | `0-719` |
 
-`--progress` prints each completed condition identifier. Raw per-condition
-traces are written while a condition runs; final metric tables and
-`run_summary.json` are written only after every condition completes and
-retrospective calculation succeeds.
+The two exhaustive registry-crossing grids fix
+`maximum_progressive_constraints=0`. Four of the 120 arbitrary persona/test-case
+pairs cannot support even one route-changing private constraint, and 13 cannot
+support three. The exhaustive grid therefore measures the common validity/time
+route objective across every pair. This keeps every array row runnable and
+makes Agent B comparisons balanced. Use the validated linked-task jobs in the
+preceding sections for one-, two-, and three-constraint experiments.
 
-The batch runner intentionally has no in-place resume or silent condition
-skip. A backend failure stops the invocation so later conditions cannot be
-mistaken for a complete balanced design. An interrupted run folder may contain
-diagnostic traces but lacks a final standard summary and must not be included
-in analysis. Fix the reported cause and rerun the same job; the new invocation
-gets a new run identifier while preserving condition identities and factors.
+`minillama` is the legacy treatment key for the TinyLlama 1.1B Transformers
+backend. `simple` is the deterministic Agent B baseline. The staged Agent A is
+fixed in these grids to isolate Agent B effects. Grid files may instead contain
+a custom backend object:
 
-### Batch Result Contract
+```json
+{
+  "key": "custom_model",
+  "plugin": "package.module:AgentBFactory",
+  "model_provider": "transformers",
+  "model_name": "organization/model-name"
+}
+```
 
-Every completed batch writes one self-contained folder under `results/` with:
+Custom plugin paths use the existing `package.module:factory_or_class`
+contract. Model/provider fields are passed through the general model registry;
+the scheduler code contains no model-specific execution branches.
 
-- the resolved job, manifest, coverage plan, environment, and provider data;
-- one condition row and complete protocol per executed condition;
-- paired identifiers and audio/text comparison values where configured;
-- immutable metric inputs followed by retrospective calculations;
-- long, wide, JSONL, XLSX, transcript, audio, and network artifacts;
-- explicit warnings, errors, unavailable-metric reasons, and failure analysis.
+#### Preview and Local Smoke Test
 
-Start analysis with `run_summary.json`, verify `condition_count` against
-`coverage_plan.json`, then join `conditions.jsonl` with `metrics_long.csv` by
-`condition_id`. Chapter 16 defines every artifact in detail.
+Always preview after editing a grid or changing a registry:
 
-The standard condition table carries analysis factors directly:
+```bash
+python scripts/run_slurm_condition.py preview \
+  --grid slurm/minillama_grid.json \
+  --limit 10
+```
 
-| Factor group | Stored fields |
-| --- | --- |
-| Matrix identity | `matrix_family`, `experiment_platform`, `configuration_fingerprint` |
-| Agents | `agent_a_type`, `agent_b_model`, `agent_b_llm_size`, `agent_b_plugin` |
-| Speech | `tts_engine`, `asr_engine`, `asr_search_width`, `speech_pattern_key` |
-| Personas | `persona_key`, `agent_a_audio_persona`, `agent_b_audio_persona` |
-| Task/design | `scenario_key`, `objective_mode`, `model_param_key`, `iteration` |
-| Pairing/outcome | `pair_id`, `run_type`, route flags, turns, runtime, task success |
+The command prints condition count, valid array range, stable condition IDs,
+and selected factor rows without loading models. `--count-only` suppresses row
+details. The `#SBATCH --array` upper bound must equal count minus one.
 
-These fields are also propagated into long-form metric factors. Independent
-Windows/Linux, TinyLlama/UserLM, and small/medium/large jobs can therefore be
-concatenated and grouped without decoding filenames. The comparison utility
-matches non-provider factors before calculating deltas, preventing averages
-from silently mixing scenarios, personas, search widths, or model tiers.
+Run either smoke condition locally without Slurm:
+
+```bash
+python scripts/run_slurm_condition.py run \
+  --grid slurm/minillama_smoke.json \
+  --index 0 \
+  --results-dir results/slurm/local \
+  --model-device cpu
+```
+
+Omit `--index` in an array task; the launcher then requires and reads
+`SLURM_ARRAY_TASK_ID`. Invalid, negative, and out-of-range values fail before a
+result directory is allocated.
+
+#### Submission
+
+Prepare model and speech assets on shared storage before submission. Runtime
+downloads are disabled in the included grids. Submit the small validation first:
+
+```bash
+sbatch slurm/minillama_smoke.sbatch
+```
+
+Then submit one compute profile:
+
+```bash
+sbatch slurm/minillama_grid_cpu.sbatch
+sbatch slurm/minillama_grid_gpu.sbatch
+```
+
+The CPU example uses `#SBATCH --array=0-719%8`; at most eight tasks execute
+concurrently. The GPU example uses `0-719%4` and one GPU per task. These are
+safe examples, not universal cluster settings: reduce `%K`, memory, or time to
+match model size, provider behavior, and site policy. Do not submit CPU and GPU
+grids into the same result root unless resource type is intentionally treated
+as a replicated condition. Override paths without editing scripts:
+
+```bash
+PROJECT_ROOT=/shared/CoopNavigationSDS \
+PYTHON_BIN=/shared/venv/bin/python \
+RESULTS_ROOT=/scratch/$USER/coop-results \
+sbatch slurm/minillama_grid_cpu.sbatch
+```
+
+Optional speech submission is:
+
+```bash
+sbatch slurm/minillama_speech_grid.sbatch
+```
+
+#### Result Identity and Restart Safety
+
+Every task gets this structure:
+
+```text
+results/slurm/<profile>/<grid-name>/<condition-id>-<mode>-s<seed>-r<rep>-<hash>/
+  condition.json
+  resolved_experiment.job
+  task_summary.json
+  <timestamp>_b-n0001/
+    slurm_condition.json
+    run_summary.json
+    conditions.jsonl
+    metrics_long.csv
+    metrics_wide.csv
+    ...standard evidence...
+```
+
+The directory hash includes all experimental factors and runtime overrides.
+Directory creation is atomic. Resubmitting the same index creates `-a02`, then
+`-a03`; existing evidence is never replaced. A failed task retains its exact
+condition and generated job, while only a folder containing `run_summary.json`
+is a finalized analytical run.
+
+#### Aggregation
+
+The standard comparison command discovers finalized task results recursively:
+
+```bash
+python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
+  results/slurm/cpu \
+  --output results/slurm-analysis/cpu
+```
+
+Concatenate `combined_conditions.csv` for condition outcomes and
+`combined_metrics_long.csv` for graphing or statistical analysis. Join by
+`result_run_id` and `condition_id`; group or block by `experiment_seed`,
+`repetition`, `slurm_grid_name`, `run_mode`, persona, test case, and Agent B
+identity. `task_summary.json` records the exact command, return code, timestamps,
+and finalized result path for scheduler-level failure auditing.
 
 ## 13. Batch Comparison and Visualization
 
@@ -2256,12 +2265,27 @@ It reads only `run_summary.json`, `conditions.jsonl`, and `metrics_long.csv`.
 | `combined_metrics_long.csv` | Lossless joined long-form metric evidence |
 | `metric_summary.csv` | Count, mean, standard deviation, minimum, and maximum by run/provider/metric |
 | `metric_deltas.csv` | Pairwise mean differences and direction-adjusted improvement |
-| `comparison_report.html` | Portable overview tables and inline SVG charts with no external assets |
+| `run_outcomes.csv` | One row per finalized run with all-successful, mixed, or all-failed task status and aligned outlier counts |
+| `metric_outliers.csv` | Robust pre-outcome metric outliers joined to condition outcomes, direction, and alignment label |
+| `metric_indicator_summary.csv` | Per-metric counts and rates showing whether detected outliers aligned with success or failure |
+| `comparison_report.html` | Portable color-coded run outcomes, metric outlier evidence, and inline SVG charts with no external assets |
 
 The report is descriptive. A provider delta is causal only when jobs match on
 every non-provider factor. Statistical inference should use the long-form rows,
 retain `pair_id`, account for repetitions and scenarios, and avoid treating
 correlated turn metrics as independent observations.
+
+Run rows are green when every condition succeeds, amber when outcomes are
+mixed, and red when every condition fails. Metric outliers use the modified
+z-score based on median absolute deviation within the same metric, phase, and
+run type. At least five observations and an absolute modified z-score of 3.5
+are required. A red outlier is adverse in the metric's declared direction and
+occurs on a failed condition; green is favorable on a successful condition;
+violet marks a contradiction or unknown direction. Task-outcome,
+whole-dialogue, and metric-validity phases are excluded from this indicator
+view to prevent outcome-label leakage. These labels identify evidence worth
+inspection; they are not causal explanations or validated predictive
+thresholds.
 
 ## 14. Data Capture
 
@@ -2412,8 +2436,9 @@ correlations and thresholds are exploratory unless evaluated on held-out runs.
 
 ## 16. Result Structure
 
-`results/` is the single output root. Each execution creates one flat,
-timestamped run directory. Single runs and batch runs use the same analysis
+`results/` is the single output root. Ordinary executions create a timestamped
+run directory directly beneath it; focused Agent B jobs create that same run
+directory beneath their validated model/caller result group. Single runs and batch runs use the same analysis
 tables: a single run is represented as a one-condition dataset, so multiple
 single-run folders can be concatenated for graphing or statistical analysis
 without a conversion step.
@@ -2516,8 +2541,12 @@ coop_navigation_sds/
   batch.py                       batch command-line controller
   experiments.py                 reusable condition-grid runner
   smoke.py                       dependency-light end-to-end validation
+minillama/orchestration/         legacy module command delegating one scheduler condition
 jobs/                             reproducible experiment definitions
-scripts/                          preparation, launch, and documentation tools
+  agent_b_llm/                    focused model-size/family jobs and manifests
+  support/                        smoke and component-support jobs
+scripts/                          preparation, local/Slurm launch, and documentation tools
+slurm/                            array scripts and scheduler-neutral grid specifications
 tests/                            unit, integration, provider, and pipeline tests
 results/                          single experiment output root
 .model-providers/agent_b/         ignored Windows/Linux local LLM stores

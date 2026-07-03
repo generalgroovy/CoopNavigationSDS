@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "name": "agent_b_llm_base",
+  "description": "Shared controlled design for Agent B model-size and model-family comparisons.",
+  "coverage_strategy": "pairwise",
+  "iterations": 1,
+  "config": {
+    "agent_a_type": "userlm",
+    "agent_a_model_provider": "transformers",
+    "agent_a_model_name": "microsoft/UserLM-8b",
+    "agent_a_model_base_url": "",
+    "allow_model_download": false,
+    "agent_b_plugin": "llm",
+    "model_provider": "ollama",
+    "model_name": "llama3.2:1b",
+    "model_base_url": "http://127.0.0.1:11435/api",
+    "model_timeout_sec": 300,
+    "model_max_new_tokens": 48,
+    "num_turns": 20,
+    "maximum_progressive_constraints": 3,
+    "minimum_compared_routes": 2,
+    "paired_audio_text_runs": true,
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "tts_engine": "piper",
+    "asr_engine": "faster_whisper",
+    "log_profile": "full"
+  },
+  "grid": {
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter"],
+    "agent_a_audio_personas": ["high_clarity_caller", "hesitant_caller"],
+    "agent_b_audio_personas": ["clear_operator", "degraded_operator"],
+    "speech_patterns": ["clean", "hesitant", "noisy_station"],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"],
+    "tts_engines": ["piper"],
+    "asr_engines": ["faster_whisper"],
+    "agent_b_models": ["llama3.2:1b"]
+  },
+  "parameter_values": {
+    "matrix_family": ["agent_b_llm_comparison_v1"],
+    "experiment_platform": ["windows"],
+    "asr_beam_size": [1, 6],
+    "network_seed": [11, 29]
+  },
+  "linked_profiles": {
+    "task": [
+      {"task_profile_key": "morning_focused", "test_case_key": "morning_peak_cross_city", "persona_key": "focused_commuter"},
+      {"task_profile_key": "midday_distracted", "test_case_key": "midday_transfer", "persona_key": "distracted_multitasker"},
+      {"task_profile_key": "late_verbose", "test_case_key": "late_event", "persona_key": "verbose_planner"},
+      {"task_profile_key": "airport_delay", "test_case_key": "airport_connection", "persona_key": "delay_sensitive_traveler"}
+    ]
+  }
+}

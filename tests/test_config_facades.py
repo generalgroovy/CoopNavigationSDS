@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from coop_navigation_sds.Configuration.runtime import NUM_TURNS, RESULTS_DIR, SESSION_LOG_DIR
-from coop_navigation_sds.Configuration.schema import resolve_results_root
+from coop_navigation_sds.Configuration.schema import resolve_result_group, resolve_results_root
 from coop_navigation_sds.Configuration.speech import (
     AGENT_B_PLUGIN,
     SPEECH_AUDIO_DIR,
@@ -32,6 +32,14 @@ class ConfigModuleTests(unittest.TestCase):
         self.assertTrue(SPEECH_PLAYBACK_ENABLED)
         self.assertTrue(SPEECH_REALTIME_ENABLED)
         self.assertTrue(SPEECH_AUDIO_DIR)
+
+    def test_result_groups_remain_beneath_the_single_results_root(self):
+        root = Path(resolve_results_root("results"))
+        grouped = Path(resolve_result_group(root, "agent_b/primary/01-small/userlm"))
+        self.assertEqual(grouped, root / "agent_b" / "primary" / "01-small" / "userlm")
+        for invalid in ("../outside", "/absolute", "agent_b/../outside"):
+            with self.assertRaises(ValueError):
+                resolve_result_group(root, invalid)
 
     def test_file_pipeline_produces_audio_and_transcript(self):
         with tempfile.TemporaryDirectory() as tmpdir:

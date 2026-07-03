@@ -37,6 +37,7 @@ def _model_cache_dir():
 
 
 MODEL_CACHE_DIR = str(_model_cache_dir())
+USERLM_MODEL_NAME = "microsoft/UserLM-8b"
 
 
 def _prepared_model(model_name):
@@ -45,6 +46,12 @@ def _prepared_model(model_name):
         return str(configured.resolve())
     prepared = Path(MODEL_CACHE_DIR) / model_name.replace("/", "--")
     return str(prepared.resolve()) if prepared.is_dir() else model_name
+
+
+def _trust_remote_code(model_name):
+    """Return whether a registered model explicitly requires Hub model code."""
+    normalized = str(model_name).replace("\\", "/").rstrip("/")
+    return normalized.endswith((USERLM_MODEL_NAME, "microsoft--UserLM-8b"))
 
 
 def load_model_and_tokenizer(
@@ -169,6 +176,7 @@ def _load_tokenizer(
         The computed value or side effect documented by the implementation.
     """
     from transformers import AutoTokenizer
+    trust_remote_code = _trust_remote_code(model_name)
     model_name = _prepared_model(model_name)
 
     try:
@@ -176,12 +184,17 @@ def _load_tokenizer(
             model_name,
             token=token,
             cache_dir=MODEL_CACHE_DIR,
-            local_files_only=True,
+            local_files_only=not allow_model_download,
+            trust_remote_code=trust_remote_code,
         )
     except OSError:
         raise RuntimeError(
-            f"Tokenizer weights for {model_name} are not available locally. "
-            "Run the asset preparation command before the experiment."
+            f"Tokenizer weights for {model_name} are unavailable. "
+            + (
+                "Check network access and model authorization."
+                if allow_model_download
+                else "Prepare the model locally or explicitly enable model downloads."
+            )
         )
 
 
@@ -203,6 +216,7 @@ def _load_model(
     """
     import torch
     from transformers import AutoModelForCausalLM
+    trust_remote_code = _trust_remote_code(model_name)
     model_name = _prepared_model(model_name)
 
     dtype = torch.float16 if device == "cuda" else torch.float32
@@ -210,17 +224,22 @@ def _load_model(
         "token": token,
         "dtype": dtype,
         "low_cpu_mem_usage": True,
+        "trust_remote_code": trust_remote_code,
     }
 
     try:
         return AutoModelForCausalLM.from_pretrained(
             model_name,
             cache_dir=MODEL_CACHE_DIR,
-            local_files_only=True,
+            local_files_only=not allow_model_download,
             **model_kwargs,
         )
     except OSError:
         raise RuntimeError(
-            f"Model weights for {model_name} are not available locally. "
-            "Run the asset preparation command before the experiment."
+            f"Model weights for {model_name} are unavailable. "
+            + (
+                "Check network access, disk capacity, and model authorization."
+                if allow_model_download
+                else "Prepare the model locally or explicitly enable model downloads."
+            )
         )

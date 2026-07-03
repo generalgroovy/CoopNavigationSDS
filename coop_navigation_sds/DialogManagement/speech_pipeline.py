@@ -2052,6 +2052,7 @@ class WhisperCppSpeechToText:
     """Portable whisper.cpp adapter using the official whisper-cli executable."""
 
     name = "whisper-cpp-asr"
+    maximum_beam_size = 8
 
     def __init__(
         self,
@@ -2096,6 +2097,7 @@ class WhisperCppSpeechToText:
             )
         output_base = wav_path.with_name(f"{wav_path.stem}-whispercpp")
         output_file = Path(f"{output_base}.txt")
+        effective_search_width = min(self.search_width, self.maximum_beam_size)
         command = [
             executable,
             "-m",
@@ -2110,7 +2112,7 @@ class WhisperCppSpeechToText:
             "--no-timestamps",
             "--no-prints",
             "--beam-size",
-            str(self.search_width),
+            str(effective_search_width),
         ]
         if resolved["vad_model"]:
             command.extend(["--vad", "--vad-model", resolved["vad_model"]])
@@ -2140,7 +2142,10 @@ class WhisperCppSpeechToText:
             resolved_executable=executable,
             resolved_model=str(model_path),
             command=command,
-            asr_search_width=self.search_width,
+            asr_search_width=effective_search_width,
+            asr_search_width_requested=self.search_width,
+            asr_search_width_saturated=self.search_width != effective_search_width,
+            asr_search_width_maximum=self.maximum_beam_size,
             asr_search_width_applied=True,
         )
 

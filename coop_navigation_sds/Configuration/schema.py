@@ -38,6 +38,26 @@ def resolve_results_root(value=None):
         path = PROJECT_ROOT / path
     return str(path.resolve())
 
+
+def resolve_result_group(results_root, group=None):
+    """Resolve a portable relative result group beneath one results root."""
+    root = Path(resolve_results_root(results_root))
+    raw = str(group or "").strip().replace("\\", "/")
+    if not raw:
+        return str(root)
+    raw_parts = raw.split("/")
+    if (
+        raw.startswith("/")
+        or any(part in {"", ".", ".."} for part in raw_parts)
+        or any(":" in part for part in raw_parts)
+    ):
+        raise ValueError("Result group must be a relative path without traversal.")
+    safe_parts = [safe_artifact_name(part, maximum_length=64) for part in raw_parts]
+    selected = root.joinpath(*safe_parts).resolve()
+    if root != selected and root not in selected.parents:
+        raise ValueError("Result group resolves outside the configured results root.")
+    return str(selected)
+
 SECRET_CONFIG_FIELDS = frozenset({"model_api_key", "token", "api_key"})
 RAW_TRACE_COLLECTIONS = (
     "conversation",

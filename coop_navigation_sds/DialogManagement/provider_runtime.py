@@ -19,6 +19,10 @@ PYTHON_NAMES = (
 )
 
 
+class ProviderProcessStoppedError(RuntimeError):
+    """Raised when an isolated provider exits before returning a response."""
+
+
 def _provider_key(engine):
     return str(engine or "").strip().lower().replace("-", "_").replace(".", "_")
 
@@ -116,50 +120,69 @@ class ProviderProcessClient:
             encoding="utf-8",
             bufsize=1,
         )
-        threading.Thread(target=self._read_responses, daemon=True).start()
+        response_queue = self.responses
+        process = self.process
+        threading.Thread(
+            target=self._read_responses,
+            args=(process, response_queue),
+            daemon=True,
+        ).start()
         return True
 
-    def _read_responses(self):
-        for line in self.process.stdout:
-            self.responses.put(line)
-        self.responses.put(None)
+    @staticmethod
+    def _read_responses(process, response_queue):
+        for line in process.stdout:
+            response_queue.put(line)
+        response_queue.put(None)
 
     def request(self, payload):
         with self.lock:
-            cold_start = self._start()
-            self.process.stdin.write(json.dumps(payload, ensure_ascii=True) + "\n")
-            self.process.stdin.flush()
-            try:
-                cold_timeout = (
-                    1800.0
-                    if self.engine in {"qwen3_tts", "qwen3_asr", "parakeet", "f5_tts"}
-                    else 600.0
-                )
-                line = self.responses.get(
-                    timeout=max(self.timeout_seconds, cold_timeout)
-                    if cold_start
-                    else self.timeout_seconds
-                )
-            except queue.Empty as exc:
-                self.close()
-                raise TimeoutError(
-                    f"{self.engine} {self.stage} provider exceeded "
-                    f"{self.timeout_seconds:.1f} seconds."
-                ) from exc
-            if line is None:
-                return_code = self.process.poll()
-                raise RuntimeError(
-                    f"{self.engine} {self.stage} provider stopped unexpectedly "
-                    f"with exit code {return_code}."
-                )
-            response = json.loads(line)
-            if not response.get("ok"):
-                raise RuntimeError(
-                    f"{self.engine} {self.stage} provider failed: "
-                    f"{response.get('error', 'unknown error')}\n"
-                    f"{response.get('traceback', '')}".rstrip()
-                )
-            return response
+            for restart_count in range(2):
+                try:
+                    response = self._request_once(payload)
+                    response["provider_restart_count"] = restart_count
+                    return response
+                except ProviderProcessStoppedError:
+                    self.close()
+                    if restart_count:
+                        raise
+                    self.responses = queue.Queue()
+
+    def _request_once(self, payload):
+        cold_start = self._start()
+        self.process.stdin.write(json.dumps(payload, ensure_ascii=True) + "\n")
+        self.process.stdin.flush()
+        try:
+            cold_timeout = (
+                1800.0
+                if self.engine in {"qwen3_tts", "qwen3_asr", "parakeet", "f5_tts"}
+                else 600.0
+            )
+            line = self.responses.get(
+                timeout=max(self.timeout_seconds, cold_timeout)
+                if cold_start
+                else self.timeout_seconds
+            )
+        except queue.Empty as exc:
+            self.close()
+            raise TimeoutError(
+                f"{self.engine} {self.stage} provider exceeded "
+                f"{self.timeout_seconds:.1f} seconds."
+            ) from exc
+        if line is None:
+            return_code = self.process.poll()
+            raise ProviderProcessStoppedError(
+                f"{self.engine} {self.stage} provider stopped unexpectedly "
+                f"with exit code {return_code}."
+            )
+        response = json.loads(line)
+        if not response.get("ok"):
+            raise RuntimeError(
+                f"{self.engine} {self.stage} provider failed: "
+                f"{response.get('error', 'unknown error')}\n"
+                f"{response.get('traceback', '')}".rstrip()
+            )
+        return response
 
     def close(self):
         process = self.process
@@ -251,11 +274,15 @@ class IsolatedTextToSpeech:
             "realtime": bool(self.config.realtime_enabled),
             "waited": bool(played and self.config.realtime_enabled),
         })
+        diagnostics = dict(response.get("diagnostics") or {})
+        diagnostics["provider_restart_count"] = int(
+            response.get("provider_restart_count", 0)
+        )
         return SpeechSignal(
             speaker=speaker,
             text=response["text"],
             audio=audio,
-            diagnostics=response.get("diagnostics") or {},
+            diagnostics=diagnostics,
         )
 
 
@@ -285,5 +312,8 @@ class IsolatedSpeechToText:
                 "diagnostics": signal.diagnostics or {},
             },
         })
-        signal.diagnostics = response.get("diagnostics") or {}
+        signal.diagnostics = dict(response.get("diagnostics") or {})
+        signal.diagnostics["provider_restart_count"] = int(
+            response.get("provider_restart_count", 0)
+        )
         return response["transcript"]

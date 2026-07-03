@@ -34,10 +34,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 TTS_RUNTIME_PROFILES = {
     "sapi": {"tts_model": "", "tts_executable": "", "tts_python_executable": ""},
-    "chattts": {"tts_model": ".speech-providers/models/chattts", "tts_executable": "", "tts_python_executable": "", "tts_timeout_sec": 180.0},
+    "chattts": {"tts_model": ".speech-providers/models/chattts", "tts_executable": "", "tts_python_executable": "", "tts_timeout_sec": 600.0},
     "piper": {"tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx", "tts_executable": "", "tts_python_executable": ""},
     "espeak_ng": {"tts_model": "", "tts_executable": "", "tts_python_executable": ""},
-    "coqui": {"tts_model": ".speech-providers/models/coqui", "tts_executable": "", "tts_python_executable": ""},
+    "coqui": {"tts_model": ".speech-providers/models/coqui", "tts_executable": "", "tts_python_executable": "", "tts_timeout_sec": 180.0},
     "file": {"tts_model": "", "tts_executable": "", "tts_python_executable": ""},
 }
 

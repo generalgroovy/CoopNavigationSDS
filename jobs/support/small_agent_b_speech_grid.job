@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "name": "small_agent_b_speech_grid",
+  "description": "Expanded TinyLlama Agent B speech baseline with validated tasks and matched text controls.",
+  "coverage_strategy": "pairwise",
+  "iterations": 2,
+  "config": {
+    "agent_a_type": "tinyllama",
+    "agent_b_plugin": "llm",
+    "model_profile": "tinyllama_1b_transformers",
+    "model_provider": "transformers",
+    "model_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "num_turns": 20,
+    "maximum_progressive_constraints": 3,
+    "minimum_compared_routes": 2,
+    "paired_audio_text_runs": true,
+    "speech_playback_enabled": false,
+    "speech_realtime_enabled": false,
+    "tts_engine": "piper",
+    "tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx",
+    "asr_engine": "vosk",
+    "asr_model": ".speech-providers/models/vosk/vosk-model-small-en-us-0.15",
+    "log_profile": "full",
+    "result_group": "agent_b/support/00-small-tinyllama/tinyllama"
+  },
+  "grid": {
+    "test_cases": [
+      "morning_peak_cross_city",
+      "midday_transfer",
+      "airport_connection"
+    ],
+    "personas": [
+      "focused_commuter",
+      "distracted_multitasker",
+      "delay_sensitive_traveler"
+    ],
+    "agent_a_audio_personas": [
+      "high_clarity_caller",
+      "hesitant_caller"
+    ],
+    "agent_b_audio_personas": [
+      "clear_operator",
+      "degraded_operator"
+    ],
+    "speech_patterns": [
+      "clean",
+      "hesitant",
+      "noisy_station"
+    ],
+    "model_params": ["greedy"],
+    "objective_modes": ["shortest_valid_route_with_constraints"],
+    "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"],
+    "tts_engines": ["piper", "espeak_ng"],
+    "asr_engines": ["vosk", "faster_whisper"]
+  },
+  "parameter_values": {
+    "matrix_family": ["small_agent_b_speech_grid_v1"],
+    "agent_b_llm_size": ["small"],
+    "agent_b_model_role": ["support_baseline"],
+    "asr_beam_size": [1, 6],
+    "network_seed": [11, 29]
+  },
+  "linked_profiles": {
+    "task": [
+      {
+        "task_profile_key": "morning_focused",
+        "test_case_key": "morning_peak_cross_city",
+        "persona_key": "focused_commuter"
+      },
+      {
+        "task_profile_key": "midday_distracted",
+        "test_case_key": "midday_transfer",
+        "persona_key": "distracted_multitasker"
+      },
+      {
+        "task_profile_key": "airport_delay",
+        "test_case_key": "airport_connection",
+        "persona_key": "delay_sensitive_traveler"
+      }
+    ]
+  }
+}

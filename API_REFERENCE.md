@@ -2159,6 +2159,20 @@ Aggregate each numeric metric by run and experimental component tuple.
 
 Calculate pairwise mean differences for matching metrics and run types.
 
+### Function `identify_metric_outliers(metrics, conditions, minimum_samples=5, modified_z_threshold=3.5)`
+
+Find robust pre-outcome metric outliers and relate them descriptively to task
+outcomes without using outcome-phase metrics as predictors.
+
+### Function `summarize_run_outcomes(conditions, outliers=())`
+
+Summarize condition-level task outcomes and aligned metric signals per run.
+
+### Function `summarize_metric_indicators(outliers)`
+
+Aggregate which pre-outcome metric outliers align with observed success or
+failure, retaining contradictory evidence.
+
 ### Function `_selected_chart_rows(summaries, limit=12)`
 
 Internal module operation.
@@ -2167,9 +2181,10 @@ Internal module operation.
 
 Internal module operation.
 
-### Function `write_html_report(path, run_directories, conditions, summaries, deltas)`
+### Function `write_html_report(path, run_directories, conditions, summaries, deltas, run_outcomes, outliers, metric_indicators)`
 
-Write a dependency-free HTML report with inline SVG comparisons.
+Write a dependency-free color-coded HTML report with run outcomes, metric
+outlier alignment, and inline SVG comparisons.
 
 ### Function `compare_runs(inputs, output_directory)`
 

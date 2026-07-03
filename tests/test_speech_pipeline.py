@@ -442,7 +442,10 @@ class SpeechPipelineTests(unittest.TestCase):
                 transcript = engine.transcribe(signal)
             self.assertEqual(transcript, "Need Bravo to Harbor.")
             self.assertEqual(Path(run.call_args.args[0][0]), executable.resolve())
-            self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--beam-size") + 1], "11")
+            self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--beam-size") + 1], "8")
+            self.assertEqual(signal.diagnostics["asr_search_width"], 8)
+            self.assertEqual(signal.diagnostics["asr_search_width_requested"], 11)
+            self.assertTrue(signal.diagnostics["asr_search_width_saturated"])
 
     def test_whisper_cpp_resolves_manifest_registered_runtime(self):
         with tempfile.TemporaryDirectory() as tmpdir:

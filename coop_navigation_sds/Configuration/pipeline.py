@@ -76,7 +76,14 @@ def _speech_assets_ready(key, model):
     names = {path.name.casefold() for path in files}
     suffixes = {path.suffix.casefold() for path in files}
     if key == "chattts":
-        return bool({"config.json", "vocos.pt", "dvae.pt", "gpt.pt"} & names) and ".pt" in suffixes
+        legacy_weights = {"vocos.pt", "dvae.pt", "gpt.pt"}
+        current_weights = {
+            "decoder.safetensors", "dvae.safetensors", "embed.safetensors",
+            "vocos.safetensors", "model.safetensors",
+        }
+        return "config.json" in names and bool(
+            legacy_weights.intersection(names) or current_weights.intersection(names)
+        ) and bool({".pt", ".safetensors"}.intersection(suffixes))
     if key == "piper":
         return any(path.suffix.casefold() == ".onnx" for path in files)
     if key == "coqui":
