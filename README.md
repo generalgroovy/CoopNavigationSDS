@@ -556,9 +556,17 @@ python scripts/prepare_test_environment.py --check
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-speech-optional.txt
+python scripts/setup_speech_providers.py
 python scripts/prepare_test_environment.py --check
 ```
+
+The project speech runtime supports Python 3.11 through 3.14, including Python
+3.13 supplied by Debian 13. Coqui remains isolated in its own Python 3.10 or
+3.11 provider environment because its dependency constraints differ from the
+main runtime. Provider setup validates capabilities and installed packages; it
+does not require one exact main-runtime minor version.
 
 Optional providers use isolated environments and local model directories.
 Preparation may download requested assets; experiment runtime does not replace

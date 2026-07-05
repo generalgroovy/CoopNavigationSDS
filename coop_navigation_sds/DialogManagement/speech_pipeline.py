@@ -872,7 +872,7 @@ class ChatTTSTextToSpeech(OptionalTextToSpeechBase):
 
     def install_hint(self):
         return (
-            "Install ChatTTS in a compatible Python 3.14 environment and place its model "
+            "Install ChatTTS in a supported project Python environment and place its model "
             "assets in the configured directory, or enable the ChatTTS-only missing-asset download."
         )
 
@@ -2454,7 +2454,7 @@ class SpeechTransport:
         engine = aliases.get(engine, engine)
         if engine not in TTS_ENGINE_SPECS:
             raise SpeechPipelineError(
-                f"Unsupported text-to-speech engine '{engine}' for Python 3.14.",
+                f"Unsupported text-to-speech engine '{engine}'.",
                 {"allowed": available_tts_engine_keys()},
             )
         isolated = self._isolated_stage("tts", engine)
@@ -2523,7 +2523,7 @@ class SpeechTransport:
         engine = aliases.get(engine, engine)
         if engine not in ASR_ENGINE_SPECS:
             raise SpeechPipelineError(
-                f"Unsupported automatic speech recognition engine '{engine}' for Python 3.14.",
+                f"Unsupported automatic speech recognition engine '{engine}'.",
                 {"allowed": available_asr_engine_keys()},
             )
         isolated = self._isolated_stage("asr", engine)
@@ -2604,7 +2604,7 @@ class SpeechTransport:
         return (stage_engine or "sapi").strip().lower()
 
     def _isolated_stage(self, stage, engine):
-        """Use another Python 3.14 interpreter only when explicitly configured."""
+        """Use another provider interpreter only when explicitly configured."""
         if engine in {"sapi", "windows", "windows_sapi", "speech", "file", "wav", "wave"}:
             return None
         if stage == "asr" and engine in {"whisper_cpp", "whisper.cpp", "whisper-cpp"}:

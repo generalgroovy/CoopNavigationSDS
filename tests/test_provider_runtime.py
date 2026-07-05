@@ -16,10 +16,20 @@ from coop_navigation_sds.DialogManagement.provider_runtime import (
     resolve_provider_python,
 )
 from coop_navigation_sds.DialogManagement.whisper_cpp_runtime import whisper_cpp_ready
-from coop_navigation_sds.TextToSpeech.setup import PROVIDER_PROFILES
+from coop_navigation_sds.TextToSpeech.setup import (
+    PROVIDER_PROFILES,
+    project_python_supported,
+)
 
 
 class ProviderRuntimeTests(unittest.TestCase):
+    def test_project_speech_runtime_accepts_debian_python_313(self):
+        self.assertTrue(project_python_supported((3, 11)))
+        self.assertTrue(project_python_supported((3, 13)))
+        self.assertTrue(project_python_supported((3, 14)))
+        self.assertFalse(project_python_supported((3, 10)))
+        self.assertFalse(project_python_supported((3, 15)))
+
     def test_provider_process_restarts_once_after_unexpected_exit(self):
         client = object.__new__(ProviderProcessClient)
         client.lock = threading.Lock()
@@ -145,8 +155,8 @@ class ProviderRuntimeTests(unittest.TestCase):
             self.assertTrue((Path(tmpdir) / "provider_tts_file.log").is_file())
             self.assertTrue((Path(tmpdir) / "provider_asr_file.log").is_file())
 
-    def test_supported_providers_share_the_python314_profile(self):
-        self.assertEqual(tuple(PROVIDER_PROFILES), ("python314",))
+    def test_supported_providers_share_the_project_python_profile(self):
+        self.assertEqual(tuple(PROVIDER_PROFILES), ("project_python",))
         configured = {
             engine
             for profile in PROVIDER_PROFILES.values()

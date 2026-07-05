@@ -1,4 +1,4 @@
-"""Install and verify the supported speech stack in one Python 3.14 runtime."""
+"""Install and verify the speech stack in a supported project Python runtime."""
 from argparse import ArgumentParser
 import importlib
 import json
@@ -12,7 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from coop_navigation_sds.TextToSpeech.setup import PROVIDER_PROFILES
+from coop_navigation_sds.TextToSpeech.setup import (
+    MAXIMUM_PROJECT_PYTHON_EXCLUSIVE,
+    MINIMUM_PROJECT_PYTHON,
+    PROJECT_PROVIDER_PROFILE,
+    PROVIDER_PROFILES,
+    project_python_supported,
+)
 from coop_navigation_sds.DialogManagement.whisper_cpp_runtime import whisper_cpp_ready
 from coop_navigation_sds.DialogManagement.speech_pipeline import resolve_espeak_executable
 
@@ -156,7 +162,7 @@ def verify_current_runtime(provider_dir=".speech-providers"):
         "errors": errors,
         "whisper_cpp": resolved,
     }, indent=2, sort_keys=True))
-    return tuple(sys.version_info[:2]) == (3, 14) and all(
+    return project_python_supported(sys.version_info[:2]) and all(
         status[engine] for engine in MODULES
     )
 
@@ -208,20 +214,22 @@ def main():
         raise SystemExit(0 if verify_current_runtime(args.provider_dir) else 1)
 
     details = interpreter_details(args.python)
-    if tuple(details["version"]) != (3, 14):
+    if not project_python_supported(details["version"]):
         raise RuntimeError(
-            "Speech providers must be installed with Python 3.14; "
+            "Speech providers require a project Python version from "
+            f"{MINIMUM_PROJECT_PYTHON[0]}.{MINIMUM_PROJECT_PYTHON[1]} through "
+            f"{MAXIMUM_PROJECT_PYTHON_EXCLUSIVE[0]}.{MAXIMUM_PROJECT_PYTHON_EXCLUSIVE[1] - 1}; "
             f"received {details['executable']} version {details['version']}."
         )
 
-    profile = PROVIDER_PROFILES["python314"]
+    profile = PROVIDER_PROFILES[PROJECT_PROVIDER_PROFILE]
     run((args.python, "-m", "pip", "install", "--upgrade", "pip", "wheel"))
     run((args.python, "-m", "pip", "install", *profile.packages))
     run((args.python, "-m", "pip", "check"))
     prepare_coqui_provider(args.provider_dir, args.coqui_python)
     print(
         "Installed the supported speech stack in "
-        f"{details['executable']} (Python 3.14)."
+        f"{details['executable']} (Python {'.'.join(map(str, details['version']))})."
     )
 
 

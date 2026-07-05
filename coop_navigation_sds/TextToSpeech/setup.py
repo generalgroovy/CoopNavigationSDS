@@ -13,8 +13,8 @@ class ProviderProfile:
 
 
 PROVIDER_PROFILES = {
-    "python314": ProviderProfile(
-        "python314",
+    "project_python": ProviderProfile(
+        "project_python",
         ("chattts", "piper", "faster_whisper", "vosk", "qwen3_asr"),
         (
             "ChatTTS==0.2.5",
@@ -23,6 +23,16 @@ PROVIDER_PROFILES = {
             "qwen-asr==0.0.6",
             "vosk==0.3.45",
         ),
-        "Speech libraries verified in the single Python 3.14 project runtime.",
+        "Speech libraries installed in the supported project Python runtime.",
     ),
 }
+
+PROJECT_PROVIDER_PROFILE = "project_python"
+MINIMUM_PROJECT_PYTHON = (3, 11)
+MAXIMUM_PROJECT_PYTHON_EXCLUSIVE = (3, 15)
+
+
+def project_python_supported(version):
+    """Return whether a Python major/minor can host project speech providers."""
+    normalized = tuple(int(value) for value in tuple(version)[:2])
+    return MINIMUM_PROJECT_PYTHON <= normalized < MAXIMUM_PROJECT_PYTHON_EXCLUSIVE

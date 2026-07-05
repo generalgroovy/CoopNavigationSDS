@@ -321,7 +321,7 @@ class SpeechPipelineTests(unittest.TestCase):
             raised.exception.diagnostics["missing_module"],
             "pybase16384.backends.cython._core",
         )
-        self.assertIn("Python 3.14", raised.exception.diagnostics["troubleshooting"])
+        self.assertIn("supported project Python", raised.exception.diagnostics["troubleshooting"])
 
     def test_piper_requires_explicit_voice_model(self):
         engine = PiperTextToSpeech(
