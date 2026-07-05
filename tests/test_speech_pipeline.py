@@ -38,6 +38,7 @@ from coop_navigation_sds.DialogManagement.speech_pipeline import (
     platform_default_tts_engine,
     punctuation_pause_duration_sec,
     synthesis_controls,
+    _apply_audio_channel_impairment,
 )
 
 
@@ -52,6 +53,53 @@ class SpeechPipelineTests(unittest.TestCase):
         }
         values.update(overrides)
         return SpeechTransport(config=SpeechPipelineConfig(**values))
+
+    def test_waveform_channel_impairment_is_deterministic_and_auditable(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            signal = WaveFileTextToSpeech(tmpdir).synthesize(
+                "Agent A", "I need tram line T1 from Bravo to Harbor."
+            )
+            clean_path = Path(signal.audio["path"])
+            clean_bytes = clean_path.read_bytes()
+            config = SpeechPipelineConfig(
+                tts_engine="piper",
+                asr_engine="vosk",
+                channel_noise_snr_db=10.0,
+                channel_gain_db=-6.0,
+                channel_clip_threshold=0.6,
+                channel_dropout_rate=0.1,
+            )
+
+            treated = _apply_audio_channel_impairment(signal, config, "Agent A")
+            channel_path = Path(treated.audio["path"])
+            first_bytes = channel_path.read_bytes()
+            treated.audio["path"] = str(clean_path)
+            repeated = _apply_audio_channel_impairment(treated, config, "Agent A")
+
+            self.assertEqual(Path(repeated.audio["path"]).read_bytes(), first_bytes)
+            self.assertNotEqual(first_bytes, clean_bytes)
+            evidence = repeated.audio["channel_impairment"]
+            self.assertTrue(evidence["applied"])
+            self.assertEqual(evidence["noise_snr_db"], 10.0)
+            self.assertGreater(evidence["dropped_sample_rate"], 0.0)
+            self.assertEqual(Path(evidence["clean_path"]), clean_path)
+
+    def test_text_control_records_but_does_not_apply_channel_impairment(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            signal = WaveFileTextToSpeech(tmpdir).synthesize("Agent B", "Take T1.")
+            original = signal.audio["path"]
+            config = SpeechPipelineConfig(
+                tts_engine="file",
+                asr_engine="file",
+                channel_noise_snr_db=5.0,
+                channel_dropout_rate=0.5,
+            )
+
+            treated = _apply_audio_channel_impairment(signal, config, "Agent B")
+
+            self.assertEqual(treated.audio["path"], original)
+            self.assertFalse(treated.audio["channel_impairment"]["applied"])
+            self.assertEqual(treated.audio["channel_impairment"]["reason"], "text_control")
 
     def test_selectable_engines_are_explicit_and_exclude_text_bypasses(self):
         self.assertEqual(

@@ -357,6 +357,10 @@ class SpeechPipelineConfig:
     asr_ambiguous_end_silence_ms: int = 4500
     asr_domain_normalization_enabled: bool = True
     asr_domain_similarity_threshold: float = 0.86
+    channel_noise_snr_db: float | None = None
+    channel_gain_db: float = 0.0
+    channel_clip_threshold: float = 1.0
+    channel_dropout_rate: float = 0.0
     min_utterance_sec: float = 0.25
     max_utterance_sec: float = 20.0
     provider_environment_dir: str = ".speech-providers"
@@ -709,6 +713,7 @@ class OptionalTextToSpeechBase:
                 {
                     "engine": self.name,
                     "path": str(wav_path),
+                    "backend_diagnostics": dict(backend_diagnostics or {}),
                     "troubleshooting": self.install_hint(),
                 },
             )
@@ -2316,6 +2321,108 @@ def _apply_persona_recognition_errors(text, speaker, prosody):
     return " ".join(words)
 
 
+def _apply_audio_channel_impairment(signal, config, speaker):
+    """Apply a deterministic PCM channel treatment between TTS and ASR.
+
+    The clean synthesis path is retained for TTS evaluation. ASR receives the
+    derived channel waveform, which makes acoustic degradation observable and
+    replayable instead of simulating it only by editing the transcript.
+    """
+    audio = signal.audio if isinstance(signal.audio, dict) else {}
+    source = Path(str(audio.get("path") or ""))
+    settings = {
+        "noise_snr_db": config.channel_noise_snr_db,
+        "gain_db": max(-40.0, min(20.0, float(config.channel_gain_db))),
+        "clip_threshold": max(0.05, min(1.0, float(config.channel_clip_threshold))),
+        "dropout_rate": max(0.0, min(0.95, float(config.channel_dropout_rate))),
+    }
+    requested = (
+        settings["noise_snr_db"] is not None
+        or settings["gain_db"] != 0.0
+        or settings["clip_threshold"] < 1.0
+        or settings["dropout_rate"] > 0.0
+    )
+    if config.tts_engine == "file" and config.asr_engine == "file":
+        audio["channel_impairment"] = {**settings, "applied": False, "reason": "text_control"}
+        return signal
+    if not requested:
+        audio["channel_impairment"] = {**settings, "applied": False, "reason": "clean_channel"}
+        return signal
+    if not source.is_file():
+        raise SpeechPipelineError(
+            "Audio channel treatment requires a readable synthesized WAV file.",
+            {"path": str(source), "settings": settings},
+        )
+    try:
+        with wave.open(str(source), "rb") as input_wave:
+            parameters = input_wave.getparams()
+            frames = input_wave.readframes(parameters.nframes)
+    except (OSError, wave.Error) as exc:
+        raise SpeechPipelineError(
+            "Audio channel treatment could not read the synthesized WAV file.",
+            {"path": str(source), "settings": settings, "error": repr(exc)},
+        ) from exc
+    if parameters.sampwidth != 2 or parameters.comptype != "NONE":
+        raise SpeechPipelineError(
+            "Audio channel treatment supports uncompressed 16-bit PCM WAV only.",
+            {
+                "path": str(source),
+                "sample_width": parameters.sampwidth,
+                "compression": parameters.comptype,
+            },
+        )
+    sample_count = len(frames) // 2
+    if not sample_count:
+        raise SpeechPipelineError("Audio channel treatment received an empty waveform.")
+    samples = list(struct.unpack(f"<{sample_count}h", frames))
+    gain = 10.0 ** (settings["gain_db"] / 20.0)
+    gained = [sample * gain for sample in samples]
+    signal_rms = math.sqrt(sum(sample * sample for sample in gained) / sample_count)
+    snr = settings["noise_snr_db"]
+    noise_rms = 0.0 if snr is None else signal_rms / (10.0 ** (float(snr) / 20.0))
+    seed_material = (
+        f"{speaker}|{signal.text}|{config.pattern_key}|{settings}|{source.name}"
+    )
+    rng = random.Random(int(hashlib.sha256(seed_material.encode("utf-8")).hexdigest()[:16], 16))
+    block_samples = max(1, int(parameters.framerate * parameters.nchannels * 0.02))
+    clip_limit = int(32767 * settings["clip_threshold"])
+    output = []
+    clipped = 0
+    dropped = 0
+    drop_block = False
+    for index, sample in enumerate(gained):
+        if index % block_samples == 0:
+            drop_block = rng.random() < settings["dropout_rate"]
+        if drop_block:
+            value = 0.0
+            dropped += 1
+        else:
+            value = sample + (rng.gauss(0.0, noise_rms) if noise_rms else 0.0)
+        if value > clip_limit:
+            value = clip_limit
+            clipped += 1
+        elif value < -clip_limit:
+            value = -clip_limit
+            clipped += 1
+        output.append(int(round(value)))
+    destination = source.with_name(f"{source.stem}-channel.wav")
+    with wave.open(str(destination), "wb") as output_wave:
+        output_wave.setparams(parameters)
+        output_wave.writeframes(struct.pack(f"<{sample_count}h", *output))
+    audio["clean_path"] = str(source)
+    audio["path"] = str(destination)
+    audio["channel_impairment"] = {
+        **settings,
+        "applied": True,
+        "sample_count": sample_count,
+        "clipped_sample_rate": round(clipped / sample_count, 6),
+        "dropped_sample_rate": round(dropped / sample_count, 6),
+        "clean_path": str(source),
+        "channel_path": str(destination),
+    }
+    return signal
+
+
 class SpeechTransport:
     """Controller utility that composes TTS and ASR engines into one transmit operation.
     """
@@ -2683,6 +2790,16 @@ class SpeechTransport:
             tts_started_at = time.perf_counter()
             signal = self.tts_engine.synthesize(speaker, delivered_text)
             tts_latency_sec = time.perf_counter() - tts_started_at
+            channel_started_at = time.perf_counter()
+            signal = _apply_audio_channel_impairment(
+                signal,
+                self.config,
+                speaker,
+            )
+            channel_latency_sec = time.perf_counter() - channel_started_at
+            signal_diagnostics = signal.diagnostics if isinstance(signal.diagnostics, dict) else {}
+            signal.diagnostics = signal_diagnostics
+            signal_diagnostics["audio_channel_processing_sec"] = channel_latency_sec
             simulated_duration_sec = self.estimate_duration_sec(speaker, signal.text)
             audio = signal.audio if isinstance(signal.audio, dict) else {}
             if not audio.get("path"):

@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 import tempfile
@@ -41,35 +42,31 @@ def test_readme_documents_complete_experiment_network_contract():
 
     for heading in (
         "### Network Parameters",
-        "### Structural Invariants",
-        "### Route Representation",
-        "### Fullness, Demand, and Delay",
-        "### Access and Constraint Evaluation",
-        "### Default Seed 42 Network",
-        "### Standard Scenarios",
+        "### Objective",
+        "### Integrity Rules",
+        "### Extension Contracts",
     ):
         assert heading in readme
     for required_value in (
         "36",
         "M1-M20",
         "Near-capacity threshold",
-        "Default line-specific segment travel times",
-        "Default station coordinates, public modes, transfer times, and demand districts",
+        "line-specific segment minutes",
+        "walking",
+        "nearby stations",
         "`network_overview.json`",
         "`network_graph.svg`",
     ):
-        assert required_value in readme
+        assert required_value.lower() in readme.lower()
 
 
-def test_readme_names_every_runtime_configuration_setting():
+def test_readme_points_to_authoritative_runtime_configuration():
     readme = (Path(__file__).resolve().parents[1] / "README.md").read_text(encoding="utf-8")
 
-    undocumented = [
-        key for key in sorted(default_run_config())
-        if f"`{key}`" not in readme
-    ]
-
-    assert undocumented == []
+    assert "`app.default_run_config()`" in readme
+    assert "`Configuration/jobs.py`" in readme
+    assert "python -m coop_navigation_sds.batch --help" in readme
+    assert len(default_run_config()) > 100
 
 
 def test_settings_round_trip_excludes_credentials_and_transient_paths():
@@ -230,10 +227,10 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
             result_scope="batch", manifest_path=Path(temporary) / "batch" / "experiment_manifest.json",
         )
 
-        single_wide = (Path(single_exports["metric_wide_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
-        batch_wide = (Path(batch_exports["metric_wide_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
-        single_long = (Path(single_exports["metric_long_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
-        batch_long = (Path(batch_exports["metric_long_jsonl"]).read_text(encoding="utf-8").splitlines()[0])
+        single_wide = next(csv.DictReader(Path(single_exports["metric_wide_csv"]).open(encoding="utf-8")))
+        batch_wide = next(csv.DictReader(Path(batch_exports["metric_wide_csv"]).open(encoding="utf-8")))
+        single_long = next(csv.DictReader(Path(single_exports["metric_long_csv"]).open(encoding="utf-8")))
+        batch_long = next(csv.DictReader(Path(batch_exports["metric_long_csv"]).open(encoding="utf-8")))
         single_json = json.loads(single_retrospective.read_text(encoding="utf-8"))
         batch_json = json.loads(batch_retrospective.read_text(encoding="utf-8"))
         single_summary_json = json.loads(single_summary["summary"].read_text(encoding="utf-8"))
@@ -242,12 +239,12 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
             Path(batch_summary["conditions"]).read_text(encoding="utf-8").splitlines()[0]
         )
 
-    single_wide_row = json.loads(single_wide)
-    batch_wide_row = json.loads(batch_wide)
-    single_long_row = json.loads(single_long)
-    batch_long_row = json.loads(batch_long)
+    single_wide_row = single_wide
+    batch_wide_row = batch_wide
+    single_long_row = single_long
+    batch_long_row = batch_long
 
-    assert {"metric_long_csv", "metric_long_jsonl", "metric_wide_csv", "metric_wide_jsonl"} <= set(single_exports)
+    assert set(single_exports) == {"metric_long_csv", "metric_wide_csv"}
     assert set(single_exports) == set(batch_exports)
     assert set(single_wide_row) == set(batch_wide_row)
     assert {"result_scope", "result_run_id", "condition_id", "factor_tts_engine", "factor_asr_engine"} <= set(single_wide_row)
@@ -257,9 +254,16 @@ def test_single_and_batch_metric_exports_share_graphable_schema():
     assert single_json["conditions"][0]["condition_id"] == batch_json["conditions"][0]["condition_id"] == "schema_check"
     assert set(single_summary_json) == set(batch_summary_json)
     assert single_summary_json["condition_table"] == batch_summary_json["condition_table"] == "conditions.jsonl"
+    assert single_summary_json["analysis_overview"] == "analysis_overview.html"
+    assert single_summary_json["recommended_analysis_tables"][:3] == [
+        "run_analysis.csv",
+        "condition_analysis.csv",
+        "run_phase_scorecard.csv",
+    ]
     assert {
         "speech_pattern_key", "agent_a_audio_persona", "agent_b_audio_persona",
-        "agent_b_llm_size", "model_param_key", "objective_mode", "iteration",
+        "condition_id", "test_case_key", "agent_b_llm_size",
+        "model_param_key", "objective_mode", "iteration",
         "asr_search_width", "matrix_family", "experiment_platform",
         "configured_tts_engine", "configured_asr_engine",
         "experiment_seed", "repetition", "run_mode",

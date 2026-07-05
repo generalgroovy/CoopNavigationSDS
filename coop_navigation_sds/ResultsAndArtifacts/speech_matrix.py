@@ -388,6 +388,20 @@ def run_speech_backend_matrix(
     """Execute every registered TTS/ASR pairing and write its protocol."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    tts_readiness = {}
+    asr_readiness = {}
+    if run_live:
+        probe_audio_dir = output_dir / ".readiness_probe"
+        probe_audio_dir.mkdir(parents=True, exist_ok=True)
+        first_asr = next(iter(ASR_ENGINE_SPECS))
+        first_tts = next(iter(TTS_ENGINE_SPECS))
+        for tts_engine in TTS_ENGINE_SPECS:
+            config = _pipeline_config(base_config, tts_engine, first_asr, probe_audio_dir)
+            tts_readiness[tts_engine] = tts_live_readiness(tts_engine, config)
+        for asr_engine in ASR_ENGINE_SPECS:
+            config = _pipeline_config(base_config, first_tts, asr_engine, probe_audio_dir)
+            asr_readiness[asr_engine] = asr_live_readiness(asr_engine, config)
+        probe_audio_dir.rmdir()
     cases = []
     for tts_engine in TTS_ENGINE_SPECS:
         for asr_engine in ASR_ENGINE_SPECS:
@@ -398,14 +412,12 @@ def run_speech_backend_matrix(
             )
             with tempfile.TemporaryDirectory(prefix="coop_navigation_sds_speech_matrix_") as audio_dir:
                 config = _pipeline_config(base_config, tts_engine, asr_engine, audio_dir)
-                case.tts_live_ready, case.tts_readiness = tts_live_readiness(
-                    tts_engine,
-                    config,
-                )
-                case.asr_live_ready, case.asr_readiness = asr_live_readiness(
-                    asr_engine,
-                    config,
-                )
+                if run_live:
+                    case.tts_live_ready, case.tts_readiness = tts_readiness[tts_engine]
+                    case.asr_live_ready, case.asr_readiness = asr_readiness[asr_engine]
+                else:
+                    case.tts_readiness = "not evaluated; live execution not requested"
+                    case.asr_readiness = "not evaluated; live execution not requested"
                 _run_contract_case(case, config)
                 if run_live:
                     _run_live_case(case, config)

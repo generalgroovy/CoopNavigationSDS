@@ -12,7 +12,12 @@ def get_persona(persona_key: str):
     Returns:
         The computed value or side effect documented by the implementation.
     """
-    return PERSONAS.get(persona_key, PERSONAS[DEFAULT_PERSONA])
+    key = str(persona_key or DEFAULT_PERSONA)
+    if key not in PERSONAS:
+        raise ValueError(
+            f"Unknown persona '{key}'. Available: {', '.join(sorted(PERSONAS))}."
+        )
+    return PERSONAS[key]
 
 
 def preference_text(persona: dict):

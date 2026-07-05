@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=mn-grid-gpu
-#SBATCH --array=0-719%4
+#SBATCH --array=0-15%4
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=12G
 #SBATCH --gres=gpu:1

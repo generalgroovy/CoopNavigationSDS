@@ -132,7 +132,7 @@ from coop_navigation_sds.TextToSpeech.personas import (
     audio_persona_keys,
     synthesis_values,
 )
-from coop_navigation_sds.TransportNetwork.constraints import normalize_objective_mode
+from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
 from coop_navigation_sds.Configuration.pipeline import (
     experiment_pipeline_contract,
@@ -395,7 +395,7 @@ class ConsoleEventSink:
             )
         print(
             "Detailed formulas, operands, substitutions, ranges, and unavailable reasons "
-            "are stored in retrospective_metrics.json and metrics_long.csv/jsonl.",
+            "are stored in metric_inputs.json and metrics_long.csv.",
             flush=True,
         )
 
@@ -499,6 +499,7 @@ def default_run_config():
         "agent_a_type": "userlm" if LLM_AGENT_A else AGENT_A_MINILLAMA,
         "llm_agent_a": LLM_AGENT_A,
         "speech_pattern_key": DEFAULT_SPEECH_PATTERN,
+        "speech_performance_band": "custom",
         "tts_engine": SPEECH_TTS_ENGINE or platform_default_tts_engine(),
         "asr_engine": SPEECH_ASR_ENGINE or platform_default_asr_engine(),
         "speech_playback_enabled": SPEECH_PLAYBACK_ENABLED,
@@ -533,6 +534,10 @@ def default_run_config():
         "asr_ambiguous_end_silence_ms": DEFAULT_ASR_AMBIGUOUS_END_SILENCE_MS,
         "asr_domain_normalization_enabled": True,
         "asr_domain_similarity_threshold": 0.86,
+        "channel_noise_snr_db": None,
+        "channel_gain_db": 0.0,
+        "channel_clip_threshold": 1.0,
+        "channel_dropout_rate": 0.0,
         "min_utterance_sec": DEFAULT_MIN_UTTERANCE_SEC,
         "max_utterance_sec": DEFAULT_MAX_UTTERANCE_SEC,
         "provider_environment_dir": ".speech-providers",
@@ -710,6 +715,26 @@ def normalize_run_config(config):
         normalized["min_utterance_sec"],
         float(normalized["max_utterance_sec"]),
     )
+    normalized["speech_performance_band"] = str(
+        normalized.get("speech_performance_band") or "custom"
+    ).strip().lower()
+    if normalized["speech_performance_band"] not in {
+        "custom", "ceiling", "nominal", "challenging", "floor"
+    }:
+        raise ValueError("speech_performance_band must be custom, ceiling, nominal, challenging, or floor.")
+    raw_snr = normalized.get("channel_noise_snr_db")
+    normalized["channel_noise_snr_db"] = (
+        None if raw_snr in (None, "") else max(-5.0, min(80.0, float(raw_snr)))
+    )
+    normalized["channel_gain_db"] = max(
+        -40.0, min(20.0, float(normalized.get("channel_gain_db", 0.0)))
+    )
+    normalized["channel_clip_threshold"] = max(
+        0.05, min(1.0, float(normalized.get("channel_clip_threshold", 1.0)))
+    )
+    normalized["channel_dropout_rate"] = max(
+        0.0, min(0.95, float(normalized.get("channel_dropout_rate", 0.0)))
+    )
     for agent in ("agent_a", "agent_b"):
         fallback = DEFAULT_AGENT_A_AUDIO_PERSONA if agent == "agent_a" else DEFAULT_AGENT_B_AUDIO_PERSONA
         available = audio_persona_keys("caller" if agent == "agent_a" else "assistant")
@@ -772,7 +797,7 @@ def normalize_run_config(config):
     # Per-metric switches are obsolete. Every registered metric is evaluated.
     normalized.pop("metric_config", None)
     normalized.pop("metric_tiers", None)
-    normalized["agent_a_objective_mode"] = normalize_objective_mode(normalized.get("agent_a_objective_mode"))
+    normalized["agent_a_objective_mode"] = OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
     normalized["console_view"] = str(normalized.get("console_view") or "compact").strip().lower()
     if normalized["console_view"] not in CONSOLE_VIEW_CHOICES:
         raise ValueError(f"console_view must be one of {CONSOLE_VIEW_CHOICES}.")
@@ -1121,6 +1146,10 @@ def build_dialog_runtime(event_queue, model_adapter, run_config):
             asr_ambiguous_end_silence_ms=int(run_config["asr_ambiguous_end_silence_ms"]),
             asr_domain_normalization_enabled=run_config["asr_domain_normalization_enabled"],
             asr_domain_similarity_threshold=float(run_config["asr_domain_similarity_threshold"]),
+            channel_noise_snr_db=run_config["channel_noise_snr_db"],
+            channel_gain_db=float(run_config["channel_gain_db"]),
+            channel_clip_threshold=float(run_config["channel_clip_threshold"]),
+            channel_dropout_rate=float(run_config["channel_dropout_rate"]),
             min_utterance_sec=float(run_config["min_utterance_sec"]),
             max_utterance_sec=float(run_config["max_utterance_sec"]),
             provider_environment_dir=run_config["provider_environment_dir"],

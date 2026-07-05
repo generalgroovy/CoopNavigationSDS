@@ -2,14 +2,16 @@
   "schema_version": 1,
   "name": "minillama_smoke",
   "agent_b": ["simple", "minillama"],
-  "personas": ["focused_commuter"],
-  "test_cases": ["morning_peak_cross_city"],
+  "task_profiles": [
+    {"test_case": "morning_peak_cross_city", "persona": "focused_commuter"}
+  ],
   "run_modes": ["pure_text"],
-  "seeds": [11],
+  "seeds": [42],
   "repetitions": 1,
   "agent_a_type": "staged",
   "base_config": {
-    "num_turns": 6,
+    "num_turns": 20,
+    "maximum_progressive_constraints": 3,
     "allow_model_download": false,
     "model_max_new_tokens": 32
   }

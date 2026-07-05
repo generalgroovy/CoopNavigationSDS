@@ -14,6 +14,7 @@ from minillama.orchestration.run_experiments import condition_job_document
 from scripts.run_slurm_condition import condition_index
 from coop_navigation_sds.TransportNetwork.constraints import stage_viability_report
 from coop_navigation_sds.TransportNetwork.test_cases import get_test_case
+from coop_navigation_sds.TransportNetwork import network as network_model
 
 
 def _document(run_modes=None):
@@ -125,33 +126,53 @@ def test_speech_grid_requires_both_transport_engines():
         SlurmConditionGrid.from_document(document)
 
 
-def test_included_full_grids_fix_common_route_objective_without_private_constraints():
+def test_included_full_grids_use_validated_profiles_and_three_constraints():
     root = Path(__file__).resolve().parents[1] / "slurm"
-    for filename in ("minillama_grid.json", "minillama_speech_grid.json"):
+    expected_counts = {
+        "minillama_grid.json": 16,
+        "minillama_speech_grid.json": 48,
+    }
+    for filename, expected_count in expected_counts.items():
         grid = SlurmConditionGrid.from_file(root / filename)
-        assert len(grid.conditions) == 720
+        assert len(grid.conditions) == expected_count
         assert {
             row.base_config["maximum_progressive_constraints"]
             for row in grid.conditions
-        } == {0}
+        } == {3}
+        assert len({(row.test_case_key, row.persona_key) for row in grid.conditions}) == 8
 
 
-def test_every_full_grid_task_pair_passes_common_route_objective_viability():
+def test_every_full_grid_task_seed_passes_progressive_constraint_viability():
     root = Path(__file__).resolve().parents[1] / "slurm"
     grid = SlurmConditionGrid.from_file(root / "minillama_grid.json")
-    task_pairs = {
-        (row.test_case_key, row.persona_key)
+    treatments = {
+        (row.test_case_key, row.persona_key, row.seed)
         for row in grid.conditions
     }
     failures = []
-    for test_case_key, persona_key in sorted(task_pairs):
-        case = get_test_case(test_case_key).with_persona(persona_key)
-        report = stage_viability_report(
-            case.scenario,
-            case.persona,
-            transfer_tolerance=1,
-            max_constraints=0,
-        )
-        if not report["all_stage_requirements_satisfied"]:
-            failures.append((test_case_key, persona_key))
+    original_seed = network_model.ACTIVE_NETWORK_SEED
+    try:
+        for test_case_key, persona_key, seed in sorted(treatments):
+            network_model.rebuild_network(seed, force=True)
+            case = get_test_case(test_case_key).with_persona(persona_key)
+            report = stage_viability_report(
+                case.scenario,
+                case.persona,
+                transfer_tolerance=1,
+                max_constraints=3,
+            )
+            if not report["all_stage_requirements_satisfied"]:
+                failures.append((test_case_key, persona_key, seed))
+    finally:
+        network_model.rebuild_network(original_seed, force=True)
     assert failures == []
+
+
+def test_standard_task_profiles_come_from_registered_test_cases():
+    document = _document(["pure_text"])
+    document.pop("personas")
+    document.pop("test_cases")
+    document["task_profiles"] = "standard"
+    grid = SlurmConditionGrid.from_document(document)
+
+    assert len({(row.test_case_key, row.persona_key) for row in grid.conditions}) == 8

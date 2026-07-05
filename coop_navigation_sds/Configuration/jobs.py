@@ -6,6 +6,7 @@ from pathlib import Path
 
 from coop_navigation_sds.Configuration.schema import JOB_SCHEMA_VERSION
 from coop_navigation_sds.Configuration.model_matrix import models_for_size_treatments
+from coop_navigation_sds.Configuration.speech import speech_performance_profiles
 
 
 COVERAGE_STRATEGIES = ("full_factorial", "pairwise")
@@ -92,6 +93,23 @@ def load_experiment_job(path, _seen=None):
         **inherited.get("linked_profiles", {}),
         **raw_linked_profiles,
     }
+    explicit_performance_bands = document.get("speech_performance_bands")
+    performance_bands = (
+        explicit_performance_bands
+        if explicit_performance_bands is not None
+        else inherited.get("speech_performance_bands", [])
+    )
+    if explicit_performance_bands:
+        if not isinstance(performance_bands, (list, tuple)):
+            raise ValueError("Experiment job 'speech_performance_bands' must be a list.")
+        if "speech_performance" in raw_linked_profiles:
+            raise ValueError(
+                "Define either 'speech_performance_bands' or the linked profile "
+                "group 'speech_performance', not both."
+            )
+        linked_profiles["speech_performance"] = speech_performance_profiles(
+            performance_bands
+        )
     for group, profiles in linked_profiles.items():
         if not isinstance(profiles, list) or not profiles or not all(
             isinstance(profile, dict) for profile in profiles
@@ -131,6 +149,7 @@ def load_experiment_job(path, _seen=None):
             str(group): [dict(profile) for profile in profiles]
             for group, profiles in linked_profiles.items()
         },
+        "speech_performance_bands": [str(key) for key in performance_bands],
         "coverage_strategy": coverage_strategy,
         "iterations": max(1, int(document.get("iterations", inherited.get("iterations", 1)))),
         "source": str(job_path),

@@ -474,6 +474,39 @@ class MetricFamilyTests(unittest.TestCase):
         self.assertEqual(row["asr_failure_count"], 1)
         self.assertEqual(row["tts_round_trip_semantic_intelligibility"], 0.0)
 
+    def test_invalid_route_cannot_receive_constraint_satisfaction_credit(self):
+        test_case = get_test_case(DEFAULT_TEST_CASE)
+        scenario = test_case.scenario
+        result = DialogResult(
+            condition_id="invalid-route-constraints",
+            test_case_key=test_case.key,
+            persona_key=test_case.persona_key,
+            scenario_key=test_case.scenario_key,
+            speech_pattern_key="clean",
+            model_name="fake-model",
+            conversation=[("Agent A", "Need a route."), ("Agent B", "I cannot find one.")],
+            route=[],
+            route_steps=[],
+            route_valid=False,
+            route_reaches_goal=False,
+            route_correct=False,
+            route_duration_min=None,
+            runtime_sec=0.1,
+            extra={
+                "messages": 2,
+                "stated_constraints": ["maximum_fullness"],
+                "constraint_status": {
+                    "maximum_fullness": {"satisfied": True},
+                },
+                "unsatisfied_constraints": [],
+            },
+        )
+
+        row = MetricComputer().compute(result, scenario).as_dict()
+
+        self.assertEqual(row["task_outcome_constraint_satisfaction_rate"], 0.0)
+        self.assertEqual(row["task_outcome_constraint_satisfaction"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

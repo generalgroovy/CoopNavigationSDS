@@ -1,4 +1,6 @@
 import inspect
+import csv
+import json
 import tempfile
 import tkinter as tk
 from pathlib import Path
@@ -6,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from coop_navigation_sds.app import default_run_config, normalize_run_config
-from coop_navigation_sds.batch import preflight_agent_b_model_grid
+from coop_navigation_sds.batch import preflight_agent_b_model_grid, write_condition_configuration_breakdown
 from coop_navigation_sds.Configuration.assets import (
     faster_whisper_model_ready,
     resolve_faster_whisper_model,
@@ -63,6 +65,25 @@ def _conditions(path):
 
 
 class AudioPersonaAndJobTests(unittest.TestCase):
+    def test_condition_configuration_breakdown_explains_every_paired_run(self):
+        job, conditions = _conditions(ROOT / "jobs" / "support" / "small_agent_b_speech_grid.job")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            paths = write_condition_configuration_breakdown(
+                conditions,
+                tmpdir,
+                agent_a_type=job["config"]["agent_a_type"],
+                agent_b_plugin=job["config"]["agent_b_plugin"],
+                coverage_report=condition_coverage_report(conditions),
+            )
+            rows = list(csv.DictReader(paths["csv"].open(encoding="utf-8")))
+
+        self.assertEqual(len(rows), 8)
+        self.assertEqual(sum(row["run_type"] == "audio_variant" for row in rows), 4)
+        self.assertEqual(sum(row["run_type"] == "text_only" for row in rows), 4)
+        self.assertTrue(all(row["paired_condition_sequence"] for row in rows))
+        self.assertTrue(all("run_type" in row["paired_differences"] for row in rows))
+        self.assertEqual(set(paths), {"csv"})
+
     @patch("coop_navigation_sds.NaturalLanguageGeneration.models.ensure_ollama_models_ready")
     def test_batch_preflight_checks_every_unique_agent_b_model(self, ensure_models):
         ensure_models.return_value = {"available_models": ()}
@@ -181,8 +202,10 @@ class AudioPersonaAndJobTests(unittest.TestCase):
             job, conditions = _conditions(path)
             self.assertEqual(job["config"]["agent_a_model_name"], "microsoft/UserLM-8b")
             self.assertEqual(job["config"]["agent_a_model_provider"], "transformers")
-            self.assertEqual(len(conditions), 52)
-            self.assertEqual(condition_coverage_report(conditions)["missing_pairs"], [])
+            self.assertEqual(len(conditions), 8)
+            self.assertTrue(
+                condition_coverage_report(conditions)["speech_performance_coverage"]["complete"]
+            )
             observed.add((
                 job["parameter_values"]["agent_b_llm_size"][0],
                 job["parameter_values"]["agent_b_model_role"][0],
@@ -201,15 +224,18 @@ class AudioPersonaAndJobTests(unittest.TestCase):
         path = ROOT / "jobs" / "support" / "small_agent_b_speech_grid.job"
         job, conditions = _conditions(path)
         coverage = condition_coverage_report(conditions)
-        self.assertEqual(job["coverage_strategy"], "pairwise")
-        self.assertEqual(len(conditions), 52)
-        self.assertEqual(sum(row.run_type == "audio_variant" for row in conditions), 26)
-        self.assertEqual(sum(row.run_type == "text_only" for row in conditions), 26)
-        self.assertEqual(coverage["expected_pair_count"], 126)
-        self.assertEqual(coverage["missing_pairs"], [])
-        self.assertEqual(set(job["grid"]["tts_engines"]), {"piper", "espeak_ng"})
-        self.assertEqual(set(job["grid"]["asr_engines"]), {"vosk", "faster_whisper"})
-        self.assertEqual(len(job_linked_profiles(job)["task"]), 3)
+        self.assertEqual(job["coverage_strategy"], "full_factorial")
+        self.assertEqual(len(conditions), 8)
+        self.assertEqual(sum(row.run_type == "audio_variant" for row in conditions), 4)
+        self.assertEqual(sum(row.run_type == "text_only" for row in conditions), 4)
+        self.assertEqual(job["grid"]["tts_engines"], ["piper"])
+        self.assertEqual(job["grid"]["asr_engines"], ["vosk"])
+        performance = coverage["speech_performance_coverage"]
+        self.assertTrue(performance["complete"])
+        self.assertEqual(performance["required_bands"], [
+            "ceiling", "nominal", "challenging", "floor",
+        ])
+        self.assertEqual(len(job_linked_profiles(job)["speech_performance"]), 4)
 
     def test_userlm_speech_grid_is_an_exact_caller_comparison(self):
         source, source_conditions = _conditions(
@@ -224,7 +250,7 @@ class AudioPersonaAndJobTests(unittest.TestCase):
         self.assertEqual(userlm["parameter_values"], source["parameter_values"])
         self.assertEqual(userlm["linked_profiles"], source["linked_profiles"])
         self.assertEqual(userlm["coverage_strategy"], source["coverage_strategy"])
-        self.assertEqual(len(userlm_conditions), len(source_conditions), 52)
+        self.assertEqual(len(userlm_conditions), len(source_conditions), 8)
 
     def test_all_task_profiles_are_viable_for_three_constraint_stages(self):
         job = load_experiment_job(JOB_ROOT / "userlm" / "primary" / "01-small-llama3.2-1b.job")

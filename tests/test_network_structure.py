@@ -14,10 +14,17 @@ from coop_navigation_sds.TransportNetwork.network import (
 from coop_navigation_sds.TransportNetwork.constraints import optimal_constraint_route
 from coop_navigation_sds.TransportNetwork.routes import optimal_time_route
 from coop_navigation_sds.NaturalLanguageGeneration.caller.config import PERSONAS
+from coop_navigation_sds.NaturalLanguageGeneration.caller.personas import get_persona
 from coop_navigation_sds.TransportNetwork import DEFAULT_TEST_CASE, get_test_case
+from coop_navigation_sds.TransportNetwork.scenarios import get_scenario
 
 
 class NetworkStructureTests(unittest.TestCase):
+    def test_unknown_research_factors_fail_instead_of_falling_back(self):
+        for lookup in (get_test_case, get_scenario, get_persona):
+            with self.assertRaisesRegex(ValueError, "Unknown"):
+                lookup("not-registered")
+
     def test_public_line_names_encode_transport_type(self):
         limits = {"metro": 20, "tram": 25, "bus": 30}
         prefixes = {"metro": "M", "tram": "T", "bus": "B"}

@@ -109,4 +109,9 @@ def get_scenario(scenario_key: str):
     Returns:
         The computed value or side effect documented by the implementation.
     """
-    return SCENARIOS.get(scenario_key, SCENARIOS[DEFAULT_SCENARIO])
+    key = str(scenario_key or DEFAULT_SCENARIO)
+    if key not in SCENARIOS:
+        raise ValueError(
+            f"Unknown scenario '{key}'. Available: {', '.join(sorted(SCENARIOS))}."
+        )
+    return SCENARIOS[key]

@@ -1,15 +1,16 @@
 {
   "schema_version": 1,
-  "name": "small_agent_b_speech_grid",
-  "description": "Expanded TinyLlama Agent B speech baseline with validated tasks and matched text controls.",
-  "coverage_strategy": "pairwise",
-  "iterations": 2,
+  "name": "tinyllama_speech_performance_range",
+  "description": "TinyLlama-to-TinyLlama baseline crossing preregistered floor-to-ceiling speech treatments with matched text controls.",
+  "coverage_strategy": "full_factorial",
+  "iterations": 1,
   "config": {
     "agent_a_type": "tinyllama",
     "agent_b_plugin": "llm",
     "model_profile": "tinyllama_1b_transformers",
     "model_provider": "transformers",
     "model_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "model_max_new_tokens": 24,
     "num_turns": 20,
     "maximum_progressive_constraints": 3,
     "minimum_compared_routes": 2,
@@ -24,59 +25,22 @@
     "result_group": "agent_b/support/00-small-tinyllama/tinyllama"
   },
   "grid": {
-    "test_cases": [
-      "morning_peak_cross_city",
-      "midday_transfer",
-      "airport_connection"
-    ],
-    "personas": [
-      "focused_commuter",
-      "distracted_multitasker",
-      "delay_sensitive_traveler"
-    ],
-    "agent_a_audio_personas": [
-      "high_clarity_caller",
-      "hesitant_caller"
-    ],
-    "agent_b_audio_personas": [
-      "clear_operator",
-      "degraded_operator"
-    ],
-    "speech_patterns": [
-      "clean",
-      "hesitant",
-      "noisy_station"
-    ],
+    "test_cases": ["morning_peak_cross_city"],
+    "personas": ["focused_commuter"],
+    "agent_a_audio_personas": ["high_clarity_caller"],
+    "agent_b_audio_personas": ["high_clarity_operator"],
+    "speech_patterns": ["clean"],
     "model_params": ["greedy"],
     "objective_modes": ["shortest_valid_route_with_constraints"],
     "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"],
-    "tts_engines": ["piper", "espeak_ng"],
-    "asr_engines": ["vosk", "faster_whisper"]
+    "tts_engines": ["piper"],
+    "asr_engines": ["vosk"]
   },
+  "speech_performance_bands": ["ceiling", "nominal", "challenging", "floor"],
   "parameter_values": {
-    "matrix_family": ["small_agent_b_speech_grid_v1"],
+    "matrix_family": ["tinyllama_speech_performance_v2"],
     "agent_b_llm_size": ["small"],
     "agent_b_model_role": ["support_baseline"],
-    "asr_beam_size": [1, 6],
-    "network_seed": [11, 29]
-  },
-  "linked_profiles": {
-    "task": [
-      {
-        "task_profile_key": "morning_focused",
-        "test_case_key": "morning_peak_cross_city",
-        "persona_key": "focused_commuter"
-      },
-      {
-        "task_profile_key": "midday_distracted",
-        "test_case_key": "midday_transfer",
-        "persona_key": "distracted_multitasker"
-      },
-      {
-        "task_profile_key": "airport_delay",
-        "test_case_key": "airport_connection",
-        "persona_key": "delay_sensitive_traveler"
-      }
-    ]
+    "network_seed": [42]
   }
 }

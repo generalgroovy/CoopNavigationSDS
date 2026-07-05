@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 
+from coop_navigation_sds.Configuration.schema import RESULT_FILES
 from coop_navigation_sds.EvaluationMetrics.catalog import (
     METRIC_FAMILY_SPECS,
     global_metric_key,
@@ -115,33 +116,31 @@ def metric_long_rows(records, context=None):
     return rows
 
 
-def _write_table_exports(rows, csv_path, jsonl_path):
+def _write_csv(rows, path):
     fieldnames = list(dict.fromkeys(key for row in rows for key in row))
-    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+    with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-    with jsonl_path.open("w", encoding="utf-8") as handle:
-        for row in rows:
-            handle.write(json.dumps(row, ensure_ascii=True) + "\n")
 
 
 def write_metric_long_exports(records, output_dir, context=None):
-    """Write matching long and wide metric datasets for graphing and joins."""
+    """Write canonical long and wide CSV datasets for graphing and joins.
+
+    The long table already carries formulas, operands, substitutions, ranges,
+    and availability reasons. JSONL copies therefore duplicated evidence
+    without adding information.
+    """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     records = list(records)
     rows = metric_long_rows(records, context=context)
-    csv_path = output_dir / "metrics_long.csv"
-    jsonl_path = output_dir / "metrics_long.jsonl"
+    csv_path = output_dir / RESULT_FILES["metrics_long"]
     wide_rows = metric_wide_rows(records, context=context)
-    wide_csv_path = output_dir / "metrics_wide.csv"
-    wide_jsonl_path = output_dir / "metrics_wide.jsonl"
-    _write_table_exports(rows, csv_path, jsonl_path)
-    _write_table_exports(wide_rows, wide_csv_path, wide_jsonl_path)
+    wide_csv_path = output_dir / RESULT_FILES["metrics_wide"]
+    _write_csv(rows, csv_path)
+    _write_csv(wide_rows, wide_csv_path)
     return {
         "metric_long_csv": csv_path,
-        "metric_long_jsonl": jsonl_path,
         "metric_wide_csv": wide_csv_path,
-        "metric_wide_jsonl": wide_jsonl_path,
     }

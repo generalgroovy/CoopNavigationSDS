@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from coop_navigation_sds.ResultsAndArtifacts.speech_matrix import _pipeline_config, run_speech_backend_matrix
 from coop_navigation_sds.Configuration.component_catalog import speech_engine_profile
@@ -60,6 +61,23 @@ class SpeechBackendMatrixTests(unittest.TestCase):
 
             stored = json.loads(paths["json"].read_text(encoding="utf-8"))
             self.assertEqual(stored["summary"], protocol["summary"])
+
+    def test_live_readiness_is_evaluated_once_per_engine(self):
+        with tempfile.TemporaryDirectory() as tmpdir, patch(
+            "coop_navigation_sds.ResultsAndArtifacts.speech_matrix.tts_live_readiness",
+            return_value=(False, "test unavailable"),
+        ) as tts_probe, patch(
+            "coop_navigation_sds.ResultsAndArtifacts.speech_matrix.asr_live_readiness",
+            return_value=(False, "test unavailable"),
+        ) as asr_probe:
+            protocol, _paths = run_speech_backend_matrix(tmpdir, run_live=True)
+
+        self.assertEqual(tts_probe.call_count, len(TTS_ENGINE_SPECS))
+        self.assertEqual(asr_probe.call_count, len(ASR_ENGINE_SPECS))
+        self.assertEqual(
+            protocol["summary"]["live_skipped"],
+            len(TTS_ENGINE_SPECS) * len(ASR_ENGINE_SPECS),
+        )
 
 
 if __name__ == "__main__":

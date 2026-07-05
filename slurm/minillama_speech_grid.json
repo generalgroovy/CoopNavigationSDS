@@ -2,11 +2,10 @@
   "schema_version": 1,
   "name": "minillama_agent_b_speech_grid",
   "agent_b": ["simple", "minillama"],
-  "personas": "all",
-  "test_cases": "all",
+  "task_profiles": "standard",
   "run_modes": ["speech"],
   "speech_patterns": ["clean", "hesitant", "noisy_station"],
-  "seeds": [11],
+  "seeds": [42],
   "repetitions": 1,
   "agent_a_type": "staged",
   "speech": {
@@ -15,7 +14,7 @@
   },
   "base_config": {
     "num_turns": 20,
-    "maximum_progressive_constraints": 0,
+    "maximum_progressive_constraints": 3,
     "allow_model_download": false,
     "model_max_new_tokens": 32,
     "speech_playback_enabled": false,

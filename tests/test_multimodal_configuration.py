@@ -55,8 +55,8 @@ class MultimodalConfigurationTests(unittest.TestCase):
         }
         grid = job_parameter_grid(job)
         conditions = list(build_condition_grid(
-            test_case_keys=["case"],
-            persona_keys=["persona"],
+            test_case_keys=["morning_peak_cross_city"],
+            persona_keys=["focused_commuter"],
             speech_pattern_keys=["clean"],
             model_param_keys=["greedy"],
             iterations=1,

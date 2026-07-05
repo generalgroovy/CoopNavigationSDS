@@ -419,6 +419,9 @@ MODEL_PROFILE_SPECS = {
     ),
 }
 
+AGENT_A_TINYLLAMA_PROFILE_KEY = "tinyllama_1b_transformers"
+AGENT_A_USERLM_PROFILE_KEY = "userlm_8b_transformers"
+
 
 def available_model_profile_keys():
     return ("custom", *MODEL_PROFILE_SPECS)
@@ -456,6 +459,17 @@ def model_profile_defaults(key):
 def model_profile_metadata(key):
     spec = MODEL_PROFILE_SPECS.get(str(key or "").strip())
     return asdict(spec) if spec else None
+
+
+def model_memory_requirement_gb(model, provider=None):
+    """Return the registered approximate runtime memory for one model."""
+    model = str(model or "").strip()
+    provider = str(provider or "").strip().lower()
+    matches = [
+        spec for spec in MODEL_PROFILE_SPECS.values()
+        if spec.model == model and (not provider or spec.provider == provider)
+    ]
+    return matches[0].approximate_memory_gb if len(matches) == 1 else None
 
 
 def matching_model_profile(provider, model):

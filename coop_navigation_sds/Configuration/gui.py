@@ -30,6 +30,10 @@ from coop_navigation_sds.Configuration.pipeline import (
 )
 from coop_navigation_sds.Configuration.experiment import configuration_fingerprint
 from coop_navigation_sds.Configuration.schema import RESULT_SCHEMA_VERSION, TRACE_SCHEMA_VERSION
+from coop_navigation_sds.Configuration.speech import (
+    SPEECH_PERFORMANCE_PROFILES,
+    speech_performance_profile,
+)
 
 
 COMBINED_GUI_PHASES = (
@@ -64,7 +68,7 @@ SETTING_HELP = {
     "test_case_key": "Selects the network scenario, start, destination, and travel conditions.",
     "persona_key": "Controls Agent A's dialogue behavior and private travel preferences.",
     "agent_b_plugin": "Selects the deterministic assistant, local language model, or custom plugin factory.",
-    "agent_a_objective_mode": "Defines whether Agent A requires any valid route, the shortest route, or staged constraint satisfaction.",
+    "agent_a_objective_mode": "Fixed experiment objective: find the shortest valid route while progressively satisfying stated constraints.",
     "agent_a_type": "Selects the deterministic staged caller, fixed TinyLlama caller, or configurable UserLM caller.",
     "model_provider": "Language-model runtime used by the configurable Agent B implementation.",
     "model_profile": "Reproducible model condition. Choose custom to edit the provider and model independently.",
@@ -114,6 +118,11 @@ SETTING_HELP = {
     "asr_domain_normalization_enabled": "Conservatively repairs close station, line, and route-word recognition errors after any selected recognizer; the raw transcript remains logged.",
     "asr_domain_similarity_threshold": "Minimum text similarity for automatic domain-term repair. Higher values reduce corrections; lower values tolerate more recognition variation.",
     "speech_pattern_key": "Controlled speaking condition applied before synthesis, such as clean speech, hesitation, pauses, or dropped words.",
+    "speech_performance_band": "Applies one preregistered ceiling, nominal, challenging, or floor speech-channel treatment. Custom leaves individual controls unchanged.",
+    "channel_noise_snr_db": "Signal-to-noise ratio applied to the synthesized waveform before recognition. Lower values add stronger acoustic noise; empty means no added noise.",
+    "channel_gain_db": "Waveform gain before recognition. Negative values make the signal quieter without changing the clean TTS reference.",
+    "channel_clip_threshold": "Fraction of full waveform amplitude retained before hard clipping. Lower values increase distortion.",
+    "channel_dropout_rate": "Probability that each twenty-millisecond audio block is replaced by silence before recognition.",
     "speech_playback_enabled": "Plays each synthesized utterance through the system audio output.",
     "speech_realtime_enabled": "Waits for playback to finish before the listening agent receives its transcript.",
     "results_root": "The single parent folder for all runs. Every execution writes all artifacts into one flat timestamped subfolder.",
@@ -239,6 +248,7 @@ class StartupConfigDialog:
             "max_turn_elapsed_sec": tk.DoubleVar(value=defaults["max_turn_elapsed_sec"]),
             "calculation_max_time_sec": tk.DoubleVar(value=defaults["calculation_max_time_sec"]),
             "speech_pattern_key": tk.StringVar(value=defaults["speech_pattern_key"]),
+            "speech_performance_band": tk.StringVar(value=defaults.get("speech_performance_band", "custom")),
             "tts_engine": tk.StringVar(value=defaults["tts_engine"]),
             "asr_engine": tk.StringVar(value=defaults["asr_engine"]),
             "speech_playback_enabled": tk.BooleanVar(value=defaults["speech_playback_enabled"]),
@@ -265,6 +275,10 @@ class StartupConfigDialog:
             "max_utterance_sec": tk.DoubleVar(value=defaults["max_utterance_sec"]),
             "asr_domain_normalization_enabled": tk.BooleanVar(value=defaults["asr_domain_normalization_enabled"]),
             "asr_domain_similarity_threshold": tk.DoubleVar(value=defaults["asr_domain_similarity_threshold"]),
+            "channel_noise_snr_db": tk.StringVar(value="" if defaults.get("channel_noise_snr_db") is None else defaults["channel_noise_snr_db"]),
+            "channel_gain_db": tk.DoubleVar(value=defaults.get("channel_gain_db", 0.0)),
+            "channel_clip_threshold": tk.DoubleVar(value=defaults.get("channel_clip_threshold", 1.0)),
+            "channel_dropout_rate": tk.DoubleVar(value=defaults.get("channel_dropout_rate", 0.0)),
             "agent_a_audio_persona": tk.StringVar(value=defaults["agent_a_audio_persona"]),
             "agent_b_audio_persona": tk.StringVar(value=defaults["agent_b_audio_persona"]),
             "agent_a_temperature": tk.DoubleVar(value=defaults["agent_a_temperature"]),
@@ -455,7 +469,10 @@ class StartupConfigDialog:
         caller = self._phase_section(dialogue_card, 0, "agent_a", "Agent A")
         self._combo(caller, 2, "Persona", "persona_key", self.choices["persona_keys"], on_change=self._refresh_persona_detail)
         self._combo(caller, 3, "Implementation", "agent_a_type", self.choices["agent_a_types"], on_change=self._refresh_agent_selection)
-        self._combo(caller, 4, "Objective", "agent_a_objective_mode", self.choices["agent_a_objective_modes"])
+        ttk.Label(caller, text="Objective").grid(row=4, column=0, sticky="w", padx=(0, 8), pady=2)
+        ttk.Label(caller, text="Shortest valid route with constraints").grid(
+            row=4, column=1, columnspan=2, sticky="w", pady=2
+        )
         ttk.Label(caller, textvariable=self.persona_detail, wraplength=650, justify="left").grid(
             row=5, column=0, columnspan=3, sticky="ew", pady=(5, 0)
         )
@@ -484,15 +501,20 @@ class StartupConfigDialog:
         self._attach_phase_metrics(assistant, "agent_b_nlg", 80)
 
         tts = self._phase_section(dialogue_card, 2, "tts", "Audio Persona and Text to Speech")
-        self._combo(tts, 2, "Engine", "tts_engine", self.choices["tts_engines"], on_change=self._select_tts_engine)
-        self._combo(tts, 3, "Agent A audio persona", "agent_a_audio_persona", self.choices["agent_a_audio_personas"], on_change=self._select_audio_persona)
-        self._combo(tts, 4, "Agent B audio persona", "agent_b_audio_persona", self.choices["agent_b_audio_personas"], on_change=self._select_audio_persona)
-        tts_more = self._collapsible(tts, 5, "Speech controls")
+        self._combo(tts, 2, "Performance band", "speech_performance_band", ("custom", *SPEECH_PERFORMANCE_PROFILES), on_change=self._select_speech_performance_band)
+        self._combo(tts, 3, "Engine", "tts_engine", self.choices["tts_engines"], on_change=self._select_tts_engine)
+        self._combo(tts, 4, "Agent A audio persona", "agent_a_audio_persona", self.choices["agent_a_audio_personas"], on_change=self._select_audio_persona)
+        self._combo(tts, 5, "Agent B audio persona", "agent_b_audio_persona", self.choices["agent_b_audio_personas"], on_change=self._select_audio_persona)
+        tts_more = self._collapsible(tts, 6, "Speech and channel controls")
         self._combo(tts_more, 0, "Pattern", "speech_pattern_key", self.choices["speech_patterns"])
         self._check(tts_more, 1, "Play audio", "speech_playback_enabled")
         self._check(tts_more, 2, "Real-time turn taking", "speech_realtime_enabled")
         self._number(tts_more, 3, "Utterance limit", "max_utterance_sec", 5, 40, 1)
-        self.dynamic_frames["tts"] = self._collapsible(tts, 6, "Implementation settings")
+        self._entry(tts_more, 4, "Channel SNR dB", "channel_noise_snr_db")
+        self._number(tts_more, 5, "Channel gain dB", "channel_gain_db", -40, 20, 1)
+        self._number(tts_more, 6, "Clip threshold", "channel_clip_threshold", 0.05, 1.0, 0.05)
+        self._number(tts_more, 7, "Dropout rate", "channel_dropout_rate", 0.0, 0.95, 0.01)
+        self.dynamic_frames["tts"] = self._collapsible(tts, 7, "Implementation settings")
         self._attach_phase_metrics(tts, "tts", 80)
 
         asr = self._phase_section(dialogue_card, 3, "asr", "Automatic Speech Recognition")
@@ -1100,6 +1122,17 @@ class StartupConfigDialog:
         self._refresh_conditional_sections()
 
     def _select_audio_persona(self):
+        self._schedule_pipeline_refresh()
+
+    def _select_speech_performance_band(self):
+        key = self.vars["speech_performance_band"].get()
+        if key == "custom":
+            self._schedule_pipeline_refresh()
+            return
+        for setting, value in speech_performance_profile(key).items():
+            variable = self.vars.get(setting)
+            if variable is not None:
+                variable.set("" if value is None else value)
         self._schedule_pipeline_refresh()
 
     def _select_tts_engine(self):

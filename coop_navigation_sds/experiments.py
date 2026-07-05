@@ -2,17 +2,21 @@
 """
 import time
 import hashlib
+import traceback
 from collections.abc import Mapping
 from contextlib import nullcontext
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from itertools import product
+from pathlib import Path
 from coop_navigation_sds.Configuration.component_catalog import apply_speech_engine_profiles
 from coop_navigation_sds.Configuration.run_identity import compact_code
 from coop_navigation_sds.Configuration.model_matrix import model_size_treatment
 from coop_navigation_sds.Configuration.experiment import (
     ExperimentSpecification,
+    configuration_fingerprint,
     ensure_experiment_specification,
     freeze_value,
+    thaw_value,
 )
 from coop_navigation_sds.Configuration.pipeline import experiment_pipeline_contract
 
@@ -23,9 +27,16 @@ from coop_navigation_sds.NaturalLanguageGeneration.caller.responder import (
     normalize_agent_a_type,
 )
 from coop_navigation_sds.NaturalLanguageGeneration.caller.config import DEFAULT_PERSONA, LLM_AGENT_A
-from coop_navigation_sds.Configuration.speech import AGENT_B_PLUGIN
-from coop_navigation_sds.Configuration.speech import DEFAULT_SPEECH_PATTERN
-from coop_navigation_sds.Configuration.speech import SPEECH_ASR_ENGINE, SPEECH_AUDIO_DIR, SPEECH_PLAYBACK_ENABLED, SPEECH_REALTIME_ENABLED, SPEECH_TTS_ENGINE
+from coop_navigation_sds.Configuration.speech import (
+    AGENT_B_PLUGIN,
+    DEFAULT_SPEECH_PATTERN,
+    SPEECH_ASR_ENGINE,
+    SPEECH_AUDIO_DIR,
+    SPEECH_PERFORMANCE_PROFILES,
+    SPEECH_PLAYBACK_ENABLED,
+    SPEECH_REALTIME_ENABLED,
+    SPEECH_TTS_ENGINE,
+)
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import AgentBPluginConfig, create_agent_b_plugin
 from coop_navigation_sds.NaturalLanguageGeneration.models import model_adapter_runtime_metadata
 from coop_navigation_sds.DialogManagement.speech_pipeline import (
@@ -36,7 +47,7 @@ from coop_navigation_sds.DialogManagement.speech_pipeline import (
 )
 from coop_navigation_sds.TextToSpeech.personas import DEFAULT_AGENT_A_AUDIO_PERSONA, DEFAULT_AGENT_B_AUDIO_PERSONA
 from coop_navigation_sds.DialogManagement.manager import DEFAULT_MAX_TURN_ELAPSED_SEC, DialogManager
-from coop_navigation_sds.DialogManagement.result import NullEventQueue
+from coop_navigation_sds.DialogManagement.result import DialogResult, NullEventQueue
 from coop_navigation_sds.Configuration.runtime import (
     AGENT_A_TRANSFER_TOLERANCE,
     CONSTRAINT_MISS_LIMIT,
@@ -53,7 +64,7 @@ from coop_navigation_sds.ResultsAndArtifacts.artifacts import write_metrics_csv,
 from coop_navigation_sds.ResultsAndArtifacts.logging import LOG_PROFILE_OFF, MonitoringEventQueue, SessionLogger
 from coop_navigation_sds.TransportNetwork.test_cases import TEST_CASES, get_test_case
 from coop_navigation_sds.Configuration.travel import GENERATION_MAX_TIME_SEC
-from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
+from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 
 
 class DropQueue:
@@ -86,6 +97,22 @@ class ExperimentCondition:
 
     def __post_init__(self):
         object.__setattr__(self, "parameter_values", freeze_value(self.parameter_values))
+        object.__setattr__(self, "objective_mode", OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)
+
+
+def condition_configuration_provenance(specification, condition):
+    """Return distinct, reproducible identities for a batch and one condition."""
+    condition_values = {
+        item.name: thaw_value(getattr(condition, item.name))
+        for item in fields(condition)
+    }
+    return {
+        "base_fingerprint_sha256": specification.fingerprint,
+        "fingerprint_sha256": configuration_fingerprint({
+            "base_configuration_fingerprint": specification.fingerprint,
+            "condition": condition_values,
+        }),
+    }
 
 
 class ExperimentRunner:
@@ -165,7 +192,7 @@ class ExperimentRunner:
             else None
         )
 
-    def run_condition(self, condition: ExperimentCondition, *, compute_metrics=True):
+    def run_condition(self, condition: ExperimentCondition, *, compute_metrics=True, capture_failure=False):
         """Run condition method for this module's MVC responsibility.
         
         Args:
@@ -176,11 +203,14 @@ class ExperimentRunner:
         """
         parameters = dict(condition.parameter_values)
         network_seed = parameters.get("network_seed", self.scenario_overrides.get("network_seed"))
-        if network_seed is not None and network_seed != self._active_network_seed:
+        if network_seed is not None:
             from coop_navigation_sds.TransportNetwork.network import rebuild_network
-            rebuild_network(network_seed)
+            # Every condition starts from a fresh deterministic network state.
+            # This prevents mutable route/cache state from leaking across cases.
+            rebuild_network(network_seed, force=True)
+            if network_seed != self._active_network_seed:
+                self._viability_cache.clear()
             self._active_network_seed = network_seed
-            self._viability_cache.clear()
         base_case = get_test_case(condition.test_case_key)
         test_case = base_case.with_persona(condition.persona_key)
         num_turns = max(1, int(parameters.get("num_turns", self.num_turns)))
@@ -259,7 +289,11 @@ class ExperimentRunner:
             "pattern_key": condition.speech_pattern_key,
             "tts_engine": "file" if condition.run_type == "text_only" else (condition.tts_engine or self.tts_engine),
             "asr_engine": "file" if condition.run_type == "text_only" else (condition.asr_engine or self.asr_engine),
-            "audio_dir": self.speech_audio_dir,
+            "audio_dir": str(
+                Path(self.speech_audio_dir)
+                / ".turn_audio"
+                / hashlib.sha256(condition.condition_id.encode("utf-8")).hexdigest()[:12]
+            ),
             "playback_enabled": self.speech_playback_enabled,
             "realtime_enabled": self.speech_realtime_enabled,
             "agent_a_audio_persona": condition.agent_a_audio_persona,
@@ -298,6 +332,7 @@ class ExperimentRunner:
 
         started_perf = time.perf_counter()
         event_queue = self._event_queue_for(condition)
+        failure = None
         try:
             segment = event_queue.segment if hasattr(event_queue, "segment") else lambda *_args, **_kwargs: nullcontext()
             with segment(
@@ -310,11 +345,44 @@ class ExperimentRunner:
                 calculation_max_time_sec=calculation_max_time_sec,
             ):
                 result = manager.run(event_queue)
+        except Exception as exc:
+            if not capture_failure:
+                raise
+            failure = {
+                "exception_type": type(exc).__name__,
+                "message": str(exc),
+                "diagnostics": dict(getattr(exc, "diagnostics", {}) or {}),
+                "traceback": traceback.format_exc(),
+            }
+            result = DialogResult(
+                condition_id=condition.condition_id,
+                test_case_key=condition.test_case_key,
+                persona_key=condition.persona_key,
+                scenario_key=condition.scenario_key,
+                speech_pattern_key=condition.speech_pattern_key,
+                model_name=condition.agent_b_model or str(getattr(agent_b_model_adapter, "name", "")),
+                conversation=[],
+                route=[],
+                route_steps=[],
+                route_valid=False,
+                route_reaches_goal=False,
+                route_correct=False,
+                route_duration_min=None,
+                runtime_sec=0.0,
+                extra={
+                    "execution_status": "failed",
+                    "pipeline_failure": failure,
+                    "conversation_outcome": "unsatisfied",
+                    "messages": 0,
+                },
+            )
         finally:
             speech_transport.close()
             if hasattr(event_queue, "close"):
                 event_queue.close()
         condition_runtime_sec = time.perf_counter() - started_perf
+        result.runtime_sec = condition_runtime_sec
+        result.extra.setdefault("execution_status", "completed")
         result.condition_id = condition.condition_id
         result.speech_pattern_key = condition.speech_pattern_key
         result.extra["model_param_key"] = condition.model_param_key
@@ -341,6 +409,10 @@ class ExperimentRunner:
         if self.experiment_specification is not None:
             result.extra["resolved_run_config"] = self.experiment_specification.to_dict()
             result.extra["configuration_provenance"] = self.experiment_specification.provenance()
+            result.extra["condition_provenance"] = condition_configuration_provenance(
+                self.experiment_specification,
+                condition,
+            )
             result.extra["pipeline_contract"] = experiment_pipeline_contract(
                 self.experiment_specification
             )
@@ -555,6 +627,7 @@ def condition_coverage_report(conditions):
                 if left in row and right in row
             )
     missing = sorted(expected_pairs - observed_pairs)
+    performance = speech_performance_coverage_report(source)
     return {
         "audio_condition_count": len(source),
         "factor_count": len(factor_names),
@@ -570,6 +643,49 @@ def condition_coverage_report(conditions):
              "right_factor": right, "right_value": right_value}
             for left, left_value, right, right_value in missing
         ],
+        "speech_performance_coverage": performance,
+    }
+
+
+def speech_performance_coverage_report(conditions):
+    """Verify floor-to-ceiling bands within every comparable treatment cell."""
+    required = tuple(SPEECH_PERFORMANCE_PROFILES)
+    groups = {}
+    for condition in conditions:
+        if condition.run_type != "audio_variant":
+            continue
+        parameters = dict(condition.parameter_values)
+        band = parameters.get("speech_performance_band")
+        if not band:
+            continue
+        key = (
+            condition.agent_b_model,
+            condition.tts_engine,
+            condition.asr_engine,
+            condition.test_case_key,
+            condition.persona_key,
+        )
+        groups.setdefault(key, set()).add(str(band))
+    rows = []
+    for key, observed in sorted(groups.items(), key=lambda item: tuple(str(v) for v in item[0])):
+        missing = [band for band in required if band not in observed]
+        rows.append({
+            "agent_b_model": key[0],
+            "tts_engine": key[1],
+            "asr_engine": key[2],
+            "test_case_key": key[3],
+            "persona_key": key[4],
+            "observed_bands": [band for band in required if band in observed],
+            "missing_bands": missing,
+            "complete": not missing,
+        })
+    return {
+        "applicable": bool(groups),
+        "required_bands": list(required),
+        "group_count": len(rows),
+        "complete_group_count": sum(bool(row["complete"]) for row in rows),
+        "complete": bool(rows) and all(row["complete"] for row in rows),
+        "groups": rows,
     }
 
 
@@ -607,7 +723,8 @@ def build_condition_grid(
     persona_keys = persona_keys or [DEFAULT_PERSONA]
     speech_pattern_keys = speech_pattern_keys or [DEFAULT_SPEECH_PATTERN]
     model_param_keys = model_param_keys or [DEFAULT_MODEL_PARAM_KEY]
-    objective_modes = objective_modes or [OBJECTIVE_SHORTEST_WITH_CONSTRAINTS]
+    # Kept in the signature for job/CLI compatibility; objective is controlled.
+    objective_modes = [OBJECTIVE_SHORTEST_WITH_CONSTRAINTS]
     agent_a_audio_persona_keys = agent_a_audio_persona_keys or [DEFAULT_AGENT_A_AUDIO_PERSONA]
     agent_b_audio_persona_keys = agent_b_audio_persona_keys or [DEFAULT_AGENT_B_AUDIO_PERSONA]
     tts_engine_keys = tts_engine_keys or [""]
@@ -720,7 +837,7 @@ def build_condition_grid(
             test_case_key=test_case_key, persona_key=persona_key,
             scenario_key=base_case.scenario_key, speech_pattern_key=speech_pattern_key,
             model_param_key=model_param_key,
-            objective_mode=objective_mode if objective_mode in OBJECTIVE_MODES else OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+            objective_mode=OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
             iteration=iteration, agent_a_audio_persona=agent_a_audio_persona,
             agent_b_audio_persona=agent_b_audio_persona, pair_id=pair_id,
             tts_engine=tts_engine, asr_engine=asr_engine, agent_b_model=agent_b_model,

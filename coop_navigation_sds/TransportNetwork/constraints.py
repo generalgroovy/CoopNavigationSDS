@@ -23,11 +23,9 @@ from coop_navigation_sds.TransportNetwork.routes import (
 OBJECTIVE_VALID_ROUTE = "only_valid_route"
 OBJECTIVE_SHORTEST_ROUTE = "shortest_valid_route"
 OBJECTIVE_SHORTEST_WITH_CONSTRAINTS = "shortest_valid_route_with_constraints"
-OBJECTIVE_MODES = (
-    OBJECTIVE_VALID_ROUTE,
-    OBJECTIVE_SHORTEST_ROUTE,
-    OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
-)
+# Historical modes remain readable in stored results, but new runs expose one
+# controlled task objective so objective choice cannot confound comparisons.
+OBJECTIVE_MODES = (OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,)
 OBJECTIVE_MODE_LABELS = {
     OBJECTIVE_VALID_ROUTE: "Only valid route",
     OBJECTIVE_SHORTEST_ROUTE: "Shortest valid route",
@@ -54,21 +52,8 @@ CONSTRAINT_KEYWORDS = {
 
 
 def normalize_objective_mode(value):
-    """Return a supported Agent A objective mode."""
-    normalized = str(value or OBJECTIVE_SHORTEST_WITH_CONSTRAINTS).strip().lower().replace("-", "_").replace(" ", "_")
-    aliases = {
-        "valid": OBJECTIVE_VALID_ROUTE,
-        "only_valid": OBJECTIVE_VALID_ROUTE,
-        "only_valid_route": OBJECTIVE_VALID_ROUTE,
-        "shortest": OBJECTIVE_SHORTEST_ROUTE,
-        "shortest_route": OBJECTIVE_SHORTEST_ROUTE,
-        "shortest_valid": OBJECTIVE_SHORTEST_ROUTE,
-        "shortest_valid_route": OBJECTIVE_SHORTEST_ROUTE,
-        "constraints": OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
-        "shortest_with_constraints": OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
-        "shortest_valid_route_with_constraints": OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
-    }
-    return aliases.get(normalized, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)
+    """Return the single controlled objective used by every new run."""
+    return OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 
 
 @dataclass(frozen=True)

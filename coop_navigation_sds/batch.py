@@ -1,7 +1,11 @@
 """Batch experiment entry point for automatic evaluation of speech-dialog conditions."""
 import argparse
+import csv
 import json
 from pathlib import Path
+import sys
+import time
+import traceback
 
 from coop_navigation_sds.Configuration.speech import AGENT_B_PLUGIN
 from coop_navigation_sds.Configuration.speech import DEFAULT_SPEECH_PATTERN
@@ -53,6 +57,7 @@ from coop_navigation_sds.Configuration.travel import (
 )
 from coop_navigation_sds.NaturalLanguageGeneration.models import available_model_provider_keys, model_profile_defaults
 from coop_navigation_sds.DialogManagement.manager import DEFAULT_MAX_TURN_ELAPSED_SEC
+from coop_navigation_sds.DialogManagement.result import DialogResult
 from coop_navigation_sds.experiments import (
     ExperimentRunner,
     build_condition_grid,
@@ -61,6 +66,7 @@ from coop_navigation_sds.experiments import (
 from coop_navigation_sds.EvaluationMetrics.metrics import apply_cross_run_metrics, apply_paired_run_metrics
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     calculate_batch_metrics_from_inputs,
+    consolidate_completed_runtime_logs,
     create_execution_run_dir,
     write_conversation_protocols,
     write_experiment_manifest,
@@ -69,10 +75,11 @@ from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
     write_metrics_file,
     write_metric_phase_logs,
     write_network_research_artifacts,
-    write_retrospective_metrics_json,
     write_standard_run_summary,
+    write_jsonl,
 )
 from coop_navigation_sds.ResultsAndArtifacts.coverage import update_experiment_coverage
+from coop_navigation_sds.ResultsAndArtifacts.comparison import compare_runs
 from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_MODES, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 from coop_navigation_sds.Configuration.scenarios import DEFAULT_TEST_CASE
 from coop_navigation_sds.Configuration.settings import default_settings_path, load_run_settings
@@ -96,6 +103,175 @@ from coop_navigation_sds.DialogManagement.speech_pipeline import (
     platform_default_asr_engine,
     platform_default_tts_engine,
 )
+
+
+def failed_condition_result(condition, runner, exc, runtime_sec):
+    """Create an analyzable failure result when setup fails before dialogue capture."""
+    test_case = get_test_case(condition.test_case_key).with_persona(condition.persona_key)
+    failure = {
+        "exception_type": type(exc).__name__,
+        "message": str(exc),
+        "diagnostics": dict(getattr(exc, "diagnostics", {}) or {}),
+        "traceback": traceback.format_exc(),
+    }
+    return DialogResult(
+        condition_id=condition.condition_id,
+        test_case_key=condition.test_case_key,
+        persona_key=condition.persona_key,
+        scenario_key=condition.scenario_key,
+        speech_pattern_key=condition.speech_pattern_key,
+        model_name=condition.agent_b_model or "unavailable",
+        conversation=[],
+        route=[],
+        route_steps=[],
+        route_valid=False,
+        route_reaches_goal=False,
+        route_correct=False,
+        route_duration_min=None,
+        runtime_sec=runtime_sec,
+        extra={
+            "execution_status": "failed",
+            "pipeline_failure": failure,
+            "conversation_outcome": "unsatisfied",
+            "messages": 0,
+            "model_param_key": condition.model_param_key,
+            "objective_mode": condition.objective_mode,
+            "iteration": condition.iteration,
+            "agent_a_audio_persona": condition.agent_a_audio_persona,
+            "agent_b_audio_persona": condition.agent_b_audio_persona,
+            "parameter_values": dict(condition.parameter_values),
+            "pair_id": condition.pair_id,
+            "run_type": condition.run_type,
+            "tts_engine": "file" if condition.run_type == "text_only" else (condition.tts_engine or runner.tts_engine),
+            "asr_engine": "file" if condition.run_type == "text_only" else (condition.asr_engine or runner.asr_engine),
+            "configured_tts_engine": condition.tts_engine or runner.tts_engine,
+            "configured_asr_engine": condition.asr_engine or runner.asr_engine,
+            "agent_b_model": condition.agent_b_model,
+            "agent_a_type": runner.agent_a_type,
+            "agent_b_plugin": runner.agent_b_plugin_key,
+            "condition_runtime_sec": runtime_sec,
+            "resolved_scenario": dict(test_case.scenario),
+        },
+    )
+
+
+BREAKDOWN_FACTOR_FIELDS = (
+    "test_case_key", "persona_key", "agent_a_audio_persona",
+    "agent_b_audio_persona", "speech_pattern_key", "objective_mode",
+    "configured_tts_engine", "configured_asr_engine", "model_param_key",
+    "agent_b_model", "asr_beam_size", "network_seed", "iteration", "run_type",
+    "speech_performance_band",
+)
+
+
+def condition_configuration_rows(conditions, *, agent_a_type, agent_b_plugin):
+    """Expand conditions into auditable rows with sequential and paired deltas."""
+    rows = []
+    for sequence, condition in enumerate(conditions, start=1):
+        test_case = get_test_case(condition.test_case_key).with_persona(condition.persona_key)
+        scenario = dict(test_case.scenario)
+        persona = dict(test_case.persona)
+        preferences = dict(persona.get("preferences", {}))
+        parameters = dict(condition.parameter_values)
+        destinations = scenario.get("destination_stations") or [scenario.get("destination_station")]
+        row = {
+            "sequence": sequence,
+            "condition_id": condition.condition_id,
+            "pair_id": condition.pair_id,
+            "run_type": condition.run_type,
+            "pair_role": "text control" if condition.run_type == "text_only" else "speech treatment",
+            "test_case_key": condition.test_case_key,
+            "scenario_key": condition.scenario_key,
+            "task_profile_key": parameters.get("task_profile_key", ""),
+            "start_station": scenario.get("start_station", ""),
+            "destination_stations": " -> ".join(str(value) for value in destinations),
+            "start_time_min": scenario.get("start_time_min"),
+            "persona_key": condition.persona_key,
+            "persona_name": persona.get("name", ""),
+            "persona_description": persona.get("description", ""),
+            "agent_a_type": agent_a_type,
+            "agent_a_audio_persona": condition.agent_a_audio_persona,
+            "agent_b_plugin": agent_b_plugin,
+            "agent_b_model": condition.agent_b_model,
+            "agent_b_audio_persona": condition.agent_b_audio_persona,
+            "objective_mode": condition.objective_mode,
+            "model_param_key": condition.model_param_key,
+            "speech_pattern_key": condition.speech_pattern_key,
+            "configured_tts_engine": condition.tts_engine,
+            "effective_tts_engine": "file" if condition.run_type == "text_only" else condition.tts_engine,
+            "configured_asr_engine": condition.asr_engine,
+            "effective_asr_engine": "file" if condition.run_type == "text_only" else condition.asr_engine,
+            "iteration": condition.iteration,
+            "network_seed": parameters.get("network_seed"),
+            "asr_beam_size": parameters.get("asr_beam_size"),
+            "speech_performance_band": parameters.get("speech_performance_band", "custom"),
+            "speech_performance_rank": parameters.get("speech_performance_rank"),
+            "channel_noise_snr_db": parameters.get("channel_noise_snr_db"),
+            "channel_gain_db": parameters.get("channel_gain_db"),
+            "channel_clip_threshold": parameters.get("channel_clip_threshold"),
+            "channel_dropout_rate": parameters.get("channel_dropout_rate"),
+            "agent_b_llm_size": parameters.get("agent_b_llm_size", ""),
+            "agent_b_model_role": parameters.get("agent_b_model_role", ""),
+            "matrix_family": parameters.get("matrix_family", ""),
+            "ticket_modes": ", ".join(preferences.get("ticket_modes", ())),
+            "max_walking_min": preferences.get("max_walking_min"),
+            "max_delay_probability": preferences.get("max_delay_probability"),
+            "max_transfer_miss_probability": preferences.get("max_transfer_miss_probability"),
+            "persona_preferences_json": json.dumps(preferences, sort_keys=True, default=str),
+            "scenario_configuration_json": json.dumps(scenario, sort_keys=True, default=str),
+            "parameter_values_json": json.dumps(parameters, sort_keys=True, default=str),
+        }
+        rows.append(row)
+
+    by_pair = {}
+    for row in rows:
+        by_pair.setdefault(row["pair_id"], []).append(row)
+    difference_fields = tuple(
+        field for field in rows[0]
+        if field not in {"sequence", "condition_id", "pair_id", "pair_role"}
+    ) if rows else ()
+    for index, row in enumerate(rows):
+        previous = rows[index - 1] if index else None
+        changes = [
+            field for field in difference_fields
+            if previous is not None and row.get(field) != previous.get(field)
+        ]
+        row["changed_from_previous_count"] = len(changes)
+        row["changed_from_previous"] = "; ".join(changes) if previous else "first condition"
+        peers = [peer for peer in by_pair.get(row["pair_id"], ()) if peer is not row]
+        peer = peers[0] if peers else None
+        pair_changes = [
+            field for field in difference_fields
+            if peer is not None and row.get(field) != peer.get(field)
+        ]
+        row["paired_condition_sequence"] = peer["sequence"] if peer else None
+        row["paired_difference_count"] = len(pair_changes)
+        row["paired_differences"] = "; ".join(pair_changes) if peer else "unpaired"
+    return rows
+
+
+def write_condition_configuration_breakdown(
+    conditions,
+    output_dir,
+    *,
+    agent_a_type,
+    agent_b_plugin,
+    coverage_report,
+):
+    """Write one complete, graphable view of the resolved run grid."""
+    output_dir = Path(output_dir)
+    rows = condition_configuration_rows(
+        conditions,
+        agent_a_type=agent_a_type,
+        agent_b_plugin=agent_b_plugin,
+    )
+    csv_path = output_dir / "condition_configuration_breakdown.csv"
+    fields = list(dict.fromkeys(key for row in rows for key in row))
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+    return {"csv": csv_path}
 from coop_navigation_sds.TextToSpeech.personas import (
     DEFAULT_AGENT_A_AUDIO_PERSONA,
     DEFAULT_AGENT_B_AUDIO_PERSONA,
@@ -257,7 +433,11 @@ def main():
             help=f"{label} ChatTTS reproducibility seed; ignored by other synthesizers.",
         )
     parser.add_argument("--model-params", default=job_grid_value(job, "model_params", "greedy"))
-    parser.add_argument("--objective-modes", default=job_grid_value(job, "objective_modes", configured.get("agent_a_objective_mode", OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)), help="Comma-separated Agent A objective modes or all.")
+    parser.add_argument(
+        "--objective-modes",
+        default=OBJECTIVE_SHORTEST_WITH_CONSTRAINTS,
+        help="Compatibility option; every new condition uses shortest_valid_route_with_constraints.",
+    )
     configured_agent_a_type = normalize_agent_a_type(
         configured.get("agent_a_type"),
         configured.get("llm_agent_a", False),
@@ -355,6 +535,15 @@ def main():
     ))
     full_conditions = conditions
     coverage_report = condition_coverage_report(full_conditions)
+    performance_coverage = coverage_report["speech_performance_coverage"]
+    if job.get("speech_performance_bands") and not performance_coverage["complete"]:
+        incomplete = [
+            row for row in performance_coverage["groups"] if not row["complete"]
+        ]
+        raise SystemExit(
+            "Speech performance coverage is incomplete for "
+            f"{len(incomplete)} comparable treatment group(s)."
+        )
     if args.coverage_strategy == "pairwise" and coverage_report["missing_pairs"]:
         raise SystemExit(
             "Pairwise coverage generation failed: "
@@ -466,6 +655,15 @@ def main():
         ),
         encoding="utf-8",
     )
+    configuration_breakdown_paths = write_condition_configuration_breakdown(
+        conditions,
+        run_dir,
+        agent_a_type=args.agent_a_type,
+        agent_b_plugin=args.agent_b_plugin,
+        coverage_report=coverage_report,
+    )
+    if args.update_coverage_registry:
+        update_experiment_coverage(coverage_results_root)
     metrics_output = run_dir / Path(args.output).name
     protocol_dir = run_dir
     phase_log_dir = run_dir
@@ -564,6 +762,10 @@ def main():
         speech_playback_enabled=args.speech_playback,
         speech_realtime_enabled=args.speech_real_time,
         speech_synthesis_config={
+            # Batch personas are complete treatments. Explicit parameter
+            # profiles may override this, but dataclass defaults must not.
+            "agent_a_custom_audio": False,
+            "agent_b_custom_audio": False,
             "tts_device": args.tts_device,
             "tts_model": args.tts_model,
             "tts_executable": args.tts_executable,
@@ -630,9 +832,25 @@ def main():
         experiment_specification=batch_specification,
     )
     results = []
+    condition_failures = []
+    condition_failures_path = run_dir / "condition_failures.jsonl"
+    write_jsonl(condition_failures_path, condition_failures)
     for condition in conditions:
         runner.speech_audio_dir = str(speech_audio_dir)
-        result, _metric = runner.run_condition(condition, compute_metrics=False)
+        condition_started = time.perf_counter()
+        try:
+            result, _metric = runner.run_condition(
+                condition,
+                compute_metrics=False,
+                capture_failure=True,
+            )
+        except Exception as exc:
+            result = failed_condition_result(
+                condition,
+                runner,
+                exc,
+                runtime_sec=time.perf_counter() - condition_started,
+            )
         result.extra["agent_b_model_preflight"] = next(
             (
                 record
@@ -642,8 +860,32 @@ def main():
             {},
         )
         results.append(result)
-        if args.progress:
+        if result.extra.get("execution_status") == "failed":
+            condition_failures.append({
+                "condition_id": condition.condition_id,
+                "test_case_key": condition.test_case_key,
+                "persona_key": condition.persona_key,
+                "run_type": condition.run_type,
+                "tts_engine": result.extra.get("tts_engine"),
+                "asr_engine": result.extra.get("asr_engine"),
+                "agent_b_model": condition.agent_b_model,
+                "parameter_values": dict(condition.parameter_values),
+                "runtime_sec": result.runtime_sec,
+                "failure": json.loads(json.dumps(result.extra.get("pipeline_failure", {}), default=str)),
+            })
+            write_jsonl(condition_failures_path, condition_failures)
+            print(
+                f"failed {condition.condition_id}: "
+                f"{result.extra['pipeline_failure'].get('exception_type')}: "
+                f"{result.extra['pipeline_failure'].get('message')}; continuing",
+                file=sys.stderr,
+                flush=True,
+            )
+        elif args.progress:
             print(f"completed {condition.condition_id}", flush=True)
+        if args.update_coverage_registry:
+            update_experiment_coverage(coverage_results_root)
+    write_jsonl(condition_failures_path, condition_failures)
     batch_metric_inputs = write_batch_metric_inputs(
         results,
         run_dir / "metric_inputs.json",
@@ -656,20 +898,12 @@ def main():
         "result_run_id": run_dir.name,
     }
     write_metrics_file(metrics, metrics_output, context=export_context)
-    retrospective_metrics_path = write_retrospective_metrics_json(
-        metrics,
-        run_dir / "retrospective_metrics.json",
-        result_scope="batch",
-        input_inventory={
-            result.condition_id: result.extra.get("metric_input_inventory", {})
-            for result in results
-        },
-    )
     failure_indicator_path = write_failure_indicator_report(
         metrics,
         run_dir / "failure_indicators.json",
     )
     protocol_paths = write_conversation_protocols(results, protocol_dir)
+    runtime_log_paths = consolidate_completed_runtime_logs(run_dir)
 
     first_case_key = (test_case_keys or [DEFAULT_TEST_CASE])[0]
     first_case = get_test_case(first_case_key)
@@ -746,18 +980,29 @@ def main():
         if args.update_coverage_registry
         else None
     )
+    comparison_paths = (
+        compare_runs(
+            [coverage_results_root],
+            Path(coverage_results_root) / "comparison",
+        )
+        if args.update_coverage_registry
+        else None
+    )
 
     print(f"Run folder: {run_dir}")
     print(f"Metrics: {len(metrics)} rows -> {metrics_output}")
     print(f"Summary: {standard_summary['summary']}")
     print(f"Metric tables: long={metric_exports['metric_long_csv']}; wide={metric_exports['metric_wide_csv']}")
     print(f"Metric inputs: {batch_metric_inputs}")
-    print(f"Retrospective metrics: {retrospective_metrics_path}")
     print(f"Failure indicators: {failure_indicator_path}")
     print(f"Protocols: {len(protocol_paths)} files -> {protocol_dir}")
+    print(f"Runtime logs: events={runtime_log_paths['events']}; sessions={runtime_log_paths['summaries']}")
     print(f"Artifacts: manifest={manifest_path}; network={artifacts['network_json']}; graph={artifacts['network_graph']}")
+    print(f"Configuration breakdown: {configuration_breakdown_paths['csv']}")
     if coverage_registry:
         print(f"Coverage registry: {coverage_registry['report']}")
+    if comparison_paths:
+        print(f"Run metric matrix: {comparison_paths['run_metric_matrix_report']}")
     print(f"All artifacts: {run_dir}")
 
 

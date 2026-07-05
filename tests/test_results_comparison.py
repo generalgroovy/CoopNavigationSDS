@@ -1,8 +1,11 @@
 import csv
 import json
 from pathlib import Path
+import pytest
 
 from coop_navigation_sds.ResultsAndArtifacts.comparison import (
+    build_performance_band_summary,
+    build_run_phase_scorecard,
     compare_runs,
     discover_run_directories,
     identify_metric_outliers,
@@ -11,10 +14,73 @@ from coop_navigation_sds.ResultsAndArtifacts.comparison import (
 )
 
 
+def test_performance_band_summary_reports_floor_ceiling_separation():
+    rows = []
+    for rank, band in enumerate(("floor", "challenging", "nominal", "ceiling")):
+        rows.append({
+            "source_run": "run",
+            "agent_a_type": "tinyllama",
+            "agent_b_model": "TinyLlama",
+            "configured_tts_engine": "piper",
+            "configured_asr_engine": "vosk",
+            "speech_performance_band": band,
+            "run_type": "audio_variant",
+            "task_success": rank >= 2,
+            "route_valid": rank >= 1,
+            "constraint_satisfaction": rank / 3,
+            "automatic_eval_score": 0.2 + 0.2 * rank,
+            "word_error_rate": 0.8 - 0.2 * rank,
+            "entity_error_rate": 0.6 - 0.15 * rank,
+            "repair_success_rate": 0.25 * rank,
+            "turn_count": 12 - rank,
+            "runtime_sec": 10 + rank,
+        })
+
+    summary = build_performance_band_summary(rows)
+
+    assert [row["speech_performance_band"] for row in summary] == [
+        "floor", "challenging", "nominal", "ceiling",
+    ]
+    assert all(row["complete_band_set"] for row in summary)
+    assert all(row["automatic_eval_order_monotonic"] for row in summary)
+    assert summary[0]["ceiling_minus_floor_automatic_eval"] == pytest.approx(0.6)
+
+
+def test_phase_scorecard_uses_recorded_pipeline_order():
+    rows = build_run_phase_scorecard([
+        {
+            "source_run": "run",
+            "condition_id": "c",
+            "phase": "asr",
+            "phase_order": 2,
+            "metric_key": "asr_accuracy",
+            "value_numeric": 0.8,
+            "available": True,
+            "higher_is_better": True,
+            "range_min": 0,
+            "range_max": 1,
+        },
+        {
+            "source_run": "run",
+            "condition_id": "c",
+            "phase": "audio_input",
+            "phase_order": 1,
+            "metric_key": "capture_success",
+            "value_numeric": 1.0,
+            "available": True,
+            "higher_is_better": True,
+            "range_min": 0,
+            "range_max": 1,
+        },
+    ])
+
+    assert [row["phase"] for row in rows] == ["audio_input", "asr"]
+
+
 def _write_run(
     root, run_id, asr_engine, metric_value,
     metric_key="whole_dialogue.task_success", phase="whole_dialogue",
-    metric_label="Task success",
+    metric_label="Task success", llm_size="small", model="TinyLlama",
 ):
     run = root / run_id
     run.mkdir()
@@ -23,7 +89,9 @@ def _write_run(
         "condition_id": f"{run_id}-condition",
         "run_type": "audio_variant",
         "agent_a_type": "tinyllama",
-        "agent_b_model": "TinyLlama",
+        "agent_b_model": model,
+        "agent_b_llm_size": llm_size,
+        "agent_b_model_role": "primary",
         "tts_engine": "piper",
         "asr_engine": asr_engine,
         "route_valid": True,
@@ -65,16 +133,24 @@ def test_comparison_discovers_runs_and_writes_portable_artifacts(tmp_path):
     assert all(path.is_file() for path in paths.values())
     summary = list(csv.DictReader(paths["summary"].open(encoding="utf-8")))
     deltas = list(csv.DictReader(paths["deltas"].open(encoding="utf-8")))
-    report = paths["report"].read_text(encoding="utf-8")
     assert {row["asr_engine"] for row in summary} == {"faster_whisper", "vosk"}
     assert len(deltas) == 1
-    assert "<svg" in report
-    assert "Task success" in report
-    assert "Run task outcomes" in report
-    assert "Metric outliers and outcome alignment" in report
-    assert "Metrics indicating observed outcomes" in report
-    outcomes = list(csv.DictReader(paths["run_outcomes"].open(encoding="utf-8")))
-    assert {row["task_outcome_status"] for row in outcomes} == {"all_successful", "all_failed"}
+    matrix = list(csv.DictReader(paths["run_metric_matrix"].open(encoding="utf-8")))
+    matrix_report = paths["run_metric_matrix_report"].read_text(encoding="utf-8")
+    condition_analysis = list(csv.DictReader(paths["condition_analysis"].open(encoding="utf-8")))
+    metric_column = "whole_dialogue | whole_dialogue.task_success"
+    assert len(matrix) == 2
+    assert {float(row[metric_column]) for row in matrix} == {0.0, 1.0}
+    assert 'background:#C6EFCE' in matrix_report
+    assert 'background:#F4CCCC' in matrix_report
+    assert len(condition_analysis) == 2
+    assert [row["outcome"] for row in condition_analysis] == ["success", "failure"]
+    assert (first / "analysis_overview.html").is_file()
+    assert (first / "condition_analysis.csv").is_file()
+    assert "Matrix CSV" in matrix_report
+    assert "Metric evidence" in matrix_report
+    assert not (tmp_path / "comparison" / "comparison_report.html").exists()
+    assert not (tmp_path / "comparison" / "phase_metric_overview.html").exists()
 
 
 def test_pre_outcome_outlier_is_linked_to_failed_condition_without_label_leakage():
@@ -142,10 +218,24 @@ def test_comparison_report_exports_and_colors_failure_aligned_metric_outlier(tmp
     paths = compare_runs([tmp_path], tmp_path / "comparison")
     outliers = list(csv.DictReader(paths["outliers"].open(encoding="utf-8")))
     indicators = list(csv.DictReader(paths["metric_indicators"].open(encoding="utf-8")))
-    report = paths["report"].read_text(encoding="utf-8")
+    matrix_report = paths["run_metric_matrix_report"].read_text(encoding="utf-8")
 
     assert len(outliers) == 1
     assert outliers[0]["outcome_alignment"] == "failure_aligned"
     assert indicators[0]["failure_aligned_count"] == "1"
-    assert '<tr class="failure_aligned">' in report
-    assert "Semantic recognition accuracy" in report
+    assert 'class="metric-cell failure-outlier"' in matrix_report
+    assert "Semantic recognition accuracy" in matrix_report
+    assert "automatic_speech_recognition" in matrix_report
+
+
+def test_run_metric_matrix_sorts_models_smallest_to_largest(tmp_path):
+    _write_run(tmp_path, "a-large", "vosk", 1.0, llm_size="large", model="Llama 3.1 8B")
+    _write_run(tmp_path, "z-small", "vosk", 1.0, llm_size="small", model="Llama 3.2 1B")
+
+    paths = compare_runs([tmp_path], tmp_path / "comparison")
+    rows = list(csv.DictReader(paths["run_metric_matrix"].open(encoding="utf-8")))
+    report = paths["run_metric_matrix_report"].read_text(encoding="utf-8")
+
+    assert [row["agent_b_llm_size"] for row in rows] == ["small", "large"]
+    assert [row["source_run"] for row in rows] == ["z-small", "a-large"]
+    assert 'class="phase-header"' in report

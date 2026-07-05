@@ -66,7 +66,111 @@ DEFAULT_SPEECH_PATTERN_PRESETS = {
             "Golf": "Gulf",
         },
     },
+    "severe_channel": {
+        "hesitation_probability": 0.20,
+        "hesitation_tokens": ["um", "sorry"],
+        "stutter_probability": 0.18,
+        "stutter_max_words": 3,
+        "filler_probability": 0.16,
+        "filler_tokens": ["uh", "okay"],
+    },
 }
+
+
+# Ordered treatments vary only the speech channel while task and model factors
+# remain fixed. Values are selected a priori; observed outcome separation is a
+# result, never a condition for retaining a run.
+SPEECH_PERFORMANCE_PROFILES = {
+    "ceiling": {
+        "speech_performance_profile_key": "ceiling",
+        "speech_performance_band": "ceiling",
+        "speech_performance_rank": 3,
+        "agent_a_audio_persona": "high_clarity_caller",
+        "agent_b_audio_persona": "high_clarity_operator",
+        "speech_pattern_key": "clean",
+        "agent_a_custom_audio": False,
+        "agent_b_custom_audio": False,
+        "asr_beam_size": 16,
+        "asr_domain_normalization_enabled": True,
+        "asr_domain_similarity_threshold": 0.80,
+        "channel_noise_snr_db": None,
+        "channel_gain_db": 0.0,
+        "channel_clip_threshold": 1.0,
+        "channel_dropout_rate": 0.0,
+        "max_utterance_sec": 30.0,
+    },
+    "nominal": {
+        "speech_performance_profile_key": "nominal",
+        "speech_performance_band": "nominal",
+        "speech_performance_rank": 2,
+        "agent_a_audio_persona": "neutral_caller",
+        "agent_b_audio_persona": "clear_operator",
+        "speech_pattern_key": "mostly_clean",
+        "agent_a_custom_audio": False,
+        "agent_b_custom_audio": False,
+        "asr_beam_size": 11,
+        "asr_domain_normalization_enabled": True,
+        "asr_domain_similarity_threshold": 0.86,
+        "channel_noise_snr_db": 30.0,
+        "channel_gain_db": -2.0,
+        "channel_clip_threshold": 0.95,
+        "channel_dropout_rate": 0.005,
+        "max_utterance_sec": 22.0,
+    },
+    "challenging": {
+        "speech_performance_profile_key": "challenging",
+        "speech_performance_band": "challenging",
+        "speech_performance_rank": 1,
+        "agent_a_audio_persona": "degraded_caller",
+        "agent_b_audio_persona": "degraded_operator",
+        "speech_pattern_key": "hesitant",
+        "agent_a_custom_audio": False,
+        "agent_b_custom_audio": False,
+        "asr_beam_size": 6,
+        "asr_domain_normalization_enabled": True,
+        "asr_domain_similarity_threshold": 0.92,
+        "channel_noise_snr_db": 15.0,
+        "channel_gain_db": -6.0,
+        "channel_clip_threshold": 0.70,
+        "channel_dropout_rate": 0.04,
+        "max_utterance_sec": 16.0,
+    },
+    "floor": {
+        "speech_performance_profile_key": "floor",
+        "speech_performance_band": "floor",
+        "speech_performance_rank": 0,
+        "agent_a_audio_persona": "barely_understandable_caller",
+        "agent_b_audio_persona": "barely_understandable_operator",
+        "speech_pattern_key": "severe_channel",
+        "agent_a_custom_audio": False,
+        "agent_b_custom_audio": False,
+        "asr_beam_size": 1,
+        "asr_domain_normalization_enabled": False,
+        "asr_domain_similarity_threshold": 0.98,
+        "channel_noise_snr_db": 5.0,
+        "channel_gain_db": -12.0,
+        "channel_clip_threshold": 0.35,
+        "channel_dropout_rate": 0.15,
+        "max_utterance_sec": 10.0,
+    },
+}
+
+
+def speech_performance_profile(key):
+    """Return one validated floor-to-ceiling speech treatment."""
+    normalized = str(key or "").strip().lower()
+    if normalized not in SPEECH_PERFORMANCE_PROFILES:
+        raise ValueError(
+            f"Unknown speech performance band '{key}'. Expected one of: "
+            f"{', '.join(SPEECH_PERFORMANCE_PROFILES)}."
+        )
+    return dict(SPEECH_PERFORMANCE_PROFILES[normalized])
+
+
+def speech_performance_profiles(keys=None):
+    """Return ordered named speech treatments for job expansion."""
+    selected = tuple(keys or SPEECH_PERFORMANCE_PROFILES)
+    return [speech_performance_profile(key) for key in selected]
 
 
 def _load_speech_pattern_presets():

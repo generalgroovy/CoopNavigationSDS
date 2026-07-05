@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=mn-speech
-#SBATCH --array=0-719%4
+#SBATCH --array=0-47%4
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=16G
 #SBATCH --time=03:00:00

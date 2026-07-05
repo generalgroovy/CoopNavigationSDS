@@ -10,6 +10,7 @@ import platform
 import re
 import sys
 from collections.abc import Mapping
+from types import MappingProxyType
 
 
 CONFIG_SCHEMA_VERSION = 5
@@ -18,6 +19,43 @@ TRACE_SCHEMA_VERSION = 3
 RESULT_SCHEMA_VERSION = 2
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULTS_ROOT = str(PROJECT_ROOT / "results")
+
+# Stable result names are part of the research-data contract. Writers and
+# readers reference this map instead of repeating filename literals.
+RESULT_FILES = MappingProxyType({
+    "summary": "run_summary.json",
+    "artifact_inventory": "artifact_inventory.json",
+    "conditions": "conditions.jsonl",
+    "metric_inputs": "metric_inputs.json",
+    "metrics_long": "metrics_long.csv",
+    "metrics_wide": "metrics_wide.csv",
+    "metrics_workbook": "automatic_eval_metrics.xlsx",
+    "protocols": "conversation_protocols.jsonl",
+    "transcripts": "conversation_transcripts.txt",
+    "protocol_index": "index.jsonl",
+    "runtime_events": "runtime_events.jsonl",
+    "runtime_sessions": "runtime_sessions.jsonl",
+    "runtime_log": "runtime.log",
+    "network_data": "network_overview.json",
+    "network_graph": "network_graph.svg",
+    "analysis_overview": "analysis_overview.html",
+    "condition_analysis": "condition_analysis.csv",
+    "run_analysis": "run_analysis.csv",
+    "phase_scorecard": "run_phase_scorecard.csv",
+    "performance_band_summary": "performance_band_summary.csv",
+})
+
+# Roles distinguish irreplaceable observations from views that can be rebuilt
+# from those observations. This distinction is written into every run.
+CANONICAL_RESULT_FILES = frozenset({
+    RESULT_FILES["conditions"],
+    RESULT_FILES["metric_inputs"],
+    RESULT_FILES["metrics_long"],
+    RESULT_FILES["protocols"],
+    RESULT_FILES["transcripts"],
+    RESULT_FILES["runtime_events"],
+    RESULT_FILES["network_data"],
+})
 
 
 def safe_artifact_name(value, maximum_length=96):

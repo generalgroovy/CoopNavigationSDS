@@ -4,12 +4,15 @@ from __future__ import annotations
 from dataclasses import asdict
 import csv
 from datetime import datetime
+import hashlib
 import json
 from pathlib import Path
 import wave
 
 from coop_navigation_sds.Configuration.schema import (
+    CANONICAL_RESULT_FILES,
     RAW_TRACE_COLLECTIONS,
+    RESULT_FILES,
     RESULT_SCHEMA_VERSION,
     TRACE_SCHEMA_VERSION,
     RunArtifactPaths,
@@ -19,15 +22,8 @@ from coop_navigation_sds.Configuration.run_identity import naming_scheme_documen
 from coop_navigation_sds.ResultsAndArtifacts.xlsx import write_metrics_xlsx
 from coop_navigation_sds.ResultsAndArtifacts.metric_tables import write_metric_long_exports
 from coop_navigation_sds.EvaluationMetrics.metrics import (
-    METRIC_FAMILY_SPECS,
     MetricComputer,
     failure_indicator_analysis,
-)
-from coop_navigation_sds.EvaluationMetrics.catalog import (
-    global_metric_key,
-    metric_local_name,
-    metric_metadata,
-    phase_key,
 )
 from coop_navigation_sds.TransportNetwork.overview import build_network_overview
 from coop_navigation_sds.TransportNetwork.picture import write_network_svg
@@ -77,6 +73,69 @@ def _metric_export_context(output_dir, scope):
     }
 
 
+def _artifact_role(path):
+    """Classify a result artifact by its research function."""
+    name = path.name
+    if name in {
+        RESULT_FILES["conditions"],
+        RESULT_FILES["metric_inputs"], RESULT_FILES["protocols"],
+        RESULT_FILES["transcripts"], RESULT_FILES["runtime_events"],
+        RESULT_FILES["network_data"], RESULT_FILES["network_graph"],
+    } or name.endswith("_conversation.wav"):
+        return "evidence"
+    if name in {RESULT_FILES["metrics_long"], RESULT_FILES["metrics_wide"]} or name.endswith(".xlsx"):
+        return "metrics"
+    if name.endswith("manifest.json") or name in {
+        "experiment_job.json", "naming_scheme.json", "coverage_plan.json",
+        "condition_configuration_breakdown.csv",
+    }:
+        return "configuration"
+    if name.endswith(".html") or name in {
+        RESULT_FILES["condition_analysis"], RESULT_FILES["run_analysis"],
+        RESULT_FILES["phase_scorecard"], RESULT_FILES["performance_band_summary"],
+    }:
+        return "analysis"
+    if name.endswith(".log") or "failure" in name or "warning" in name:
+        return "diagnostic"
+    return "support"
+
+
+def build_artifact_inventory(output_dir):
+    """Return a hashed, role-aware inventory for an otherwise flat run folder."""
+    output_dir = Path(output_dir)
+    excluded = {RESULT_FILES["summary"], RESULT_FILES["artifact_inventory"]}
+    rows = []
+    for path in sorted(item for item in output_dir.iterdir() if item.is_file()):
+        if path.name in excluded:
+            continue
+        role = _artifact_role(path)
+        rows.append({
+            "path": path.name,
+            "role": role,
+            "canonical": path.name in CANONICAL_RESULT_FILES or path.name.endswith("_conversation.wav"),
+            "regenerable": role == "analysis",
+            "bytes": path.stat().st_size,
+            "sha256": _sha256_file(path),
+        })
+    return rows
+
+
+def write_artifact_inventory(output_dir):
+    """Write the integrity and provenance index for all run artifacts."""
+    output_dir = Path(output_dir)
+    rows = build_artifact_inventory(output_dir)
+    payload = {
+        "schema_version": RESULT_SCHEMA_VERSION,
+        "run_id": output_dir.name,
+        "artifact_count": len(rows),
+        "canonical_count": sum(bool(row["canonical"]) for row in rows),
+        "artifacts": rows,
+    }
+    path = output_dir / RESULT_FILES["artifact_inventory"]
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=True), encoding="utf-8")
+    return path
+
+
 def write_metrics_csv(metrics, path, context=None):
     """Write flat metric rows as CSV."""
     records = list(metrics)
@@ -108,72 +167,12 @@ def write_metrics_file(metrics, path, context=None):
 
 
 def write_metric_phase_logs(metrics, output_dir, *, result_scope="run"):
-    """Write calculated phase metrics to one JSONL file and a matching catalog."""
+    """Write canonical long and wide retrospective metric tables."""
     records = list(metrics)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     export_context = _metric_export_context(output_dir, result_scope)
-    metric_path = output_dir / "metrics_by_phase.jsonl"
-    emitted_by_phase = {}
-    with metric_path.open("w", encoding="utf-8") as handle:
-        for record in records:
-            identifiers = {
-                **export_context,
-                "condition_id": record.condition_id,
-                "test_case_key": record.test_case_key,
-                "persona_key": record.persona_key,
-                "scenario_key": record.scenario_key,
-                "speech_pattern_key": record.speech_pattern_key,
-                "agent_a_audio_persona": getattr(record, "agent_a_audio_persona", "unknown"),
-                "agent_b_audio_persona": getattr(record, "agent_b_audio_persona", "unknown"),
-                "model_name": record.model_name,
-                "model_param_key": record.model_param_key,
-            }
-            known_order = [phase_key(family) for family in METRIC_FAMILY_SPECS]
-            ordered_phases = [
-                phase for phase in known_order if phase in record.metric_families
-            ] + [
-                phase for phase in record.metric_families if phase not in known_order
-            ]
-            for phase in ordered_phases:
-                phase_metrics = record.metric_families[phase]
-                if not phase_metrics:
-                    continue
-                emitted_by_phase.setdefault(phase, set()).update(phase_metrics)
-                calculations = {
-                    name: getattr(record, "metric_calculations", {}).get(global_metric_key(phase, name), {})
-                    for name in phase_metrics
-                }
-                handle.write(json.dumps({
-                    **identifiers,
-                    "phase": phase,
-                    "metrics": phase_metrics,
-                    "calculations": calculations,
-                }, ensure_ascii=True) + "\n")
-    catalog = {
-        phase_key(family): {
-                "order": family["order"],
-                "title": family["title"],
-                "description": family["description"],
-                "metrics": [
-                    {
-                        **metric_metadata(key, phase_key(family)),
-                        "label": label,
-                    }
-                    for key, label in family["metrics"]
-                    if metric_local_name(key) in emitted_by_phase.get(phase_key(family), set())
-                ],
-            }
-            for family in METRIC_FAMILY_SPECS
-            if emitted_by_phase.get(phase_key(family))
-        }
-    catalog_path = output_dir / "metric_catalog.json"
-    catalog_path.write_text(json.dumps(catalog, indent=2, ensure_ascii=True), encoding="utf-8")
-    return {
-        "phase_metrics": metric_path,
-        "catalog": catalog_path,
-        **write_metric_long_exports(records, output_dir, context=export_context),
-    }
+    return write_metric_long_exports(records, output_dir, context=export_context)
 
 
 def write_network_research_artifacts(current_time_min, output_dir, picture_dir=None):
@@ -291,6 +290,7 @@ def write_conversation_wav(path, speech_turns, gap_sec=0.15):
                     "turn_index": index,
                     "speaker": turn.get("speaker"),
                     "path": source_path,
+                    "clean_path": Path(audio["clean_path"]) if audio.get("clean_path") else None,
                     "transcript_path": Path(audio["transcript_path"]) if audio.get("transcript_path") else None,
                 })
 
@@ -303,6 +303,7 @@ def write_conversation_wav(path, speech_turns, gap_sec=0.15):
                 "turn_index": source["turn_index"],
                 "speaker": source["speaker"],
                 "path": str(source["path"]),
+                "clean_path": str(source["clean_path"]) if source.get("clean_path") else None,
                 "transcript_path": str(source["transcript_path"]) if source.get("transcript_path") else None,
             }
             for source in sources
@@ -395,7 +396,7 @@ def remove_compiled_turn_audio_sources(audio_manifest, roots):
     safe_roots = [Path(root).resolve() for root in roots if root]
     removed = []
     for source in audio_manifest.get("sources", []):
-        for key in ("path", "transcript_path"):
+        for key in ("path", "clean_path", "transcript_path"):
             file_value = source.get(key)
             if not file_value:
                 continue
@@ -444,6 +445,505 @@ def remove_empty_parent_dirs(start, roots):
         except OSError:
             return
         current = current.parent
+
+
+def _sha256_file(path):
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def consolidate_completed_conversation_artifacts(output_dir, artifact_paths, *, remove_sources=True):
+    """Combine per-condition protocol/TXT files without combining condition audio."""
+    output_dir = Path(output_dir)
+    combined_protocol = output_dir / "conversation_protocols.jsonl"
+    combined_transcript = output_dir / "conversation_transcripts.txt"
+    protocol_records = []
+    transcript_lines = []
+    compact_paths = []
+    source_paths = []
+    for record_index, paths in enumerate(artifact_paths, start=1):
+        protocol_path = Path(paths["protocol"])
+        transcript_path = Path(paths["transcript_txt"])
+        if not protocol_path.is_file() or not transcript_path.is_file():
+            raise RuntimeError(
+                f"Cannot consolidate missing conversation artifacts: {protocol_path}, {transcript_path}"
+            )
+        protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+        condition_id = str(protocol.get("summary", {}).get("condition_id") or protocol_path.stem)
+        transcript = transcript_path.read_text(encoding="utf-8").rstrip()
+        line_start = len(transcript_lines) + 1
+        transcript_lines.extend((f"=== Conversation {record_index}: {condition_id} ===", *transcript.splitlines()))
+        line_end = len(transcript_lines)
+        transcript_lines.append("")
+        protocol.setdefault("summary", {}).setdefault("compiled_artifacts", {}).update({
+            "protocol_json": str(combined_protocol),
+            "protocol_jsonl": str(combined_protocol),
+            "protocol_record": record_index,
+            "conversation_transcript_txt": str(combined_transcript),
+            "transcript_line_start": line_start,
+            "transcript_line_end": line_end,
+        })
+        protocol["artifact_compaction"] = {
+            "schema_version": 1,
+            "protocol_record": record_index,
+            "transcript_line_start": line_start,
+            "transcript_line_end": line_end,
+            "source_protocol_sha256": _sha256_file(protocol_path),
+            "source_transcript_sha256": _sha256_file(transcript_path),
+        }
+        protocol_records.append(protocol)
+        source_paths.extend((protocol_path, transcript_path))
+        compact_paths.append({
+            **paths,
+            "protocol": combined_protocol,
+            "transcript_txt": combined_transcript,
+            "protocol_record": record_index,
+            "transcript_line_start": line_start,
+            "transcript_line_end": line_end,
+        })
+
+    protocol_temp = Path(f"{combined_protocol}.tmp")
+    transcript_temp = Path(f"{combined_transcript}.tmp")
+    protocol_temp.write_text(
+        "".join(json.dumps(record, ensure_ascii=True, default=_json_default) + "\n" for record in protocol_records),
+        encoding="utf-8",
+    )
+    transcript_temp.write_text("\n".join(transcript_lines).rstrip() + "\n", encoding="utf-8")
+    verified_records = [
+        json.loads(line)
+        for line in protocol_temp.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if len(verified_records) != len(protocol_records) or not transcript_temp.read_text(encoding="utf-8").strip():
+        raise RuntimeError("Conversation artifact consolidation verification failed.")
+    protocol_temp.replace(combined_protocol)
+    transcript_temp.replace(combined_transcript)
+    if remove_sources:
+        for source in source_paths:
+            if source not in {combined_protocol, combined_transcript} and source.exists():
+                source.unlink()
+    return compact_paths
+
+
+def _structured_log_events(path):
+    events = []
+    with Path(path).open(encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(f"Invalid JSONL evidence at {path}:{line_number}") from exc
+    return events
+
+
+def consolidate_completed_runtime_logs(output_dir):
+    """Combine condition session logs after completion and retain source checksums."""
+    output_dir = Path(output_dir)
+    event_sources = sorted(output_dir.glob("batch-*.jsonl"))
+    text_sources = sorted(output_dir.glob("batch-*.log"))
+    summary_sources = sorted(output_dir.glob("batch-*-summary.json"))
+    event_records = []
+    summary_records = []
+    text_sections = []
+    for source in event_sources:
+        checksum = _sha256_file(source)
+        event_records.extend({
+            "source_session_file": source.name,
+            "source_sha256": checksum,
+            "event": event,
+        } for event in _structured_log_events(source))
+    for source in summary_sources:
+        summary_records.append({
+            "source_session_file": source.name,
+            "source_sha256": _sha256_file(source),
+            "summary": json.loads(source.read_text(encoding="utf-8")),
+        })
+    for source in text_sources:
+        text_sections.extend((
+            f"=== {source.name} | sha256={_sha256_file(source)} ===",
+            source.read_text(encoding="utf-8").rstrip(),
+            "",
+        ))
+    outputs = {
+        "events": output_dir / "runtime_events.jsonl",
+        "summaries": output_dir / "runtime_sessions.jsonl",
+        "text": output_dir / "runtime.log",
+    }
+    temporary = {name: Path(f"{path}.tmp") for name, path in outputs.items()}
+    write_jsonl(temporary["events"], event_records)
+    write_jsonl(temporary["summaries"], summary_records)
+    temporary["text"].write_text("\n".join(text_sections).rstrip() + "\n", encoding="utf-8")
+    if len(_structured_log_events(temporary["events"])) != len(event_records):
+        raise RuntimeError("Runtime event consolidation verification failed.")
+    if len(_structured_log_events(temporary["summaries"])) != len(summary_records):
+        raise RuntimeError("Runtime summary consolidation verification failed.")
+    if text_sources and not temporary["text"].read_text(encoding="utf-8").strip():
+        raise RuntimeError("Runtime text-log consolidation verification failed.")
+    for name, path in outputs.items():
+        temporary[name].replace(path)
+    for source in (*event_sources, *summary_sources, *text_sources):
+        source.unlink()
+    provider_log = consolidate_provider_runtime_logs(output_dir)
+    return {
+        **outputs,
+        "provider": provider_log,
+        "source_event_file_count": len(event_sources),
+        "source_summary_file_count": len(summary_sources),
+        "source_text_file_count": len(text_sources),
+        "event_count": len(event_records),
+    }
+
+
+def consolidate_provider_runtime_logs(output_dir):
+    """Flatten provider diagnostics while preserving source identity and bytes."""
+    output_dir = Path(output_dir)
+    sources = sorted(output_dir.glob(".turn_audio/*/provider_*.log"))
+    if not sources:
+        return output_dir / "provider_runtime.log"
+    sections = []
+    for source in sources:
+        sections.extend((
+            f"=== {source.relative_to(output_dir)} | sha256={_sha256_file(source)} ===",
+            source.read_text(encoding="utf-8", errors="replace").rstrip(),
+            "",
+        ))
+    destination = output_dir / "provider_runtime.log"
+    destination.write_text("\n".join(sections).rstrip() + "\n", encoding="utf-8")
+    if not destination.read_text(encoding="utf-8").strip():
+        raise RuntimeError("Provider-log consolidation verification failed.")
+    turn_audio_root = (output_dir / ".turn_audio").resolve()
+    for source in sources:
+        source.unlink()
+        remove_empty_parent_dirs(source.parent, [turn_audio_root])
+    if turn_audio_root.is_dir() and not any(turn_audio_root.iterdir()):
+        turn_audio_root.rmdir()
+    return destination
+
+
+def compact_incomplete_run_artifacts(run_dir):
+    """Create readable combined artifacts for an interrupted run without deleting evidence."""
+    run_dir = Path(run_dir)
+    logs = sorted(run_dir.glob("batch-*.jsonl"))
+    if not logs:
+        return {"status": "no_structured_condition_logs", "run_dir": str(run_dir)}
+    protocol_path = run_dir / "partial_conversation_protocols.jsonl"
+    transcript_path = run_dir / "partial_conversation_transcripts.txt"
+    records = []
+    transcript_lines = []
+    audio_created = 0
+    recovered_conditions = []
+    source_owners = {}
+    for log_path in logs:
+        events = _structured_log_events(log_path)
+        start_event = next(
+            (
+                event for event in events
+                if event.get("name") == "batch.condition.start"
+                or (
+                    event.get("kind") == "program.segment"
+                    and event.get("payload", {}).get("segment") == "batch.condition"
+                    and event.get("payload", {}).get("phase") == "start"
+                )
+            ),
+            {},
+        )
+        condition_id = str(
+            start_event.get("payload", {}).get("condition_id")
+            or log_path.stem.removeprefix("batch-")
+        )
+        speech_turns = [
+            event.get("payload", {})
+            for event in events
+            if event.get("name") == "telemetry.speech" and isinstance(event.get("payload"), dict)
+        ]
+        completed = any(
+            event.get("name") == "batch.condition.end"
+            or (
+                event.get("kind") == "program.segment"
+                and event.get("payload", {}).get("segment") == "batch.condition"
+                and event.get("payload", {}).get("phase") == "end"
+            )
+            for event in events
+        )
+        recovered_conditions.append({
+            "condition_id": condition_id,
+            "log_path": log_path,
+            "speech_turns": speech_turns,
+            "completed": completed,
+        })
+        for turn in speech_turns:
+            source_path = str(turn.get("audio", {}).get("path") or "")
+            if source_path:
+                source_owners.setdefault(source_path, set()).add(condition_id)
+
+    for record_index, recovered in enumerate(recovered_conditions, start=1):
+        condition_id = recovered["condition_id"]
+        log_path = recovered["log_path"]
+        speech_turns = recovered["speech_turns"]
+        completed = recovered["completed"]
+        section = [f"=== Recovered conversation {record_index}: {condition_id} ==="]
+        for turn in speech_turns:
+            section.extend((
+                f"Turn {turn.get('turn', '?')} | {turn.get('speaker', 'unknown')}",
+                f"  Intended: {turn.get('generated_text', '')}",
+                f"  TTS speech: {turn.get('outgoing_text', '')}",
+                f"  ASR raw: {turn.get('raw_asr_transcript', turn.get('incoming_transcript', ''))}",
+                f"  Understood: {turn.get('agent_input_transcript', turn.get('incoming_transcript', ''))}",
+                f"  Misinterpretations: {json.dumps(turn.get('misinterpreted_tokens', []), ensure_ascii=True)}",
+                f"  Corrections: {json.dumps(turn.get('transcript_corrections', []), ensure_ascii=True)}",
+            ))
+        section.append("")
+        line_start = len(transcript_lines) + 1
+        transcript_lines.extend(section)
+        line_end = len(transcript_lines) - 1
+        conversation_wav = run_dir / f"{safe_artifact_name(condition_id)}_partial_conversation.wav"
+        ambiguous_audio = sorted({
+            str(turn.get("audio", {}).get("path") or "")
+            for turn in speech_turns
+            if len(source_owners.get(str(turn.get("audio", {}).get("path") or ""), ())) > 1
+        })
+        if ambiguous_audio:
+            conversation_wav.unlink(missing_ok=True)
+            audio_manifest = {
+                "created": False,
+                "reason": "source audio paths are shared across conditions and cannot be attributed safely",
+                "ambiguous_source_paths": ambiguous_audio,
+                "output": str(conversation_wav),
+            }
+        else:
+            audio_manifest = write_conversation_wav(conversation_wav, speech_turns)
+        audio_created += int(bool(audio_manifest.get("created")))
+        source_integrity = []
+        source_rows = []
+        for turn in speech_turns:
+            audio = turn.get("audio", {})
+            source_rows.append({
+                "path": audio.get("path"),
+                "transcript_path": audio.get("transcript_path"),
+            })
+        seen_sources = set()
+        for source in source_rows:
+            for key in ("path", "transcript_path"):
+                source_path = Path(str(source.get(key) or ""))
+                source_key = (key, str(source_path))
+                if source_path.is_file() and source_key not in seen_sources:
+                    seen_sources.add(source_key)
+                    source_integrity.append({
+                        "kind": key,
+                        "path": str(source_path),
+                        "bytes": source_path.stat().st_size,
+                        "sha256": _sha256_file(source_path),
+                        "condition_reference_count": len(source_owners.get(str(source_path), {condition_id})),
+                    })
+        records.append({
+            "schema_version": TRACE_SCHEMA_VERSION,
+            "recovery_status": "condition_completed_before_batch_interruption" if completed else "condition_interrupted",
+            "condition_id": condition_id,
+            "protocol_record": record_index,
+            "source_log": str(log_path),
+            "source_log_sha256": _sha256_file(log_path),
+            "transcript_file": str(transcript_path),
+            "transcript_line_start": line_start,
+            "transcript_line_end": line_end,
+            "speech_pipeline": speech_turns,
+            "audio_manifest": audio_manifest,
+            "audio_recovery_status": "verified_unique_sources" if audio_manifest.get("created") else "unavailable_or_ambiguous",
+            "source_integrity": source_integrity,
+            "preservation_policy": "original turn files retained because the batch did not finalize",
+        })
+    protocol_temp = Path(f"{protocol_path}.tmp")
+    transcript_temp = Path(f"{transcript_path}.tmp")
+    protocol_temp.write_text(
+        "".join(json.dumps(record, ensure_ascii=True, default=_json_default) + "\n" for record in records),
+        encoding="utf-8",
+    )
+    transcript_temp.write_text("\n".join(transcript_lines).rstrip() + "\n", encoding="utf-8")
+    if len(_structured_log_events(protocol_temp)) != len(records):
+        raise RuntimeError(f"Recovered protocol verification failed for {run_dir}")
+    protocol_temp.replace(protocol_path)
+    transcript_temp.replace(transcript_path)
+    return {
+        "status": "recovered_incomplete_run",
+        "run_dir": str(run_dir),
+        "conversation_count": len(records),
+        "conversation_audio_count": audio_created,
+        "protocol": str(protocol_path),
+        "transcript": str(transcript_path),
+        "source_turn_files_removed": 0,
+    }
+
+
+def _refresh_compacted_run_metadata(run_dir, compacted_paths):
+    """Replace stale per-condition artifact references after verified compaction."""
+    run_dir = Path(run_dir)
+    existing_index = []
+    index_path = run_dir / "index.jsonl"
+    if index_path.is_file():
+        existing_index = _structured_log_events(index_path)
+    index_by_condition = {
+        str(row.get("condition_id")): row
+        for row in existing_index
+        if row.get("condition_id") is not None
+    }
+    protocol_records = _structured_log_events(compacted_paths[0]["protocol"])
+    index_rows = []
+    for paths in compacted_paths:
+        protocol = protocol_records[int(paths["protocol_record"]) - 1]
+        condition_id = str(protocol.get("summary", {}).get("condition_id") or "")
+        row = dict(index_by_condition.get(condition_id, {}))
+        row.update({
+            "condition_id": condition_id,
+            "protocol_file": Path(paths["protocol"]).name,
+            "protocol_record": paths["protocol_record"],
+            "transcript_file": Path(paths["transcript_txt"]).name,
+            "transcript_line_start": paths["transcript_line_start"],
+            "transcript_line_end": paths["transcript_line_end"],
+            "conversation_wav": Path(paths["conversation_wav"]).name,
+        })
+        index_rows.append(row)
+    write_jsonl(index_path, index_rows)
+
+    summary_path = run_dir / "run_summary.json"
+    if summary_path.is_file():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary["artifacts"] = [
+            {
+                "path": path.name,
+                "bytes": path.stat().st_size,
+                "extension": path.suffix.lower(),
+            }
+            for path in sorted(item for item in run_dir.iterdir() if item.is_file())
+            if path != summary_path
+        ]
+        summary_path.write_text(
+            json.dumps(summary, indent=2, ensure_ascii=True),
+            encoding="utf-8",
+        )
+
+
+def compact_existing_result_tree(results_root):
+    """Compact finalized runs without modifying canonical observations."""
+    results_root = Path(results_root).resolve()
+    reports = []
+    candidate_dirs = {
+        path.parent for path in results_root.rglob(RESULT_FILES["summary"])
+    } | {
+        path.parent for path in results_root.rglob("experiment_job.json")
+    }
+    for run_dir in sorted(candidate_dirs):
+        if (run_dir / RESULT_FILES["summary"]).is_file():
+            protocol_files = sorted(run_dir.glob("*_protocol.json"))
+            artifact_paths = []
+            for protocol_file in protocol_files:
+                prefix = protocol_file.name.removesuffix("_protocol.json")
+                transcript = run_dir / f"{prefix}_conversation_transcript.txt"
+                conversation_wav = run_dir / f"{prefix}_conversation.wav"
+                if transcript.is_file():
+                    artifact_paths.append({
+                        "protocol": protocol_file,
+                        "transcript_txt": transcript,
+                        "conversation_wav": conversation_wav,
+                    })
+            if artifact_paths:
+                compacted = consolidate_completed_conversation_artifacts(run_dir, artifact_paths)
+                _refresh_compacted_run_metadata(run_dir, compacted)
+                reports.append({
+                    "status": "compacted_finalized_run",
+                    "run_dir": str(run_dir),
+                    "conversation_count": len(compacted),
+                    "protocol": str(compacted[0]["protocol"]),
+                    "transcript": str(compacted[0]["transcript_txt"]),
+                })
+            else:
+                reports.append({"status": "already_compact", "run_dir": str(run_dir)})
+            removed = remove_redundant_derived_artifacts(run_dir)
+            consolidate_provider_runtime_logs(run_dir)
+            refresh_result_inventory(run_dir)
+            reports[-1]["removed_redundant_artifacts"] = removed
+        else:
+            reports.append(compact_incomplete_run_artifacts(run_dir))
+    return reports
+
+
+REDUNDANT_DERIVED_ARTIFACTS = (
+    "condition_configuration_breakdown.json",
+    "condition_configuration_breakdown.md",
+    "metric_catalog.json",
+    "metrics_by_phase.jsonl",
+    "metrics_long.jsonl",
+    "metrics_wide.jsonl",
+    "retrospective_metrics.json",
+    "phase_metric_overview.html",
+    "phase_metric_summary.csv",
+)
+
+
+def remove_redundant_derived_artifacts(run_dir):
+    """Remove verified copies whose information is present in canonical tables."""
+    run_dir = Path(run_dir)
+    metric_inputs = run_dir / RESULT_FILES["metric_inputs"]
+    metrics_long = run_dir / RESULT_FILES["metrics_long"]
+    if not metric_inputs.is_file() or not metrics_long.is_file():
+        return []
+    with metrics_long.open("r", encoding="utf-8", newline="") as handle:
+        header = set(next(csv.reader(handle), ()))
+    required_columns = {"phase", "metric_key", "value", "formula", "operands_json", "unavailable_reason"}
+    if not required_columns <= header:
+        return []
+    removed = []
+    for name in REDUNDANT_DERIVED_ARTIFACTS:
+        path = run_dir / name
+        if path.is_file():
+            path.unlink()
+            removed.append(name)
+    return removed
+
+
+def refresh_result_inventory(run_dir):
+    """Refresh integrity metadata for one already completed result folder."""
+    run_dir = Path(run_dir)
+    summary_path = run_dir / RESULT_FILES["summary"]
+    if not summary_path.is_file():
+        raise FileNotFoundError(f"Completed result has no {RESULT_FILES['summary']}: {run_dir}")
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    manifest_name = summary.get("manifest")
+    manifest_path = run_dir / str(manifest_name or "")
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if "analysis_artifacts" in manifest:
+            manifest["analysis_artifacts"] = {
+                "wide_workbook": RESULT_FILES["metrics_workbook"],
+                "long_csv": RESULT_FILES["metrics_long"],
+                "wide_csv": RESULT_FILES["metrics_wide"],
+                "raw_metric_inputs": RESULT_FILES["metric_inputs"],
+                "failure_indicators": "failure_indicators.json",
+            }
+            manifest["result_layout_version"] = RESULT_SCHEMA_VERSION
+            manifest_path.write_text(
+                json.dumps(manifest, indent=2, ensure_ascii=True),
+                encoding="utf-8",
+            )
+    inventory_path = write_artifact_inventory(run_dir)
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    summary["artifact_inventory"] = inventory_path.name
+    summary["artifact_count"] = inventory["artifact_count"]
+    summary["canonical_artifact_count"] = inventory["canonical_count"]
+    summary["recommended_analysis_tables"] = [
+        RESULT_FILES["condition_analysis"],
+        RESULT_FILES["phase_scorecard"],
+        RESULT_FILES["performance_band_summary"],
+        RESULT_FILES["metrics_long"],
+        RESULT_FILES["metrics_wide"],
+        RESULT_FILES["conditions"],
+    ]
+    summary.pop("artifacts", None)
+    summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
+    return inventory_path
 
 
 def build_combined_protocol(result, summary, turns, speech_turns, timing_turns, phase_timings, nlu_turns, agent_turn_segments, agent_timing_summary, runtime_events, candidate_events, verification, audio_manifest):
@@ -746,9 +1246,8 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
     metric_inputs = write_metric_inputs(result, scenario, canonical_paths["metric_inputs"])
     metric = MetricComputer().compute(result, scenario)
     protocol_paths = write_conversation_protocol(result, run_dir)
-    metrics_file = run_dir / "metrics.xlsx"
+    metrics_file = run_dir / RESULT_FILES["metrics_workbook"]
     phase_log_dir = run_dir
-    retrospective_json = run_dir / "retrospective_metrics.json"
     export_context = _metric_export_context(run_dir, "single_run")
     write_metrics_file([metric], metrics_file, context=export_context)
     metric_exports = write_metric_phase_logs([metric], phase_log_dir, result_scope="single_run")
@@ -756,12 +1255,6 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         scenario["start_time_min"],
         run_dir,
         picture_dir=run_dir,
-    )
-    write_retrospective_metrics_json(
-        [metric],
-        retrospective_json,
-        result_scope="single_run",
-        input_inventory={metric.condition_id: result.extra.get("metric_input_inventory", {})},
     )
     manifest = {
         "schema_version": RESULT_SCHEMA_VERSION,
@@ -788,13 +1281,8 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
             "protocol": Path(protocol_paths["protocol"]).name,
             "transcript": Path(protocol_paths["transcript_txt"]).name,
             "metrics": metrics_file.name,
-            "metrics_by_phase": "metrics_by_phase.jsonl",
-            "metric_catalog": "metric_catalog.json",
             "metrics_long_csv": Path(metric_exports["metric_long_csv"]).name,
-            "metrics_long_jsonl": Path(metric_exports["metric_long_jsonl"]).name,
             "metrics_wide_csv": Path(metric_exports["metric_wide_csv"]).name,
-            "metrics_wide_jsonl": Path(metric_exports["metric_wide_jsonl"]).name,
-            "retrospective_metrics": retrospective_json.name,
         },
         "output_layout": {
             "layout": "flat",
@@ -821,7 +1309,6 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
         "protocol": protocol_paths,
         "metrics_file": metrics_file,
         "phase_log_dir": phase_log_dir,
-        "retrospective_json": retrospective_json,
         "network_json": network_paths["network_json"],
         "network_graph": network_paths["network_graph"],
         "run_summary": standard_summary["summary"],
@@ -830,10 +1317,11 @@ def write_single_run_research_outputs(result, scenario, output_dir, *, run_dir=N
 
 
 def write_conversation_protocols(results, output_dir):
-    """Write protocol artifacts for all completed conversations."""
+    """Write one protocol JSONL and one transcript TXT for a completed batch."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     paths = [write_conversation_protocol(result, output_dir) for result in results]
+    paths = consolidate_completed_conversation_artifacts(output_dir, paths)
     index_rows = [
         {
             "condition_id": result.condition_id,
@@ -845,8 +1333,14 @@ def write_conversation_protocols(results, output_dir):
             "message_count": len(result.conversation),
             "route_correct": result.route_correct,
             "folder": safe_artifact_name(result.condition_id),
+            "protocol_file": Path(paths[index]["protocol"]).name,
+            "protocol_record": paths[index]["protocol_record"],
+            "transcript_file": Path(paths[index]["transcript_txt"]).name,
+            "transcript_line_start": paths[index]["transcript_line_start"],
+            "transcript_line_end": paths[index]["transcript_line_end"],
+            "conversation_wav": Path(paths[index]["conversation_wav"]).name,
         }
-        for result in results
+        for index, result in enumerate(results)
     ]
     write_jsonl(output_dir / "index.jsonl", index_rows)
     return paths
@@ -888,6 +1382,8 @@ def write_standard_run_summary(
             "scenario_key": result.scenario_key,
             "persona_key": result.persona_key,
             "speech_pattern_key": result.speech_pattern_key,
+            "speech_performance_band": parameters.get("speech_performance_band"),
+            "speech_performance_rank": parameters.get("speech_performance_rank"),
             "agent_a_type": extras.get("agent_a_type") or extras.get("resolved_run_config", {}).get("agent_a_type"),
             "agent_a_audio_persona": extras.get("agent_a_audio_persona"),
             "agent_b_audio_persona": extras.get("agent_b_audio_persona"),
@@ -910,7 +1406,17 @@ def write_standard_run_summary(
             "run_mode": parameters.get("run_mode"),
             "slurm_condition_index": parameters.get("slurm_condition_index"),
             "slurm_grid_name": parameters.get("slurm_grid_name"),
-            "configuration_fingerprint": extras.get("configuration_provenance", {}).get("fingerprint_sha256"),
+            "configuration_fingerprint": (
+                extras.get("condition_provenance", {}).get("fingerprint_sha256")
+                or extras.get("configuration_provenance", {}).get("fingerprint_sha256")
+            ),
+            "base_configuration_fingerprint": (
+                extras.get("condition_provenance", {}).get("base_fingerprint_sha256")
+                or extras.get("configuration_provenance", {}).get("fingerprint_sha256")
+            ),
+            "execution_status": extras.get("execution_status", "completed"),
+            "pipeline_failure_type": (extras.get("pipeline_failure") or {}).get("exception_type"),
+            "pipeline_failure_message": (extras.get("pipeline_failure") or {}).get("message"),
             "route_valid": bool(result.route_valid),
             "route_reaches_goal": bool(result.route_reaches_goal),
             "route_correct": bool(result.route_correct),
@@ -920,20 +1426,15 @@ def write_standard_run_summary(
             "automatic_eval_score": getattr(metric, "automatic_eval_score", None),
             "task_success": getattr(metric, "success", bool(result.route_correct)),
         })
-    conditions_path = output_dir / "conditions.jsonl"
+    conditions_path = output_dir / RESULT_FILES["conditions"]
     write_jsonl(conditions_path, condition_rows)
-    artifact_rows = []
-    for path in sorted(item for item in output_dir.iterdir() if item.is_file()):
-        artifact_rows.append({
-            "path": path.name,
-            "bytes": path.stat().st_size,
-            "extension": path.suffix.lower(),
-        })
     summary = {
         "schema_version": RESULT_SCHEMA_VERSION,
         "result_scope": result_scope,
         "result_run_id": output_dir.name,
         "condition_count": len(condition_rows),
+        "completed_condition_count": sum(row["execution_status"] == "completed" for row in condition_rows),
+        "failed_condition_count": sum(row["execution_status"] == "failed" for row in condition_rows),
         "successful_condition_count": sum(bool(row["task_success"]) for row in condition_rows),
         "configuration_fingerprints": sorted({
             row["configuration_fingerprint"]
@@ -947,9 +1448,29 @@ def write_standard_run_summary(
             "metrics_wide.csv",
             conditions_path.name,
         ],
-        "artifacts": artifact_rows,
+        "artifact_inventory": RESULT_FILES["artifact_inventory"],
     }
-    summary_path = output_dir / "run_summary.json"
+    summary_path = output_dir / RESULT_FILES["summary"]
+    summary_path.write_text(
+        json.dumps(summary, indent=2, ensure_ascii=True),
+        encoding="utf-8",
+    )
+    from coop_navigation_sds.ResultsAndArtifacts.comparison import write_run_analysis_outputs
+    analysis_paths = write_run_analysis_outputs(output_dir)
+    summary["recommended_analysis_tables"] = [
+        Path(analysis_paths["run_analysis"]).name,
+        Path(analysis_paths["condition_analysis"]).name,
+        Path(analysis_paths["run_phase_scorecard"]).name,
+        Path(analysis_paths["performance_band_summary"]).name,
+        "metrics_long.csv",
+        "metrics_wide.csv",
+        conditions_path.name,
+    ]
+    summary["analysis_overview"] = Path(analysis_paths["analysis_overview"]).name
+    inventory_path = write_artifact_inventory(output_dir)
+    inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+    summary["artifact_count"] = inventory["artifact_count"]
+    summary["canonical_artifact_count"] = inventory["canonical_count"]
     summary_path.write_text(
         json.dumps(summary, indent=2, ensure_ascii=True),
         encoding="utf-8",
@@ -1109,14 +1630,9 @@ def write_experiment_manifest(
         "pipeline_contract": configuration.get("pipeline_contract", {}),
         "analysis_artifacts": {
             "wide_workbook": metrics_filename,
-            "phase_jsonl": "metrics_by_phase.jsonl",
-            "long_csv": "metrics_long.csv",
-            "long_jsonl": "metrics_long.jsonl",
-            "wide_csv": "metrics_wide.csv",
-            "wide_jsonl": "metrics_wide.jsonl",
-            "metric_catalog": "metric_catalog.json",
-            "raw_metric_inputs": "metric_inputs.json",
-            "retrospective_metrics": "retrospective_metrics.json",
+            "long_csv": RESULT_FILES["metrics_long"],
+            "wide_csv": RESULT_FILES["metrics_wide"],
+            "raw_metric_inputs": RESULT_FILES["metric_inputs"],
             "failure_indicators": "failure_indicators.json",
         },
         "conditions": rows,

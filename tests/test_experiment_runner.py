@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,10 +11,11 @@ import wave
 from zipfile import ZipFile
 
 from coop_navigation_sds.DialogManagement.result import DialogResult
-from coop_navigation_sds.EvaluationMetrics.catalog import metric_local_name
-from coop_navigation_sds.experiments import ExperimentCondition, ExperimentRunner, build_condition_grid, write_metrics_csv, write_metrics_file
-from coop_navigation_sds.ResultsAndArtifacts.artifacts import create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
+from coop_navigation_sds.Configuration.experiment import ExperimentSpecification
+from coop_navigation_sds.experiments import ExperimentCondition, ExperimentRunner, build_condition_grid, condition_configuration_provenance, write_metrics_csv, write_metrics_file
+from coop_navigation_sds.ResultsAndArtifacts.artifacts import compact_existing_result_tree, consolidate_completed_runtime_logs, create_execution_run_dir, write_conversation_protocol, write_conversation_protocols, write_experiment_manifest, write_metric_phase_logs, write_network_research_artifacts, write_single_run_research_outputs
 from coop_navigation_sds.NaturalLanguageGeneration.models import ModelParameterSet
+from coop_navigation_sds.TransportNetwork.constraints import OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 
 
 def write_test_wav(path, frame_rate=8000, seconds=0.05):
@@ -51,6 +53,47 @@ class FakeModelAdapter:
 
 
 class ExperimentRunnerTests(unittest.TestCase):
+    def test_condition_fingerprint_distinguishes_treatments_from_shared_base(self):
+        specification = ExperimentSpecification.resolve({"agent_a_type": "tinyllama"})
+        common = {
+            "test_case_key": "morning_peak_cross_city",
+            "persona_key": "focused_commuter",
+            "scenario_key": "morning_peak_cross_city",
+            "speech_pattern_key": "clean",
+            "model_param_key": "greedy",
+        }
+        ceiling = ExperimentCondition(condition_id="ceiling", **common)
+        floor = ExperimentCondition(
+            condition_id="floor",
+            parameter_values={"speech_performance_band": "floor"},
+            **common,
+        )
+
+        ceiling_provenance = condition_configuration_provenance(specification, ceiling)
+        floor_provenance = condition_configuration_provenance(specification, floor)
+
+        self.assertEqual(
+            ceiling_provenance["base_fingerprint_sha256"],
+            floor_provenance["base_fingerprint_sha256"],
+        )
+        self.assertNotEqual(
+            ceiling_provenance["fingerprint_sha256"],
+            floor_provenance["fingerprint_sha256"],
+        )
+
+    def test_experiment_condition_enforces_constraint_aware_shortest_route(self):
+        condition = ExperimentCondition(
+            condition_id="fixed-objective",
+            test_case_key="morning_peak_cross_city",
+            persona_key="focused_commuter",
+            scenario_key="morning_peak_cross_city",
+            speech_pattern_key="clean",
+            model_param_key="greedy",
+            objective_mode="only_valid_route",
+        )
+
+        self.assertEqual(condition.objective_mode, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)
+
     def test_shared_tinyllama_condition_reuses_loaded_adapter(self):
         adapter = FakeModelAdapter(name="TinyLlama/TinyLlama-1.1B-Chat-v1.0")
         factory = MagicMock()
@@ -136,6 +179,10 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(create_agent_b_plugin.call_args.args[1].model_parameters.temperature, 0.7)
         self.assertEqual(create_agent_b_plugin.call_args.args[1].max_time_sec, 4.5)
         self.assertEqual(dialog_manager_cls.call_args.kwargs["max_turn_elapsed_sec"], 4.0)
+        audio_dir = Path(dialog_manager_cls.call_args.kwargs["speech_transport"].config.audio_dir)
+        self.assertEqual(audio_dir.parent.name, ".turn_audio")
+        self.assertEqual(audio_dir.name, hashlib.sha256(condition.condition_id.encode("utf-8")).hexdigest()[:12])
+        self.assertLess(len(str(audio_dir)), len(str(audio_dir.parent / condition.condition_id)))
         self.assertEqual(result.condition_id, condition.condition_id)
         self.assertEqual(result.speech_pattern_key, "clean")
         self.assertEqual(result.extra["model_param_key"], "temp0.7")
@@ -208,6 +255,63 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(result.extra["agent_b_model"], "agent-b-comparison")
         self.assertEqual(result.extra["model_backend"]["model"], "agent-b-comparison")
         self.assertEqual(result.extra["agent_a_model_backend"]["model"], "agent-a-tinyllama")
+
+    @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
+    @patch("coop_navigation_sds.experiments.DialogManager")
+    @patch("coop_navigation_sds.experiments.get_test_case")
+    def test_run_condition_captures_failure_for_batch_and_allows_next_condition(
+        self,
+        get_test_case,
+        dialog_manager_cls,
+        _create_agent_b_plugin,
+    ):
+        base_case = SimpleNamespace(
+            key="case",
+            name="Case",
+            persona_key="focused_commuter",
+            scenario_key="scenario",
+            scenario={
+                "name": "Scenario",
+                "start_station": "A",
+                "destination_station": "B",
+                "start_time_min": 0,
+                "transfer_time_min": 2,
+            },
+        )
+        base_case.with_persona = lambda _persona_key: base_case
+        get_test_case.return_value = base_case
+        failed = RuntimeError("provider failed")
+        successful = SimpleNamespace(extra={}, runtime_sec=0.0)
+        dialog_manager_cls.return_value.run.side_effect = [failed, successful]
+        runner = ExperimentRunner(
+            FakeModelAdapter(),
+            num_turns=1,
+            agent_b_plugin_key="simple",
+            tts_engine="file",
+            asr_engine="file",
+            speech_playback_enabled=False,
+            speech_realtime_enabled=False,
+        )
+        conditions = [
+            ExperimentCondition(
+                condition_id=f"condition-{index}",
+                test_case_key="case",
+                persona_key="focused_commuter",
+                scenario_key="scenario",
+                speech_pattern_key="clean",
+                model_param_key="greedy",
+            )
+            for index in (1, 2)
+        ]
+
+        first, _ = runner.run_condition(conditions[0], compute_metrics=False, capture_failure=True)
+        second, _ = runner.run_condition(conditions[1], compute_metrics=False, capture_failure=True)
+
+        self.assertEqual(first.extra["execution_status"], "failed")
+        self.assertEqual(first.extra["pipeline_failure"]["message"], "provider failed")
+        self.assertFalse(first.route_correct)
+        self.assertEqual(second.extra["execution_status"], "completed")
+        self.assertEqual(dialog_manager_cls.return_value.run.call_count, 2)
 
     @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
     @patch("coop_navigation_sds.experiments.DialogManager")
@@ -288,6 +392,21 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(conditions[0].scenario_key, "scenario:alpha")
         self.assertEqual(conditions[-1].scenario_key, "scenario:beta")
 
+    @patch("coop_navigation_sds.experiments.get_test_case")
+    def test_build_condition_grid_has_one_fixed_objective(self, get_test_case):
+        get_test_case.return_value = SimpleNamespace(scenario_key="scenario")
+
+        conditions = list(build_condition_grid(
+            test_case_keys=["case"],
+            persona_keys=["persona"],
+            speech_pattern_keys=["clean"],
+            model_param_keys=["greedy"],
+            objective_modes=["only_valid_route", "shortest_valid_route"],
+        ))
+
+        self.assertEqual(len(conditions), 1)
+        self.assertEqual(conditions[0].objective_mode, OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)
+
     def test_write_metrics_csv_accepts_iterables(self):
         class FakeMetric:
             def __init__(self, row):
@@ -332,12 +451,10 @@ class ExperimentRunnerTests(unittest.TestCase):
                 names = set(archive.namelist())
                 workbook_xml = archive.read("xl/workbook.xml").decode("utf-8")
 
-            phase_rows = (log_dir / "metrics_by_phase.jsonl").read_text(encoding="utf-8").splitlines()
             long_rows = list(csv.DictReader((log_dir / "metrics_long.csv").open(encoding="utf-8")))
-            long_jsonl_exists = (log_dir / "metrics_long.jsonl").exists()
             runtime_record = next(
-                json.loads(row) for row in phase_rows
-                if json.loads(row)["phase"] == "runtime"
+                row for row in long_rows
+                if row["phase"] == "runtime" and row["metric_name"] == "response_latency_sec"
             )
 
         self.assertIn("xl/workbook.xml", names)
@@ -345,9 +462,9 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertIn('name="metric_long"', workbook_xml)
         self.assertIn('name="runtime"', workbook_xml)
         self.assertEqual(runtime_record["phase"], "runtime")
-        self.assertEqual(runtime_record["metrics"]["response_latency_sec"], 0.12)
+        self.assertEqual(float(runtime_record["value_numeric"]), 0.12)
         self.assertEqual({row["phase"] for row in long_rows}, {"runtime", "asr"})
-        self.assertTrue(long_jsonl_exists)
+        self.assertFalse((log_dir / "metrics_long.jsonl").exists())
 
     def test_write_network_research_artifacts(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -522,12 +639,25 @@ class ExperimentRunnerTests(unittest.TestCase):
             paths = write_conversation_protocol(result, tmpdir)
             protocol_children = [child for child in Path(tmpdir).iterdir() if child.is_dir() and child.name != "turn_audio"]
             batch_paths = write_conversation_protocols([result], Path(tmpdir) / "batch")
+            batch_dir = Path(tmpdir) / "batch"
+            batch_protocol_count = len(list(batch_dir.glob("*_protocol.json")))
+            batch_transcript_count = len(list(batch_dir.glob("*_conversation_transcript.txt")))
+            batch_protocol_records = [
+                json.loads(line)
+                for line in (batch_dir / "conversation_protocols.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            batch_transcript = (batch_dir / "conversation_transcripts.txt").read_text(encoding="utf-8")
 
             combined_protocol = json.loads(paths["protocol"].read_text(encoding="utf-8"))
             transcript_text = paths["transcript_txt"].read_text(encoding="utf-8")
             conversation_wav_exists = paths["conversation_wav"].exists()
 
         self.assertTrue(batch_paths)
+        self.assertEqual(batch_protocol_count, 0)
+        self.assertEqual(batch_transcript_count, 0)
+        self.assertEqual(len(batch_protocol_records), 1)
+        self.assertIn("=== Conversation 1: Case One ===", batch_transcript)
         self.assertEqual(protocol_children, [])
         self.assertEqual(combined_protocol["summary"]["condition_id"], "Case One")
         self.assertIn("Agent A", transcript_text)
@@ -545,6 +675,170 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(len(combined_protocol["phase_timing"]), 1)
         self.assertIn("processing seconds", transcript_text)
         self.assertIn("Messages", combined_protocol["retrospective_summary"])
+
+    def test_interrupted_result_recovery_combines_readable_files_without_deleting_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_dir = Path(tmpdir) / "results" / "20260703_partial"
+            run_dir.mkdir(parents=True)
+            (run_dir / "experiment_job.json").write_text("{}", encoding="utf-8")
+            wav_path = run_dir / "0001-agent-a.wav"
+            txt_path = run_dir / "0001-agent-a.txt"
+            write_test_wav(wav_path)
+            txt_path.write_text("Alpha to Echo", encoding="utf-8")
+            events = [
+                {
+                    "schema_version": 3,
+                    "kind": "program.segment",
+                    "name": "batch.condition.start",
+                    "payload": {"segment": "batch.condition", "phase": "start", "condition_id": "case-one"},
+                },
+                {
+                    "schema_version": 3,
+                    "kind": "system",
+                    "name": "telemetry.speech",
+                    "payload": {
+                        "turn": 1,
+                        "speaker": "Agent A",
+                        "generated_text": "Alpha to Echo",
+                        "outgoing_text": "Alpha to Echo",
+                        "raw_asr_transcript": "alpha to echo",
+                        "incoming_transcript": "Alpha to Echo",
+                        "agent_input_transcript": "Alpha to Echo",
+                        "misinterpreted_tokens": [],
+                        "transcript_corrections": [],
+                        "audio": {"path": str(wav_path), "transcript_path": str(txt_path)},
+                    },
+                },
+            ]
+            log_path = run_dir / "batch-case-one.jsonl"
+            log_path.write_text(
+                "".join(json.dumps(event) + "\n" for event in events),
+                encoding="utf-8",
+            )
+
+            reports = compact_existing_result_tree(run_dir.parent)
+            protocol_lines = [
+                json.loads(line)
+                for line in (run_dir / "partial_conversation_protocols.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            transcript = (run_dir / "partial_conversation_transcripts.txt").read_text(encoding="utf-8")
+
+            self.assertEqual(reports[0]["status"], "recovered_incomplete_run")
+            self.assertEqual(len(protocol_lines), 1)
+            self.assertEqual(protocol_lines[0]["preservation_policy"], "original turn files retained because the batch did not finalize")
+            self.assertTrue(protocol_lines[0]["source_integrity"])
+            self.assertIn("TTS speech: Alpha to Echo", transcript)
+            self.assertTrue(wav_path.is_file())
+            self.assertTrue(txt_path.is_file())
+            self.assertTrue((run_dir / "case-one_partial_conversation.wav").is_file())
+
+    def test_completed_runtime_logs_are_verified_and_consolidated(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            event_path = root / "batch-case.jsonl"
+            text_path = root / "batch-case.log"
+            summary_path = root / "batch-case-summary.json"
+            event_path.write_text(json.dumps({"name": "condition.end"}) + "\n", encoding="utf-8")
+            text_path.write_text("condition complete\n", encoding="utf-8")
+            summary_path.write_text(json.dumps({"events": 1}), encoding="utf-8")
+
+            outputs = consolidate_completed_runtime_logs(root)
+            event = json.loads(outputs["events"].read_text(encoding="utf-8"))
+            summary = json.loads(outputs["summaries"].read_text(encoding="utf-8"))
+
+            self.assertEqual(event["source_session_file"], event_path.name)
+            self.assertEqual(event["event"]["name"], "condition.end")
+            self.assertEqual(len(event["source_sha256"]), 64)
+            self.assertEqual(summary["summary"]["events"], 1)
+            self.assertIn("condition complete", outputs["text"].read_text(encoding="utf-8"))
+            self.assertFalse(event_path.exists())
+            self.assertFalse(text_path.exists())
+            self.assertFalse(summary_path.exists())
+
+    def test_finalized_result_compaction_refreshes_index_and_artifact_inventory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_dir = Path(tmpdir) / "results" / "completed"
+            run_dir.mkdir(parents=True)
+            protocol_path = run_dir / "case-one_protocol.json"
+            transcript_path = run_dir / "case-one_conversation_transcript.txt"
+            wav_path = run_dir / "case-one_conversation.wav"
+            protocol_path.write_text(
+                json.dumps({"summary": {"condition_id": "case-one"}}),
+                encoding="utf-8",
+            )
+            transcript_path.write_text("Agent A: Alpha to Echo.\n", encoding="utf-8")
+            write_test_wav(wav_path)
+            (run_dir / "index.jsonl").write_text(
+                json.dumps({"condition_id": "case-one", "protocol_file": protocol_path.name}) + "\n",
+                encoding="utf-8",
+            )
+            (run_dir / "run_summary.json").write_text(
+                json.dumps({"artifacts": [{"path": protocol_path.name}]}),
+                encoding="utf-8",
+            )
+
+            reports = compact_existing_result_tree(run_dir.parent)
+            index = json.loads((run_dir / "index.jsonl").read_text(encoding="utf-8"))
+            summary = json.loads((run_dir / "run_summary.json").read_text(encoding="utf-8"))
+            inventory = json.loads(
+                (run_dir / summary["artifact_inventory"]).read_text(encoding="utf-8")
+            )
+            artifact_names = {row["path"] for row in inventory["artifacts"]}
+
+            self.assertEqual(reports[0]["status"], "compacted_finalized_run")
+            self.assertFalse(protocol_path.exists())
+            self.assertFalse(transcript_path.exists())
+            self.assertEqual(index["protocol_file"], "conversation_protocols.jsonl")
+            self.assertEqual(index["protocol_record"], 1)
+            self.assertEqual(index["transcript_file"], "conversation_transcripts.txt")
+            self.assertIn("conversation_protocols.jsonl", artifact_names)
+            self.assertIn("conversation_transcripts.txt", artifact_names)
+            self.assertNotIn(protocol_path.name, artifact_names)
+            self.assertTrue(all(row["sha256"] for row in inventory["artifacts"]))
+
+    def test_interrupted_recovery_rejects_audio_reused_across_conditions(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_dir = Path(tmpdir) / "results" / "partial"
+            run_dir.mkdir(parents=True)
+            (run_dir / "experiment_job.json").write_text("{}", encoding="utf-8")
+            shared_wav = run_dir / "shared.wav"
+            write_test_wav(shared_wav)
+            for condition_id in ("case-one", "case-two"):
+                events = [
+                    {
+                        "name": "batch.condition.start",
+                        "payload": {"condition_id": condition_id},
+                    },
+                    {
+                        "name": "telemetry.speech",
+                        "payload": {
+                            "turn": 1,
+                            "speaker": "Agent A",
+                            "generated_text": "Alpha to Echo",
+                            "outgoing_text": "Alpha to Echo",
+                            "incoming_transcript": "Alpha to Echo",
+                            "audio": {"path": str(shared_wav)},
+                        },
+                    },
+                ]
+                (run_dir / f"batch-{condition_id}.jsonl").write_text(
+                    "".join(json.dumps(event) + "\n" for event in events),
+                    encoding="utf-8",
+                )
+
+            compact_existing_result_tree(run_dir.parent)
+            records = [
+                json.loads(line)
+                for line in (run_dir / "partial_conversation_protocols.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+            self.assertEqual(len(records), 2)
+            self.assertTrue(all(record["audio_recovery_status"] == "unavailable_or_ambiguous" for record in records))
+            self.assertTrue(all("shared across conditions" in record["audio_manifest"]["reason"] for record in records))
+            self.assertEqual(list(run_dir.glob("*_partial_conversation.wav")), [])
+            self.assertTrue(shared_wav.is_file())
 
     def test_single_run_research_outputs_compile_metrics_for_analysis(self):
         result = DialogResult(
@@ -610,42 +904,14 @@ class ExperimentRunnerTests(unittest.TestCase):
             self.assertEqual(paths["metrics_file"].parent, paths["run_dir"])
             self.assertTrue(metrics_file.exists())
             self.assertEqual(phase_dir, paths["run_dir"])
-            self.assertTrue((phase_dir / "metrics_by_phase.jsonl").exists())
             self.assertTrue((phase_dir / "metrics_long.csv").exists())
-            self.assertTrue((phase_dir / "metrics_long.jsonl").exists())
+            self.assertTrue((phase_dir / "metrics_wide.csv").exists())
+            self.assertFalse((phase_dir / "metrics_long.jsonl").exists())
             self.assertFalse((phase_dir / "metric_phase_summary.jsonl").exists())
-            self.assertTrue((phase_dir / "metric_catalog.json").exists())
-            self.assertTrue(paths["retrospective_json"].exists())
-            retrospective = json.loads(paths["retrospective_json"].read_text(encoding="utf-8"))
-            phase_rows = [
-                json.loads(line)
-                for line in (phase_dir / "metrics_by_phase.jsonl").read_text(encoding="utf-8").splitlines()
-            ]
-            catalog = json.loads((phase_dir / "metric_catalog.json").read_text(encoding="utf-8"))
+            self.assertFalse((phase_dir / "metric_catalog.json").exists())
+            self.assertFalse((phase_dir / "retrospective_metrics.json").exists())
             long_rows = list(csv.DictReader((phase_dir / "metrics_long.csv").open(encoding="utf-8")))
-            emitted = {
-                (row["phase"], name)
-                for row in phase_rows
-                for name in row["metrics"]
-            }
-            cataloged = {
-                (phase, metric_local_name(item["key"]))
-                for phase, phase_catalog in catalog.items()
-                for item in phase_catalog["metrics"]
-            }
-            self.assertEqual(emitted, cataloged)
-            self.assertEqual(len(emitted), len(retrospective["calculation_evidence"]))
-            null_metric_count = sum(
-                value is None
-                for values in retrospective["metrics_by_phase"].values()
-                for value in values.values()
-            )
-            unavailable_evidence_count = sum(
-                not evidence["available"] and bool(evidence["reason"])
-                for evidence in retrospective["calculation_evidence"].values()
-            )
-            self.assertEqual(null_metric_count, unavailable_evidence_count)
-            self.assertEqual(len(long_rows), len(cataloged))
+            self.assertGreater(len(long_rows), 0)
             self.assertTrue({
                 "phase",
                 "metric_key",
@@ -661,6 +927,11 @@ class ExperimentRunnerTests(unittest.TestCase):
             self.assertIn("audio_manifest", protocol)
             self.assertTrue(paths["network_json"].exists())
             self.assertTrue(paths["network_graph"].exists())
+            summary = json.loads(paths["run_summary"].read_text(encoding="utf-8"))
+            inventory_path = paths["run_dir"] / summary["artifact_inventory"]
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+            self.assertEqual(summary["artifact_count"], inventory["artifact_count"])
+            self.assertTrue(all(row["sha256"] for row in inventory["artifacts"]))
             self.assertFalse(any(child.is_dir() for child in paths["run_dir"].iterdir()))
 
 

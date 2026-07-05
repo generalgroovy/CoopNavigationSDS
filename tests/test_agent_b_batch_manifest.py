@@ -37,7 +37,7 @@ def test_userlm_expanded_speech_manifest_has_six_matched_jobs():
     manifest = load_batch_manifest(BATCH_ROOT / "06-userlm-speech-grid-all-models.json")
     rows = [job_overview(path) for path in manifest["jobs"]]
     assert len(rows) == 6
-    assert sum(row["conditions"] for row in rows) == 312
+    assert sum(row["conditions"] for row in rows) == 48
     assert {row["agent_b_size"] for row in rows} == {"small", "medium", "large"}
     assert {row["agent_a_model"] for row in rows} == {"microsoft/UserLM-8b"}
 

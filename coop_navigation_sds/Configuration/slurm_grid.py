@@ -10,6 +10,7 @@ from typing import Mapping
 
 from coop_navigation_sds.Configuration.schema import safe_artifact_name
 from coop_navigation_sds.Configuration.speech import speech_pattern_keys
+from coop_navigation_sds.Configuration.travel import NETWORK_SEED
 from coop_navigation_sds.NaturalLanguageGeneration.caller.config import PERSONAS
 from coop_navigation_sds.NaturalLanguageGeneration.assistant.plugin_registry import (
     available_agent_b_plugin_keys,
@@ -61,6 +62,36 @@ def _registry_selection(value, registry, label):
     if unknown:
         raise ValueError(f"Unknown {label}: {', '.join(unknown)}")
     return tuple(value)
+
+
+def _task_profiles(document):
+    """Resolve validated case/persona pairs without creating blind cross-products."""
+    configured = document.get("task_profiles")
+    if configured == "standard":
+        return tuple(
+            (key, test_case.persona_key)
+            for key, test_case in sorted(TEST_CASES.items())
+        )
+    if configured is not None:
+        if not isinstance(configured, list) or not configured:
+            raise ValueError("task_profiles must be 'standard' or a non-empty list.")
+        profiles = []
+        for index, profile in enumerate(configured):
+            if not isinstance(profile, dict):
+                raise ValueError(f"task_profiles[{index}] must be an object.")
+            test_case = str(profile.get("test_case") or "")
+            persona = str(profile.get("persona") or "")
+            if test_case not in TEST_CASES:
+                raise ValueError(f"Unknown task_profiles[{index}] test case '{test_case}'.")
+            if persona not in PERSONAS:
+                raise ValueError(f"Unknown task_profiles[{index}] persona '{persona}'.")
+            profiles.append((test_case, persona))
+        if len(set(profiles)) != len(profiles):
+            raise ValueError("task_profiles contains duplicate case/persona pairs.")
+        return tuple(profiles)
+    personas = _registry_selection(document.get("personas", "all"), PERSONAS, "personas")
+    test_cases = _registry_selection(document.get("test_cases", "all"), TEST_CASES, "test cases")
+    return tuple((test_case, persona) for persona in personas for test_case in test_cases)
 
 
 @dataclass(frozen=True)
@@ -187,8 +218,7 @@ class SlurmConditionGrid:
         backends = tuple(AgentBBackend.from_value(value) for value in document.get("agent_b", ()))
         if not backends:
             raise ValueError("Slurm grid requires at least one Agent B backend.")
-        personas = _registry_selection(document.get("personas", "all"), PERSONAS, "personas")
-        test_cases = _registry_selection(document.get("test_cases", "all"), TEST_CASES, "test cases")
+        task_profiles = _task_profiles(document)
         run_modes = tuple(document.get("run_modes") or ("pure_text",))
         invalid_modes = sorted(set(run_modes) - set(RUN_MODES))
         if invalid_modes:
@@ -197,7 +227,7 @@ class SlurmConditionGrid:
         invalid_patterns = sorted(set(patterns) - set(speech_pattern_keys()))
         if invalid_patterns:
             raise ValueError(f"Unknown speech patterns: {', '.join(invalid_patterns)}")
-        seeds = tuple(int(value) for value in document.get("seeds", (11,)))
+        seeds = tuple(int(value) for value in document.get("seeds", (NETWORK_SEED,)))
         if not seeds:
             raise ValueError("Slurm grid requires at least one seed.")
         repetitions = max(1, int(document.get("repetitions", 1)))
@@ -214,27 +244,26 @@ class SlurmConditionGrid:
 
         conditions = []
         for backend in backends:
-            for persona in personas:
-                for test_case in test_cases:
-                    for run_mode in run_modes:
-                        active_patterns = patterns if run_mode == "speech" else (None,)
-                        for pattern in active_patterns:
-                            for seed in seeds:
-                                for repetition in range(repetitions):
-                                    conditions.append(SlurmCondition(
-                                        grid_name=name,
-                                        index=len(conditions),
-                                        backend=backend,
-                                        persona_key=persona,
-                                        test_case_key=test_case,
-                                        run_mode=run_mode,
-                                        speech_pattern_key=pattern,
-                                        seed=seed,
-                                        repetition=repetition,
-                                        agent_a_type=agent_a_type,
-                                        speech_config=speech,
-                                        base_config=base_config,
-                                    ))
+            for test_case, persona in task_profiles:
+                for run_mode in run_modes:
+                    active_patterns = patterns if run_mode == "speech" else (None,)
+                    for pattern in active_patterns:
+                        for seed in seeds:
+                            for repetition in range(repetitions):
+                                conditions.append(SlurmCondition(
+                                    grid_name=name,
+                                    index=len(conditions),
+                                    backend=backend,
+                                    persona_key=persona,
+                                    test_case_key=test_case,
+                                    run_mode=run_mode,
+                                    speech_pattern_key=pattern,
+                                    seed=seed,
+                                    repetition=repetition,
+                                    agent_a_type=agent_a_type,
+                                    speech_config=speech,
+                                    base_config=base_config,
+                                ))
         return cls(name=name, conditions=tuple(conditions), source=str(source or ""))
 
     @classmethod

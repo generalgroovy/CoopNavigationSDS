@@ -52,7 +52,6 @@ from coop_navigation_sds.TransportNetwork.constraints import (
     route_near_capacity_count,
     stage_viability_report,
     route_transfer_miss_probability,
-    normalize_objective_mode,
     stated_constraint_keys,
     unsatisfied_constraint_keys,
 )
@@ -193,7 +192,7 @@ class DialogManager:
             HARD_MAX_TURN_ELAPSED_SEC,
             max(1.0, float(max_turn_elapsed_sec or DEFAULT_MAX_TURN_ELAPSED_SEC)),
         )
-        self.agent_a_objective_mode = normalize_objective_mode(agent_a_objective_mode)
+        self.agent_a_objective_mode = OBJECTIVE_SHORTEST_WITH_CONSTRAINTS
 
     def run(self, event_queue):
         """Run method for this module's MVC responsibility.

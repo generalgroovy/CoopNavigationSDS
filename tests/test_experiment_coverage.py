@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 
-from coop_navigation_sds.ResultsAndArtifacts.coverage import update_experiment_coverage
+from coop_navigation_sds.ResultsAndArtifacts.coverage import _agent_model_combination_rows, _agent_model_html, _coverage_key, update_experiment_coverage
 from coop_navigation_sds.Configuration.jobs import load_experiment_job
 from coop_navigation_sds.ResultsAndArtifacts.coverage import _planned_rows
 
@@ -83,7 +83,138 @@ def test_coverage_registry_indexes_only_finalized_standard_runs():
         assert completed_row["configured_asr_engine"] == "vosk"
         assert completed_row["run_ids"] == "completed"
         assert paths["matrix"].is_file()
+        assert paths["agent_model_matrix"].is_file()
+        assert paths["agent_model_report"].is_file()
+        assert paths["case_coverage"].is_file()
+        case_rows = list(csv.DictReader(paths["case_coverage"].open(encoding="utf-8")))
+        assert case_rows
+        assert case_rows[0]["test_case_key"] == "morning_peak_cross_city"
+        assert summary["case_coverage"]["treatment_count"] == 1
+        agent_matrix = list(csv.DictReader(paths["agent_model_matrix"].open(encoding="utf-8")))
+        assert len(agent_matrix) == 12
+        assert {row["model_slot"] for row in agent_matrix} == {
+            "small1", "small2", "medium1", "medium2", "large1", "large2"
+        }
         assert "completed/planned" in paths["report"].read_text(encoding="utf-8")
+
+
+def test_agent_model_matrix_separates_canonical_slots_and_active_control():
+    coverage = [{
+        "coverage_key": "one",
+        "matrix_family": "agent_b_llm_comparison_v1",
+        "agent_a_type": "tinyllama",
+        "agent_b_model": "llama3.2:1b",
+        "agent_b_llm_size": "small",
+        "agent_b_model_role": "primary",
+        "planned": True,
+        "completed_count": 1,
+        "successful_count": 1,
+    }]
+    active = [{
+        "result_run_id": "baseline",
+        "agent_a_type": "tinyllama",
+        "agent_b_model": "TinyLlama",
+        "agent_b_llm_size": "small",
+        "agent_b_model_role": "support_baseline",
+        "matrix_family": "small_agent_b_speech_grid_v1",
+        "planned_condition_count": 52,
+        "observed_condition_count": 10,
+        "failed_condition_count": 0,
+    }]
+
+    rows, controls = _agent_model_combination_rows(coverage, active)
+
+    small_primary = next(row for row in rows if row["agent_a_type"] == "tinyllama" and row["model_slot"] == "small1")
+    assert len(rows) == 12
+    assert small_primary["status"] == "complete"
+    assert small_primary["agent_b_models"] == "llama3.2:1b"
+    assert controls[0]["active_observed_condition_count"] == 10
+
+
+def test_agent_model_matrix_reports_combined_memory_in_ascending_order():
+    coverage = [{
+        "matrix_family": "agent_b_llm_comparison_v1",
+        "agent_a_type": "userlm",
+        "agent_b_model": "llama3.2:1b",
+        "agent_b_llm_size": "small",
+        "agent_b_model_role": "primary",
+        "planned": True,
+        "completed_count": 0,
+        "successful_count": 0,
+    }, {
+        "matrix_family": "agent_b_llm_comparison_v1",
+        "agent_a_type": "tinyllama",
+        "agent_b_model": "llama3.2:1b",
+        "agent_b_llm_size": "small",
+        "agent_b_model_role": "primary",
+        "planned": True,
+        "completed_count": 0,
+        "successful_count": 0,
+    }]
+
+    rows, _controls = _agent_model_combination_rows(coverage, [])
+    row = next(item for item in rows if item["agent_a_type"] == "userlm" and item["model_slot"] == "small1")
+
+    assert row["agent_a_model"] == "microsoft/UserLM-8b"
+    assert row["agent_a_approximate_memory_gb"] == 34.0
+    assert row["agent_b_approximate_memory_gb"] == 3.0
+    assert row["combined_approximate_memory_gb"] == 37.0
+
+    tinyllama_row = next(item for item in rows if item["agent_a_type"] == "tinyllama" and item["model_slot"] == "small1")
+    assert tinyllama_row["agent_a_model"] == "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    assert tinyllama_row["agent_a_approximate_memory_gb"] == 4.5
+    assert tinyllama_row["agent_b_approximate_memory_gb"] == 3.0
+    assert tinyllama_row["combined_approximate_memory_gb"] == 7.5
+    combined = [
+        item["combined_approximate_memory_gb"] for item in rows
+        if item["combined_approximate_memory_gb"] is not None
+    ]
+    assert combined == sorted(combined)
+
+
+def test_agent_model_html_sorts_slots_by_numeric_memory_and_hides_unavailable_viability():
+    rows, controls = _agent_model_combination_rows([], [])
+    for index, row in enumerate(rows):
+        row["agent_b_models"] = {
+            "small1": "small-one",
+            "small2": "small-two",
+            "medium1": "medium-one",
+            "medium2": "medium-two",
+            "large1": "large-twelve",
+            "large2": "large-ten",
+        }[row["model_slot"]]
+        row["agent_b_approximate_memory_gb"] = {
+            "small1": 3.0,
+            "small2": 4.0,
+            "medium1": 6.0,
+            "medium2": 7.0,
+            "large1": 12.0,
+            "large2": 10.0,
+        }[row["model_slot"]]
+        row["combined_approximate_memory_gb"] = row["agent_a_approximate_memory_gb"] + row["agent_b_approximate_memory_gb"]
+        row.pop("system_viability", None)
+
+    report = _agent_model_html(rows, controls)
+
+    assert report.index("large2") < report.index("large1")
+    assert report.index("large-ten") < report.index("large-twelve")
+    assert "System viability" not in report
+
+
+def test_coverage_key_normalizes_missing_platform_consistently():
+    assert _coverage_key({"experiment_platform": None}) == _coverage_key({"experiment_platform": "unspecified"})
+
+
+def test_coverage_key_distinguishes_case_seed_and_condition_identity():
+    base = {
+        "condition_id": "condition-a",
+        "test_case_key": "morning_peak_cross_city",
+        "network_seed": 11,
+    }
+
+    assert _coverage_key(base) != _coverage_key({**base, "condition_id": "condition-b"})
+    assert _coverage_key(base) != _coverage_key({**base, "test_case_key": "midday_transfer"})
+    assert _coverage_key(base) != _coverage_key({**base, "network_seed": 29})
 
 
 def test_focused_agent_b_job_is_bounded_and_covers_declared_levels():

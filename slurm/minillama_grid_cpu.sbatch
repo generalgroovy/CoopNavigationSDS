@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=mn-grid-cpu
-#SBATCH --array=0-719%8
+#SBATCH --array=0-15%8
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=10G
 #SBATCH --time=02:00:00

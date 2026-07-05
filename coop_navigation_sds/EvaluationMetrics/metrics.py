@@ -1216,11 +1216,20 @@ class MetricComputer:
         satisfied_constraints = sum(
             1 for status in constraint_status.values() if status.get("satisfied")
         )
-        constraint_satisfaction_rate = safe_ratio(
+        stated_constraint_satisfaction_rate = safe_ratio(
             satisfied_constraints,
             len(constraint_status),
         ) if constraint_status else (1.0 if not result.extra.get("stated_constraints") else 0.0)
-        all_constraints_satisfied = not result.extra.get("unsatisfied_constraints")
+        route_eligible_for_constraints = bool(result.route_valid and result.route_reaches_goal)
+        constraint_satisfaction_rate = (
+            stated_constraint_satisfaction_rate
+            if route_eligible_for_constraints
+            else 0.0
+        )
+        all_constraints_satisfied = bool(
+            route_eligible_for_constraints
+            and not result.extra.get("unsatisfied_constraints")
+        )
         acceptable_duration = bool(
             result.extra.get(
                 "time_frame_satisfied",

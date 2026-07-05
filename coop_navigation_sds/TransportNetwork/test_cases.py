@@ -107,4 +107,9 @@ def get_test_case(test_case_key: str):
     Returns:
         The computed value or side effect documented by the implementation.
     """
-    return TEST_CASES.get(test_case_key, TEST_CASES[DEFAULT_TEST_CASE])
+    key = str(test_case_key or DEFAULT_TEST_CASE)
+    if key not in TEST_CASES:
+        raise ValueError(
+            f"Unknown test case '{key}'. Available: {', '.join(sorted(TEST_CASES))}."
+        )
+    return TEST_CASES[key]
