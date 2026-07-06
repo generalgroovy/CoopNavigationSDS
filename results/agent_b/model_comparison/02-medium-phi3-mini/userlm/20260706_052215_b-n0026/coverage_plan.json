@@ -1,0 +1,61 @@
+{
+  "audio_condition_count": 13,
+  "condition_start": 0,
+  "coverage_strategy": "pairwise",
+  "covered_pair_count": 109,
+  "expected_pair_count": 109,
+  "factor_count": 9,
+  "full_condition_count": 26,
+  "levels": {
+    "agent_a_audio_persona": [
+      "hesitant_caller",
+      "high_clarity_caller"
+    ],
+    "agent_b_audio_persona": [
+      "clear_operator",
+      "degraded_operator"
+    ],
+    "agent_b_model": [
+      "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.model-providers/agent_b/linux/transformers/mid2-phi3-mini"
+    ],
+    "automatic_speech_recognition": [
+      "faster_whisper"
+    ],
+    "model_parameters": [
+      "greedy"
+    ],
+    "objective": [
+      "shortest_valid_route_with_constraints"
+    ],
+    "speech_pattern": [
+      "clean",
+      "hesitant",
+      "noisy_station"
+    ],
+    "task_profile": [
+      "airport_delay",
+      "late_verbose",
+      "midday_distracted",
+      "morning_focused"
+    ],
+    "text_to_speech": [
+      "piper"
+    ]
+  },
+  "missing_pairs": [],
+  "pair_coverage_ratio": 1.0,
+  "selected_condition_count": 26,
+  "speech_performance_coverage": {
+    "applicable": false,
+    "complete": false,
+    "complete_group_count": 0,
+    "group_count": 0,
+    "groups": [],
+    "required_bands": [
+      "ceiling",
+      "nominal",
+      "challenging",
+      "floor"
+    ]
+  }
+}
