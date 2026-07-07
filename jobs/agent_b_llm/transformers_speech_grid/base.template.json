@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "extends": "../../support/small_agent_b_speech_grid.job",
+  "name": "transformers_agent_b_speech_grid_base",
+  "description": "TinyLlama caller with a non-Ollama Transformers Agent B model using the shared speech-performance range.",
+  "config": {
+    "agent_a_type": "tinyllama",
+    "agent_b_plugin": "llm",
+    "model_provider": "transformers",
+    "model_base_url": "",
+    "allow_model_download": false,
+    "model_timeout_sec": 300,
+    "model_max_new_tokens": 48,
+    "result_group": "agent_b/transformers/00-base/tinyllama"
+  },
+  "parameter_values": {
+    "matrix_family": ["transformers_agent_b_speech_grid_v1"],
+    "experiment_platform": ["linux"],
+    "agent_b_model_role": ["transformers_candidate"]
+  }
+}

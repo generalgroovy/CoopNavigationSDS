@@ -14,6 +14,8 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 
+from coop_navigation_sds.NaturalLanguageGeneration.models import model_memory_requirement_gb
+
 
 REQUIRED_RUN_FILES = ("run_summary.json", "conditions.jsonl", "metrics_long.csv")
 DISPLAY_METRIC_HINTS = (
@@ -41,6 +43,7 @@ CONDITION_ANALYSIS_METRICS = (
 )
 SPEECH_BAND_RANK = {"floor": 0, "challenging": 1, "nominal": 2, "ceiling": 3}
 SPEECH_BAND_SCORE_TOLERANCE = 0.02
+AGENT_B_SIZE_ORDER = {"small": 0, "medium": 1, "large": 2, "hosted": 3, "custom": 4, "": 9}
 
 
 def discover_run_directories(paths):
@@ -463,6 +466,67 @@ def _rate(rows, key, expected=True):
     )
 
 
+def _agent_b_sort_key(row):
+    return (
+        AGENT_B_SIZE_ORDER.get(str(row.get("agent_b_llm_size") or "").casefold(), 8),
+        str(row.get("agent_b_model") or "").casefold(),
+        str(row.get("run_type") or "").casefold(),
+        str(row.get("scenario_key") or "").casefold(),
+        str(row.get("persona_key") or "").casefold(),
+    )
+
+
+def _agent_b_model_summary_rows(condition_rows, phase_rows, dialogue_rows):
+    groups = defaultdict(list)
+    for row in condition_rows:
+        groups[(row.get("agent_b_llm_size"), row.get("agent_b_model"), row.get("agent_a_type"))].append(row)
+    phase_groups = defaultdict(list)
+    for row in phase_rows:
+        phase_groups[(row.get("agent_b_llm_size"), row.get("agent_b_model"), row.get("agent_a_type"))].append(row)
+    dialogue_groups = defaultdict(list)
+    for row in dialogue_rows:
+        matching = next(
+            (
+                condition for condition in condition_rows
+                if condition.get("condition_id") == row.get("condition_id")
+            ),
+            {},
+        )
+        dialogue_groups[(matching.get("agent_b_llm_size"), matching.get("agent_b_model"), matching.get("agent_a_type"))].append(row)
+    output = []
+    for (size, model, agent_a), rows in groups.items():
+        completed = [row for row in rows if row.get("condition_state") == "completed"]
+        phases = phase_groups.get((size, model, agent_a), [])
+        dialogues = dialogue_groups.get((size, model, agent_a), [])
+        output.append({
+            "agent_b_llm_size": size,
+            "agent_b_model": model,
+            "agent_a_type": agent_a,
+            "agent_b_estimated_memory_gb": model_memory_requirement_gb(model),
+            "planned_conditions": len(rows),
+            "completed_conditions": len(completed),
+            "interrupted_conditions": sum(row.get("condition_state") == "interrupted" for row in rows),
+            "not_started_conditions": sum(row.get("condition_state") == "not_started" for row in rows),
+            "task_success_rate": _rate(completed, "task_success", True),
+            "route_validity_rate": _rate(completed, "route_valid", True),
+            "mean_duration_gap_min": _mean(_numeric_values(completed, "duration_gap_min")),
+            "mean_turn_count": _mean(_numeric_values(completed, "turn_count")),
+            "mean_phase_processing_sec": _mean(_numeric_values(phases, "mean_processing_sec")),
+            "total_asr_misinterpretations": sum(
+                _number(row.get("misinterpreted_token_count")) or 0
+                for row in phases if row.get("phase") == "automatic_speech_recognition"
+            ),
+            "total_transcript_corrections": sum(
+                _number(row.get("correction_count")) or 0
+                for row in phases if row.get("phase") == "automatic_speech_recognition"
+            ),
+            "mean_dialogue_state_agreement": _mean(_numeric_values(dialogues, "state_task_variable_agreement")),
+            "mean_route_agreement": _mean(_numeric_values(dialogues, "current_route_agreement")),
+            "evidence_source": "condition, phase, and dialogue summaries grouped by Agent B model",
+        })
+    return sorted(output, key=_agent_b_sort_key)
+
+
 def _task_success_summary_rows(condition_rows):
     dimensions = (
         "agent_a_type", "agent_b_model", "agent_b_llm_size", "scenario_key",
@@ -495,7 +559,7 @@ def _task_success_summary_rows(condition_rows):
             "mean_constraints_total": _mean(_numeric_values(completed, "constraints_total")),
             "evidence_source": "task_outcome_comparison.csv grouped without changing source results",
         })
-    return sorted(output, key=lambda row: tuple(str(row.get(key, "")).casefold() for key in dimensions))
+    return sorted(output, key=_agent_b_sort_key)
 
 
 def _phase_summary_rows(phase_rows):
@@ -524,8 +588,7 @@ def _phase_summary_rows(phase_rows):
             "evidence_source": "phase_metric_comparison.csv grouped by model/run type/phase",
         })
     return sorted(output, key=lambda row: (
-        str(row.get("agent_a_type", "")).casefold(),
-        str(row.get("agent_b_model", "")).casefold(),
+        *_agent_b_sort_key(row),
         _number(row.get("phase_order")) or 0,
     ))
 
@@ -633,6 +696,7 @@ def _write_analysis_guide(path, generated_files):
         "| `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |",
         "| `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |",
         "| `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |",
+        "| `agent_b_model_summary.csv` | One row per Agent B model and Agent A pairing, sorted by Agent B size and model. |",
         "| `phase_metric_comparison.csv` | One row per condition and dialogue-system phase with telemetry counts and timings. |",
         "| `phase_summary_by_model.csv` | Phase-level aggregates by Agent A, Agent B, run type, TTS, ASR, and phase. |",
         "| `dialogue_state_comparison.csv` | One row per condition with memory, route, candidate, and agreement evidence. |",
@@ -656,7 +720,7 @@ def _write_analysis_guide(path, generated_files):
     Path(path).write_text("\n".join(lines), encoding="utf-8")
 
 
-def _write_evidence_overview(path, inventory, configurations, outcomes, phases, dialogues, task_summary, phase_summary, dialogue_summary):
+def _write_evidence_overview(path, inventory, configurations, outcomes, phases, dialogues, task_summary, model_summary, phase_summary, dialogue_summary):
     run_table = _html_table(inventory, (
         ("source_run", "Run"), ("run_state", "State"), ("agent_a_type", "Agent A"),
         ("agent_b_model", "Agent B"), ("planned_condition_count", "Planned"),
@@ -694,6 +758,14 @@ def _write_evidence_overview(path, inventory, configurations, outcomes, phases, 
         ("route_validity_rate", "Route valid"), ("mean_duration_gap_min", "Mean gap"),
         ("mean_turn_count", "Mean turns"),
     ), limit=120)
+    model_summary_table = _html_table(model_summary, (
+        ("agent_b_llm_size", "Size"), ("agent_b_model", "Agent B"), ("agent_a_type", "Agent A"),
+        ("agent_b_estimated_memory_gb", "Agent B RAM"), ("planned_conditions", "Planned"),
+        ("completed_conditions", "Completed"), ("task_success_rate", "Success"),
+        ("route_validity_rate", "Route valid"), ("mean_duration_gap_min", "Mean gap"),
+        ("mean_phase_processing_sec", "Phase sec"), ("total_asr_misinterpretations", "ASR misheard"),
+        ("mean_dialogue_state_agreement", "State agreement"),
+    ), limit=120)
     phase_summary_table = _html_table(phase_summary, (
         ("agent_b_model", "Agent B"), ("run_type", "Run type"), ("phase", "Phase"),
         ("condition_phase_rows", "Rows"), ("mean_processing_sec", "Mean sec"),
@@ -719,9 +791,10 @@ th{{position:sticky;top:0;background:#244b5a;color:#fff}}.finalized,.completed{{
 .interrupted{{background:#f8dddd}}.preflight_only,.not_started{{background:#edf0f3;color:#56616c}}code{{background:#edf1f4;padding:2px 4px}}
 </style></head><body><main><h1>Result evidence comparison</h1>
 <p>Derived representation only. Source logs, audio, configuration, and outcomes are not modified. Blank values mean unavailable evidence, not zero or failure.</p>
-<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
+<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
 <section><h2>Run lifecycle</h2>{run_table}</section><section><h2>Configuration groups</h2>{config_table}</section>
 <section><h2>Task and success</h2>{outcome_table}</section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
+<section><h2>Agent B model summary</h2>{model_summary_table}</section>
 <section><h2>Phase metrics</h2>{phase_table}</section><section><h2>Phase summary by model</h2>{phase_summary_table}</section>
 <section><h2>Conversation and dialogue state</h2>{dialogue_table}</section><section><h2>Dialogue summary</h2>{dialogue_summary_table}</section></main></body></html>"""
     Path(path).write_text(document, encoding="utf-8")
@@ -761,6 +834,7 @@ def write_evidence_comparison(inputs, output_directory):
         inventory_rows.append(_run_inventory_row(run_directory, planned, sessions, run_conditions))
     configuration_rows = _configuration_group_rows(condition_rows)
     task_summary_rows = _task_success_summary_rows(condition_rows)
+    model_summary_rows = _agent_b_model_summary_rows(condition_rows, phase_rows, dialogue_rows)
     phase_summary_rows = _phase_summary_rows(phase_rows)
     dialogue_summary_rows = _dialogue_summary_rows(dialogue_rows)
     paths = {
@@ -770,6 +844,7 @@ def write_evidence_comparison(inputs, output_directory):
         "configurations": output / "configuration_groups.csv",
         "outcomes": output / "task_outcome_comparison.csv",
         "task_summary": output / "task_success_by_configuration.csv",
+        "model_summary": output / "agent_b_model_summary.csv",
         "phases": output / "phase_metric_comparison.csv",
         "phase_summary": output / "phase_summary_by_model.csv",
         "dialogue": output / "dialogue_state_comparison.csv",
@@ -780,6 +855,7 @@ def write_evidence_comparison(inputs, output_directory):
     for key, rows in (
         ("run_inventory", inventory_rows), ("configurations", configuration_rows),
         ("outcomes", condition_rows), ("task_summary", task_summary_rows),
+        ("model_summary", model_summary_rows),
         ("phases", phase_rows), ("phase_summary", phase_summary_rows),
         ("dialogue", dialogue_rows), ("dialogue_summary", dialogue_summary_rows),
         ("turns", conversation_rows),
@@ -789,7 +865,7 @@ def write_evidence_comparison(inputs, output_directory):
     _write_analysis_guide(paths["guide"], generated_file_names)
     _write_evidence_overview(
         paths["overview"], inventory_rows, configuration_rows, condition_rows,
-        phase_rows, dialogue_rows, task_summary_rows, phase_summary_rows,
+        phase_rows, dialogue_rows, task_summary_rows, model_summary_rows, phase_summary_rows,
         dialogue_summary_rows,
     )
     after = _source_inventory(roots, output)

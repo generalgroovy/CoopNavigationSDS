@@ -18,10 +18,15 @@ Additional documented replacement or follow-up candidates:
 | --- | --- | --- |
 | Small | `HuggingFaceTB/SmolLM2-360M-Instruct` | sub-billion floor condition |
 | Small | `Qwen/Qwen2.5-0.5B-Instruct` | tiny multilingual Transformers condition |
+| Small | `HuggingFaceTB/SmolLM2-1.7B-Instruct` | small/medium boundary compact instruction model |
+| Medium | `Qwen/Qwen2.5-1.5B-Instruct` | non-Ollama Qwen medium-lite condition |
 | Medium | `gemma2:2b` | Gemma-family architecture contrast |
 | Medium | `qwen3:4b` | newer Qwen-family instruction contrast |
+| Medium | `microsoft/Phi-3-mini-4k-instruct` | reasoning-focused Phi-family Transformers condition |
 | Large | `mistral:7b` | non-Llama/Qwen large local baseline |
-| Large | `microsoft/UserLM-8b` | user-simulator-trained ablation candidate |
+| Large | `tiiuae/Falcon3-7B-Instruct` | Falcon-family assistant model replacing UserLM as Agent B proposal |
+| Large | `Qwen/Qwen2.5-7B-Instruct` | large multilingual non-Ollama condition |
+| Large | `meta-llama/Llama-3.1-8B-Instruct` | large Llama-family Transformers condition |
 
 Every Agent B treatment is run with two callers:
 
@@ -58,6 +63,10 @@ agent_b_llm/
 |   |-- small/
 |   |-- medium/
 |   `-- large/
+|-- transformers_speech_grid/
+|   |-- small/
+|   |-- medium/
+|   `-- large/
 `-- tinyllama_comparison/
     |-- primary/
     `-- model_comparison/
@@ -88,6 +97,16 @@ python scripts/run_agent_b_llm_batch.py \
   --batch jobs/agent_b_llm/batches/06-userlm-speech-grid-all-models.json \
   --results-dir results \
   --preview
+
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/07-transformers-agent-b-all.json \
+  --results-dir results \
+  --preview
+
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/08-transformers-agent-b-small-medium.json \
+  --results-dir results \
+  --preview
 ```
 
 The UserLM-only manifest contains 6 jobs and 156 conditions. The complete
@@ -110,6 +129,24 @@ sbatch slurm/userlm_large2_cpu_array.sbatch
 Each wrapper runs one UserLM speech-grid job as eight single-condition array
 tasks with no GPU request. This improves backfill opportunities and prevents
 one unavailable node class from blocking the full model comparison.
+
+For non-Ollama Agent B runs, prepare selected Hugging Face assets and submit
+the tiered Slurm arrays:
+
+```bash
+python scripts/setup_transformers_agent_b_models.py --tier small --download
+python scripts/setup_transformers_agent_b_models.py --tier medium --download
+scripts/submit_transformers_agent_b_arrays.sh --small-medium
+```
+
+Large Transformers jobs are intentionally separate because they request more
+memory:
+
+```bash
+python scripts/setup_transformers_agent_b_models.py --tier large --download
+JOB_FILE=jobs/agent_b_llm/transformers_speech_grid/large/04-falcon3-7b.job \
+sbatch slurm/transformers_agent_b_large_cpu_array.sbatch
+```
 
 ## Result Groups
 

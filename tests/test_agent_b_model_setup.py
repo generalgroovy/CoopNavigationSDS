@@ -12,6 +12,10 @@ from scripts.setup_agent_b_models import (
     readiness_rows,
     selected_model_names,
 )
+from scripts.setup_transformers_agent_b_models import (
+    TRANSFORMERS_AGENT_B_PROFILES,
+    selected_profiles as selected_transformers_profiles,
+)
 
 
 class AgentBModelSetupTests(unittest.TestCase):
@@ -100,6 +104,23 @@ class AgentBModelSetupTests(unittest.TestCase):
             self.assertGreaterEqual(len(rows), 3, tier)
             self.assertEqual(len({row.model for row in rows}), len(rows))
             self.assertTrue(all(row.unique_aspect and row.use_case for row in rows))
+        self.assertNotIn(
+            "microsoft/UserLM-8b",
+            {row.model for row in proposals["large"]},
+        )
+        self.assertIn(
+            "tiiuae/Falcon3-7B-Instruct",
+            {row.model for row in proposals["large"]},
+        )
+
+    def test_transformers_agent_b_setup_profiles_cover_four_per_size_without_ollama(self):
+        self.assertEqual(
+            {tier: len(profiles) for tier, profiles in TRANSFORMERS_AGENT_B_PROFILES.items()},
+            {"small": 4, "medium": 4, "large": 4},
+        )
+        selected = selected_transformers_profiles(("small", "large"), ())
+        self.assertEqual(len(selected), 8)
+        self.assertTrue(all("ollama" not in profile for profile in selected))
 
     def test_unavailable_ollama_returns_actionable_status_without_traceback(self):
         with patch(

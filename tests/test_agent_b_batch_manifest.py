@@ -14,6 +14,7 @@ from scripts.run_agent_b_llm_batch import (
 
 ROOT = Path(__file__).resolve().parents[1]
 BATCH_ROOT = ROOT / "jobs" / "agent_b_llm" / "batches"
+TRANSFORMERS_GRID_ROOT = ROOT / "jobs" / "agent_b_llm" / "transformers_speech_grid"
 USERLM_LARGE2_JOB = ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid" / "large" / "02-qwen2.5-7b.job"
 USERLM_SLURM_ARRAYS = {
     "userlm_small1_cpu_array.sbatch": ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid" / "small" / "01-llama3.2-1b.job",
@@ -47,6 +48,36 @@ def test_userlm_expanded_speech_manifest_has_six_matched_jobs():
     assert sum(row["conditions"] for row in rows) == 48
     assert {row["agent_b_size"] for row in rows} == {"small", "medium", "large"}
     assert {row["agent_a_model"] for row in rows} == {"microsoft/UserLM-8b"}
+
+
+def test_transformers_agent_b_manifest_has_four_models_per_size_and_eight_conditions_each():
+    manifest = load_batch_manifest(BATCH_ROOT / "07-transformers-agent-b-all.json")
+    rows = [job_overview(path) for path in manifest["jobs"]]
+
+    assert len(rows) == 12
+    assert sum(row["conditions"] for row in rows) == 96
+    assert {
+        size: sum(row["agent_b_size"] == size for row in rows)
+        for size in ("small", "medium", "large")
+    } == {"small": 4, "medium": 4, "large": 4}
+    assert {row["agent_a"] for row in rows} == {"tinyllama"}
+    assert all(row["conditions"] == 8 for row in rows)
+
+
+def test_transformers_slurm_arrays_are_single_condition_shards():
+    scripts = {
+        "small": ROOT / "slurm" / "transformers_agent_b_small_cpu_array.sbatch",
+        "medium": ROOT / "slurm" / "transformers_agent_b_medium_cpu_array.sbatch",
+        "large": ROOT / "slurm" / "transformers_agent_b_large_cpu_array.sbatch",
+    }
+    for tier, script_path in scripts.items():
+        script = script_path.read_text(encoding="utf-8")
+        assert "#SBATCH --array=0-7%1" in script
+        assert "--condition-count 1" in script
+        assert "--model-device cpu" in script
+        assert "JOB_FILE" in script
+        for job_path in (TRANSFORMERS_GRID_ROOT / tier).glob("*.job"):
+            assert job_condition_count(job_path) == 8
 
 
 @pytest.mark.parametrize(("script_name", "job_path"), sorted(USERLM_SLURM_ARRAYS.items()))

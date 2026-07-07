@@ -309,8 +309,9 @@ Model providers are Transformers, Ollama, llama.cpp server, and
 OpenAI-compatible chat completion. Registered profiles cover meaningful
 resource and family contrasts, including SmolLM2 360M/1.7B, Qwen2.5
 0.5B/1.5B/7B, TinyLlama 1.1B, Gemma 2 2B, Llama 3.2 1B/3B, Phi-3 Mini,
-Qwen3 4B, Mistral 7B, Llama 3.1 8B, UserLM 8B, and a hosted API profile.
-Availability depends on local assets or an explicitly configured service.
+Qwen3 4B, Mistral 7B, Falcon3 7B, Llama 3.1 8B, UserLM 8B, and a hosted API
+profile. Availability depends on local assets or an explicitly configured
+service.
 
 Model-specific behavior is registry-driven. Runtime metadata records provider,
 model identifier, profile, device, artifact location, and preflight status.
@@ -358,7 +359,28 @@ added merely because they are available.
 | Large | large1 | `llama3.1:8b` | Ollama | canonical large Llama-family baseline | high-quality local baseline |
 | Large | large2 | `qwen2.5:7b` | Ollama | large multilingual Qwen comparison | cross-family large-model contrast |
 | Large | large3 | `mistral:7b` | Ollama | Mistral-family instruction model | non-Llama/Qwen repair behavior |
-| Large | large4 | `microsoft/UserLM-8b` | Transformers | user-simulator-trained rather than assistant-chat model | Agent A or Agent B ablation |
+| Large | large4 | `tiiuae/Falcon3-7B-Instruct` | Transformers | Falcon-family assistant model with multilingual support | replaces UserLM as large Agent B proposal |
+
+The non-Ollama Transformers Agent B grid contains these twelve proposals. It is
+intended for clusters where Ollama cannot be installed or kept reachable. The
+grid uses TinyLlama as Agent A so the combined memory requirement remains more
+realistic than UserLM plus a second large model. UserLM remains the stronger
+caller model for smaller targeted follow-up runs.
+
+```bash
+python scripts/setup_transformers_agent_b_models.py --tier small --download
+python scripts/setup_transformers_agent_b_models.py --tier medium --download
+python scripts/setup_transformers_agent_b_models.py --tier large --download
+
+python scripts/run_agent_b_llm_batch.py \
+  --batch jobs/agent_b_llm/batches/07-transformers-agent-b-all.json \
+  --results-dir results \
+  --preview
+```
+
+`jobs/agent_b_llm/batches/08-transformers-agent-b-small-medium.json` is the
+recommended first cluster manifest because it covers eight non-Ollama Agent B
+models without the 7B/8B memory burden.
 
 ### TTS
 
@@ -716,6 +738,17 @@ RESULTS_ROOT=/path/to/CoopNavigationSDS/results \
 sbatch slurm/userlm_small1_cpu_array.sbatch
 ```
 
+The non-Ollama Transformers Agent B matrix uses tier-specific wrappers. Submit
+small and medium first to get a useful success/failure spectrum with lower
+scheduler friction; submit large only when high-memory CPU nodes are available:
+
+```bash
+scripts/submit_transformers_agent_b_arrays.sh --small-medium
+
+JOB_FILE=jobs/agent_b_llm/transformers_speech_grid/large/04-falcon3-7b.job \
+sbatch slurm/transformers_agent_b_large_cpu_array.sbatch
+```
+
 ## 8. Data and Metrics
 
 Raw evidence is captured during execution; all registered metrics are computed
@@ -932,9 +965,10 @@ python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
 
 `comparison_overview.html` links normalized evidence and aggregate views: run
 lifecycle, configuration groups, task outcomes, task success by configuration,
-phase metrics, phase summary by model, dialogue state, dialogue summary, and
-conversation turns. `analysis_guide.md` explains how to use each file. Every
-planned condition is represented as `completed`, `interrupted`, or
+Agent B model summary, phase metrics, phase summary by model, dialogue state,
+dialogue summary, and conversation turns. `analysis_guide.md` explains how to
+use each file. Every planned condition is represented as `completed`,
+`interrupted`, or
 `not_started`. Missing outcomes remain blank and are never converted to failure
 or zero. `analysis_manifest.json` hashes source evidence before and after
 generation and aborts if any source file changes. The command writes only

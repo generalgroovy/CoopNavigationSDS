@@ -307,11 +307,14 @@ def test_evidence_comparison_includes_partial_and_preflight_runs_without_mutatio
     assert source_before == source_after
     inventory = list(csv.DictReader(paths["run_inventory"].open(encoding="utf-8")))
     outcomes = list(csv.DictReader(paths["outcomes"].open(encoding="utf-8")))
+    model_summary = list(csv.DictReader(paths["model_summary"].open(encoding="utf-8")))
     assert {row["run_state"] for row in inventory} == {"partial", "preflight_only"}
     completed_row = next(row for row in outcomes if row["condition_id"] == "condition-complete")
     missing_rows = [row for row in outcomes if row["condition_state"] == "not_started"]
     assert completed_row["task_success"] == "True"
     assert missing_rows and all(row["task_success"] == "" for row in missing_rows)
+    assert model_summary
+    assert "agent_b_estimated_memory_gb" in model_summary[0]
     manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
     assert manifest["source_evidence_unchanged"] is True
     assert manifest["discovered_run_count"] == 2

@@ -115,9 +115,9 @@ AGENT_B_MODEL_PROPOSALS = {
             "tests whether non-Llama/Qwen architecture shifts repair quality",
         ),
         AgentBModelProposal(
-            "large", "large4", "microsoft/UserLM-8b", "transformers",
-            "user-simulator-trained model rather than assistant-chat model",
-            "candidate for Agent A or controlled Agent B ablations",
+            "large", "large4", "tiiuae/Falcon3-7B-Instruct", "transformers",
+            "large Falcon-family assistant model replacing UserLM as Agent B candidate",
+            "tests architecture diversity without using a user simulator as the assistant",
         ),
     ),
 }
