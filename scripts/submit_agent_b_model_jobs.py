@@ -209,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
 
     jobs = discover_jobs(args)
     print(f"Agent B model jobs: {len(jobs)}")
+    submitted = 0
+    failed: list[tuple[ModelJob, int, str]] = []
     for index, job in enumerate(jobs, start=1):
         cpus, memory, time_limit = resources_for(job, args)
         command = sbatch_command(job, args)
@@ -219,7 +221,36 @@ def main(argv: list[str] | None = None) -> int:
         )
         print("    " + " ".join(command))
         if not args.dry_run:
-            subprocess.run(command, cwd=ROOT, check=True)
+            result = subprocess.run(
+                command,
+                cwd=ROOT,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            output = "\n".join(
+                part.strip()
+                for part in (result.stdout, result.stderr)
+                if part and part.strip()
+            )
+            if result.returncode:
+                failed.append((job, result.returncode, output))
+                print(f"    SUBMIT FAILED rc={result.returncode}")
+                if output:
+                    print("    " + output.replace("\n", "\n    "))
+                continue
+            submitted += 1
+            if output:
+                print("    " + output.replace("\n", "\n    "))
+    if not args.dry_run:
+        print(f"Submission summary: submitted={submitted} failed={len(failed)}")
+        for job, return_code, output in failed:
+            print(
+                f"FAILED {job.family}/{job.tier} {job.model_name} "
+                f"rc={return_code}: {output or 'no Slurm message captured'}"
+            )
+        return 1 if failed else 0
     return 0
 
 
