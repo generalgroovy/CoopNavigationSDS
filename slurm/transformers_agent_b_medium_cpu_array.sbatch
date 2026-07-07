@@ -11,6 +11,12 @@
 
 set -euo pipefail
 
+# Force CPU-only runtime before Python imports torch/transformers.
+export CUDA_VISIBLE_DEVICES=""
+export NVIDIA_VISIBLE_DEVICES="void"
+export ACCELERATE_USE_CPU="true"
+export PYTORCH_NVML_BASED_CUDA_CHECK="0"
+
 PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}"
 PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv-linux/bin/python}"
 RESULTS_ROOT="${RESULTS_ROOT:-${PROJECT_ROOT}/results}"
@@ -27,4 +33,6 @@ mkdir -p slurm/logs
   --condition-count 1 \
   --model-device cpu \
   --agent-a-model-device cpu \
+  --tts-device cpu \
+  --asr-device cpu \
   --progress

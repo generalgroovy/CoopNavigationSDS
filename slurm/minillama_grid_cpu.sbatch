@@ -8,6 +8,13 @@
 #SBATCH --error=slurm/logs/slurm-%x-%A_%a.err
 
 set -euo pipefail
+
+# Force CPU-only runtime before Python imports torch/transformers.
+export CUDA_VISIBLE_DEVICES=""
+export NVIDIA_VISIBLE_DEVICES="void"
+export ACCELERATE_USE_CPU="true"
+export PYTORCH_NVML_BASED_CUDA_CHECK="0"
+
 PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 RESULTS_ROOT="${RESULTS_ROOT:-${PROJECT_ROOT}/results/slurm/cpu}"

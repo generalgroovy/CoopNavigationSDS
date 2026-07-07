@@ -11,6 +11,14 @@
 
 set -euo pipefail
 
+# CPU arrays must not probe cluster GPUs. Some GPU nodes expose old NVIDIA
+# drivers, and PyTorch can fail during import/preflight even when models are
+# explicitly configured for CPU inference.
+export CUDA_VISIBLE_DEVICES=""
+export NVIDIA_VISIBLE_DEVICES="void"
+export ACCELERATE_USE_CPU="true"
+export PYTORCH_NVML_BASED_CUDA_CHECK="0"
+
 PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}"
 PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv-linux/bin/python}"
 RESULTS_ROOT="${RESULTS_ROOT:-${PROJECT_ROOT}/results}"
@@ -45,5 +53,7 @@ fi
   --condition-count 1 \
   --model-device cpu \
   --agent-a-model-device cpu \
+  --tts-device cpu \
+  --asr-device cpu \
   --progress \
   "${extra_args[@]}"
