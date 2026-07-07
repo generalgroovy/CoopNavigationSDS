@@ -148,6 +148,23 @@ JOB_FILE=jobs/agent_b_llm/transformers_speech_grid/large/04-falcon3-7b.job \
 sbatch slurm/transformers_agent_b_large_cpu_array.sbatch
 ```
 
+To submit every configured Agent B model as its own independent Slurm array,
+use the model submitter. Each `.job` file becomes one scheduler job, and that
+job's array tasks cover the condition rows for only that model. This prevents a
+failure or queue delay for one model from blocking the rest of the experiment.
+
+```bash
+python scripts/submit_agent_b_model_jobs.py --dry-run
+python scripts/submit_agent_b_model_jobs.py --family tinyllama --tier small medium
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium
+python scripts/submit_agent_b_model_jobs.py --family all --tier small medium large
+```
+
+The submitter computes the correct Slurm array range from each resolved job
+definition and overrides the wrapper's default `#SBATCH --array`. Ollama-backed
+jobs start a per-task local Ollama server on a task-specific port; Transformers
+jobs run without Ollama.
+
 ## Result Groups
 
 ```text
