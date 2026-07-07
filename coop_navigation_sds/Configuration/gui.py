@@ -1220,9 +1220,6 @@ class StartupConfigDialog:
             self._entry(frame, 1, "Inference device", "tts_device")
         elif engine == "espeak_ng":
             self._entry(frame, 0, "Optional eSpeak NG executable", "tts_executable")
-        elif engine == "coqui":
-            self._entry(frame, 0, "Coqui model name or path", "tts_model")
-            self._entry(frame, 1, "Inference device", "tts_device")
         elif engine == "sapi":
             ttk.Label(
                 frame,

@@ -317,7 +317,7 @@ def test_tinyllama_agent_a_selects_tinyllama_model_profile():
 
 def test_interactive_catalog_hides_file_controls_and_unavailable_components():
     def status(_kind, key, _config=None):
-        return ComponentStatus(key, key not in {"coqui", "qwen3_asr"}, "test status")
+        return ComponentStatus(key, key != "qwen3_asr", "test status")
 
     with patch(
         "coop_navigation_sds.Configuration.component_catalog.component_status",
@@ -327,7 +327,7 @@ def test_interactive_catalog_hides_file_controls_and_unavailable_components():
 
     assert "file" not in choices["tts_engines"]
     assert "file" not in choices["asr_engines"]
-    assert "coqui" not in choices["tts_engines"]
+    assert "qwen3_asr" not in choices["asr_engines"]
     assert "qwen3_asr" not in choices["asr_engines"]
 
 

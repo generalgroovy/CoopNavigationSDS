@@ -86,8 +86,6 @@ def _speech_assets_ready(key, model):
         ) and bool({".pt", ".safetensors"}.intersection(suffixes))
     if key == "piper":
         return any(path.suffix.casefold() == ".onnx" for path in files)
-    if key == "coqui":
-        return "config.json" in names and bool({".pth", ".pt", ".onnx"} & suffixes)
     if key == "faster_whisper":
         return "config.json" in names and bool({"model.bin", "model.safetensors"} & names)
     if key == "vosk":
@@ -366,7 +364,7 @@ def component_status(kind, key, config=None):
         ready = system == "Windows" and shutil.which("powershell") is not None
         return ComponentStatus(key, ready, "Windows System.Speech" if ready else "Windows System.Speech is unavailable")
     modules = {
-        "chattts": "ChatTTS", "piper": "piper", "coqui": "TTS.api",
+        "chattts": "ChatTTS", "piper": "piper",
         "faster_whisper": "faster_whisper", "vosk": "vosk",
         "qwen3_asr": "qwen_asr", "sherpa_onnx": "sherpa_onnx",
     }
@@ -420,7 +418,7 @@ def component_status(kind, key, config=None):
             provider_ready = False
     ready = provider_ready
     reason = "Python provider import succeeded" if ready else f"Install or configure the {key} provider"
-    if key in {"chattts", "piper", "coqui", "faster_whisper", "vosk", "qwen3_asr", "sherpa_onnx"}:
+    if key in {"chattts", "piper", "faster_whisper", "vosk", "qwen3_asr", "sherpa_onnx"}:
         model_key = "tts_model" if kind == "tts" else "asr_model"
         model_value = str(config.get(model_key, "")).strip()
         model = Path(model_value) if model_value else None

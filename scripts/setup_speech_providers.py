@@ -2,7 +2,6 @@
 from argparse import ArgumentParser
 import importlib
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -32,7 +31,6 @@ MODULES = {
     "sherpa_onnx": "sherpa_onnx",
     "vosk": "vosk",
 }
-COQUI_SUPPORTED_PYTHON_VERSIONS = {(3, 10), (3, 11)}
 
 
 def prepare_project_layout(provider_dir):
@@ -85,102 +83,6 @@ def register_provider_python(provider_dir, engine, python):
     manifest_path.write_text(json.dumps(document, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def _python_details_or_none(python):
-    try:
-        return interpreter_details(python)
-    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError, TypeError):
-        return None
-
-
-def _candidate_python_paths(explicit=""):
-    candidates = []
-    for value in (
-        explicit,
-        os.environ.get("COOP_NAVIGATION_SDS_COQUI_PYTHON", ""),
-        os.environ.get("COQUI_PYTHON", ""),
-    ):
-        if value:
-            candidates.append(Path(value))
-    candidates.extend((
-        ROOT / ".runtime" / "python311" / ("python.exe" if sys.platform == "win32" else "bin/python"),
-        ROOT / ".runtime" / "python310" / ("python.exe" if sys.platform == "win32" else "bin/python"),
-    ))
-    if sys.platform == "win32":
-        local = os.environ.get("LOCALAPPDATA", "")
-        candidates.extend((
-            Path(local) / "Programs" / "Python" / "Python311" / "python.exe",
-            Path(local) / "Programs" / "Python" / "Python310" / "python.exe",
-        ))
-    else:
-        for name in ("python3.11", "python3.10"):
-            resolved = shutil.which(name)
-            if resolved:
-                candidates.append(Path(resolved))
-    output = []
-    seen = set()
-    for candidate in candidates:
-        if not candidate:
-            continue
-        key = str(candidate)
-        if key not in seen:
-            seen.add(key)
-            output.append(candidate)
-    return output
-
-
-def resolve_coqui_python(explicit=""):
-    """Return a Python 3.10/3.11 interpreter suitable for Coqui, if available."""
-    rejected = []
-    for candidate in _candidate_python_paths(explicit):
-        if not candidate.is_file():
-            rejected.append({"candidate": str(candidate), "reason": "not found"})
-            continue
-        details = _python_details_or_none(candidate)
-        if not details:
-            rejected.append({"candidate": str(candidate), "reason": "could not run interpreter probe"})
-            continue
-        version = tuple(details["version"][:2])
-        if version in COQUI_SUPPORTED_PYTHON_VERSIONS:
-            return Path(details["executable"]), rejected
-        rejected.append({
-            "candidate": details["executable"],
-            "reason": f"version {version[0]}.{version[1]} is not supported by Coqui TTS",
-        })
-    return None, rejected
-
-
-def coqui_python_error(explicit="", rejected=()):
-    examples = (
-        "python3.11 -m venv .runtime/python311",
-        "python scripts/setup_speech_providers.py --coqui-only --coqui-python .runtime/python311/bin/python",
-    )
-    detail = "; ".join(f"{row['candidate']} ({row['reason']})" for row in rejected) or "no candidates found"
-    return (
-        "Coqui requires an isolated Python 3.10 or 3.11 interpreter. "
-        f"Checked: {detail}. "
-        f"Example setup: `{examples[0]}` then `{examples[1]}`."
-    )
-
-
-def prepare_coqui_provider(provider_dir, coqui_python="", required=False):
-    resolved_python, rejected = resolve_coqui_python(coqui_python)
-    if resolved_python is None:
-        message = coqui_python_error(coqui_python, rejected)
-        if required:
-            raise RuntimeError(message)
-        print(f"Coqui provider unavailable: {message}")
-        return False
-    environment = Path(provider_dir) / "coqui"
-    python = environment / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
-    if not python.is_file():
-        run((resolved_python, "-m", "venv", environment))
-    run((python, "-m", "pip", "install", "--upgrade", "pip", "wheel"))
-    run((python, "-m", "pip", "install", "torch", "torchaudio", "coqui-tts==0.27.5"))
-    register_provider_python(provider_dir, "coqui", python)
-    print(f"Installed Coqui provider in {environment} using {resolved_python}.")
-    return True
-
-
 def interpreter_details(python):
     probe = subprocess.run(
         [
@@ -218,22 +120,6 @@ def verify_current_runtime(provider_dir=".speech-providers"):
     status["whisper_cpp"] = ready
     if not ready:
         errors["whisper_cpp"] = message
-    manifest_path = Path(provider_dir) / "providers.json"
-    try:
-        coqui_entry = json.loads(manifest_path.read_text(encoding="utf-8"))["providers"]["coqui"]
-        coqui_python = coqui_entry["python"] if isinstance(coqui_entry, dict) else coqui_entry
-        coqui_probe = subprocess.run(
-            [str(coqui_python), "-c", "from TTS.api import TTS"],
-            text=True,
-            capture_output=True,
-            timeout=60,
-        )
-        status["coqui"] = coqui_probe.returncode == 0
-        if not status["coqui"]:
-            errors["coqui"] = coqui_probe.stderr.strip().splitlines()[-1]
-    except Exception as exc:
-        status["coqui"] = False
-        errors["coqui"] = f"{type(exc).__name__}: {exc}"
     status["espeak_ng"] = bool(resolve_espeak_executable())
     if not status["espeak_ng"]:
         errors["espeak_ng"] = "eSpeak NG executable not found"
@@ -260,23 +146,8 @@ def main():
     parser.add_argument("--whisper-cpp-executable", default="")
     parser.add_argument("--whisper-cpp-model", default="")
     parser.add_argument("--whisper-cpp-vad-model", default="")
-    parser.add_argument(
-        "--coqui-python",
-        default="",
-        help="Python 3.10/3.11 interpreter used to create the isolated Coqui provider. "
-        "Defaults to COOP_NAVIGATION_SDS_COQUI_PYTHON, .runtime/python311, python3.11, then python3.10.",
-    )
-    parser.add_argument("--coqui-only", action="store_true")
-    parser.add_argument(
-        "--skip-coqui",
-        action="store_true",
-        help="Install project-runtime providers without preparing the optional isolated Coqui provider.",
-    )
     args = parser.parse_args()
     prepare_project_layout(args.provider_dir)
-
-    if args.coqui_only:
-        raise SystemExit(0 if prepare_coqui_provider(args.provider_dir, args.coqui_python, required=True) else 2)
 
     if args.register_whisper_cpp:
         ready, message, _resolved = whisper_cpp_ready(
@@ -315,8 +186,6 @@ def main():
     run((args.python, "-m", "pip", "install", "--upgrade", "pip", "wheel"))
     run((args.python, "-m", "pip", "install", *profile.packages))
     run((args.python, "-m", "pip", "check"))
-    if not args.skip_coqui:
-        prepare_coqui_provider(args.provider_dir, args.coqui_python, required=False)
     print(
         "Installed the supported speech stack in "
         f"{details['executable']} (Python {'.'.join(map(str, details['version']))})."

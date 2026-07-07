@@ -672,7 +672,7 @@ def normalize_run_config(config):
         known_other_defaults = {
             str(other.get(model_key) or "")
             for other_engine in (
-                ("sapi", "chattts", "piper", "espeak_ng", "coqui", "file")
+                ("sapi", "chattts", "piper", "espeak_ng", "file")
                 if stage == "tts"
                 else ("sapi", "faster_whisper", "vosk", "whisper_cpp", "qwen3_asr", "sherpa_onnx", "file")
             )
@@ -960,13 +960,6 @@ def validate_run_config_for_start(config):
         executable = resolve_espeak_executable(normalized["tts_executable"])
         if not executable:
             raise ValueError("eSpeak NG requires `espeak-ng` on PATH or an explicit executable path.")
-    elif tts_engine == "coqui":
-        _require_module_or_provider(normalized, "tts", tts_engine, "TTS.api", "Coqui TTS")
-        if not normalized["tts_model"]:
-            raise ValueError("Coqui requires a local path or model identifier.")
-        if not Path(normalized["tts_model"]).exists():
-            raise ValueError("Coqui model assets are not available locally.")
-
     asr_engine = normalized["asr_engine"]
     if asr_engine == "sapi" and platform.system() != "Windows":
         raise ValueError("Windows SAPI recognition is available only on Windows.")

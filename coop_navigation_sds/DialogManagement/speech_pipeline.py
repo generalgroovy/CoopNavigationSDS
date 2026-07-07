@@ -157,10 +157,6 @@ TTS_ENGINE_SPECS = {
         "espeak_ng", "tts", "eSpeak NG", "Small cross-platform command-line synthesizer with explicit voice, rate, pitch, and volume controls.",
         optional_dependency=True,
     ),
-    "coqui": SpeechEngineSpec(
-        "coqui", "tts", "Coqui TTS", "Neural synthesis through the Coqui TTS Python API or an isolated provider environment.",
-        optional_dependency=True,
-    ),
     "file": SpeechEngineSpec(
         "file", "tts", "Deterministic WAV", "Dependency-free reproducible WAV carrier for tests and experiments.",
     ),
@@ -1048,69 +1044,6 @@ class EspeakNgTextToSpeech(OptionalTextToSpeechBase):
 
     def install_hint(self):
         return "Install `espeak-ng` with the operating-system package manager or configure `tts_executable`."
-
-
-class CoquiTextToSpeech(OptionalTextToSpeechBase):
-    """Coqui TTS adapter with lazy model loading."""
-
-    engine_key = "coqui"
-    name = "coqui-tts"
-
-    def __init__(self, config):
-        super().__init__(config)
-        self._tts = None
-
-    def _model(self):
-        if self._tts is not None:
-            return self._tts
-        try:
-            from TTS.api import TTS
-        except ModuleNotFoundError as exc:
-            raise SpeechPipelineError(
-                "Coqui TTS is selected but the `TTS` package is unavailable.",
-                {"troubleshooting": self.install_hint()},
-            ) from exc
-        model = self.config.tts_model or "tts_models/en/ljspeech/tacotron2-DDC"
-        model_root = Path(model)
-        if not model_root.exists():
-            raise SpeechPipelineError("Coqui model assets are not available locally.")
-        os.environ.setdefault(
-            "TTS_HOME",
-            str(Path(self.config.provider_environment_dir) / "models" / "coqui"),
-        )
-        use_gpu = str(self.config.tts_device).lower().startswith(("cuda", "gpu"))
-        config_path = next(model_root.rglob("config.json"), None)
-        checkpoint_path = next(
-            (
-                path
-                for pattern in ("model_file.pth", "best_model.pth", "*.pth")
-                for path in model_root.rglob(pattern)
-            ),
-            None,
-        )
-        if config_path is None or checkpoint_path is None:
-            raise SpeechPipelineError(
-                "Prepared Coqui assets require config.json and a model checkpoint."
-            )
-        self._tts = TTS(
-            model_path=str(checkpoint_path),
-            config_path=str(config_path),
-            progress_bar=False,
-            gpu=use_gpu,
-        )
-        return self._tts
-
-    def _synthesize_wave(self, wav_path, text, prosody):
-        model = self._model()
-        kwargs = {"text": text, "file_path": str(wav_path)}
-        speakers = getattr(model, "speakers", None) or []
-        if speakers:
-            kwargs["speaker"] = prosody["voice"] if prosody["voice"] in speakers else speakers[0]
-        model.tts_to_file(**kwargs)
-        return {"model": self.config.tts_model or "tts_models/en/ljspeech/tacotron2-DDC", "speaker": kwargs.get("speaker")}
-
-    def install_hint(self):
-        return "Install Coqui `TTS` in a compatible isolated provider environment and configure `tts_model`."
 
 
 class KokoroTextToSpeech(OptionalTextToSpeechBase):
@@ -2481,8 +2414,6 @@ class SpeechTransport:
             return PiperTextToSpeech(self.config)
         if engine in {"espeak_ng", "espeak-ng", "espeak"}:
             return EspeakNgTextToSpeech(self.config)
-        if engine in {"coqui", "coqui_tts"}:
-            return CoquiTextToSpeech(self.config)
         if engine == "kokoro":
             return KokoroTextToSpeech(self.config)
         if engine in {"f5_tts", "f5-tts", "f5"}:

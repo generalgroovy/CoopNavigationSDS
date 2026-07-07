@@ -8,7 +8,6 @@ from unittest.mock import patch
 from coop_navigation_sds.Configuration.speech import speech_pattern_keys
 from coop_navigation_sds.DialogManagement.speech_pipeline import (
     ChatTTSTextToSpeech,
-    CoquiTextToSpeech,
     EspeakNgTextToSpeech,
     F5TextToSpeech,
     FasterWhisperSpeechToText,
@@ -109,7 +108,6 @@ class SpeechPipelineTests(unittest.TestCase):
                 "chattts",
                 "piper",
                 "espeak_ng",
-                "coqui",
                 "file",
             ),
         )
@@ -140,7 +138,6 @@ class SpeechPipelineTests(unittest.TestCase):
             ("chattts", "file", ChatTTSTextToSpeech),
             ("piper", "file", PiperTextToSpeech),
             ("espeak_ng", "file", EspeakNgTextToSpeech),
-            ("coqui", "file", CoquiTextToSpeech),
             ("file", "faster_whisper", FasterWhisperSpeechToText),
             ("file", "vosk", VoskSpeechToText),
             ("file", "whisper_cpp", WhisperCppSpeechToText),
@@ -179,36 +176,6 @@ class SpeechPipelineTests(unittest.TestCase):
         self.assertIn("-w", command)
         self.assertIn("145", command)
         self.assertEqual(metadata["voice"], "en-us")
-
-    def test_coqui_loads_lazily_and_writes_through_common_api(self):
-        calls = []
-
-        class FakeCoqui:
-            speakers = ["speaker-one"]
-
-            def __init__(self, **kwargs):
-                calls.append(("init", kwargs))
-
-            def tts_to_file(self, **kwargs):
-                calls.append(("write", kwargs))
-
-        with patch.dict(sys.modules, {
-            "TTS": SimpleNamespace(),
-            "TTS.api": SimpleNamespace(TTS=FakeCoqui),
-        }), tempfile.TemporaryDirectory() as tmpdir:
-            (Path(tmpdir) / "config.json").touch()
-            (Path(tmpdir) / "model_file.pth").touch()
-            engine = CoquiTextToSpeech(SpeechPipelineConfig(tts_model=tmpdir, tts_device="cpu"))
-            metadata = engine._synthesize_wave(
-                Path("out.wav"),
-                "Take the tram.",
-                {"voice": "", "language": "en-US"},
-            )
-
-        self.assertEqual(calls[0][1]["model_path"], str(Path(tmpdir) / "model_file.pth"))
-        self.assertEqual(calls[0][1]["config_path"], str(Path(tmpdir) / "config.json"))
-        self.assertEqual(calls[1][1]["speaker"], "speaker-one")
-        self.assertEqual(metadata["model"], tmpdir)
 
     def test_sherpa_onnx_detects_transducer_model_layout(self):
         recognizer = object()

@@ -23,13 +23,6 @@
       "destination": ".speech-providers/models/piper",
       "required": ["en_US-lessac-medium.onnx", "en_US-lessac-medium.onnx.json"]
     },
-    "coqui": {
-      "component": "text_to_speech",
-      "kind": "archive",
-      "source": "https://github.com/coqui-ai/TTS/releases/download/v0.6.1_models/tts_models--en--ljspeech--tacotron2-DDC.zip",
-      "destination": ".speech-providers/models/coqui",
-      "required": ["config.json", "model_file.pth"]
-    },
     "faster_whisper": {
       "component": "automatic_speech_recognition",
       "kind": "faster_whisper",

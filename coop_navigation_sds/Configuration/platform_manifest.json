@@ -7,11 +7,11 @@
   },
   "preparation_downloads": "scripts/prepare_test_environment.py",
   "Windows": {
-    "text_to_speech": ["file", "sapi", "chattts", "piper", "coqui", "espeak_ng"],
+    "text_to_speech": ["file", "sapi", "chattts", "piper", "espeak_ng"],
     "automatic_speech_recognition": ["file", "sapi", "faster_whisper", "vosk", "whisper_cpp", "qwen3_asr", "sherpa_onnx"]
   },
   "Linux": {
-    "text_to_speech": ["file", "chattts", "piper", "coqui", "espeak_ng"],
+    "text_to_speech": ["file", "chattts", "piper", "espeak_ng"],
     "automatic_speech_recognition": ["file", "faster_whisper", "vosk", "whisper_cpp", "qwen3_asr", "sherpa_onnx"]
   },
   "language_models": {
@@ -24,7 +24,6 @@
     "chattts": ".speech-providers/models/chattts",
     "faster_whisper": ".speech-providers/models/faster-whisper",
     "piper": ".speech-providers/models/piper",
-    "coqui": ".speech-providers/models/coqui",
     "vosk": ".speech-providers/models/vosk",
     "whisper_cpp": ".speech-providers/models/whisper.cpp",
     "qwen3_asr": ".speech-providers/models/qwen3-asr",

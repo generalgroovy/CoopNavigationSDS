@@ -136,10 +136,6 @@ def tts_live_readiness(engine, config):
     if engine == "espeak_ng":
         executable = config.tts_executable or shutil.which("espeak-ng") or shutil.which("espeak")
         return bool(executable), f"eSpeak NG executable: {executable or 'not found'}"
-    if engine == "coqui":
-        package, package_error = _provider_import_ready(engine, config.tts_python_executable, config.provider_environment_dir, "TTS.api")
-        model = _configured_path(config.tts_model)
-        return package and bool(model), f"Coqui TTS package and local assets required: {model or 'not configured'}; {package_error or 'provider import ready'}"
     if engine == "kokoro":
         package = bool(isolated) or _module_available("kokoro")
         ready = False

@@ -21,7 +21,7 @@ class EnvironmentPreparationTests(unittest.TestCase):
         self.assertEqual(
             set(models),
             {
-                "tinyllama", "chattts", "piper", "coqui",
+                "tinyllama", "chattts", "piper",
                 "faster_whisper", "vosk", "whisper_cpp",
                 "qwen3_asr", "sherpa_onnx",
             },

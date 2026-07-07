@@ -389,15 +389,14 @@ models without the 7B/8B memory burden.
 | Piper | Fast, local neural baseline |
 | eSpeak NG | Lightweight parametric cross-platform baseline |
 | ChatTTS | Conversational neural synthesis and speaker sampling |
-| Coqui | Neural framework contrast |
 | Windows SAPI | Native Windows reference condition |
 
 Piper is the default cross-platform neural TTS baseline because it is local,
 fast, and reproducible with a pinned voice file. eSpeak NG supplies a low-cost
-parametric contrast. ChatTTS and Coqui provide neural-family contrasts but have
-larger dependency and memory footprints. SAPI is retained for Windows-specific
-reference runs and must not be pooled with cross-platform conditions without
-explicitly modeling operating system and voice differences.
+parametric contrast. ChatTTS provides a conversational neural-family contrast
+with a larger dependency and memory footprint. SAPI is retained for
+Windows-specific reference runs and must not be pooled with cross-platform
+conditions without explicitly modeling operating system and voice differences.
 
 ### ASR
 
@@ -608,28 +607,8 @@ python scripts/prepare_test_environment.py --check
 ```
 
 The project speech runtime supports Python 3.11 through 3.14, including Python
-3.13 supplied by Debian 13. Coqui remains isolated in its own Python 3.10 or
-3.11 provider environment because its dependency constraints differ from the
-main runtime. Provider setup validates capabilities and installed packages; it
-does not require one exact main-runtime minor version.
-
-Coqui setup is analogous to the other speech providers once a compatible
-interpreter exists. The setup script searches, in order, an explicit
-`--coqui-python`, `COOP_NAVIGATION_SDS_COQUI_PYTHON`, `.runtime/python311`,
-`.runtime/python310`, `python3.11`, and `python3.10`; it then creates and
-registers `.speech-providers/coqui` in `providers.json`.
-
-```bash
-python3.11 -m venv .runtime/python311
-python scripts/setup_speech_providers.py \
-  --coqui-only \
-  --coqui-python .runtime/python311/bin/python
-python scripts/setup_speech_providers.py --status
-```
-
-If Coqui is intentionally not part of a run, use `--skip-coqui` during provider
-installation. If Coqui is selected as TTS, `--coqui-only` should fail loudly
-with the missing interpreter or package reason instead of silently skipping.
+3.13 supplied by Debian 13. Provider setup validates capabilities and installed
+packages; it does not require one exact main-runtime minor version.
 
 Optional providers use isolated environments and local model directories.
 Preparation may download requested assets; experiment runtime does not replace

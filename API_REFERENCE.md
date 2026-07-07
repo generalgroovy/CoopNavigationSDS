@@ -806,15 +806,6 @@ Cross-platform eSpeak NG command-line synthesis adapter.
 - `EspeakNgTextToSpeech._synthesize_wave(self, wav_path, text, prosody)`: Internal class operation.
 - `EspeakNgTextToSpeech.install_hint(self)`: Internal class operation.
 
-### Class `CoquiTextToSpeech`
-
-Coqui TTS adapter with lazy model loading.
-
-- `CoquiTextToSpeech.__init__(self, config)`: Internal class operation.
-- `CoquiTextToSpeech._model(self)`: Internal class operation.
-- `CoquiTextToSpeech._synthesize_wave(self, wav_path, text, prosody)`: Internal class operation.
-- `CoquiTextToSpeech.install_hint(self)`: Internal class operation.
-
 ### Class `KokoroTextToSpeech`
 
 Kokoro adapter using its reusable Python pipeline.

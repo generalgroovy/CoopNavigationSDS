@@ -97,19 +97,6 @@ def _prepare_asset(key, spec):
     elif kind == "faster_whisper":
         from faster_whisper import WhisperModel
         WhisperModel(spec["source"], device="cpu", compute_type="int8", download_root=str(destination))
-    elif kind == "coqui_model":
-        python = _provider_python("coqui") or Path(sys.executable)
-        environment = dict(
-            **__import__("os").environ,
-            TTS_HOME=str(destination),
-            COQUI_TOS_AGREED="1",
-        )
-        subprocess.run(
-            [str(python), "-c", f"from TTS.api import TTS; TTS(model_name={spec['source']!r}, progress_bar=False, gpu=False)"],
-            cwd=ROOT,
-            env=environment,
-            check=True,
-        )
     elif kind == "archive":
         _download_archive(spec)
     elif kind == "github_release_archive":

@@ -37,7 +37,6 @@ TTS_RUNTIME_PROFILES = {
     "chattts": {"tts_model": ".speech-providers/models/chattts", "tts_executable": "", "tts_python_executable": "", "tts_timeout_sec": 600.0},
     "piper": {"tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx", "tts_executable": "", "tts_python_executable": ""},
     "espeak_ng": {"tts_model": "", "tts_executable": "", "tts_python_executable": ""},
-    "coqui": {"tts_model": ".speech-providers/models/coqui", "tts_executable": "", "tts_python_executable": "", "tts_timeout_sec": 180.0},
     "file": {"tts_model": "", "tts_executable": "", "tts_python_executable": ""},
 }
 
@@ -51,7 +50,7 @@ ASR_RUNTIME_PROFILES = {
     "file": {"asr_model": "", "asr_executable": "", "asr_python_executable": "", "asr_vad_model": ""},
 }
 
-INTERACTIVE_TTS_ENGINES = ("chattts", "piper", "coqui", "espeak_ng")
+INTERACTIVE_TTS_ENGINES = ("chattts", "piper", "espeak_ng")
 INTERACTIVE_ASR_ENGINES = ("faster_whisper", "vosk", "whisper_cpp", "sherpa_onnx")
 
 
