@@ -1,0 +1,521 @@
+{
+  "audio_condition_count": 4,
+  "condition_start": 4,
+  "coverage_strategy": "full_factorial",
+  "covered_pair_count": 157,
+  "expected_pair_count": 229,
+  "factor_count": 11,
+  "full_condition_count": 8,
+  "levels": {
+    "agent_a_audio_persona": [
+      "barely_understandable_caller",
+      "degraded_caller",
+      "high_clarity_caller",
+      "neutral_caller"
+    ],
+    "agent_b_audio_persona": [
+      "barely_understandable_operator",
+      "clear_operator",
+      "degraded_operator",
+      "high_clarity_operator"
+    ],
+    "agent_b_model": [
+      "Qwen/Qwen3-4B-Instruct-2507"
+    ],
+    "automatic_speech_recognition": [
+      "vosk"
+    ],
+    "model_parameters": [
+      "greedy"
+    ],
+    "objective": [
+      "shortest_valid_route_with_constraints"
+    ],
+    "persona": [
+      "focused_commuter"
+    ],
+    "speech_pattern": [
+      "clean",
+      "hesitant",
+      "mostly_clean",
+      "severe_channel"
+    ],
+    "speech_performance_profile": [
+      "ceiling",
+      "challenging",
+      "floor",
+      "nominal"
+    ],
+    "test_case": [
+      "morning_peak_cross_city"
+    ],
+    "text_to_speech": [
+      "piper"
+    ]
+  },
+  "missing_pairs": [
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "clear_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "degraded_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "high_clarity_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "barely_understandable_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "clear_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "high_clarity_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "barely_understandable_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "clear_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "degraded_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "barely_understandable_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "degraded_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "high_clarity_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "hesitant",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "hesitant",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "hesitant",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "mostly_clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "mostly_clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "mostly_clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "severe_channel",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "severe_channel",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "severe_channel",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    }
+  ],
+  "pair_coverage_ratio": 0.68559,
+  "selected_condition_count": 1,
+  "speech_performance_coverage": {
+    "applicable": true,
+    "complete": true,
+    "complete_group_count": 1,
+    "group_count": 1,
+    "groups": [
+      {
+        "agent_b_model": "Qwen/Qwen3-4B-Instruct-2507",
+        "asr_engine": "vosk",
+        "complete": true,
+        "missing_bands": [],
+        "observed_bands": [
+          "ceiling",
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      }
+    ],
+    "required_bands": [
+      "ceiling",
+      "nominal",
+      "challenging",
+      "floor"
+    ]
+  }
+}
