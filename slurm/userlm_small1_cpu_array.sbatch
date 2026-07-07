@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=u8b-small1-cpu
-#SBATCH --array=0-7%1
+#SBATCH --array=0-83%1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4

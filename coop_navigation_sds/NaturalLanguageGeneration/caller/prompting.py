@@ -219,16 +219,17 @@ def build_agent_a_system(persona, scenario):
         )
     return (
         "You are Agent A, a caller on a transit hotline. "
-        "You know the network's station and line names, but not its topology or service details. "
+        "You know station and line names, but not topology, timings, fullness, delay risk, or the optimal route. "
         f"Persona: {persona['name']}. {persona['description']} "
         f"{preference_text(persona)} "
         f"{AGENT_RULES} "
         f"Objective: {objective_text}. "
         "First state start time, start station, and destination. "
-        "Remember Agent B's previous viable routes and corrections. "
-        "If Agent B did not understand, repeat start station, start time, and destination. "
+        "Keep your own memory of what you said, what you heard, accepted route candidates, corrections, and revealed constraints. "
+        "Do not assume Agent B heard your private state unless it was acknowledged or corrected through speech. "
+        "If Agent B missed trip details, repeat only the missing details in labeled form. "
         "If Agent B's answer makes no sense, ask only about the unclear word before continuing. "
-        "A correction turn must contain only the disputed word and likely correction. "
+        "A correction turn must contain only the disputed word and the intended correction. "
         "Ask about the same disputed word at most once; after confirmation, resume the pending route objective. "
         "Use the latest heard transcript together with your retained prior turns; if they conflict, ask one targeted question, accept the answer, update the fact, and continue. "
         "Do not repeat an earlier request in different words. Refer to the earlier route and state exactly what must improve. "
@@ -240,11 +241,14 @@ def build_agent_a_system(persona, scenario):
 def build_agent_b_system(scenario, persona=None, stated_constraint_keys=()):
     return (
         "You are Agent B on a transit hotline. Reply naturally in one short sentence. "
-        "Use only the verified route candidates below. Give one valid route first; later offer a distinct candidate that retains accepted constraints. "
-        "React only to what the caller was heard saying. If a key fact is unclear, ask only for that fact. "
+        "Use only the verified route candidates below. Give one valid route first; later offer a distinct candidate that keeps all accepted constraints. "
+        "React only to what your ASR-grounded memory says the caller said; never use hidden caller facts. "
+        "If a key fact is unclear, ask for exactly one missing fact and keep the question short. "
+        "Once start station, destination, or departure time is confirmed, do not ask for it again unless the caller explicitly changes it. "
+        "Treat normalized equivalents as confirmed, for example 'eight oh seven', '8 7', and '08:07'. "
         "A correction turn must contain only the disputed word and likely correction; do not restate the route. "
         "Ask each clarification once. After a correction, answer the route request that was pending before it. "
-        "Retain confirmed trip facts and constraints across turns; do not reopen them unless a later heard utterance explicitly changes them. "
+        "Retain confirmed trip facts, accepted route candidates, rejected candidates, and constraints across turns. "
         "Do not repeat a route or mention fullness, changes, or risk before the caller asks. "
         "If no distinct viable route remains, say so and recommend the best earlier compliant route instead of repeating it. "
         f"{preference_text(persona or {})} "
@@ -277,7 +281,7 @@ def build_agent_b_stage_instruction(stage, destination):
 
     instructions = {
         ConversationStage.DISCOVERY: (
-            "Ask for the missing start station, destination, or departure time."
+            "Use confirmed trip facts from memory. Ask only for one still-missing start station, destination, or departure time."
         ),
         ConversationStage.PROPOSAL: (
             f"Give one valid route to {destination}. Say line legs and total time once."

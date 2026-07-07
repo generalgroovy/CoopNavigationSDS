@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-07-07T13:23:24.584787+00:00",
+  "generated_at_utc": "2026-07-07T17:47:37.605580+00:00",
   "method": "read-only derivation from canonical and partial runtime evidence",
   "source_evidence_unchanged": true,
-  "source_file_count": 419,
-  "source_evidence_sha256": "84bd5cd041bf5b126ae2498c74499bb90bbed00aeea46544f5f9e97dd3a5c949",
-  "discovered_run_count": 3,
-  "planned_condition_count": 78,
+  "source_file_count": 564,
+  "source_evidence_sha256": "7045301efb87dd2cadc20b50b7d175d39758f2073e7efc3e3e56add0e1ea4ec7",
+  "discovered_run_count": 49,
+  "planned_condition_count": 124,
   "observed_condition_count": 18,
   "completed_condition_count": 17,
   "generated_files": [
@@ -25,40 +25,620 @@
   ],
   "source_files": {
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_model_combination_coverage.csv": {
-      "size_bytes": 1897,
-      "sha256": "ae854eca698500ac5015f9c0c6ca5ce5cd28060ffe0b8a34c12e22a9377a952f"
+      "size_bytes": 1945,
+      "sha256": "382b527a940a2d5a16c5fc90f6b3ea45dc341ee22c95e0b5d130f5654d97a853"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_model_combination_coverage.html": {
-      "size_bytes": 6117,
-      "sha256": "c7f9ec290538bf1f546cfd8ba63abe40c043140437e5ec78595ec3644aa004fb"
+      "size_bytes": 6213,
+      "sha256": "80667f2158e2a3ea590ca05d20042171509a0c994fc493f26e96b8e93d4935ab"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_case_coverage.csv": {
-      "size_bytes": 1887,
-      "sha256": "395284c654facd363b9cb48c72e1d999ad84951ca3ef72990b609ceddfc261cc"
+      "size_bytes": 3689,
+      "sha256": "ba28b44348089580e79639e5f2c21656db54ab5576c304a4f9de1abfb90f0d0a"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage.html": {
-      "size_bytes": 9153,
-      "sha256": "572d1282b445ca6c2ee502c19d25778cdbd551a6982268651c0ef16aa99dad2c"
+      "size_bytes": 14919,
+      "sha256": "e41b852cdb502e76c536bb3c534d3d7a5c9073ca5fccfa6ee3f3228cc8b53b90"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_conditions.csv": {
-      "size_bytes": 232934,
-      "sha256": "9737415fe690f157b1ef6f0d63877b0e29e65cb186d2dec616504389a0993273"
+      "size_bytes": 1062362,
+      "sha256": "49a1e6a1eb97f16be61e1ea111178ec8137c153d2ec0853912249dde65f152fa"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_matrix.csv": {
-      "size_bytes": 6259,
-      "sha256": "7a194d773a26ff646a00c35d4b7c348dfd4a5391ce7d3476fc99b896277efc35"
+      "size_bytes": 13212,
+      "sha256": "e5382f2d67e977bbc30cba6312673affcdf55bb606726c0426bcaf7d2b0a4b16"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_runs.csv": {
       "size_bytes": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_summary.json": {
-      "size_bytes": 1058,
-      "sha256": "46cd1f1b127c73576b55ae0ad5839558831f799978cfc8f9c4c79f60ac1bc107"
+      "size_bytes": 1060,
+      "sha256": "698a765a7e914a7f0a84f3c57ba6bff5279cfe265a045da54c8fc486e0bc2219"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164031_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2878,
+      "sha256": "051389d5838a49a8c0565120c4b1cf090350323da50feeaf79e99d0c88664d6b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164031_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "57df9395749ff858db827b3b64ea9a6ca6179d28b551e69cdc602719f1618575"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164031_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164132_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2887,
+      "sha256": "e43c8cf304e7179ad3ffcc679286e0931d7701530bac5c503f96cec1af7c6d5c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164132_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "1bd8e014827c0cecc75c3e9ac56f89c1e41f452b9f7585bce33e785961a7aa06"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164132_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164302_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2883,
+      "sha256": "e64cd62d93fb1dff899c73ea0288dd45c704056ea0dc64501e32f5bc401de6c4"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164302_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "b60272f2bed1143de7ad96a7001dce66442dd4cf8f0094fcbe43c16349c993fe"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164302_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164434_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2892,
+      "sha256": "1489663f49d2e33194320db17cd9ed81e2680858e8ed4307fc539b50998a46d2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164434_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "1c39029cd1b6ed1cf760588aa956677a849830fa10ecae82719b7dea642c8928"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164434_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164703_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2892,
+      "sha256": "34be8bdfdabbdaa55a4939d515712352e657e83fd869fd230237e37d0a1ee083"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164703_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "6fc844c854a7dd10b2aeae33d7ac7f2e800a2584873282e354c94a52ddd398e5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164703_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164832_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2901,
+      "sha256": "551b2de69c1b9083a6851125ec2b9faae5c3650ff85f62119873796b7bcb9d07"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164832_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "986aeeca8a5e17bd2c029ca32782f623c7f0b2b0746554f8a8d25e68a7c9a5ff"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164832_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164932_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2906,
+      "sha256": "5f9f88065ca0549b49e040dcdc744c1dfefaccb059adcf011a8263d397712fb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164932_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "4111b8fd8ef1a92afc238ce3db681844a789fa93d828c7e018531a7407885ac8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_164932_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_165103_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2915,
+      "sha256": "57655c3490b74d5f1d462bdd6ba6828198d3c49504c67e31856279447d28a9e2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_165103_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15492,
+      "sha256": "c658c9728a7365bf4fe0c103ce6345f06bad2f75566ddf9603d4d12252359eb7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen3-4b\\tinyllama\\20260707_165103_b-n0001\\experiment_job.json": {
+      "size_bytes": 532,
+      "sha256": "8681cd59fe664125bd4df117a40bd1818155b9368b4215f2f053701f7dabe7d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163100_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2881,
+      "sha256": "e0679ad802cd18e08697d79018ee8d0b462a10a6b0ba8cddaada6dbe6b0ad4b2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163100_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "22cee759c02e03545182fdd20ee3a7e7b2a5c32e1c8326f440a075106a9cf4e6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163100_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163501_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2890,
+      "sha256": "4bfcca280a58ca919e1de174c983e7944b1bcfe9741087f080f47447d5778be3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163501_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "c35857a524dd06267a4e826337690f245ecfe10b1522393e75d337b11fc98b20"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163501_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163633_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2886,
+      "sha256": "1dcdc0b9554e81bb3783e6a74f09d5c6dc72e5391bef7ae6b4119187faa352fa"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163633_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "0b0b69ddfdd7ded1c6f24b35ab11165ead01d3a2f403de1a1af6bc1ed5de6aa5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163633_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163801_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2895,
+      "sha256": "9f64002f586e7d43274b3a3c7cf068409104ed9d3624083574ef1c71afa4cc26"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163801_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "2b75db66be50d22f83a2baf5b1d147c5abebc51b4ed9eb78bcd556793ebb529e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163801_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163931_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2895,
+      "sha256": "b2d165ff4f5707074c9496dc2d5e2cd4cea8d0ebc0ce4495d39d0ff821432842"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163931_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "9f543f7d63296ab63735256b7f37b47ef2e743176a5746402768770a5385681b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_163931_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164101_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2904,
+      "sha256": "e98eaf916e060968d47bed51dd597a5320a2b4a814d7cc05ddb088cacf276f79"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164101_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "d77dfd276c41d0f392cb11751acb1444ebf28427302b60ed8daeda8ee1648eb1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164101_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164232_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2909,
+      "sha256": "bd68e9de8752a6d7016d6fa5cd662cae62e2dbac889a15a6a12b6b5aa85e14a5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164232_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "01a64486c85ccc39c460498394618ecec11976def707246024de273111ffab66"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164232_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164403_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2918,
+      "sha256": "d69b110f6b31eb5fc35e4612ad830b13f3cb4a4fb81aa5e90d87de291cf0b1f8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164403_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "20bd44a1c3c157f80a4f6b042929fceaa2130fa1861c92e85482ca8e75875ba5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-qwen2.5-1.5b\\tinyllama\\20260707_164403_b-n0001\\experiment_job.json": {
+      "size_bytes": 530,
+      "sha256": "100b5dac0dd5cfb8596ad0b25ecf7ae37c8df59dc16fe7a68c7df6dfbd68cc71"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_163901_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2889,
+      "sha256": "99068eca555be44ac6c74a7175325bfcb64c92a434113c12a60f3fe049ffacdd"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_163901_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "81377d435c6342eb2e0fb7d925eeb301bbff09946c6c24e8d9ad9b0e0adfb897"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_163901_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164001_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2898,
+      "sha256": "e96a56e6a9693859554f6ce7e79622b223644b9d81331ea2f8021577ece327af"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164001_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "c6da55e821498eabf510c42dab8c8fd643e3a7867e2d37e124245c9dafa747e1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164001_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164101_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2894,
+      "sha256": "4a7682f5898b8737ab6fd6bc9f8430597b60a363b99cc560278512bde73d53be"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164101_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "fe985b3e1b94c40fe35d319c2e6f0e49cd4d37abce521841919edd6e65e3e20a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164101_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164232_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2903,
+      "sha256": "4a791360fb9a5ed73a7028c4045af2132e1cc1628c0acf476b72b4ea35598a11"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164232_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "11ebe6480561b8f54d5104db6f10ac5bcfa98724c4dcc33367f9e1f33ba5e545"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164232_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164403_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2903,
+      "sha256": "062d6e4915764548093d7a3ade78740a8624d2583205fc6e2254d590f45039f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164403_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "f1dff7f40067d6b0194d7352abd635febb2e16ebe1eef4761e0be257330552c0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164403_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164704_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2912,
+      "sha256": "ac887cec69e22f03ae8f829d2616abd490326fe2b127bc82b7a1b2fdc54e3a98"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164704_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "1cd47f6633a60f5020e19272a30c96325a486f67cd4649a3342bc41d01934fe0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164704_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164832_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2917,
+      "sha256": "9d5c43dceedd2eb8008921fa9861dfe6660a44d4943d24d544840d0ddad2eddc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164832_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "68f9d74e590fe5286c0c593ea8a0199317ed53075746973ad9bf0009d02809d6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164832_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164932_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2926,
+      "sha256": "66d022f76ec54e8c4c3d5ead86d18aa22400ebb27bb757f87f9536c7ddd8a771"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164932_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15502,
+      "sha256": "49ee1e8a54fd74e44574999fd7d28477c2bc1cbd8c4aca34b58357e0a269fa19"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-phi3-mini\\tinyllama\\20260707_164932_b-n0001\\experiment_job.json": {
+      "size_bytes": 543,
+      "sha256": "b0b0924fa8766fca7deba1fdcc9608cfb2c0e274c5e61843d78a93b8701f9cec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_163901_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2869,
+      "sha256": "5cd9dc3e6fafc89adcab928f50a799fa33a51f207e2d1f41ee7eca3fe0ffde79"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_163901_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "fb72ff73f32544e4930565dfbb2f0a48f5442c51913192aa4f1af5b1c76d538c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_163901_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164001_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2878,
+      "sha256": "4f7c88117579265a3afa9cf94eed738be3fb39736dc65179e293a11831e52137"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164001_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "10ebd1dfa31cce7cc15849f3c4acd7277d01c80b3ba2d4db3746654401215212"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164001_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164101_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2874,
+      "sha256": "99d549340876ff161bfbb588b547ce507b25b087f233e68433a6f3731561745b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164101_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "521474ed5e994babcaf29f1b6ef7c3060a821bf164aa680b2092cbd6485a3851"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164101_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164232_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2883,
+      "sha256": "6c1d75974442d2522d4291b4fdedb56148ef9cd06972afe81e69d6be6fac60e5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164232_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "77b33743a79e1104389c82e8d479f22fe2cfbb794fe58e136bb53ca89ad27536"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164232_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164403_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2883,
+      "sha256": "860d557e376154bfbe6985016e7c41483ac2bc2f6207d7b524fb420070a78a30"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164403_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "af524eaade8bb1cd8934690341f6e824ebf32362b85ace87092d428dcb737548"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164403_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164503_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2892,
+      "sha256": "8d2c95a5fe8267422e743816f129f1bc9239c54a28cc5f841b7f25a12880e220"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164503_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "a92e0135e3729eb8f7b49f1628eee60a232861bbcc03143eb093b80de4ab4f4c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164503_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164733_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2897,
+      "sha256": "d84e182ddb185483149b025f4565204a270489fd7755667f3ab21f72f7f91757"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164733_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "3eb1ddd3c4784ddb69be6e1bc771bd25f8c7b481e14c1feb5556af9e00c199ee"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164733_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164902_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2906,
+      "sha256": "ea653c091b5d3055b291dba6d0893343625454645bf50fef3be77c6041689747"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164902_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15478,
+      "sha256": "1e4775fde02c014e4daa04974d6e87d8c6160c9120e8864f719a28dbc5c399ba"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\02-medium-gemma2-2b\\tinyllama\\20260707_164902_b-n0001\\experiment_job.json": {
+      "size_bytes": 503,
+      "sha256": "fee6542001e7b2e6bc410bd5b29f9909a88e25a8e39c60d208139bc9b755dd15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_162702_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2872,
+      "sha256": "35a55dc288bb3dac257cccfa2a17bebaa89a8e23cb6e0a2ccd783f971731f38d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_162702_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "1899864b7d05f4362a69ef16a5635e524ca53fc8ce5e51b4e923ae4bb3c43147"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_162702_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_162831_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2881,
+      "sha256": "94c4b285f6da4c5fb74d94ec5c4fd6d6846c7d813b5511df99e859c96dfed2b3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_162831_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "163518875e913ccf4c95f1efbc573e6c8e7aed32d020b8c1dc5b652aa70b90e0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_162831_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_163001_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2877,
+      "sha256": "30faa97799b04ec8fdee5716839b58060c8b1b5a93e58dac7d7fa7e2cf9f9dbd"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_163001_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "93beecd8931c3a7ac574a38b9b62da38ba7a56602ede5b583c0cb70219bd380a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_163001_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_163131_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2886,
+      "sha256": "463ba419c78e69f9d9963077dbde81ff3f9ba973f4fa0917dfd7df5044e2ccdf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_163131_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "aa0df305a3edb9fcb1762cab4197d72e4644d6be2e0711dde3912bf781b25c92"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_163131_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165103_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2886,
+      "sha256": "dba60af4c79039a61ec8b2bdf497df1f8752bbba7f4cfde6abc2ce42f496c489"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165103_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "8d17fc66671f5e3159f26682fd9e50e4510f0b8f8a0aa7265549788046bde82f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165103_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165435_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2895,
+      "sha256": "80b713de6eb85d42e369aef9014a94e6d0629d68023d6aff21f54f61828280e7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165435_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "1201386e0a13fbbcb0e6a71edde2ee8ab7b7eea82379f1871f7dd0ca7297ddb4"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165435_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165604_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2900,
+      "sha256": "3589fba63a43ff961aa388f51206bce53952b78978c5a9ddf38f1183d1214d4f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165604_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "d9fad8f0f4614bf132aa9b291547c146330f6c4cfc154780b35e1e4836fb9942"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165604_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165704_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2909,
+      "sha256": "90168ad75a4eaad453aa03655583983721838cc644bf22c58a0f59fe995819d8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165704_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15506,
+      "sha256": "f2a1656714984d1d11165d27ed8eb1ba28877c025ec9516dc913ca1635d64752"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-tinyllama-1.1b\\tinyllama\\20260707_165704_b-n0001\\experiment_job.json": {
+      "size_bytes": 541,
+      "sha256": "ac9f56458c9cdc687d72eb3ecc93251a3a3188ab5a422686e65b62a52b58a538"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\20260707_165903_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2873,
+      "sha256": "6ea097361cbe96124f5aa731d53f9e2d13c5626a4373fe6129eebe1b7c36e965"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\20260707_165903_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15508,
+      "sha256": "f4b59c9a23778e66ef9fdb0edc09709e1d0ad8ac45af04517b3146e3e9cec6fa"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\20260707_165903_b-n0001\\experiment_job.json": {
+      "size_bytes": 544,
+      "sha256": "7ecef05ca4f6c0e3416cc91281d1704e5e52760d2c0aab7f41f8163d1ee3662e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\20260707_170003_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2882,
+      "sha256": "03a2031835d78534dd9e756ab0c200d9a359a249ef43852dcc4226b32363e3e1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\20260707_170003_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15508,
+      "sha256": "9326f9dfc701b6208d279c079607759bedabf5fcebb2324d245668e599175aa8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-smollm2-360m\\tinyllama\\20260707_170003_b-n0001\\experiment_job.json": {
+      "size_bytes": 544,
+      "sha256": "7ecef05ca4f6c0e3416cc91281d1704e5e52760d2c0aab7f41f8163d1ee3662e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\naming_scheme.json": {
+      "size_bytes": 2087,
+      "sha256": "5bdc0744cff74e309ecf0bfd31600e5fc9ed3488072bfc1ac0800f2f1a7bf1f7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165435_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2864,
+      "sha256": "fc7da72f2f5a6f97afc18a1c80bf46f8e7e23f8b9a79c56f834fc210f2a9c7b9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165435_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "1c582a07ab41593302aa4025b6e15be01dacf878c929e8e803d0fd77e68f7b8f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165435_b-n0001\\experiment_job.json": {
+      "size_bytes": 525,
+      "sha256": "dc13495c629bf43fcc808835a485804031974ccacbf8c23ce6d81a0ba614a0d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165804_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2873,
+      "sha256": "7e07b6cd55108ce948ced74fa3e18d1b1bde749f0297d0b942d1886766363e5a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165804_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "be4222b8165b84a8a628514a3d354fe3eedfa172b528bd91e925e020c5b1d233"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165804_b-n0001\\experiment_job.json": {
+      "size_bytes": 525,
+      "sha256": "dc13495c629bf43fcc808835a485804031974ccacbf8c23ce6d81a0ba614a0d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165903_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2869,
+      "sha256": "8ee2975f5f8e1a1afa06b83dad860400cab337c641638e20107a52205790d61d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165903_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "2bcb7213ce2b5047a0daaeaf370c22fe717d52a24367c0a851b9bb73cda398ea"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_165903_b-n0001\\experiment_job.json": {
+      "size_bytes": 525,
+      "sha256": "dc13495c629bf43fcc808835a485804031974ccacbf8c23ce6d81a0ba614a0d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_170004_b-n0001\\condition_configuration_breakdown.csv": {
+      "size_bytes": 2878,
+      "sha256": "04fa3e4392a616d4d0dc6e2456dfa3912eab862192d9b96530ea7579b0d8d292"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_170004_b-n0001\\coverage_plan.json": {
+      "size_bytes": 15490,
+      "sha256": "3ffe8db8a4c7cc08ce481ebd4ed8049af0c28bec237a439a7f55788c8f3bde92"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\transformers\\01-small-qwen2.5-0.5b\\tinyllama\\20260707_170004_b-n0001\\experiment_job.json": {
+      "size_bytes": 525,
+      "sha256": "dc13495c629bf43fcc808835a485804031974ccacbf8c23ce6d81a0ba614a0d5"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\02-medium-phi3-mini\\userlm\\naming_scheme.json": {
-      "size_bytes": 2123,
-      "sha256": "a3b57c3ed43cee669fee9ba51a96e8d8e00c2619c847e5c3c3b7f4736ccbde20"
+      "size_bytes": 2088,
+      "sha256": "0a28111fa5eebe7317e9422546fe4acfe4e7fd00b256a877b3e1d565006f3f17"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\02-medium-phi3-mini\\userlm\\20260706_052215_b-n0026\\condition_configuration_breakdown.csv": {
       "size_bytes": 48699,
@@ -73,8 +653,8 @@
       "sha256": "40494f47d8c5d0ee29302d2c331e4ad2b1346f5e3efa8d8712744ca892b6dc0a"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\naming_scheme.json": {
-      "size_bytes": 2123,
-      "sha256": "a3b57c3ed43cee669fee9ba51a96e8d8e00c2619c847e5c3c3b7f4736ccbde20"
+      "size_bytes": 2088,
+      "sha256": "0a28111fa5eebe7317e9422546fe4acfe4e7fd00b256a877b3e1d565006f3f17"
     },
     "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-a-20260705-154707-summary.json": {
       "size_bytes": 661,

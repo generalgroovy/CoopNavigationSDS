@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "extends": "../../support/small_agent_b_speech_grid_userlm.job",
+  "name": "userlm_8b_transformers_agent_b_speech_grid_base",
+  "description": "UserLM-8b caller with a non-Ollama Transformers Agent B model using the shared pairwise speech, task, and repair coverage range.",
+  "config": {
+    "agent_b_plugin": "llm",
+    "model_provider": "transformers",
+    "model_base_url": "",
+    "allow_model_download": false,
+    "model_timeout_sec": 300,
+    "model_max_new_tokens": 48,
+    "result_group": "agent_b/userlm_transformers/00-base/userlm"
+  },
+  "parameter_values": {
+    "matrix_family": ["userlm_8b_transformers_agent_b_speech_grid_v1"],
+    "experiment_platform": ["linux"],
+    "agent_b_model_role": ["transformers_candidate"]
+  }
+}

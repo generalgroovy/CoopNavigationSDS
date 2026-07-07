@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "tinyllama_speech_performance_range",
   "description": "TinyLlama-to-TinyLlama baseline crossing preregistered floor-to-ceiling speech treatments with matched text controls.",
-  "coverage_strategy": "full_factorial",
+  "coverage_strategy": "pairwise",
   "iterations": 1,
   "config": {
     "agent_a_type": "tinyllama",
@@ -25,22 +25,25 @@
     "result_group": "agent_b/support/00-small-tinyllama/tinyllama"
   },
   "grid": {
-    "test_cases": ["morning_peak_cross_city"],
-    "personas": ["focused_commuter"],
-    "agent_a_audio_personas": ["high_clarity_caller"],
-    "agent_b_audio_personas": ["high_clarity_operator"],
-    "speech_patterns": ["clean"],
-    "model_params": ["greedy"],
+    "test_cases": ["morning_peak_cross_city", "midday_transfer", "airport_connection", "crowded_event_exit"],
+    "personas": ["focused_commuter", "crowd_averse_rider", "delay_sensitive_traveler", "risk_averse_novice"],
+    "agent_a_audio_personas": ["high_clarity_caller", "neutral_caller", "hesitant_caller", "soft_spoken_caller"],
+    "agent_b_audio_personas": ["high_clarity_operator", "clear_operator", "brisk_operator", "reassuring_operator"],
+    "speech_patterns": ["clean", "mostly_clean", "hesitant", "severe_channel"],
+    "model_params": ["greedy", "temp0.7", "nucleus0.9"],
     "objective_modes": ["shortest_valid_route_with_constraints"],
     "agent_b_models": ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"],
     "tts_engines": ["piper"],
-    "asr_engines": ["vosk"]
+    "asr_engines": ["vosk", "faster_whisper"]
   },
   "speech_performance_bands": ["ceiling", "nominal", "challenging", "floor"],
   "parameter_values": {
     "matrix_family": ["tinyllama_speech_performance_v2"],
     "agent_b_llm_size": ["small"],
     "agent_b_model_role": ["support_baseline"],
-    "network_seed": [42]
+    "network_seed": [42, 77],
+    "asr_beam_size": [1, 6, 11, 16],
+    "dialogue_stagnation_limit": [2, 3],
+    "transfer_tolerance": [1, 2]
   }
 }

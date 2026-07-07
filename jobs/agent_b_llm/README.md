@@ -36,12 +36,14 @@ Every Agent B treatment is run with two callers:
 - **TinyLlama comparison:** `TinyLlama/TinyLlama-1.1B-Chat-v1.0` through
   Transformers, with all non-caller settings inherited unchanged.
 
-The compact support speech-grid jobs expand to eight conditions: four
-speech-performance bands and their matched text controls. Larger comparison
-manifests may expand further through pairwise coverage. Caller audio persona,
-operator audio persona, speech pattern, recognition beam width, and network
-seed vary only through registered job factors, so every result can be traced
-back to an explicit configuration row.
+The shared support speech-grid jobs use pairwise coverage and expand to 84
+conditions per Agent A/Agent B model pairing. They vary scenario, task persona,
+caller and operator audio persona, speech pattern, model decoding, ASR engine,
+ASR beam width, network seed, transfer tolerance, and repair limits while
+retaining paired audio/text controls. Caller audio persona, operator audio
+persona, speech pattern, recognition beam width, and network seed vary only
+through registered job factors, so every result can be traced back to an
+explicit configuration row.
 
 ## Layout
 
@@ -63,6 +65,10 @@ agent_b_llm/
 |   |-- small/
 |   |-- medium/
 |   `-- large/
+|-- userlm_transformers_speech_grid/
+|   |-- small/
+|   |-- medium/
+|   `-- large/
 |-- transformers_speech_grid/
 |   |-- small/
 |   |-- medium/
@@ -75,11 +81,13 @@ agent_b_llm/
 `base.template.json` owns every controlled setting. Child jobs state only the
 Agent B model, size, role, caller override where applicable, and result group.
 
-The `userlm_speech_grid/` family instead inherits the expanded 52-condition
-speech design from `jobs/support/small_agent_b_speech_grid_userlm.job`. It has
-six jobs: two Agent B models at each size. The complete manifest contains 312
-conditions while keeping UserLM-8b, tasks, speech factors, repetitions, and
-matched controls identical across Agent B models.
+The `userlm_speech_grid/` family covers the six Ollama-backed Agent B jobs
+with UserLM-8B as Agent A. The `userlm_transformers_speech_grid/` family covers
+twelve Transformers-backed Agent B jobs with the same UserLM caller and the
+same condition design. Together they provide 18 independent UserLM Agent B jobs,
+or 1512 planned condition tasks at 84 conditions per job. The TinyLlama caller
+Transformers family provides 12 additional jobs, giving the full independent
+submitter 30 jobs and 2520 planned condition tasks.
 
 ## Preview and Run
 
@@ -109,9 +117,19 @@ python scripts/run_agent_b_llm_batch.py \
   --preview
 ```
 
-The UserLM-only manifest contains 6 jobs and 156 conditions. The complete
-manifest contains 12 jobs and 312 conditions. The runner executes
-jobs sequentially and maintains `results/agent_b/experiment_run_table.csv`.
+Legacy JSON manifests remain available for sequential local runs. The current
+Slurm submitter is preferred for thesis-scale coverage because it submits one
+independent array per Agent B model:
+
+```bash
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium large --dry-run
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier medium --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier large --array-concurrency 1
+```
+
+The runner executes jobs sequentially when used directly and maintains
+`results/agent_b/experiment_run_table.csv`.
 After completed jobs, it also rebuilds
 `results/agent_b/comparison/comparison_report.html`, with color-coded run task
 outcomes and robust pre-outcome metric outliers. The underlying

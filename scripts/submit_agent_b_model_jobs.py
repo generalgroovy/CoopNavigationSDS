@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import hashlib
 from pathlib import Path
 import shutil
 import subprocess
@@ -28,8 +29,11 @@ from coop_navigation_sds.experiments import build_condition_grid  # noqa: E402
 
 
 DEFAULT_ROOTS = {
-    "tinyllama": ROOT / "jobs" / "agent_b_llm" / "transformers_speech_grid",
-    "userlm": ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid",
+    "tinyllama": (ROOT / "jobs" / "agent_b_llm" / "transformers_speech_grid",),
+    "userlm": (
+        ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid",
+        ROOT / "jobs" / "agent_b_llm" / "userlm_transformers_speech_grid",
+    ),
 }
 
 RESOURCE_TABLE = {
@@ -60,13 +64,21 @@ class ModelJob:
 
     @property
     def job_name(self) -> str:
-        return safe_slurm_name(f"{self.agent_a_type}-{self.tier}-{self.name}")
+        suffix = hashlib.sha1(str(self.path).encode("utf-8")).hexdigest()[:6]
+        return safe_slurm_name(f"{self.agent_a_type}-{self.tier}-{self.path.stem}-{suffix}")
 
 
 def safe_slurm_name(value: str, limit: int = 48) -> str:
     cleaned = "".join(ch.lower() if ch.isalnum() else "-" for ch in value)
     cleaned = "-".join(part for part in cleaned.split("-") if part)
-    return (cleaned or "agent-b-model")[:limit]
+    if not cleaned:
+        return "agent-b-model"
+    parts = cleaned.split("-")
+    suffix = parts[-1] if len(parts[-1]) == 6 else ""
+    if suffix and len(cleaned) > limit:
+        prefix = "-".join(parts[:-1])[: max(1, limit - len(suffix) - 1)].rstrip("-")
+        return f"{prefix}-{suffix}"
+    return cleaned[:limit]
 
 
 def condition_count(job: dict) -> int:
@@ -95,8 +107,12 @@ def resolve_roots(args) -> list[tuple[str, Path]]:
     if args.root:
         return [("custom", Path(value).expanduser().resolve()) for value in args.root]
     if args.family == "all":
-        return [(family, path) for family, path in DEFAULT_ROOTS.items()]
-    return [(args.family, DEFAULT_ROOTS[args.family])]
+        return [
+            (family, path)
+            for family, paths in DEFAULT_ROOTS.items()
+            for path in paths
+        ]
+    return [(args.family, path) for path in DEFAULT_ROOTS[args.family]]
 
 
 def discover_jobs(args) -> list[ModelJob]:
@@ -131,10 +147,17 @@ def discover_jobs(args) -> list[ModelJob]:
 
 
 def resources_for(job: ModelJob, args) -> tuple[int, str, str]:
-    cpus, memory, time_limit = RESOURCE_TABLE.get(
-        (job.family, job.tier),
-        RESOURCE_TABLE.get((job.agent_a_type, job.tier), (4, "24G", "01:59:00")),
-    )
+    if job.agent_a_type == "userlm" and job.provider == "transformers":
+        cpus, memory, time_limit = {
+            "small": (8, "72G", "03:59:00"),
+            "medium": (10, "96G", "03:59:00"),
+            "large": (12, "128G", "03:59:00"),
+        }.get(job.tier, (8, "96G", "03:59:00"))
+    else:
+        cpus, memory, time_limit = RESOURCE_TABLE.get(
+            (job.family, job.tier),
+            RESOURCE_TABLE.get((job.agent_a_type, job.tier), (4, "24G", "01:59:00")),
+        )
     return (
         int(args.cpus_per_task or cpus),
         args.memory or memory,

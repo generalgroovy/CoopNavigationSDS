@@ -180,6 +180,73 @@ or premature closure can trigger a recorded deterministic repair. The audit
 records requested output, accepted output, intervention reason, and delivery
 source, allowing guard intervention rates to be measured rather than hidden.
 
+### Agent A Configuration and Knowledge Integrity
+
+Agent A represents the caller. Its configurable implementation is
+`template-agent-a`, `tinyllama`, or `userlm`; persona and audio persona are
+separate factors. Agent A receives the registered start station, destination,
+departure time, valid station names, valid line names, persona priorities, and
+private constraints. It does **not** receive the topology, travel times,
+fullness, delay labels, viable alternatives, or optimal route. This separation
+is deliberate: Agent A must behave like a caller using the system, not like a
+second route planner.
+
+Agent A's prompt and deterministic policy enforce this sequence:
+
+1. state start, destination, and departure time;
+2. ask for transit lines to reach the destination;
+3. accept a route only when it is connected, line-identified, and time-valid;
+4. reveal at most one additional private constraint after the previous layer
+   is satisfied;
+5. request a better compliant route when the current route violates a revealed
+   constraint;
+6. close the call with the best route it understood, or with documented
+   dissatisfaction when the turn limit is reached.
+
+Repairs are intentionally narrow. If Agent A hears an ambiguous word or a
+missing critical variable, it asks or answers only that item. A correction does
+not overwrite Agent B's state silently; it becomes another spoken turn, passes
+through TTS and ASR, and is visible in the protocol.
+
+### Agent B Configuration and Knowledge Integrity
+
+Agent B represents the route-information system. Its configurable
+implementation is `simple`, `llm`, or a registered custom plugin. With the
+`llm` plugin, the selected model profile and provider define the backend, while
+the dialogue manager supplies the same route-network contract and prompt
+contract to every model. Agent B receives network data, line names, station
+names, and the route verifier, but learns Agent A's trip and constraints only
+from what it hears.
+
+Agent B's prompt and deterministic guards enforce this sequence:
+
+1. update its own memory only from previous Agent B speech and received Agent A
+   ASR/NLU output;
+2. ask for exactly one missing critical fact when start, destination, or time
+   is not established;
+3. treat normalized equivalents as confirmed, for example `eight oh seven`,
+   `8 7`, and `08:07`;
+4. propose complete routes in the form `mode line from station to station`;
+5. keep viable earlier proposals available for comparison;
+6. adapt only to constraints Agent A has actually stated;
+7. continue helping rather than ending the call.
+
+This design makes misunderstanding loops measurable instead of hidden. If
+Agent B repeats a request for information that was already understood, the
+state-retention and repair metrics can identify the dialogue-management
+failure. If Agent B never heard the information because of ASR, the ASR and
+NLU evidence stays distinct.
+
+### Prompt Selection Reasoning
+
+The prompts are not optimized for fluent chat in isolation. They are optimized
+for an auditable speech-dialogue experiment: short turns, explicit route
+structure, controlled knowledge boundaries, and repair behavior that can be
+attributed to a pipeline phase. Detailed route calculation is performed by the
+network verifier, not by hidden prompt reasoning. The language models decide
+how to phrase, clarify, compare, and cooperate within the current stage; the
+runtime records when deterministic guards corrected or rejected an utterance.
+
 ### Agent Knowledge
 
 Agent A initially knows the start station, destination, departure time, valid
@@ -361,11 +428,20 @@ added merely because they are available.
 | Large | large3 | `mistral:7b` | Ollama | Mistral-family instruction model | non-Llama/Qwen repair behavior |
 | Large | large4 | `tiiuae/Falcon3-7B-Instruct` | Transformers | Falcon-family assistant model with multilingual support | replaces UserLM as large Agent B proposal |
 
-The non-Ollama Transformers Agent B grid contains these twelve proposals. It is
-intended for clusters where Ollama cannot be installed or kept reachable. The
-grid uses TinyLlama as Agent A so the combined memory requirement remains more
-realistic than UserLM plus a second large model. UserLM remains the stronger
-caller model for smaller targeted follow-up runs.
+The non-Ollama Transformers Agent B grid contains twelve registered proposals
+across the same size tiers. It is intended for clusters where Ollama cannot be
+installed or kept reachable, and it is also useful as a provider contrast when
+Ollama is available. The grid exists for both Agent A callers:
+
+- `transformers_speech_grid/` uses TinyLlama as Agent A for lower memory
+  baseline coverage.
+- `userlm_transformers_speech_grid/` uses Microsoft UserLM as Agent A for the
+  stronger caller condition.
+
+UserLM plus a second large model can require high-memory CPU nodes or a
+compatible accelerator. Such resource failures are operational evidence and
+are recorded as condition failures; they are not silently replaced by smaller
+models.
 
 ```bash
 python scripts/setup_transformers_agent_b_models.py --tier small --download
@@ -566,10 +642,13 @@ generic "quality" setting from obscuring which pipeline phase was changed.
 - `iterations` creates explicit repetitions; it does not duplicate rows after
   execution.
 
-The compact range job expands to `4 bands x 2 run types x 1 repetition = 8`
-conditions. Expansion is deterministic. Every condition receives a readable
-code, full condition record, pair identifier where applicable, base fingerprint,
-and condition fingerprint before model execution.
+Small smoke-style jobs may expand to `4 bands x 2 run types x 1 repetition =
+8` conditions. Thesis grids use pairwise coverage across scenarios, personas,
+audio personas, speech patterns, decoding, ASR search width, repair limits,
+seeds, and provider choices. Expansion is deterministic in both cases. Every
+condition receives a readable code, full condition record, pair identifier
+where applicable, base fingerprint, and condition fingerprint before model
+execution.
 
 ### Optional Configuration GUI
 
@@ -689,11 +768,16 @@ The compact TinyLlama range baseline is:
   --results-dir results --progress
 ```
 
-It creates eight conditions: four preregistered bands times one matched
-text/audio pair. One repetition is suitable for pipeline validation only;
-thesis inference requires multiple seeds or repetitions declared before the
-run. The same profile registry is reusable for every Agent A/Agent B model
-combination without copying parameter values into model-specific jobs.
+The current support job uses pairwise coverage and creates 84 conditions per
+Agent A/Agent B model pairing. The factors cover four scenarios, four task
+personas, four caller audio personas, four operator audio personas, four speech
+patterns, three decoding profiles, two ASR engines, two network seeds, four
+ASR beam widths, two stagnation limits, and two transfer-tolerance values while
+preserving paired audio/text controls. One condition per factor pair is enough
+to expose a broad success-to-failure spectrum for pipeline debugging; thesis
+inference still requires preregistered repetitions or held-out batches. The
+same profile registry is reusable for every Agent A/Agent B model combination
+without copying parameter values into model-specific jobs.
 
 ### Slurm
 
@@ -714,11 +798,43 @@ Slurm standard output and error files are written under `slurm/logs/` so
 scheduler diagnostics are transportable through Git without filling the project
 root.
 
-The UserLM x Small1, Small2, and Large2 comparisons have CPU-first Slurm
-wrappers for clusters where GPU nodes are drained, reserved, or too busy. Each
-wrapper shards the eight expanded conditions into separate one-condition array
-tasks, starts a per-task loopback Ollama service on a unique port, and avoids a
-GPU request:
+The recommended thesis-scale Slurm path is the independent Agent B model
+submitter. It discovers every registered job file for the requested caller
+family and size tier, computes the condition count, and submits one Slurm array
+per Agent B model. This prevents one unavailable model, endpoint, or node class
+from blocking the rest of the experiment.
+
+```bash
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium large --dry-run
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier medium --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier large --array-concurrency 1
+```
+
+`--family userlm` currently resolves 18 independent Agent B model jobs: six
+small, six medium, and six large. Each job has 84 conditions. The full UserLM
+coverage therefore contains 1512 array tasks. `--family all` adds the
+TinyLlama caller grid and resolves 30 jobs with 2520 condition tasks. The
+configured factors intentionally span ceiling, nominal, challenging, and floor
+speech performance so successful and unsuccessful dialogues can be compared
+phase-wise.
+
+The submitter writes Slurm stdout and stderr under `slurm/logs/`, uses unique
+job-name suffixes, and passes `RESULTS_ROOT` to the batch runner so every
+condition writes to the single `results/` root. Ollama-backed jobs start a
+per-task local Ollama service on a task-specific port. Transformers jobs do not
+require Ollama but must pass model-asset preflight.
+
+Override paths without editing job files when needed:
+
+```bash
+PROJECT_ROOT=/path/to/CoopNavigationSDS \
+PYTHON_BIN=/path/to/CoopNavigationSDS/.venv-linux/bin/python \
+RESULTS_ROOT=/path/to/CoopNavigationSDS/results \
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small --dry-run
+```
+
+Legacy single-model wrappers remain available for focused retries:
 
 ```bash
 sbatch slurm/userlm_small1_cpu_array.sbatch
@@ -726,18 +842,10 @@ sbatch slurm/userlm_small2_cpu_array.sbatch
 sbatch slurm/userlm_large2_cpu_array.sbatch
 ```
 
-Override paths without editing the script when needed:
-
-```bash
-PROJECT_ROOT=/path/to/CoopNavigationSDS \
-PYTHON_BIN=/path/to/CoopNavigationSDS/.venv-linux/bin/python \
-RESULTS_ROOT=/path/to/CoopNavigationSDS/results \
-sbatch slurm/userlm_small1_cpu_array.sbatch
-```
-
-The non-Ollama Transformers Agent B matrix uses tier-specific wrappers. Submit
-small and medium first to get a useful success/failure spectrum with lower
-scheduler friction; submit large only when high-memory CPU nodes are available:
+The non-Ollama Transformers Agent B matrix can also be submitted through the
+older tier-specific wrappers. Submit small and medium first to get a useful
+success/failure spectrum with lower scheduler friction; submit large only when
+high-memory CPU nodes are available:
 
 ```bash
 scripts/submit_transformers_agent_b_arrays.sh --small-medium
@@ -745,6 +853,27 @@ scripts/submit_transformers_agent_b_arrays.sh --small-medium
 JOB_FILE=jobs/agent_b_llm/transformers_speech_grid/large/04-falcon3-7b.job \
 sbatch slurm/transformers_agent_b_large_cpu_array.sbatch
 ```
+
+Debian 13 cluster pull and full UserLM coverage:
+
+```bash
+cd /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+eval "$(ssh-agent -s)"
+ssh-add /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/key2
+GIT_SSH_COMMAND="ssh -i /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/key2 -o IdentitiesOnly=yes -o HostName=ssh.github.com -o Port=443" \
+  git pull --ff-only origin main
+source .venv-linux/bin/activate
+python3 scripts/setup_speech_providers.py --status
+python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium large --dry-run
+python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier small --array-concurrency 1
+python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier medium --array-concurrency 1
+python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier large --array-concurrency 1
+```
+
+If a cluster rejects the large tier because of memory, time, or partition
+limits, keep the completed small and medium jobs and submit large models one at
+a time with the partition-specific limits accepted by that site. Do not lower
+model size inside the job; that would change the condition.
 
 ## 8. Data and Metrics
 
@@ -952,6 +1081,10 @@ metrics, metric summaries, paired deltas, robust outliers, a condition analysis
 table, and `run_phase_metric_matrix.html`. The matrix places completed runs in
 rows and phase-ordered metrics in columns. Color encodes outcome and descriptive
 outlier status; it does not establish causality or a validated threshold.
+Positive-direction metrics use greener cells for larger normalized values;
+negative-direction metrics use greener cells for smaller normalized values.
+Unavailable metrics remain neutral with the unavailable reason in the derived
+tables. Raw result files are not modified during comparison generation.
 
 Interrupted and preflight-only runs use a separate evidence-preserving view:
 
