@@ -12,6 +12,17 @@ decoding, and coverage strategy constant.
 | Medium | `llama3.2:3b` | `phi3:mini` | 3.2B / 3.8B |
 | Large | `llama3.1:8b` | `qwen2.5:7b` | 8.0B / 7.6B |
 
+Additional documented replacement or follow-up candidates:
+
+| Size | Candidate | Distinct value |
+| --- | --- | --- |
+| Small | `HuggingFaceTB/SmolLM2-360M-Instruct` | sub-billion floor condition |
+| Small | `Qwen/Qwen2.5-0.5B-Instruct` | tiny multilingual Transformers condition |
+| Medium | `gemma2:2b` | Gemma-family architecture contrast |
+| Medium | `qwen3:4b` | newer Qwen-family instruction contrast |
+| Large | `mistral:7b` | non-Llama/Qwen large local baseline |
+| Large | `microsoft/UserLM-8b` | user-simulator-trained ablation candidate |
+
 Every Agent B treatment is run with two callers:
 
 - **UserLM:** `microsoft/UserLM-8b` through Transformers, fixed independently
@@ -20,11 +31,12 @@ Every Agent B treatment is run with two callers:
 - **TinyLlama comparison:** `TinyLlama/TinyLlama-1.1B-Chat-v1.0` through
   Transformers, with all non-caller settings inherited unchanged.
 
-Each job expands to 13 pairwise-selected audio conditions and 13 matched
-text-only controls. The four linked tasks cover distinct scenarios and caller
-personas. Caller audio persona, operator audio persona, speech pattern,
-recognition beam width, and network seed vary. Piper and Faster-Whisper remain
-fixed so the primary contrast is language-model behavior.
+The compact support speech-grid jobs expand to eight conditions: four
+speech-performance bands and their matched text controls. Larger comparison
+manifests may expand further through pairwise coverage. Caller audio persona,
+operator audio persona, speech pattern, recognition beam width, and network
+seed vary only through registered job factors, so every result can be traced
+back to an explicit configuration row.
 
 ## Layout
 
@@ -85,6 +97,19 @@ After completed jobs, it also rebuilds
 `results/agent_b/comparison/comparison_report.html`, with color-coded run task
 outcomes and robust pre-outcome metric outliers. The underlying
 `run_outcomes.csv` and `metric_outliers.csv` retain the exact values and labels.
+
+For schedulers where UserLM conditions are hard to place, use the CPU-first
+array wrappers:
+
+```bash
+sbatch slurm/userlm_small1_cpu_array.sbatch
+sbatch slurm/userlm_small2_cpu_array.sbatch
+sbatch slurm/userlm_large2_cpu_array.sbatch
+```
+
+Each wrapper runs one UserLM speech-grid job as eight single-condition array
+tasks with no GPU request. This improves backfill opportunities and prevents
+one unavailable node class from blocking the full model comparison.
 
 ## Result Groups
 

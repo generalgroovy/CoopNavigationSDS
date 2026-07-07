@@ -5,8 +5,8 @@
 #SBATCH --mem=12G
 #SBATCH --gres=gpu:1
 #SBATCH --time=01:00:00
-#SBATCH --output=slurm-%A_%a.out
-#SBATCH --error=slurm-%A_%a.err
+#SBATCH --output=slurm/logs/slurm-%x-%A_%a.out
+#SBATCH --error=slurm/logs/slurm-%x-%A_%a.err
 
 set -euo pipefail
 PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}"

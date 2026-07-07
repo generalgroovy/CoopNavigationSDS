@@ -337,6 +337,29 @@ missing assets, incompatible runtimes, unreachable endpoints, and resource
 errors. The requested model is never silently replaced with a smaller model or
 the deterministic agent because that would invalidate the condition label.
 
+#### Agent B Model Proposal Catalog
+
+The main thesis matrix uses two canonical Agent B models per size tier so the
+experiment remains tractable. Additional registered candidates are documented
+for follow-up batches or replacement when a cluster cannot run one canonical
+condition. Each proposal has a distinct experimental reason; models are not
+added merely because they are available.
+
+| Tier | Slot | Model | Provider | Unique aspect | Best use |
+| --- | --- | --- | --- | --- | --- |
+| Small | small1 | `llama3.2:1b` | Ollama | canonical small Llama-family chat baseline | low-resource local baseline |
+| Small | small2 | `qwen2.5:1.5b` | Ollama | larger multilingual Qwen-family small model | tests modest scale and family shift |
+| Small | small3 | `HuggingFaceTB/SmolLM2-360M-Instruct` | Transformers | sub-billion model with very low memory | floor condition and smoke tests |
+| Small | small4 | `Qwen/Qwen2.5-0.5B-Instruct` | Transformers | very small multilingual model without Ollama | provider/runtime contrast |
+| Medium | medium1 | `llama3.2:3b` | Ollama | canonical medium Llama-family model | middle resource point |
+| Medium | medium2 | `phi3:mini` | Ollama | non-Llama Phi architecture with compact reasoning focus | repair and clarification contrast |
+| Medium | medium3 | `gemma2:2b` | Ollama | Gemma-family model with lower memory than Phi | architecture contrast at moderate cost |
+| Medium | medium4 | `qwen3:4b` | Ollama | newer Qwen generation | constraint handling and multilingual contrast |
+| Large | large1 | `llama3.1:8b` | Ollama | canonical large Llama-family baseline | high-quality local baseline |
+| Large | large2 | `qwen2.5:7b` | Ollama | large multilingual Qwen comparison | cross-family large-model contrast |
+| Large | large3 | `mistral:7b` | Ollama | Mistral-family instruction model | non-Llama/Qwen repair behavior |
+| Large | large4 | `microsoft/UserLM-8b` | Transformers | user-simulator-trained rather than assistant-chat model | Agent A or Agent B ablation |
+
 ### TTS
 
 | Engine | Experimental value |
@@ -668,6 +691,30 @@ count. For cluster execution, choose `%K` from measured memory use rather than
 CPU count alone because language models and speech providers can dominate RAM
 or GPU memory. Array tasks must use a shared immutable grid file but separate
 result directories. Aggregation runs only after all tasks have stopped.
+Slurm standard output and error files are written under `slurm/logs/` so
+scheduler diagnostics are transportable through Git without filling the project
+root.
+
+The UserLM x Small1, Small2, and Large2 comparisons have CPU-first Slurm
+wrappers for clusters where GPU nodes are drained, reserved, or too busy. Each
+wrapper shards the eight expanded conditions into separate one-condition array
+tasks, starts a per-task loopback Ollama service on a unique port, and avoids a
+GPU request:
+
+```bash
+sbatch slurm/userlm_small1_cpu_array.sbatch
+sbatch slurm/userlm_small2_cpu_array.sbatch
+sbatch slurm/userlm_large2_cpu_array.sbatch
+```
+
+Override paths without editing the script when needed:
+
+```bash
+PROJECT_ROOT=/path/to/CoopNavigationSDS \
+PYTHON_BIN=/path/to/CoopNavigationSDS/.venv-linux/bin/python \
+RESULTS_ROOT=/path/to/CoopNavigationSDS/results \
+sbatch slurm/userlm_small1_cpu_array.sbatch
+```
 
 ## 8. Data and Metrics
 
@@ -876,11 +923,31 @@ table, and `run_phase_metric_matrix.html`. The matrix places completed runs in
 rows and phase-ordered metrics in columns. Color encodes outcome and descriptive
 outlier status; it does not establish causality or a validated threshold.
 
+Interrupted and preflight-only runs use a separate evidence-preserving view:
+
+```bash
+python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
+  results --output results/analysis --include-partial
+```
+
+`comparison_overview.html` links normalized evidence and aggregate views: run
+lifecycle, configuration groups, task outcomes, task success by configuration,
+phase metrics, phase summary by model, dialogue state, dialogue summary, and
+conversation turns. `analysis_guide.md` explains how to use each file. Every
+planned condition is represented as `completed`, `interrupted`, or
+`not_started`. Missing outcomes remain blank and are never converted to failure
+or zero. `analysis_manifest.json` hashes source evidence before and after
+generation and aborts if any source file changes. The command writes only
+derived files beneath `results/analysis`.
+
 Coverage can be rebuilt independently:
 
 ```bash
 python scripts/update_experiment_coverage.py --results-dir results
 ```
+
+That command now refreshes the evidence-preserving analysis automatically and
+adds the finalized-run comparison only when canonical finalized runs exist.
 
 ### Recommended Analysis Workflow
 

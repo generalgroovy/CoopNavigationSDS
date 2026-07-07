@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+from datetime import datetime, timezone
+import hashlib
 import html
 import json
 import math
 import os
+import re
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -101,6 +104,716 @@ def _phase_order(value):
 
 def _joined_values(rows, key):
     return ";".join(sorted({str(row.get(key)) for row in rows if row.get(key) not in (None, "")}))
+
+
+def discover_evidence_run_directories(paths):
+    """Discover finalized and interrupted batch directories without changing them."""
+    discovered = set(discover_run_directories(paths))
+    for value in paths:
+        root = Path(value).expanduser().resolve()
+        if not root.is_dir():
+            continue
+        if (root / "experiment_job.json").is_file():
+            discovered.add(root)
+        discovered.update(path.parent for path in root.rglob("experiment_job.json"))
+    return sorted(discovered, key=lambda path: str(path).casefold())
+
+
+def _source_inventory(roots, excluded_directory):
+    """Hash source evidence while excluding the derived analysis destination."""
+    excluded_directory = Path(excluded_directory).resolve()
+    files = {}
+    for root in roots:
+        root = Path(root).resolve()
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*"):
+            if not path.is_file() or excluded_directory in path.parents:
+                continue
+            digest = hashlib.sha256()
+            with path.open("rb") as handle:
+                for block in iter(lambda: handle.read(1024 * 1024), b""):
+                    digest.update(block)
+            files[str(path)] = {"size_bytes": path.stat().st_size, "sha256": digest.hexdigest()}
+    return files
+
+
+def _event_rows(path):
+    rows = []
+    try:
+        with Path(path).open(encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    rows.append(json.loads(line))
+    except (OSError, json.JSONDecodeError):
+        return rows
+    return rows
+
+
+def _summary_sections(text):
+    """Parse the runtime's human summary without inferring absent values."""
+    sections = {}
+    section = ""
+    for raw_line in str(text or "").splitlines():
+        line = raw_line.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1].strip().casefold()
+            sections.setdefault(section, {})
+        elif section and ":" in line:
+            key, value = line.split(":", 1)
+            sections[section][key.strip().casefold()] = value.strip()
+    return sections
+
+
+def _text_number(value):
+    match = re.search(r"-?\d+(?:\.\d+)?", str(value or ""))
+    return float(match.group()) if match else None
+
+
+def _text_boolean(value):
+    normalized = str(value or "").strip().casefold()
+    if normalized in {"true", "yes", "1"}:
+        return True
+    if normalized in {"false", "no", "0"}:
+        return False
+    return None
+
+
+def _normalized_model_name(value):
+    text = str(value or "").replace("\\", "/").rstrip("/")
+    return text.rsplit("/", 1)[-1] if text else ""
+
+
+def _planned_conditions(run_directory):
+    breakdown = Path(run_directory) / "condition_configuration_breakdown.csv"
+    return _read_csv(breakdown) if breakdown.is_file() else []
+
+
+def _condition_sessions(run_directory):
+    """Load one immutable runtime event stream per observed condition."""
+    sessions = {}
+    for path in sorted(Path(run_directory).glob("batch-*.jsonl")):
+        events = _event_rows(path)
+        start = next((row for row in events if row.get("name") == "batch.condition.start"), None)
+        if start is None:
+            continue
+        condition_id = str(start.get("payload", {}).get("condition_id") or "")
+        if condition_id:
+            sessions[condition_id] = {"path": path, "events": events}
+    return sessions
+
+
+def _condition_state(session):
+    if session is None:
+        return "not_started"
+    names = {row.get("name") for row in session["events"]}
+    return "completed" if "batch.condition.end" in names and "metrics" in names else "interrupted"
+
+
+def _condition_runtime_view(run_id, run_directory, planned, session):
+    condition_id = str(planned.get("condition_id") or "")
+    state = _condition_state(session)
+    events = session["events"] if session else []
+    summary_event = next((row for row in reversed(events) if row.get("name") == "metrics"), None)
+    sections = _summary_sections((summary_event or {}).get("payload", {}).get("metrics"))
+    run_section = sections.get("run", {})
+    task = sections.get("task", {})
+    comparison = sections.get("comparison", {})
+    execution = sections.get("execution", {})
+    constraint_match = re.search(r"(\d+)\s*/\s*(\d+)", task.get("constraints satisfied", ""))
+    return {
+        "source_run": run_id,
+        "source_path": str(run_directory),
+        "condition_id": condition_id,
+        "condition_state": state,
+        "run_type": planned.get("run_type", ""),
+        "pair_id": planned.get("pair_id", ""),
+        "scenario_key": planned.get("scenario_key", ""),
+        "persona_key": planned.get("persona_key", ""),
+        "speech_pattern_key": planned.get("speech_pattern_key", ""),
+        "agent_a_type": planned.get("agent_a_type", ""),
+        "agent_b_model": _normalized_model_name(planned.get("agent_b_model")),
+        "agent_b_llm_size": planned.get("agent_b_llm_size", ""),
+        "tts_engine": planned.get("configured_tts_engine", ""),
+        "asr_engine": planned.get("configured_asr_engine", ""),
+        "asr_beam_size": planned.get("asr_beam_size", ""),
+        "network_seed": planned.get("network_seed", ""),
+        "outcome": run_section.get("outcome") if state == "completed" else None,
+        "task_success": _text_boolean(run_section.get("task success")) if state == "completed" else None,
+        "stop_reason": run_section.get("stop reason") if state == "completed" else None,
+        "route_valid": _text_boolean(task.get("route valid")) if state == "completed" else None,
+        "destination_reached": _text_boolean(task.get("destination reached")) if state == "completed" else None,
+        "route_duration_min": _text_number(task.get("duration")) if state == "completed" else None,
+        "duration_limit_min": _text_number(task.get("duration limit")) if state == "completed" else None,
+        "optimal_duration_min": _text_number(comparison.get("optimal duration")) if state == "completed" else None,
+        "duration_gap_min": _text_number(comparison.get("duration gap")) if state == "completed" else None,
+        "constraints_satisfied": int(constraint_match.group(1)) if constraint_match and state == "completed" else None,
+        "constraints_total": int(constraint_match.group(2)) if constraint_match and state == "completed" else None,
+        "candidates_compared": _text_number(comparison.get("candidates compared")) if state == "completed" else None,
+        "route_revisions": _text_number(comparison.get("revisions")) if state == "completed" else None,
+        "turn_count": _text_number(execution.get("turns")) if state == "completed" else None,
+        "runtime_sec": _text_number(execution.get("runtime")) if state == "completed" else None,
+        "selected_route": task.get("selected route") if state == "completed" else None,
+        "optimal_route": comparison.get("optimal route") if state == "completed" else None,
+        "source_event_file": str(session["path"]) if session else None,
+    }
+
+
+def _phase_comparison_rows(condition, session):
+    if session is None:
+        return []
+    events = session["events"]
+    timing = [row.get("payload", {}) for row in events if row.get("name") == "telemetry.phase_timing"]
+    speech = [row.get("payload", {}) for row in events if row.get("name") == "telemetry.speech"]
+    nlu = [row.get("payload", {}) for row in events if row.get("name") == "telemetry.nlu"]
+    candidates = [row for row in events if row.get("name") == "candidate"]
+    phase_fields = (
+        ("natural_language_generation", "natural_language_generation_sec"),
+        ("text_to_speech", "text_to_speech_processing_sec"),
+        ("automatic_speech_recognition", "automatic_speech_recognition_processing_sec"),
+        ("natural_language_understanding", "natural_language_understanding_sec"),
+        ("dialogue_management", "dialogue_management_sec"),
+        ("speech_pipeline", "speech_pipeline_wall_sec"),
+    )
+    rows = []
+    for order, (phase, field) in enumerate(phase_fields, 1):
+        values = [_number(item.get(field)) for item in timing]
+        values = [value for value in values if value is not None]
+        row = {
+            "source_run": condition["source_run"],
+            "condition_id": condition["condition_id"],
+            "condition_state": condition["condition_state"],
+            "agent_a_type": condition["agent_a_type"],
+            "agent_b_model": condition["agent_b_model"],
+            "agent_b_llm_size": condition["agent_b_llm_size"],
+            "tts_engine": condition["tts_engine"],
+            "asr_engine": condition["asr_engine"],
+            "run_type": condition["run_type"],
+            "scenario_key": condition["scenario_key"],
+            "persona_key": condition["persona_key"],
+            "speech_pattern_key": condition["speech_pattern_key"],
+            "phase_order": order,
+            "phase": phase,
+            "observation_count": len(values),
+            "total_processing_sec": sum(values) if values else None,
+            "mean_processing_sec": _mean(values),
+            "maximum_processing_sec": max(values) if values else None,
+            "pipeline_success_rate": None,
+            "error_count": None,
+            "misinterpreted_token_count": None,
+            "correction_count": None,
+            "valid_route_parse_rate": None,
+            "candidate_count": None,
+            "evidence_source": "runtime event telemetry; no retrospective substitution",
+        }
+        if phase in {"text_to_speech", "automatic_speech_recognition", "speech_pipeline"}:
+            row["pipeline_success_rate"] = _mean([float(bool(item.get("pipeline_ok"))) for item in speech])
+            row["error_count"] = sum(not bool(item.get("pipeline_ok")) for item in speech)
+        if phase == "automatic_speech_recognition":
+            row["misinterpreted_token_count"] = sum(len(item.get("misinterpreted_tokens") or ()) for item in speech)
+            row["correction_count"] = sum(len(item.get("transcript_corrections") or ()) for item in speech)
+        if phase == "natural_language_understanding":
+            parsed = [item for item in nlu if item.get("route_valid") is not None]
+            row["valid_route_parse_rate"] = _mean([float(bool(item.get("route_valid"))) for item in parsed])
+        if phase == "dialogue_management":
+            row["candidate_count"] = len(candidates)
+        rows.append(row)
+    return rows
+
+
+def _state_agreement(snapshot_a, snapshot_b):
+    keys = ("start_station", "destination_station", "start_time_min")
+    a_values = snapshot_a.get("task_variables", {})
+    b_values = snapshot_b.get("task_variables", {})
+    known = [key for key in keys if a_values.get(key) is not None or b_values.get(key) is not None]
+    return _mean([float(a_values.get(key) == b_values.get(key)) for key in known]) if known else None
+
+
+def _dialogue_state_row(condition, session):
+    if session is None:
+        return {
+            "source_run": condition["source_run"], "condition_id": condition["condition_id"],
+            "condition_state": condition["condition_state"], "run_type": condition["run_type"],
+            "scenario_key": condition["scenario_key"], "persona_key": condition["persona_key"],
+        }
+    events = session["events"]
+    messages_a = [row for row in events if row.get("name") == "message.agent a"]
+    messages_b = [row for row in events if row.get("name") == "message.agent b"]
+    candidates = [row.get("payload", {}).get("candidate", {}) for row in events if row.get("name") == "candidate"]
+    memories = [row.get("payload", {}) for row in events if row.get("name") == "telemetry.memory"]
+    final = memories[-1].get("snapshots", {}) if memories else {}
+    agent_a = final.get("Agent A", {})
+    agent_b = final.get("Agent B", {})
+    route_a = agent_a.get("current_route") or []
+    route_b = agent_b.get("current_route") or []
+    constraints_a = set(agent_a.get("active_constraints") or ())
+    constraints_b = set(agent_b.get("active_constraints") or ())
+    focuses = [
+        (item.get("snapshots", {}).get("Agent A", {}).get("pending_focus"),
+         item.get("snapshots", {}).get("Agent B", {}).get("pending_focus"))
+        for item in memories
+    ]
+    return {
+        "source_run": condition["source_run"],
+        "condition_id": condition["condition_id"],
+        "condition_state": condition["condition_state"],
+        "run_type": condition["run_type"],
+        "scenario_key": condition["scenario_key"],
+        "persona_key": condition["persona_key"],
+        "message_count": len(messages_a) + len(messages_b),
+        "agent_a_turn_count": len(messages_a),
+        "agent_b_turn_count": len(messages_b),
+        "memory_snapshot_count": len(memories),
+        "candidate_count": len(candidates),
+        "unique_route_count": len({tuple(item.get("route") or ()) for item in candidates if item.get("route")}),
+        "state_task_variable_agreement": _state_agreement(agent_a, agent_b),
+        "active_constraint_agreement": float(constraints_a == constraints_b),
+        "current_route_agreement": float(route_a == route_b),
+        "agent_a_constraint_count": len(constraints_a),
+        "agent_b_constraint_count": len(constraints_b),
+        "agent_a_clarification_count": agent_a.get("clarification_request_count"),
+        "agent_b_clarification_count": agent_b.get("clarification_request_count"),
+        "final_agent_a_focus": agent_a.get("pending_focus"),
+        "final_agent_b_focus": agent_b.get("pending_focus"),
+        "focus_disagreement_count": sum(left != right for left, right in focuses),
+    }
+
+
+def _conversation_rows(condition, session):
+    if session is None:
+        return []
+    events = session["events"]
+    speech = {
+        int(row.get("payload", {}).get("turn")): row.get("payload", {})
+        for row in events if row.get("name") == "telemetry.speech" and row.get("payload", {}).get("turn") is not None
+    }
+    nlu = {
+        int(row.get("payload", {}).get("turn")): row.get("payload", {})
+        for row in events if row.get("name") == "telemetry.nlu" and row.get("payload", {}).get("turn") is not None
+    }
+    rows = []
+    for turn in sorted(speech):
+        item = speech[turn]
+        semantic = nlu.get(turn, {})
+        rows.append({
+            "source_run": condition["source_run"],
+            "condition_id": condition["condition_id"],
+            "condition_state": condition["condition_state"],
+            "run_type": condition["run_type"],
+            "turn": turn,
+            "speaker": item.get("speaker"),
+            "listener": "Agent B" if item.get("speaker") == "Agent A" else "Agent A",
+            "intended_text": item.get("generated_text"),
+            "tts_text": item.get("outgoing_text"),
+            "asr_raw_text": item.get("raw_asr_transcript"),
+            "understood_text": item.get("agent_input_transcript"),
+            "misinterpretation_count": len(item.get("misinterpreted_tokens") or ()),
+            "correction_count": len(item.get("transcript_corrections") or ()),
+            "pipeline_ok": item.get("pipeline_ok"),
+            "tts_latency_sec": item.get("tts_latency_sec"),
+            "asr_latency_sec": item.get("asr_latency_sec"),
+            "pipeline_latency_sec": item.get("pipeline_latency_sec"),
+            "nlu_route_valid": semantic.get("route_valid"),
+            "nlu_route_reaches_goal": semantic.get("route_reaches_goal"),
+        })
+    return rows
+
+
+def _configuration_group_rows(condition_rows):
+    dimensions = (
+        "agent_a_type", "agent_b_model", "agent_b_llm_size", "tts_engine", "asr_engine",
+        "scenario_key", "persona_key", "speech_pattern_key", "run_type", "asr_beam_size",
+    )
+    groups = defaultdict(list)
+    for row in condition_rows:
+        groups[tuple(row.get(key) for key in dimensions)].append(row)
+    output = []
+    for identity, rows in groups.items():
+        completed = [row for row in rows if row["condition_state"] == "completed"]
+        observed = [row for row in rows if row["condition_state"] != "not_started"]
+        successful = [row for row in completed if row.get("task_success") is True]
+        output.append({
+            **dict(zip(dimensions, identity)),
+            "planned_condition_count": len(rows),
+            "observed_condition_count": len(observed),
+            "completed_condition_count": len(completed),
+            "interrupted_condition_count": sum(row["condition_state"] == "interrupted" for row in rows),
+            "not_started_condition_count": sum(row["condition_state"] == "not_started" for row in rows),
+            "successful_condition_count": len(successful),
+            "task_success_rate_completed": len(successful) / len(completed) if completed else None,
+            "source_runs": _joined_values(rows, "source_run"),
+        })
+    return sorted(output, key=lambda row: tuple(str(row.get(key, "")).casefold() for key in dimensions))
+
+
+def _numeric_values(rows, key):
+    values = []
+    for row in rows:
+        value = _number(row.get(key))
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def _rate(rows, key, expected=True):
+    known = [row for row in rows if row.get(key) is not None]
+    return (
+        sum(row.get(key) is expected for row in known) / len(known)
+        if known else None
+    )
+
+
+def _task_success_summary_rows(condition_rows):
+    dimensions = (
+        "agent_a_type", "agent_b_model", "agent_b_llm_size", "scenario_key",
+        "persona_key", "speech_pattern_key", "run_type", "tts_engine", "asr_engine",
+    )
+    groups = defaultdict(list)
+    for row in condition_rows:
+        groups[tuple(row.get(key) for key in dimensions)].append(row)
+    output = []
+    for identity, rows in groups.items():
+        completed = [row for row in rows if row.get("condition_state") == "completed"]
+        observed = [row for row in rows if row.get("condition_state") != "not_started"]
+        gaps = _numeric_values(completed, "duration_gap_min")
+        turns = _numeric_values(completed, "turn_count")
+        runtime = _numeric_values(completed, "runtime_sec")
+        output.append({
+            **dict(zip(dimensions, identity)),
+            "planned_conditions": len(rows),
+            "observed_conditions": len(observed),
+            "completed_conditions": len(completed),
+            "interrupted_conditions": sum(row.get("condition_state") == "interrupted" for row in rows),
+            "not_started_conditions": sum(row.get("condition_state") == "not_started" for row in rows),
+            "task_success_rate": _rate(completed, "task_success", True),
+            "route_validity_rate": _rate(completed, "route_valid", True),
+            "destination_reached_rate": _rate(completed, "destination_reached", True),
+            "mean_duration_gap_min": _mean(gaps),
+            "mean_turn_count": _mean(turns),
+            "mean_runtime_sec": _mean(runtime),
+            "mean_constraints_satisfied": _mean(_numeric_values(completed, "constraints_satisfied")),
+            "mean_constraints_total": _mean(_numeric_values(completed, "constraints_total")),
+            "evidence_source": "task_outcome_comparison.csv grouped without changing source results",
+        })
+    return sorted(output, key=lambda row: tuple(str(row.get(key, "")).casefold() for key in dimensions))
+
+
+def _phase_summary_rows(phase_rows):
+    dimensions = (
+        "agent_a_type", "agent_b_model", "agent_b_llm_size", "run_type",
+        "tts_engine", "asr_engine", "phase_order", "phase",
+    )
+    groups = defaultdict(list)
+    for row in phase_rows:
+        groups[tuple(row.get(key) for key in dimensions)].append(row)
+    output = []
+    for identity, rows in groups.items():
+        output.append({
+            **dict(zip(dimensions, identity)),
+            "condition_phase_rows": len(rows),
+            "observed_phase_rows": sum(_number(row.get("observation_count")) not in (None, 0) for row in rows),
+            "mean_observation_count": _mean(_numeric_values(rows, "observation_count")),
+            "mean_processing_sec": _mean(_numeric_values(rows, "mean_processing_sec")),
+            "maximum_processing_sec": max(_numeric_values(rows, "maximum_processing_sec") or [None]),
+            "mean_pipeline_success_rate": _mean(_numeric_values(rows, "pipeline_success_rate")),
+            "total_error_count": sum(_numeric_values(rows, "error_count")),
+            "total_misinterpreted_tokens": sum(_numeric_values(rows, "misinterpreted_token_count")),
+            "total_corrections": sum(_numeric_values(rows, "correction_count")),
+            "mean_valid_route_parse_rate": _mean(_numeric_values(rows, "valid_route_parse_rate")),
+            "total_candidates": sum(_numeric_values(rows, "candidate_count")),
+            "evidence_source": "phase_metric_comparison.csv grouped by model/run type/phase",
+        })
+    return sorted(output, key=lambda row: (
+        str(row.get("agent_a_type", "")).casefold(),
+        str(row.get("agent_b_model", "")).casefold(),
+        _number(row.get("phase_order")) or 0,
+    ))
+
+
+def _dialogue_summary_rows(dialogue_rows):
+    dimensions = ("source_run", "run_type", "scenario_key", "persona_key")
+    groups = defaultdict(list)
+    for row in dialogue_rows:
+        groups[tuple(row.get(key) for key in dimensions)].append(row)
+    output = []
+    for identity, rows in groups.items():
+        output.append({
+            **dict(zip(dimensions, identity)),
+            "condition_count": len(rows),
+            "completed_condition_count": sum(row.get("condition_state") == "completed" for row in rows),
+            "mean_message_count": _mean(_numeric_values(rows, "message_count")),
+            "mean_agent_a_turn_count": _mean(_numeric_values(rows, "agent_a_turn_count")),
+            "mean_agent_b_turn_count": _mean(_numeric_values(rows, "agent_b_turn_count")),
+            "mean_memory_snapshot_count": _mean(_numeric_values(rows, "memory_snapshot_count")),
+            "mean_candidate_count": _mean(_numeric_values(rows, "candidate_count")),
+            "mean_unique_route_count": _mean(_numeric_values(rows, "unique_route_count")),
+            "mean_task_state_agreement": _mean(_numeric_values(rows, "state_task_variable_agreement")),
+            "mean_constraint_agreement": _mean(_numeric_values(rows, "active_constraint_agreement")),
+            "mean_route_agreement": _mean(_numeric_values(rows, "current_route_agreement")),
+            "total_focus_disagreements": sum(_numeric_values(rows, "focus_disagreement_count")),
+            "evidence_source": "dialogue_state_comparison.csv grouped by run/scenario/persona",
+        })
+    return sorted(output, key=lambda row: tuple(str(row.get(key, "")).casefold() for key in dimensions))
+
+
+def _run_inventory_row(run_directory, planned, sessions, condition_rows):
+    completed = sum(row["condition_state"] == "completed" for row in condition_rows)
+    interrupted = sum(row["condition_state"] == "interrupted" for row in condition_rows)
+    not_started = sum(row["condition_state"] == "not_started" for row in condition_rows)
+    finalized = (Path(run_directory) / "run_summary.json").is_file()
+    if finalized:
+        state = "finalized"
+    elif interrupted:
+        state = "interrupted"
+    elif sessions:
+        state = "partial"
+    else:
+        state = "preflight_only"
+    first = planned[0] if planned else {}
+    successes = sum(row.get("task_success") is True for row in condition_rows)
+    known_outcomes = sum(row.get("task_success") is not None for row in condition_rows)
+    return {
+        "source_run": Path(run_directory).name,
+        "source_path": str(run_directory),
+        "run_state": state,
+        "agent_a_type": first.get("agent_a_type", ""),
+        "agent_b_model": _normalized_model_name(first.get("agent_b_model")),
+        "agent_b_llm_size": first.get("agent_b_llm_size", ""),
+        "tts_engines": _joined_values(planned, "configured_tts_engine"),
+        "asr_engines": _joined_values(planned, "configured_asr_engine"),
+        "planned_condition_count": len(planned),
+        "observed_condition_count": len(sessions),
+        "completed_condition_count": completed,
+        "interrupted_condition_count": interrupted,
+        "not_started_condition_count": not_started,
+        "known_outcome_count": known_outcomes,
+        "successful_condition_count": successes,
+        "task_success_rate_completed": successes / known_outcomes if known_outcomes else None,
+        "finalized_artifacts_available": finalized,
+        "interpretation": (
+            "canonical finalized result" if finalized else
+            "runtime evidence ended during a condition" if state == "interrupted" else
+            "some condition evidence exists but canonical finalization is absent" if state == "partial" else
+            "configuration was expanded; no condition runtime evidence was found"
+        ),
+    }
+
+
+def _html_table(rows, columns, *, limit=None):
+    selected = list(rows if limit is None else rows[:limit])
+    header = "".join(f"<th>{html.escape(label)}</th>" for _key, label in columns)
+    body = []
+    for row in selected:
+        state = str(row.get("run_state") or row.get("condition_state") or "")
+        cells = []
+        for key, _label in columns:
+            value = row.get(key)
+            if isinstance(value, float):
+                value = f"{value:.4f}"
+            cells.append(f"<td>{html.escape('' if value is None else str(value))}</td>")
+        body.append(f'<tr class="{html.escape(state)}">{"".join(cells)}</tr>')
+    if not body:
+        body.append(f'<tr><td colspan="{len(columns)}">No evidence available.</td></tr>')
+    return f"<table><thead><tr>{header}</tr></thead><tbody>{''.join(body)}</tbody></table>"
+
+
+def _write_analysis_guide(path, generated_files):
+    lines = [
+        "# Result Analysis Guide",
+        "",
+        "This folder contains derived analysis tables only. The generator reads raw",
+        "run evidence, writes normalized comparison views, hashes the source evidence",
+        "before and after generation, and aborts if source evidence changes.",
+        "",
+        "## Files",
+        "",
+        "| File | Purpose |",
+        "| --- | --- |",
+        "| `run_inventory.csv` | One row per discovered run folder, including lifecycle state and completed/observed counts. |",
+        "| `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |",
+        "| `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |",
+        "| `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |",
+        "| `phase_metric_comparison.csv` | One row per condition and dialogue-system phase with telemetry counts and timings. |",
+        "| `phase_summary_by_model.csv` | Phase-level aggregates by Agent A, Agent B, run type, TTS, ASR, and phase. |",
+        "| `dialogue_state_comparison.csv` | One row per condition with memory, route, candidate, and agreement evidence. |",
+        "| `dialogue_state_summary.csv` | Dialogue-state aggregates by run, scenario, persona, and run type. |",
+        "| `conversation_turns.csv` | Turn-level intended text, TTS text, raw ASR, understood text, and correction counts. |",
+        "| `analysis_manifest.json` | Source-evidence hash, generated file list, and read-only integrity check. |",
+        "",
+        "## Interpretation Rules",
+        "",
+        "- `completed` means the condition reached a canonical end event.",
+        "- `interrupted` means runtime evidence exists but no successful condition end was recorded.",
+        "- `not_started` means the condition was planned but has no observed session evidence.",
+        "- Blank numeric outcomes are missing evidence, not zero.",
+        "- HTML colors are exploratory visual markers only; statistical analysis should use the CSV files.",
+        "",
+        "## Generated Files",
+        "",
+        *[f"- `{name}`" for name in generated_files],
+        "",
+    ]
+    Path(path).write_text("\n".join(lines), encoding="utf-8")
+
+
+def _write_evidence_overview(path, inventory, configurations, outcomes, phases, dialogues, task_summary, phase_summary, dialogue_summary):
+    run_table = _html_table(inventory, (
+        ("source_run", "Run"), ("run_state", "State"), ("agent_a_type", "Agent A"),
+        ("agent_b_model", "Agent B"), ("planned_condition_count", "Planned"),
+        ("completed_condition_count", "Completed"), ("interrupted_condition_count", "Interrupted"),
+        ("task_success_rate_completed", "Success rate"),
+    ))
+    config_table = _html_table(configurations, (
+        ("agent_b_model", "Agent B"), ("scenario_key", "Scenario"), ("persona_key", "Persona"),
+        ("speech_pattern_key", "Speech"), ("run_type", "Run type"),
+        ("planned_condition_count", "Planned"), ("completed_condition_count", "Completed"),
+    ), limit=80)
+    outcome_table = _html_table(outcomes, (
+        ("condition_id", "Condition"), ("condition_state", "State"), ("scenario_key", "Scenario"),
+        ("run_type", "Run type"), ("task_success", "Success"), ("route_valid", "Route valid"),
+        ("constraints_satisfied", "Constraints"), ("constraints_total", "Total"),
+        ("route_duration_min", "Duration"), ("duration_gap_min", "Gap"), ("turn_count", "Turns"),
+    ), limit=120)
+    phase_table = _html_table(phases, (
+        ("condition_id", "Condition"), ("phase", "Phase"), ("observation_count", "N"),
+        ("mean_processing_sec", "Mean sec"), ("pipeline_success_rate", "Pipeline success"),
+        ("error_count", "Errors"), ("misinterpreted_token_count", "Misinterpretations"),
+        ("correction_count", "Corrections"),
+    ), limit=160)
+    dialogue_table = _html_table(dialogues, (
+        ("condition_id", "Condition"), ("condition_state", "State"), ("message_count", "Messages"),
+        ("candidate_count", "Candidates"), ("unique_route_count", "Unique routes"),
+        ("state_task_variable_agreement", "Task-state agreement"),
+        ("active_constraint_agreement", "Constraint agreement"),
+        ("current_route_agreement", "Route agreement"), ("focus_disagreement_count", "Focus disagreements"),
+    ), limit=120)
+    task_summary_table = _html_table(task_summary, (
+        ("agent_a_type", "Agent A"), ("agent_b_model", "Agent B"), ("scenario_key", "Scenario"),
+        ("persona_key", "Persona"), ("run_type", "Run type"), ("planned_conditions", "Planned"),
+        ("completed_conditions", "Completed"), ("task_success_rate", "Success"),
+        ("route_validity_rate", "Route valid"), ("mean_duration_gap_min", "Mean gap"),
+        ("mean_turn_count", "Mean turns"),
+    ), limit=120)
+    phase_summary_table = _html_table(phase_summary, (
+        ("agent_b_model", "Agent B"), ("run_type", "Run type"), ("phase", "Phase"),
+        ("condition_phase_rows", "Rows"), ("mean_processing_sec", "Mean sec"),
+        ("mean_pipeline_success_rate", "Pipeline success"), ("total_error_count", "Errors"),
+        ("total_misinterpreted_tokens", "Misinterpretations"), ("total_corrections", "Corrections"),
+        ("mean_valid_route_parse_rate", "Route parse"),
+    ), limit=160)
+    dialogue_summary_table = _html_table(dialogue_summary, (
+        ("source_run", "Run"), ("scenario_key", "Scenario"), ("persona_key", "Persona"),
+        ("run_type", "Run type"), ("mean_message_count", "Messages"),
+        ("mean_candidate_count", "Candidates"), ("mean_unique_route_count", "Unique routes"),
+        ("mean_task_state_agreement", "Task agreement"), ("mean_route_agreement", "Route agreement"),
+        ("total_focus_disagreements", "Focus disagreements"),
+    ), limit=120)
+    document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Result evidence comparison</title>
+<style>
+body{{font:14px system-ui,sans-serif;margin:0;background:#f4f6f8;color:#1d2935}}main{{max-width:1800px;margin:auto;padding:20px}}
+h1,h2{{margin:0 0 10px}}section{{background:#fff;border:1px solid #cad3dc;margin:12px 0;padding:14px;overflow:auto}}
+nav a{{margin-right:16px;color:#15536d;font-weight:650}}.grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #dce2e8;padding:6px 8px;text-align:left;white-space:nowrap}}
+th{{position:sticky;top:0;background:#244b5a;color:#fff}}.finalized,.completed{{background:#e1f2e8}}.partial{{background:#fff1c9}}
+.interrupted{{background:#f8dddd}}.preflight_only,.not_started{{background:#edf0f3;color:#56616c}}code{{background:#edf1f4;padding:2px 4px}}
+</style></head><body><main><h1>Result evidence comparison</h1>
+<p>Derived representation only. Source logs, audio, configuration, and outcomes are not modified. Blank values mean unavailable evidence, not zero or failure.</p>
+<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
+<section><h2>Run lifecycle</h2>{run_table}</section><section><h2>Configuration groups</h2>{config_table}</section>
+<section><h2>Task and success</h2>{outcome_table}</section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
+<section><h2>Phase metrics</h2>{phase_table}</section><section><h2>Phase summary by model</h2>{phase_summary_table}</section>
+<section><h2>Conversation and dialogue state</h2>{dialogue_table}</section><section><h2>Dialogue summary</h2>{dialogue_summary_table}</section></main></body></html>"""
+    Path(path).write_text(document, encoding="utf-8")
+
+
+def write_evidence_comparison(inputs, output_directory):
+    """Create comparable derived views for every discovered run lifecycle state."""
+    roots = [Path(value).expanduser().resolve() for value in inputs]
+    output = Path(output_directory).expanduser().resolve()
+    runs = discover_evidence_run_directories(roots)
+    if not runs:
+        raise ValueError("No result directories containing experiment_job.json or canonical run artifacts were found.")
+    before = _source_inventory(roots, output)
+    output.mkdir(parents=True, exist_ok=True)
+    inventory_rows = []
+    condition_rows = []
+    phase_rows = []
+    dialogue_rows = []
+    conversation_rows = []
+    for run_directory in runs:
+        planned = _planned_conditions(run_directory)
+        sessions = _condition_sessions(run_directory)
+        if not planned and (run_directory / "conditions.jsonl").is_file():
+            planned = _read_jsonl(run_directory / "conditions.jsonl")
+        run_id = run_directory.name
+        run_conditions = []
+        for planned_row in planned:
+            condition = _condition_runtime_view(
+                run_id, run_directory, planned_row, sessions.get(str(planned_row.get("condition_id") or ""))
+            )
+            run_conditions.append(condition)
+            session = sessions.get(condition["condition_id"])
+            phase_rows.extend(_phase_comparison_rows(condition, session))
+            dialogue_rows.append(_dialogue_state_row(condition, session))
+            conversation_rows.extend(_conversation_rows(condition, session))
+        condition_rows.extend(run_conditions)
+        inventory_rows.append(_run_inventory_row(run_directory, planned, sessions, run_conditions))
+    configuration_rows = _configuration_group_rows(condition_rows)
+    task_summary_rows = _task_success_summary_rows(condition_rows)
+    phase_summary_rows = _phase_summary_rows(phase_rows)
+    dialogue_summary_rows = _dialogue_summary_rows(dialogue_rows)
+    paths = {
+        "overview": output / "comparison_overview.html",
+        "guide": output / "analysis_guide.md",
+        "run_inventory": output / "run_inventory.csv",
+        "configurations": output / "configuration_groups.csv",
+        "outcomes": output / "task_outcome_comparison.csv",
+        "task_summary": output / "task_success_by_configuration.csv",
+        "phases": output / "phase_metric_comparison.csv",
+        "phase_summary": output / "phase_summary_by_model.csv",
+        "dialogue": output / "dialogue_state_comparison.csv",
+        "dialogue_summary": output / "dialogue_state_summary.csv",
+        "turns": output / "conversation_turns.csv",
+        "manifest": output / "analysis_manifest.json",
+    }
+    for key, rows in (
+        ("run_inventory", inventory_rows), ("configurations", configuration_rows),
+        ("outcomes", condition_rows), ("task_summary", task_summary_rows),
+        ("phases", phase_rows), ("phase_summary", phase_summary_rows),
+        ("dialogue", dialogue_rows), ("dialogue_summary", dialogue_summary_rows),
+        ("turns", conversation_rows),
+    ):
+        _write_csv(paths[key], rows)
+    generated_file_names = [path.name for key, path in paths.items() if key != "manifest"]
+    _write_analysis_guide(paths["guide"], generated_file_names)
+    _write_evidence_overview(
+        paths["overview"], inventory_rows, configuration_rows, condition_rows,
+        phase_rows, dialogue_rows, task_summary_rows, phase_summary_rows,
+        dialogue_summary_rows,
+    )
+    after = _source_inventory(roots, output)
+    if before != after:
+        raise RuntimeError("Source result evidence changed while derived analysis was generated.")
+    aggregate = hashlib.sha256(
+        "".join(f"{path}:{item['sha256']}\n" for path, item in sorted(before.items())).encode("utf-8")
+    ).hexdigest()
+    manifest = {
+        "schema_version": 1,
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "method": "read-only derivation from canonical and partial runtime evidence",
+        "source_evidence_unchanged": True,
+        "source_file_count": len(before),
+        "source_evidence_sha256": aggregate,
+        "discovered_run_count": len(runs),
+        "planned_condition_count": len(condition_rows),
+        "observed_condition_count": sum(row["condition_state"] != "not_started" for row in condition_rows),
+        "completed_condition_count": sum(row["condition_state"] == "completed" for row in condition_rows),
+        "generated_files": generated_file_names,
+        "source_files": before,
+    }
+    paths["manifest"].write_text(json.dumps(manifest, indent=2, ensure_ascii=True), encoding="utf-8")
+    return paths
 
 
 def build_condition_analysis_rows(conditions, metrics):
@@ -1284,8 +1997,17 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Compare standard CoopNavigationSDS result folders.")
     parser.add_argument("runs", nargs="+", help="Run folders or result roots to discover recursively.")
     parser.add_argument("--output", required=True, help="Directory for combined CSV files and the HTML report.")
+    parser.add_argument(
+        "--include-partial",
+        action="store_true",
+        help="Represent finalized, partial, interrupted, and preflight-only runs without modifying evidence.",
+    )
     args = parser.parse_args(argv)
-    paths = compare_runs(args.runs, args.output)
+    paths = (
+        write_evidence_comparison(args.runs, args.output)
+        if args.include_partial
+        else compare_runs(args.runs, args.output)
+    )
     for label, path in paths.items():
         print(f"{label}: {path}")
 

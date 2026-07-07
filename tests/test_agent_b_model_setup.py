@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from coop_navigation_sds.Configuration.model_matrix import (
     AGENT_B_OLLAMA_BASE_URL,
+    agent_b_model_proposals,
     model_catalog_folder,
     resolve_agent_b_model_store,
 )
@@ -90,6 +91,15 @@ class AgentBModelSetupTests(unittest.TestCase):
         self.assertNotEqual(windows, linux)
         self.assertEqual(windows.parts[-3:], ("agent_b", "windows", "ollama"))
         self.assertEqual(linux.parts[-3:], ("agent_b", "linux", "ollama"))
+
+    def test_model_proposals_contain_at_least_three_unique_models_per_size(self):
+        proposals = agent_b_model_proposals()
+
+        self.assertEqual(set(proposals), {"small", "medium", "large"})
+        for tier, rows in proposals.items():
+            self.assertGreaterEqual(len(rows), 3, tier)
+            self.assertEqual(len({row.model for row in rows}), len(rows))
+            self.assertTrue(all(row.unique_aspect and row.use_case for row in rows))
 
     def test_unavailable_ollama_returns_actionable_status_without_traceback(self):
         with patch(

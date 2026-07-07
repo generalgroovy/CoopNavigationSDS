@@ -1,0 +1,1703 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-07-07T12:48:59.365664+00:00",
+  "method": "read-only derivation from canonical and partial runtime evidence",
+  "source_evidence_unchanged": true,
+  "source_file_count": 419,
+  "source_evidence_sha256": "84bd5cd041bf5b126ae2498c74499bb90bbed00aeea46544f5f9e97dd3a5c949",
+  "discovered_run_count": 3,
+  "planned_condition_count": 78,
+  "observed_condition_count": 18,
+  "completed_condition_count": 17,
+  "generated_files": [
+    "comparison_overview.html",
+    "analysis_guide.md",
+    "run_inventory.csv",
+    "configuration_groups.csv",
+    "task_outcome_comparison.csv",
+    "task_success_by_configuration.csv",
+    "phase_metric_comparison.csv",
+    "phase_summary_by_model.csv",
+    "dialogue_state_comparison.csv",
+    "dialogue_state_summary.csv",
+    "conversation_turns.csv"
+  ],
+  "source_files": {
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_model_combination_coverage.csv": {
+      "size_bytes": 1897,
+      "sha256": "ae854eca698500ac5015f9c0c6ca5ce5cd28060ffe0b8a34c12e22a9377a952f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_model_combination_coverage.html": {
+      "size_bytes": 6117,
+      "sha256": "c7f9ec290538bf1f546cfd8ba63abe40c043140437e5ec78595ec3644aa004fb"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_case_coverage.csv": {
+      "size_bytes": 1887,
+      "sha256": "395284c654facd363b9cb48c72e1d999ad84951ca3ef72990b609ceddfc261cc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage.html": {
+      "size_bytes": 9153,
+      "sha256": "572d1282b445ca6c2ee502c19d25778cdbd551a6982268651c0ef16aa99dad2c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_conditions.csv": {
+      "size_bytes": 232934,
+      "sha256": "9737415fe690f157b1ef6f0d63877b0e29e65cb186d2dec616504389a0993273"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_matrix.csv": {
+      "size_bytes": 6259,
+      "sha256": "7a194d773a26ff646a00c35d4b7c348dfd4a5391ce7d3476fc99b896277efc35"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_runs.csv": {
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\experiment_coverage_summary.json": {
+      "size_bytes": 1058,
+      "sha256": "46cd1f1b127c73576b55ae0ad5839558831f799978cfc8f9c4c79f60ac1bc107"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\02-medium-phi3-mini\\userlm\\naming_scheme.json": {
+      "size_bytes": 2123,
+      "sha256": "a3b57c3ed43cee669fee9ba51a96e8d8e00c2619c847e5c3c3b7f4736ccbde20"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\02-medium-phi3-mini\\userlm\\20260706_052215_b-n0026\\condition_configuration_breakdown.csv": {
+      "size_bytes": 48699,
+      "sha256": "f3459402f6df0aa3fc28cda57a3976b8b615284e03e252e0ec47a2d4a8e0ba92"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\02-medium-phi3-mini\\userlm\\20260706_052215_b-n0026\\coverage_plan.json": {
+      "size_bytes": 1410,
+      "sha256": "39364446df6718f3ed89c8eafe8da4c67b0e856cbff60a4dc672278ff1f83b4e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\02-medium-phi3-mini\\userlm\\20260706_052215_b-n0026\\experiment_job.json": {
+      "size_bytes": 417,
+      "sha256": "40494f47d8c5d0ee29302d2c331e4ad2b1346f5e3efa8d8712744ca892b6dc0a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\naming_scheme.json": {
+      "size_bytes": 2123,
+      "sha256": "a3b57c3ed43cee669fee9ba51a96e8d8e00c2619c847e5c3c3b7f4736ccbde20"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-a-20260705-154707-summary.json": {
+      "size_bytes": 661,
+      "sha256": "ad23d991b8519fab684d414428c1220f9f35f8ab1e5b04488b3979e99980c4cc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-a-20260705-154707.jsonl": {
+      "size_bytes": 118508,
+      "sha256": "af2ca25cbccb96edc5263c7d3a75d979f9b2af2ddead2f983e2710ea04a6b797"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-a-20260705-154707.log": {
+      "size_bytes": 7205,
+      "sha256": "46d110409a2fe493098fa304152c403be79e9541422e4b8ef22c622d923ef68e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-t-20260705-153649-summary.json": {
+      "size_bytes": 663,
+      "sha256": "5a30a2a1a413d3b4be1e5e38b39fbb42eb7812a5c3513bbbdcb653660b5e3f60"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-t-20260705-153649.jsonl": {
+      "size_bytes": 157184,
+      "sha256": "a57678308f20d9967b3477c027f8bbeb13075c4e5871b248e17e683c924be20d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-clean-pip-fwh-bhugg-defau-sml-i0-17888f5f01-t-20260705-153649.log": {
+      "size_bytes": 10252,
+      "sha256": "d62fe0efd792557e3668702e4e85cdc734f696add5b595b0330d58de9483db22"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-hesit-pip-fwh-bhugg-defau-sml-i0-358a27ba05-a-20260705-160823-summary.json": {
+      "size_bytes": 661,
+      "sha256": "ff57b0da4745a087ddf08effaf3ab6b5f04777ecd5a31d331ffc850450dd36f6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-hesit-pip-fwh-bhugg-defau-sml-i0-358a27ba05-a-20260705-160823.jsonl": {
+      "size_bytes": 119519,
+      "sha256": "573df42e069447dfcfcae0f881a06dfa7bd6b45bdf521771577938f112f59a6d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-hesit-pip-fwh-bhugg-defau-sml-i0-358a27ba05-a-20260705-160823.log": {
+      "size_bytes": 7200,
+      "sha256": "2ae189f678a43e6b016be7c62cc4dcafb0d0156f8cf4f1bd47991c2f34e1938e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-hesit-pip-fwh-bhugg-defau-sml-i0-358a27ba05-t-20260705-155844-summary.json": {
+      "size_bytes": 662,
+      "sha256": "47681f3393eeaef40d5e079ed68f4312005b1a6cb9b20ad54285c1949f227956"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-hesit-pip-fwh-bhugg-defau-sml-i0-358a27ba05-t-20260705-155844.jsonl": {
+      "size_bytes": 116391,
+      "sha256": "f00516760d720a2fa118d857de879b87ecb454a0ecf47219b2f4a6f8d7bc9869"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-hesit-pip-fwh-bhugg-defau-sml-i0-358a27ba05-t-20260705-155844.log": {
+      "size_bytes": 7198,
+      "sha256": "b8c56ee491b0e144821018bc12107e334b81641b6806f4640b8e41b951893254"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-ns-pip-fwh-bhugg-defau-sml-i0-a3a37ceb21-a-20260705-164655.jsonl": {
+      "size_bytes": 101279,
+      "sha256": "f853d24ccd2409728c4d185e4caa19c6d86e6805e71805e0a16aef003c2beb27"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-ns-pip-fwh-bhugg-defau-sml-i0-a3a37ceb21-a-20260705-164655.log": {
+      "size_bytes": 6364,
+      "sha256": "3fa97d68efd237845a97ce5821357152e2396b2187430d89d09c829f3604424f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-ns-pip-fwh-bhugg-defau-sml-i0-a3a37ceb21-t-20260705-163717-summary.json": {
+      "size_bytes": 652,
+      "sha256": "4af1b33b41721edfe78c16251bf5c5e5166e59dba26bf6cd89415f67f8bb9f8c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-ns-pip-fwh-bhugg-defau-sml-i0-a3a37ceb21-t-20260705-163717.jsonl": {
+      "size_bytes": 110505,
+      "sha256": "a35135f017aee8a8d0ef639d506f6db3ae28ce16c68230c5e8b43b01411c6b15"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-le-vp-ns-pip-fwh-bhugg-defau-sml-i0-a3a37ceb21-t-20260705-163717.log": {
+      "size_bytes": 7196,
+      "sha256": "a10ed67819138d49f48851963cb673f025fe1fee7f9076e205e742bd4b9223e0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-clean-pip-fwh-bhugg-defau-sml-i0-acf3050f22-a-20260705-125724-summary.json": {
+      "size_bytes": 668,
+      "sha256": "785b34eb6ca3935763570b30768f6750b9bbde027a5593efa3fc85c7c9d1858d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-clean-pip-fwh-bhugg-defau-sml-i0-acf3050f22-a-20260705-125724.jsonl": {
+      "size_bytes": 112347,
+      "sha256": "734e8659c2db0dc5dffbeebbfffe071dd3805722b7462c5126049bd6f584a26a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-clean-pip-fwh-bhugg-defau-sml-i0-acf3050f22-a-20260705-125724.log": {
+      "size_bytes": 7207,
+      "sha256": "7145a3c0922a43baaf5cf62d0136310483b4ac2797c33683a3fc3766e33e1004"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-clean-pip-fwh-bhugg-defau-sml-i0-acf3050f22-t-20260705-123810-summary.json": {
+      "size_bytes": 668,
+      "sha256": "07203d048757e14bd9d1543ca73835a8c4d0cf86c508d463681e31cb00af3597"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-clean-pip-fwh-bhugg-defau-sml-i0-acf3050f22-t-20260705-123810.jsonl": {
+      "size_bytes": 109339,
+      "sha256": "00e80ddc0ceacaeef1c0f2352b1ef6552fe461fb4e600e434a91fa27b0057845"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-clean-pip-fwh-bhugg-defau-sml-i0-acf3050f22-t-20260705-123810.log": {
+      "size_bytes": 7209,
+      "sha256": "13bd943baa64ed4656003ed66067a5215fafd84d4352d1e664e38636fe6905c6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-hesit-pip-fwh-bhugg-defau-sml-i0-5142576e57-a-20260705-131756-summary.json": {
+      "size_bytes": 669,
+      "sha256": "b13bd5451a68eb6f3f8e50d5d14567fc44337fc2b84b4a2ec82a7a59cedf28e4"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-hesit-pip-fwh-bhugg-defau-sml-i0-5142576e57-a-20260705-131756.jsonl": {
+      "size_bytes": 158814,
+      "sha256": "5311865240311a59a3e3a5edac38f2637695eb6c1a1efcc714f41695b7f42242"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-hesit-pip-fwh-bhugg-defau-sml-i0-5142576e57-a-20260705-131756.log": {
+      "size_bytes": 10221,
+      "sha256": "305990cf9153def77417b2410c278a71285ecb0babc21fd95dde3ba563187d28"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-hesit-pip-fwh-bhugg-defau-sml-i0-5142576e57-t-20260705-130822-summary.json": {
+      "size_bytes": 667,
+      "sha256": "a00c34683997cdae4bd8afe580c96c40cd068c1f445d1fcf6615600161f822e1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-hesit-pip-fwh-bhugg-defau-sml-i0-5142576e57-t-20260705-130822.jsonl": {
+      "size_bytes": 112234,
+      "sha256": "0922a393fbb8dc5642826bf76db0e4a211d39248779c8e8809d585ecb70197bc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-hesit-pip-fwh-bhugg-defau-sml-i0-5142576e57-t-20260705-130822.log": {
+      "size_bytes": 7198,
+      "sha256": "54ce5f2cbdd57de294854341f3fdaed7f3bb9d511088c16d443456b8a9c1e807"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-ns-pip-fwh-bhugg-defau-sml-i0-df1b4b45a4-a-20260705-133746-summary.json": {
+      "size_bytes": 660,
+      "sha256": "f660859d79702e5c1c6c01362858c62e65b52ac6efdf5df5cda09d477b50cd7d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-ns-pip-fwh-bhugg-defau-sml-i0-df1b4b45a4-a-20260705-133746.jsonl": {
+      "size_bytes": 135022,
+      "sha256": "a9466c3d0a31a220bc8bd8d6f5c9574c8afe71a5098a43037a7dd7eeea01a3dc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-ns-pip-fwh-bhugg-defau-sml-i0-df1b4b45a4-a-20260705-133746.log": {
+      "size_bytes": 8698,
+      "sha256": "92ed6c6655777548e092a49a6a6bb39ce48f114e73a0bb1afce94526bfd9cf31"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-ns-pip-fwh-bhugg-defau-sml-i0-df1b4b45a4-t-20260705-132910-summary.json": {
+      "size_bytes": 660,
+      "sha256": "9f378cd37a8ac00ef873540f0f217f8c19c0cbb7c3322fe0620d634fb56f805e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-ns-pip-fwh-bhugg-defau-sml-i0-df1b4b45a4-t-20260705-132910.jsonl": {
+      "size_bytes": 131372,
+      "sha256": "0d75c82429523d092be77a5632f40256660df9517ba9129b005118b8623ae065"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mpcc-fc-ns-pip-fwh-bhugg-defau-sml-i0-df1b4b45a4-t-20260705-132910.log": {
+      "size_bytes": 8713,
+      "sha256": "7a6ffbdd9fc9b8d2559c36d3cd8741f99f40ae568a849a4f39a5e787b45298cf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-clean-pip-fwh-bhugg-defau-sml-i0-a6326b76fc-a-20260705-135843-summary.json": {
+      "size_bytes": 662,
+      "sha256": "510c58d316f9d5f7cec8cb17e918bad6fc97926870c9434e3b67f8cf004303f9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-clean-pip-fwh-bhugg-defau-sml-i0-a6326b76fc-a-20260705-135843.jsonl": {
+      "size_bytes": 116678,
+      "sha256": "7a9b74a8b951c7811cbc755b4daa18081897940f8d0cdf75147595a509ec9ad0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-clean-pip-fwh-bhugg-defau-sml-i0-a6326b76fc-a-20260705-135843.log": {
+      "size_bytes": 7205,
+      "sha256": "dc1672e69f8967b2c8d973bf82ea567e0b74fbda0d083d60066b64cff2f42eec"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-clean-pip-fwh-bhugg-defau-sml-i0-a6326b76fc-t-20260705-134907-summary.json": {
+      "size_bytes": 662,
+      "sha256": "7ccf6e146ecbc8ad11b630b11cbd8f5aeb4704e04710e360c376b2b257f2eeab"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-clean-pip-fwh-bhugg-defau-sml-i0-a6326b76fc-t-20260705-134907.jsonl": {
+      "size_bytes": 113768,
+      "sha256": "8236d45696a465e70b38876b13378188bc5021372f5ab00dd015965d80e2561b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-clean-pip-fwh-bhugg-defau-sml-i0-a6326b76fc-t-20260705-134907.log": {
+      "size_bytes": 7194,
+      "sha256": "e9f452776b4fe942feaec780843855775cae017cd25ac9b7d89160fb1482bd4c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-hesit-pip-fwh-bhugg-defau-sml-i0-05c07e7d2f-a-20260705-142012-summary.json": {
+      "size_bytes": 662,
+      "sha256": "7c0567e16ce0de52bbc24d36e6b8cbd25762d7d3b80ef258bf0581df6a0dbb10"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-hesit-pip-fwh-bhugg-defau-sml-i0-05c07e7d2f-a-20260705-142012.jsonl": {
+      "size_bytes": 112533,
+      "sha256": "f3d305390d0abb04645dad01b5ac7241dd82540d7f12bc21a5b06adc877a65ab"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-hesit-pip-fwh-bhugg-defau-sml-i0-05c07e7d2f-a-20260705-142012.log": {
+      "size_bytes": 7254,
+      "sha256": "58b9e17ed5bf98a5f6e9491dc443a2706a20441185196a9230654ce2bde4550b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-hesit-pip-fwh-bhugg-defau-sml-i0-05c07e7d2f-t-20260705-141035-summary.json": {
+      "size_bytes": 662,
+      "sha256": "43ab2cf082ac720d524ca0bc08472320249d45347a147aaefce5917361e16665"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-hesit-pip-fwh-bhugg-defau-sml-i0-05c07e7d2f-t-20260705-141035.jsonl": {
+      "size_bytes": 108578,
+      "sha256": "2fb8aa4d078089e09af92986c08b4e89df0f8159ceb18e819bd10dc9aa76e7c6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-hesit-pip-fwh-bhugg-defau-sml-i0-05c07e7d2f-t-20260705-141035.log": {
+      "size_bytes": 7256,
+      "sha256": "cad5f3049fb755f0468b08947b31e4b6850c825b44c7f3defa22c237740bb7b5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-ns-pip-fwh-bhugg-defau-sml-i0-872e51c882-a-20260705-152519-summary.json": {
+      "size_bytes": 653,
+      "sha256": "d41481d4092b6ba4544eabd091d389a65857c63c33f33a15241ae405a612b9c5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-ns-pip-fwh-bhugg-defau-sml-i0-872e51c882-a-20260705-152519.jsonl": {
+      "size_bytes": 116742,
+      "sha256": "0def13041adfb62fe39b29b4032fe152a1e1429ae3451fbba7ee03646eb6c534"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-ns-pip-fwh-bhugg-defau-sml-i0-872e51c882-a-20260705-152519.log": {
+      "size_bytes": 7200,
+      "sha256": "239c9079ba7b62e8f0c2d8bdeda2ca5476142d5f2cf2227e41740faf77b9c091"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-ns-pip-fwh-bhugg-defau-sml-i0-872e51c882-t-20260705-151539-summary.json": {
+      "size_bytes": 653,
+      "sha256": "f1370524489be4b088616b5386226bb9d4353eefed64161ac9c1e7a0d6f06b51"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-ns-pip-fwh-bhugg-defau-sml-i0-872e51c882-t-20260705-151539.jsonl": {
+      "size_bytes": 113852,
+      "sha256": "0f9c8f751e8eda5a0e33df47bb725be851e7c33b3a3f1317151236b31517aafd"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\batch-c-mt-dm-ns-pip-fwh-bhugg-defau-sml-i0-872e51c882-t-20260705-151539.log": {
+      "size_bytes": 7198,
+      "sha256": "43db44066f03ee9d7dc024a76523880328e899eb5c128f06a6f27feb53acabe7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\condition_configuration_breakdown.csv": {
+      "size_bytes": 48777,
+      "sha256": "28cfd874b97a640d3ce0a64b874e48aee13e399942266802e7fe00bbaa087501"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\condition_failures.jsonl": {
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\coverage_plan.json": {
+      "size_bytes": 1415,
+      "sha256": "60590af3df043beef06bddf91a348995b48aa0e00d965eb20a7a8a66f08f2ccc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\experiment_job.json": {
+      "size_bytes": 425,
+      "sha256": "64d1eec2cf14ab501c54da9657387388db11365cac391c096cb0409be4bdeb04"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260706_052055_b-n0026\\condition_configuration_breakdown.csv": {
+      "size_bytes": 48777,
+      "sha256": "28cfd874b97a640d3ce0a64b874e48aee13e399942266802e7fe00bbaa087501"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260706_052055_b-n0026\\coverage_plan.json": {
+      "size_bytes": 1415,
+      "sha256": "60590af3df043beef06bddf91a348995b48aa0e00d965eb20a7a8a66f08f2ccc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260706_052055_b-n0026\\experiment_job.json": {
+      "size_bytes": 425,
+      "sha256": "64d1eec2cf14ab501c54da9657387388db11365cac391c096cb0409be4bdeb04"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0001-agent-a-5142f4ee65.txt": {
+      "size_bytes": 118,
+      "sha256": "6f8baf8e195eaf2d88800acfe89f6df6be66a2961f4e7d15b906137c40eb462a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0001-agent-a-5142f4ee65.wav": {
+      "size_bytes": 317996,
+      "sha256": "aa0f3a154fe4a986e7a45964a7caf2ea0f2e2d23b5d7fd907de9de2bfb883e70"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0002-agent-b-6afdca31ab.txt": {
+      "size_bytes": 94,
+      "sha256": "004f99a9d3e8ab2b70dd1a176d61062258caa9749b54d2f270d316f45166e0be"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0002-agent-b-6afdca31ab.wav": {
+      "size_bytes": 326700,
+      "sha256": "4d58e6614564a3e6e53ef95f54a357d5d651394dc0acb86fd02a8b0382ce8b77"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0003-agent-a-12eb6e6d71.txt": {
+      "size_bytes": 62,
+      "sha256": "a7436fda265b2d7f696a2692eb10c7817f0222ebb846873979136638f1ef087c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0003-agent-a-12eb6e6d71.wav": {
+      "size_bytes": 163884,
+      "sha256": "f3fcbe830f15df78f504b299aa1d0b18663bffde757dccf3df312769243de7ed"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0004-agent-b-46c7adc9bf.txt": {
+      "size_bytes": 116,
+      "sha256": "91e51bfadb02a211c869f634ff1a62cc4a77efac776343bb0c74b6b4679882af"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0004-agent-b-46c7adc9bf.wav": {
+      "size_bytes": 376364,
+      "sha256": "b385614195b48b5ad5efc890272bf5d31d370f92d24b36b154d229805362b1c7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0005-agent-a-e65b614c4d.txt": {
+      "size_bytes": 79,
+      "sha256": "36b847c014ec2bc87138cfd0dfe43068afc4f0605928b7d8371fa7c61d07d4b9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0005-agent-a-e65b614c4d.wav": {
+      "size_bytes": 198188,
+      "sha256": "25de7332c97a5f53ae38d737d1237e4a99cb2c32c7f8022a10484eaad02f636f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0006-agent-b-1ede2c8503.txt": {
+      "size_bytes": 159,
+      "sha256": "9feee761bec432e5a07182c0dc9b68bd971a708aa4f32e083b5df65bdaa39e0a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0006-agent-b-1ede2c8503.wav": {
+      "size_bytes": 501292,
+      "sha256": "8613e408cd961c3b907572c7ffde1a4f9dadd814d387f54024a864cf6f1a73b3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0007-agent-a-4cb66384c9.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0007-agent-a-4cb66384c9.wav": {
+      "size_bytes": 282668,
+      "sha256": "d339e1b69283fd4f34b0930ec0a236018c7e0edad250e221425922b1f3cda737"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0008-agent-b-65423b6010.txt": {
+      "size_bytes": 121,
+      "sha256": "8edb209e19071b866d832da9527a0d1251f88bef25887c375f3158cd24765e45"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\04dc65f08b66\\0008-agent-b-65423b6010.wav": {
+      "size_bytes": 390700,
+      "sha256": "e704f3af04c3645b19173a113f1723dec698bfe172e38dee955ef83b03209923"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0001-agent-a-426d134027.txt": {
+      "size_bytes": 113,
+      "sha256": "a9165bef89ad8801dbb3f4218b6df9b7e53eabe9104c1e92771de861982eabf5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0001-agent-a-426d134027.wav": {
+      "size_bytes": 312876,
+      "sha256": "e68273cbb265833f922699d07b77125c47a8d74d9eb79bd26a4b3e4924f099af"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0002-agent-b-93de909911.txt": {
+      "size_bytes": 117,
+      "sha256": "49889d06756d6bbd9494b6761d052077d46a61eb5666335ab4cff39b17adef0a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0002-agent-b-93de909911.wav": {
+      "size_bytes": 355884,
+      "sha256": "b3aabb4abd75e9f9429680c2e697b191fd130f9ef5f04fbc714aad1365865293"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0003-agent-a-47c08dc0d2.txt": {
+      "size_bytes": 83,
+      "sha256": "9dff8e8e796fdbaf756f2a9da355abc65859091524a9c6e520b44c94cc5f1aaf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0003-agent-a-47c08dc0d2.wav": {
+      "size_bytes": 210988,
+      "sha256": "f5fc1b8b99457165b5cc3891e726b5a285a680b4d5b6b4692170ef85abffd7df"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0004-agent-b-35fded592f.txt": {
+      "size_bytes": 148,
+      "sha256": "ae145381e547f7b498a1e878a22a1c59d5a94cd178164f379c5fb9dd89223bb6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0004-agent-b-35fded592f.wav": {
+      "size_bytes": 489516,
+      "sha256": "4956b1323f3ec39d81c4dda3247ced415c3a006627602a8422db4336f253e7c2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0005-agent-a-3b644d1e11.txt": {
+      "size_bytes": 76,
+      "sha256": "9c58e657b3c53df0e993399e6639eef0032457e0c5530188c7d90d116053513f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0005-agent-a-3b644d1e11.wav": {
+      "size_bytes": 224300,
+      "sha256": "10f1707d3b5b51b2304c8e358f82b14f8a3e6e42086d0dfb84e28bb3913f42f1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0006-agent-b-b2e42577c0.txt": {
+      "size_bytes": 174,
+      "sha256": "fb2633251199778ae21da1dd8b1695ab39f976f2c697ed42ca0f054e92df7cee"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0006-agent-b-b2e42577c0.wav": {
+      "size_bytes": 562220,
+      "sha256": "7d973f5dbdbf30b12744f613b081b79b7dd22a6a4bc3bebfc6561155b1113dc5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0007-agent-a-9fcb9bb5a2.txt": {
+      "size_bytes": 89,
+      "sha256": "5efe95a50178c6ee3e51e00dba95f440c36e5ed1373b169e0175073b0ec27b4a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0007-agent-a-9fcb9bb5a2.wav": {
+      "size_bytes": 256556,
+      "sha256": "9c5a27135c52367aee7098b6f5afebf74d5a99e5114caaef76dcfcbd8742a2da"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0008-agent-b-a5985a4155.txt": {
+      "size_bytes": 179,
+      "sha256": "5bb006dcdbafe2033720970464b5ecc035b5ea3c84db43b8fe0df4d789d2d144"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0008-agent-b-a5985a4155.wav": {
+      "size_bytes": 562732,
+      "sha256": "2522b0d8f4048e2894cdfb3ffcc5dac8d899cb37d760b3a4a973ed8f38981c6f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0009-agent-a-e2c2dccaf8.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\16cf0902af7c\\0009-agent-a-e2c2dccaf8.wav": {
+      "size_bytes": 176684,
+      "sha256": "19f83fece9effa976b3a3c08219c5ac36b77cfc085a64badcf2fe0108a91d3a4"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0001-agent-a-e3282170a6.txt": {
+      "size_bytes": 113,
+      "sha256": "a9165bef89ad8801dbb3f4218b6df9b7e53eabe9104c1e92771de861982eabf5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0001-agent-a-e3282170a6.wav": {
+      "size_bytes": 169928,
+      "sha256": "4c3b4e6af79b4818856b4925676277b36e06b278d8831791d07542d1c0b53ed1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0002-agent-b-3198c5ac36.txt": {
+      "size_bytes": 117,
+      "sha256": "49889d06756d6bbd9494b6761d052077d46a61eb5666335ab4cff39b17adef0a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0002-agent-b-3198c5ac36.wav": {
+      "size_bytes": 153280,
+      "sha256": "99f3227aaa595963be8bb295ecf66dd908abe780da6016cb6f6484aded2ae816"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0003-agent-a-67a7b8e8d6.txt": {
+      "size_bytes": 83,
+      "sha256": "9dff8e8e796fdbaf756f2a9da355abc65859091524a9c6e520b44c94cc5f1aaf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0003-agent-a-67a7b8e8d6.wav": {
+      "size_bytes": 122780,
+      "sha256": "3d913b03440f9e3f4b49745cd2f90461451e119e21e738d844b52fbac2b9f849"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0004-agent-b-6c23ea7265.txt": {
+      "size_bytes": 148,
+      "sha256": "ae145381e547f7b498a1e878a22a1c59d5a94cd178164f379c5fb9dd89223bb6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0004-agent-b-6c23ea7265.wav": {
+      "size_bytes": 190908,
+      "sha256": "aaa6a11046bf1ec502af99ec0a94c8368e5ffeb9234dc7832d8aeccb63a37749"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0005-agent-a-07dc130a0f.txt": {
+      "size_bytes": 76,
+      "sha256": "9c58e657b3c53df0e993399e6639eef0032457e0c5530188c7d90d116053513f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0005-agent-a-07dc130a0f.wav": {
+      "size_bytes": 105928,
+      "sha256": "10370fa2402b2c3a4ad0cb2df187e26e623bd3537f6ca6cad82e99706cc3f261"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0006-agent-b-aa954f0d0b.txt": {
+      "size_bytes": 174,
+      "sha256": "fb2633251199778ae21da1dd8b1695ab39f976f2c697ed42ca0f054e92df7cee"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0006-agent-b-aa954f0d0b.wav": {
+      "size_bytes": 222720,
+      "sha256": "c5e6d41054044036bfb097584149ce4a9988519d32a1a6202dfa9de9fa37b7d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0007-agent-a-fd7c2159ef.txt": {
+      "size_bytes": 89,
+      "sha256": "5efe95a50178c6ee3e51e00dba95f440c36e5ed1373b169e0175073b0ec27b4a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0007-agent-a-fd7c2159ef.wav": {
+      "size_bytes": 124630,
+      "sha256": "105753d709d0dfc39d414fe271b037d5f14f7aa04de3344a3e1651d508765587"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0008-agent-b-a2d72704df.txt": {
+      "size_bytes": 179,
+      "sha256": "5bb006dcdbafe2033720970464b5ecc035b5ea3c84db43b8fe0df4d789d2d144"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0008-agent-b-a2d72704df.wav": {
+      "size_bytes": 222720,
+      "sha256": "c5e6d41054044036bfb097584149ce4a9988519d32a1a6202dfa9de9fa37b7d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0009-agent-a-724b9e9237.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\3218140d6704\\0009-agent-a-724b9e9237.wav": {
+      "size_bytes": 84594,
+      "sha256": "a449b887394cd0a0aa72b896d34e384e7c7539114d34adebc7640ca1f6c07e06"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0001-agent-a-6f44d47c35.txt": {
+      "size_bytes": 115,
+      "sha256": "b05ef9582490e78934aab28f1f3fe87f4047da114a85f483a2ed586e3f479474"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0001-agent-a-6f44d47c35.wav": {
+      "size_bytes": 182676,
+      "sha256": "70bd12bf8abc3bcea1f2f7b8211165f87a86fcf74bab9d339c95ff8b8b89e618"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0002-agent-b-320da159f8.txt": {
+      "size_bytes": 99,
+      "sha256": "3dd52ae50b1b556427e02a4d1edd8f1a3e80e68e2dde7adbb66da71574735d2c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0002-agent-b-320da159f8.wav": {
+      "size_bytes": 121468,
+      "sha256": "c0d4a4ce47cfd42c183ea9b74f29542c9bd0f4f9e39dbe105b5b17ff7a92053b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0003-agent-a-9b5cb0538e.txt": {
+      "size_bytes": 71,
+      "sha256": "3dc8e4c87be6aaad2d9c76df156430203b4b17e8145bc797138136723cb40183"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0003-agent-a-9b5cb0538e.wav": {
+      "size_bytes": 104828,
+      "sha256": "5b478826cdc5c361584e66aba046f54c1670cf85eb855f28436ee8123243bda8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0004-agent-b-d61706d5ab.txt": {
+      "size_bytes": 117,
+      "sha256": "36beb81800bdef022a3e0b438c21fe54d04a7370a51cdc847a89b34b2a2b0d27"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0004-agent-b-d61706d5ab.wav": {
+      "size_bytes": 147462,
+      "sha256": "563c0c6ce408e61622c0b60ba3a5f3c80ec10da6b3bcbe580b79b89ce1817d74"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0005-agent-a-55687d3b08.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0005-agent-a-55687d3b08.wav": {
+      "size_bytes": 160858,
+      "sha256": "4d61837eaf9233315b0a28470ea1326adb69c0390a9603a73528472f3ffae618"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0006-agent-b-3b260189fe.txt": {
+      "size_bytes": 122,
+      "sha256": "3f694426f1dbea0424c9bafce3c8d2a85fac61bace3515bc3d30f741c91fb6b3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0006-agent-b-3b260189fe.wav": {
+      "size_bytes": 153280,
+      "sha256": "99f3227aaa595963be8bb295ecf66dd908abe780da6016cb6f6484aded2ae816"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0007-agent-a-d39b7e6b19.txt": {
+      "size_bytes": 92,
+      "sha256": "4d2fd631cd36abd29ebc2fc72d859c5206de6a4d08ff8090b8b7a06720343680"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0007-agent-a-d39b7e6b19.wav": {
+      "size_bytes": 133920,
+      "sha256": "f8b4d3ce98af0d9158944880d06c065aafca35d20ebfbb9376a4017b647a2901"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0008-agent-b-b10e845a94.txt": {
+      "size_bytes": 125,
+      "sha256": "2d75a7362231ef24e6dfba2a5b24d24052d7c22e62fa4997f9e01c074b455667"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0008-agent-b-b10e845a94.wav": {
+      "size_bytes": 153280,
+      "sha256": "99f3227aaa595963be8bb295ecf66dd908abe780da6016cb6f6484aded2ae816"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0009-agent-a-724b9e9237.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\337961d31bff\\0009-agent-a-724b9e9237.wav": {
+      "size_bytes": 88130,
+      "sha256": "82f7b1915319cd7daceee46888f262b4a0082acffb71acaaf74e59ece9214c08"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0001-agent-a-765322c45a.txt": {
+      "size_bytes": 131,
+      "sha256": "8a3d1bd1addf4b0a2b0db9aafd3522ad38f73b493e65050b27464962cb0903d8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0001-agent-a-765322c45a.wav": {
+      "size_bytes": 214444,
+      "sha256": "5784922b167881dbdba2169b429f4ce26e0396a2cc22389961925853ff52c3c0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0002-agent-b-5b72a0ec0e.txt": {
+      "size_bytes": 91,
+      "sha256": "d39476dec4849ed6c7029ed4c30edfad22b1aaf3a11b5af0da8f973d0a1fd2ff"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0002-agent-b-5b72a0ec0e.wav": {
+      "size_bytes": 113964,
+      "sha256": "f8371efc04f382710afc16ab09bbf7ceb54ed221d21c25048e38782e6b28afb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0003-agent-a-6a4fd18842.txt": {
+      "size_bytes": 87,
+      "sha256": "019573181153d7de3ecfce181e41defc62609c807e93cf220c8302da9904e3de"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0003-agent-a-6a4fd18842.wav": {
+      "size_bytes": 136220,
+      "sha256": "92347ef4c9e9864ff4883152f816f3142bebcd35afb8904d55225e2bd4c3defa"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0004-agent-b-26f0d17fb8.txt": {
+      "size_bytes": 158,
+      "sha256": "6e640f9fdb2c968ebbf8689ab1eaa05bb89f60b19d1f83cc0b2cb0760e2cb03f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0004-agent-b-26f0d17fb8.wav": {
+      "size_bytes": 191404,
+      "sha256": "103a28879c62aaebbff1993d0085678eac21d8f3c4268b7054fc4ee74a615b81"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0005-agent-a-55687d3b08.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0005-agent-a-55687d3b08.wav": {
+      "size_bytes": 155706,
+      "sha256": "6131daa5eb7cf23a3bff684266a93e78b05bc0e446117e393577d8347929fc35"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0006-agent-b-24437de69d.txt": {
+      "size_bytes": 116,
+      "sha256": "4daf986b1179eb494dfc58f2eb4798489da89a0b78189315dba8ea59747bdd2e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0006-agent-b-24437de69d.wav": {
+      "size_bytes": 150444,
+      "sha256": "6a0961bcbb503151699181facfc0da08c94dad9e6a446b5b77c65c42ee2a4c60"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0007-agent-a-b538672e07.txt": {
+      "size_bytes": 100,
+      "sha256": "2dc270108795e916dab25fa15ad7264630e07e3a8fc4cebfb0987f50a36bf2c1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0007-agent-a-b538672e07.wav": {
+      "size_bytes": 153074,
+      "sha256": "c9160ebed41e7b57804f78f83623c117589313d0e56161e2fd1ed5fe49ce6851"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0008-agent-b-3725b9c78c.txt": {
+      "size_bytes": 113,
+      "sha256": "476b4a0c133963e6a2c804bc1d5e1a3f96ccf2e7a92d97c16ab3f26e62424353"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0008-agent-b-3725b9c78c.wav": {
+      "size_bytes": 144256,
+      "sha256": "f4e92055f2661bc4fb3e6f4bc6cae1718010286ca73056085019164556532280"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0009-agent-a-423013a008.txt": {
+      "size_bytes": 56,
+      "sha256": "387e78521cf7cfda6d69b9783267afd9cc1b1a1547e3ecc16efa8d5c29ed7316"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\34050d5803a3\\0009-agent-a-423013a008.wav": {
+      "size_bytes": 96186,
+      "sha256": "04c4bb3d6f9148a42877030888c9bc332919e42f8bcd1d014eb582c570702d9b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0001-agent-a-aa694e98a4.txt": {
+      "size_bytes": 129,
+      "sha256": "6476fd580a108f8da630ea5e30be154a738a3a148ee622567fdb8c95a9207862"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0001-agent-a-aa694e98a4.wav": {
+      "size_bytes": 214734,
+      "sha256": "bf8b46f5b59e199213eac20d6ce432d0d1b8d920f8cd5ef2703fc633ef9484cf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0002-agent-b-6acb964589.txt": {
+      "size_bytes": 119,
+      "sha256": "e778c0952c910f5c2e367796776590d60cc838f2655874c8e66d3aa2287e2a36"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0002-agent-b-6acb964589.wav": {
+      "size_bytes": 153280,
+      "sha256": "99f3227aaa595963be8bb295ecf66dd908abe780da6016cb6f6484aded2ae816"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0003-agent-a-b8334a2696.txt": {
+      "size_bytes": 95,
+      "sha256": "760ab32d58b450615afc4eebb17eeebfb0e93cb90d642478de6e66e673f602ba"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0003-agent-a-b8334a2696.wav": {
+      "size_bytes": 151432,
+      "sha256": "316416d17b9c42b328e71737dbe2c40d6495e9edf166be8f79160dec3f5cf7b3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0004-agent-b-9db62a4b34.txt": {
+      "size_bytes": 94,
+      "sha256": "e2b704969766459aca50bc5a0cdb53efeb61e89ba5b7b56c6c3bc1763a2b0b63"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0004-agent-b-9db62a4b34.wav": {
+      "size_bytes": 118370,
+      "sha256": "8988eca504f3c4eb0c07fb4625e3482dd778f1ad71c7bb74ed3d72d292a8566a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0005-agent-a-4de2c2fc7e.txt": {
+      "size_bytes": 58,
+      "sha256": "3c997dab4dc8afeb2b60ccfb2b355148ab5b0be8c4f0d954c5d4e17deb81d578"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0005-agent-a-4de2c2fc7e.wav": {
+      "size_bytes": 90284,
+      "sha256": "82966181bc7fc3dba148a287cc0fa293243804029d57220a5f368b5395e1bf73"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0006-agent-b-e718721cdb.txt": {
+      "size_bytes": 115,
+      "sha256": "3be0fe904aa2cd34835a0d866c6871d72eb27beb018d78ac79d1d57655c22ec0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0006-agent-b-e718721cdb.wav": {
+      "size_bytes": 141644,
+      "sha256": "a5a7d406282f5edf1c4aa117dedbe6f3dbeb889b3d99c6c5c45de7068f89910c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0007-agent-a-d659861b63.txt": {
+      "size_bytes": 75,
+      "sha256": "47b05a401eac9d65bc84a149d48d22e969d75d37dc0673d42c5dbe8e77216299"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0007-agent-a-d659861b63.wav": {
+      "size_bytes": 122342,
+      "sha256": "44af2d0a9307306480f2039103893ae8c693cdee962b1d69f2f39de87ed5ff9c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0008-agent-b-0e3ba9590c.txt": {
+      "size_bytes": 142,
+      "sha256": "8bc2b0b7513d2baf83330e9e56a6df0481a42ca1bc8f4bdc7549b298b3b9a1ca"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0008-agent-b-0e3ba9590c.wav": {
+      "size_bytes": 178894,
+      "sha256": "8fd2b797ad12dc6b1a967fc7b8d089506f8b917bfa22e7b9232e7010d1d5e116"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0009-agent-a-da92d4cbea.txt": {
+      "size_bytes": 78,
+      "sha256": "d01bc80a53058db6003b460817ecb54cd35844a776805cc8f52e9fa12012bc5b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5248db47c32a\\0009-agent-a-da92d4cbea.wav": {
+      "size_bytes": 136886,
+      "sha256": "b6c6d287617f2d47f09ef7a3191601cb4d5797c32e4e3d475d557fd153ff9451"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0001-agent-a-b6c035828a.txt": {
+      "size_bytes": 134,
+      "sha256": "a803c3226ac84fdc32fd5bdea68a040cb817b9bb654f7540733790df8a5dd54e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0001-agent-a-b6c035828a.wav": {
+      "size_bytes": 386092,
+      "sha256": "cc1770cde4a55c04a2cb2c2672c7355f06a00580fdd758dd0387ac67ad2a8cae"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0002-agent-b-3132add6a8.txt": {
+      "size_bytes": 91,
+      "sha256": "3c1bacdec6185ca00e17b1dbbe2a12d9fa93273516b8f3cdfe6e1c0f6246f98d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0002-agent-b-3132add6a8.wav": {
+      "size_bytes": 293420,
+      "sha256": "443723a294bd591bf3e82faa0afe9923e418c27dff4c1b37c4401c15eec26727"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0003-agent-a-7b34d1a7c3.txt": {
+      "size_bytes": 78,
+      "sha256": "f847950fb8d568e9aa3ee6e60e6172ab2d633b10629177fce41ce4332c1557ab"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0003-agent-a-7b34d1a7c3.wav": {
+      "size_bytes": 263212,
+      "sha256": "272ac3d31abac2fa8809f09ccad05815d8b38477557b35f0609ec6bb9a6f522f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0004-agent-b-af97f27c7a.txt": {
+      "size_bytes": 150,
+      "sha256": "a73ccf19337f11891b2d27450e6f4cf2ad6cffaf4ff93bd6ef7cbe19d5990cf0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0004-agent-b-af97f27c7a.wav": {
+      "size_bytes": 469548,
+      "sha256": "cbec5eecc62ed3d4c75fafe09c31fa944e23d8675634cdfc22ed47146df440b5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0005-agent-a-da888e9c1c.txt": {
+      "size_bytes": 89,
+      "sha256": "5efe95a50178c6ee3e51e00dba95f440c36e5ed1373b169e0175073b0ec27b4a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0005-agent-a-da888e9c1c.wav": {
+      "size_bytes": 268332,
+      "sha256": "04f85a03c326eb115adddc870c1bfe69024b3f6364778194f16bfa7914dc1862"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0006-agent-b-89f8373907.txt": {
+      "size_bytes": 155,
+      "sha256": "091c4f56e2ee901671d0b67c4945aa5c9a9c72d7d354ca45d277c7f43b3b0ee7"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0006-agent-b-89f8373907.wav": {
+      "size_bytes": 468524,
+      "sha256": "8212acf3866dc9010a3db35e960d7a7febbf91febd04b201d572ed04fff57df1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0007-agent-a-550a16d8d8.txt": {
+      "size_bytes": 116,
+      "sha256": "21434030e7c42798e76a68dbb6885118d8d7144f0221b5054dd3f51340837391"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0007-agent-a-550a16d8d8.wav": {
+      "size_bytes": 345644,
+      "sha256": "2b4632aad6729450ef9246ed6210989f91ddffbe8c948fb6bf74c3b81ce4a45b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0008-agent-b-4f849a5e6f.txt": {
+      "size_bytes": 142,
+      "sha256": "f7f1209f7a53d89305d3c0bb60717fe060fbadce651ab168998b757a5c1de228"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0008-agent-b-4f849a5e6f.wav": {
+      "size_bytes": 455724,
+      "sha256": "695d59cd60d4bd44d67199a98467370c73f5652cb865de6858a1323d38ae3f20"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0009-agent-a-7a17f5ac8b.txt": {
+      "size_bytes": 56,
+      "sha256": "387e78521cf7cfda6d69b9783267afd9cc1b1a1547e3ecc16efa8d5c29ed7316"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5c651dfcaa81\\0009-agent-a-7a17f5ac8b.wav": {
+      "size_bytes": 174124,
+      "sha256": "36926997cade1ba17bde1ac534ce61af855550ee370e473e632fc92eb2b00a6d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0001-agent-a-097dad46b0.txt": {
+      "size_bytes": 129,
+      "sha256": "6476fd580a108f8da630ea5e30be154a738a3a148ee622567fdb8c95a9207862"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0001-agent-a-097dad46b0.wav": {
+      "size_bytes": 354860,
+      "sha256": "3eae5471b65604dcf73796fd21f043ebd6c090918c4af77e29b6cd1f8631b83c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0002-agent-b-f55c30c380.txt": {
+      "size_bytes": 119,
+      "sha256": "e778c0952c910f5c2e367796776590d60cc838f2655874c8e66d3aa2287e2a36"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0002-agent-b-f55c30c380.wav": {
+      "size_bytes": 398380,
+      "sha256": "b9e3bcc22699569bc224d9ddfbbae13cf615f6411a8588d8bff4b3f944a05ccf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0003-agent-a-ae5a58e971.txt": {
+      "size_bytes": 95,
+      "sha256": "760ab32d58b450615afc4eebb17eeebfb0e93cb90d642478de6e66e673f602ba"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0003-agent-a-ae5a58e971.wav": {
+      "size_bytes": 281644,
+      "sha256": "df5360c7caa69b1bcd5e0cf31fc44016624387aa3e0183728042ff5110d775b1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0004-agent-b-34d9d283ae.txt": {
+      "size_bytes": 94,
+      "sha256": "e2b704969766459aca50bc5a0cdb53efeb61e89ba5b7b56c6c3bc1763a2b0b63"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0004-agent-b-34d9d283ae.wav": {
+      "size_bytes": 315948,
+      "sha256": "30a5d5f528b4c1c75fec2d4da24192905563afc6b05c8ae7f69546f91937eb95"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0005-agent-a-95657b0d5e.txt": {
+      "size_bytes": 58,
+      "sha256": "3c997dab4dc8afeb2b60ccfb2b355148ab5b0be8c4f0d954c5d4e17deb81d578"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0005-agent-a-95657b0d5e.wav": {
+      "size_bytes": 175148,
+      "sha256": "99b31b2a32777ce96420c5dc230a7c531461903edf81240541e5900dc255f400"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0006-agent-b-a7dc1a3fb3.txt": {
+      "size_bytes": 115,
+      "sha256": "3be0fe904aa2cd34835a0d866c6871d72eb27beb018d78ac79d1d57655c22ec0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0006-agent-b-a7dc1a3fb3.wav": {
+      "size_bytes": 357932,
+      "sha256": "477777d5ef29c9cceaafd133d3d8502a9cbf3a1e112d4f063d1afe532ac3b52f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0007-agent-a-1c4aa83f5a.txt": {
+      "size_bytes": 75,
+      "sha256": "47b05a401eac9d65bc84a149d48d22e969d75d37dc0673d42c5dbe8e77216299"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0007-agent-a-1c4aa83f5a.wav": {
+      "size_bytes": 223276,
+      "sha256": "8aa49de3c5dcf485da0f29af2414ba2b033b75235b9643d3cb6a0213ba372a67"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0008-agent-b-fe9623587b.txt": {
+      "size_bytes": 142,
+      "sha256": "8bc2b0b7513d2baf83330e9e56a6df0481a42ca1bc8f4bdc7549b298b3b9a1ca"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0008-agent-b-fe9623587b.wav": {
+      "size_bytes": 454188,
+      "sha256": "a40a000fda2f504a5ef19a929ad2ed89bdd97cfb2df8149f0d9aaf4944993755"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0009-agent-a-8cb0d359dd.txt": {
+      "size_bytes": 78,
+      "sha256": "d01bc80a53058db6003b460817ecb54cd35844a776805cc8f52e9fa12012bc5b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\5d3cebdf037d\\0009-agent-a-8cb0d359dd.wav": {
+      "size_bytes": 227372,
+      "sha256": "566b8b8fec4163b3e9cfe7e8438a0f12d5b7d79c397c0fa965b5c5ad794aa8a1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0001-agent-a-e3282170a6.txt": {
+      "size_bytes": 113,
+      "sha256": "a9165bef89ad8801dbb3f4218b6df9b7e53eabe9104c1e92771de861982eabf5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0001-agent-a-e3282170a6.wav": {
+      "size_bytes": 169928,
+      "sha256": "4c3b4e6af79b4818856b4925676277b36e06b278d8831791d07542d1c0b53ed1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0002-agent-b-3198c5ac36.txt": {
+      "size_bytes": 117,
+      "sha256": "49889d06756d6bbd9494b6761d052077d46a61eb5666335ab4cff39b17adef0a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0002-agent-b-3198c5ac36.wav": {
+      "size_bytes": 153280,
+      "sha256": "99f3227aaa595963be8bb295ecf66dd908abe780da6016cb6f6484aded2ae816"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0003-agent-a-67a7b8e8d6.txt": {
+      "size_bytes": 83,
+      "sha256": "9dff8e8e796fdbaf756f2a9da355abc65859091524a9c6e520b44c94cc5f1aaf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0003-agent-a-67a7b8e8d6.wav": {
+      "size_bytes": 122780,
+      "sha256": "3d913b03440f9e3f4b49745cd2f90461451e119e21e738d844b52fbac2b9f849"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0004-agent-b-6c23ea7265.txt": {
+      "size_bytes": 148,
+      "sha256": "ae145381e547f7b498a1e878a22a1c59d5a94cd178164f379c5fb9dd89223bb6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0004-agent-b-6c23ea7265.wav": {
+      "size_bytes": 190908,
+      "sha256": "aaa6a11046bf1ec502af99ec0a94c8368e5ffeb9234dc7832d8aeccb63a37749"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0005-agent-a-07dc130a0f.txt": {
+      "size_bytes": 76,
+      "sha256": "9c58e657b3c53df0e993399e6639eef0032457e0c5530188c7d90d116053513f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0005-agent-a-07dc130a0f.wav": {
+      "size_bytes": 105928,
+      "sha256": "10370fa2402b2c3a4ad0cb2df187e26e623bd3537f6ca6cad82e99706cc3f261"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0006-agent-b-aa954f0d0b.txt": {
+      "size_bytes": 174,
+      "sha256": "fb2633251199778ae21da1dd8b1695ab39f976f2c697ed42ca0f054e92df7cee"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0006-agent-b-aa954f0d0b.wav": {
+      "size_bytes": 222720,
+      "sha256": "c5e6d41054044036bfb097584149ce4a9988519d32a1a6202dfa9de9fa37b7d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0007-agent-a-fd7c2159ef.txt": {
+      "size_bytes": 89,
+      "sha256": "5efe95a50178c6ee3e51e00dba95f440c36e5ed1373b169e0175073b0ec27b4a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0007-agent-a-fd7c2159ef.wav": {
+      "size_bytes": 124630,
+      "sha256": "105753d709d0dfc39d414fe271b037d5f14f7aa04de3344a3e1651d508765587"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0008-agent-b-a2d72704df.txt": {
+      "size_bytes": 179,
+      "sha256": "5bb006dcdbafe2033720970464b5ecc035b5ea3c84db43b8fe0df4d789d2d144"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0008-agent-b-a2d72704df.wav": {
+      "size_bytes": 222720,
+      "sha256": "c5e6d41054044036bfb097584149ce4a9988519d32a1a6202dfa9de9fa37b7d5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0009-agent-a-724b9e9237.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\68330bd03abe\\0009-agent-a-724b9e9237.wav": {
+      "size_bytes": 84594,
+      "sha256": "a449b887394cd0a0aa72b896d34e384e7c7539114d34adebc7640ca1f6c07e06"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0001-agent-a-c641ae30f7.txt": {
+      "size_bytes": 118,
+      "sha256": "6f8baf8e195eaf2d88800acfe89f6df6be66a2961f4e7d15b906137c40eb462a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0001-agent-a-c641ae30f7.wav": {
+      "size_bytes": 189948,
+      "sha256": "b054eea5abaf13756a32cca2927676e9c326a7c143466b7575419f86249a162b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0002-agent-b-5fa9da453f.txt": {
+      "size_bytes": 91,
+      "sha256": "4428413246eb1704b30695b3fbf85c5319143548cee6fd572f45cb20d32e0e5d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0002-agent-b-5fa9da453f.wav": {
+      "size_bytes": 115650,
+      "sha256": "811a8935c1200573250369929093faa91bad734ff40bcbaebc617966cb549fb2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0003-agent-a-032f8db4f6.txt": {
+      "size_bytes": 62,
+      "sha256": "a7436fda265b2d7f696a2692eb10c7817f0222ebb846873979136638f1ef087c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0003-agent-a-032f8db4f6.wav": {
+      "size_bytes": 97556,
+      "sha256": "86ed423a5ea70e4039eb6cc42697f97480e9f8934684be3aefd122e4babf247b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0004-agent-b-e89655f165.txt": {
+      "size_bytes": 119,
+      "sha256": "51e39835805db7a9407a342f4dc142619623b6885342a703c2ae16975d6e7453"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0004-agent-b-e89655f165.wav": {
+      "size_bytes": 147462,
+      "sha256": "563c0c6ce408e61622c0b60ba3a5f3c80ec10da6b3bcbe580b79b89ce1817d74"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0005-agent-a-ce9c770500.txt": {
+      "size_bytes": 79,
+      "sha256": "36b847c014ec2bc87138cfd0dfe43068afc4f0605928b7d8371fa7c61d07d4b9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0005-agent-a-ce9c770500.wav": {
+      "size_bytes": 104828,
+      "sha256": "5b478826cdc5c361584e66aba046f54c1670cf85eb855f28436ee8123243bda8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0006-agent-b-2dd53e28e4.txt": {
+      "size_bytes": 159,
+      "sha256": "d2b39dd4f1dee0004de49a8bd234c236bf682cbf7312cde5b073d82b2933655b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0006-agent-b-2dd53e28e4.wav": {
+      "size_bytes": 190908,
+      "sha256": "aaa6a11046bf1ec502af99ec0a94c8368e5ffeb9234dc7832d8aeccb63a37749"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0007-agent-a-c01a4199ea.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0007-agent-a-c01a4199ea.wav": {
+      "size_bytes": 160858,
+      "sha256": "4d61837eaf9233315b0a28470ea1326adb69c0390a9603a73528472f3ffae618"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0008-agent-b-cb83fc7898.txt": {
+      "size_bytes": 121,
+      "sha256": "35f69ddfa74a0b540a033090b633041d5dc69a0e84e701efff0398c791947ba3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0008-agent-b-cb83fc7898.wav": {
+      "size_bytes": 153280,
+      "sha256": "99f3227aaa595963be8bb295ecf66dd908abe780da6016cb6f6484aded2ae816"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0009-agent-a-724b9e9237.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\6e2c1ca9a944\\0009-agent-a-724b9e9237.wav": {
+      "size_bytes": 88130,
+      "sha256": "82f7b1915319cd7daceee46888f262b4a0082acffb71acaaf74e59ece9214c08"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0001-agent-a-c08e16542b.txt": {
+      "size_bytes": 131,
+      "sha256": "8a3d1bd1addf4b0a2b0db9aafd3522ad38f73b493e65050b27464962cb0903d8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0001-agent-a-c08e16542b.wav": {
+      "size_bytes": 370220,
+      "sha256": "f667abfd8bb839ec1cdc0f3fd8bb4a7c36ddfb0e8af3f20d8e8ff43e61e4b1bc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0002-agent-b-cb6bd7879f.txt": {
+      "size_bytes": 91,
+      "sha256": "d39476dec4849ed6c7029ed4c30edfad22b1aaf3a11b5af0da8f973d0a1fd2ff"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0002-agent-b-cb6bd7879f.wav": {
+      "size_bytes": 297516,
+      "sha256": "d813c9b3635bfdea469f00288615f1f9a3d3da3c9163b75ddecc89182f5ff1b5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0003-agent-a-e268f18547.txt": {
+      "size_bytes": 87,
+      "sha256": "019573181153d7de3ecfce181e41defc62609c807e93cf220c8302da9904e3de"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0003-agent-a-e268f18547.wav": {
+      "size_bytes": 283692,
+      "sha256": "1d957609a30f3dec0e68bdeabd8be12dff6c9da5958eba058ea5ec20ba9efa53"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0004-agent-b-259b160181.txt": {
+      "size_bytes": 158,
+      "sha256": "6e640f9fdb2c968ebbf8689ab1eaa05bb89f60b19d1f83cc0b2cb0760e2cb03f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0004-agent-b-259b160181.wav": {
+      "size_bytes": 514092,
+      "sha256": "ac18cdd06b9b6c50c84805778770dc5bde6fc4568e7080bd3cdb0c1e94294c01"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0005-agent-a-6569fa2e76.txt": {
+      "size_bytes": 41,
+      "sha256": "8f442b9b63d35d9c823e05a61471deda181790b2a59722482e904f8e019009bf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0005-agent-a-6569fa2e76.wav": {
+      "size_bytes": 116268,
+      "sha256": "de8d81a8bbf66217a43def4396489acc2f2d2bb63ac45c2a1edb7558cf470b7d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0006-agent-b-a540c824a7.txt": {
+      "size_bytes": 21,
+      "sha256": "a1259d42df6a7c2218acc86d3d7026fd70a244e35fc980b4fdc95dadb565d948"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0006-agent-b-a540c824a7.wav": {
+      "size_bytes": 67116,
+      "sha256": "722e475493230311872df6ba0dabf319a4c283fc6232e73eb4334a7bc9647bb1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0007-agent-a-550a16d8d8.txt": {
+      "size_bytes": 116,
+      "sha256": "21434030e7c42798e76a68dbb6885118d8d7144f0221b5054dd3f51340837391"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0007-agent-a-550a16d8d8.wav": {
+      "size_bytes": 346156,
+      "sha256": "14c248013ce2a35c03cf75bec0efcb84d0b925e5baa1114023b77a87b7ad9b6f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0008-agent-b-90453925ff.txt": {
+      "size_bytes": 134,
+      "sha256": "0b85206203dbbbbd0f7df08eeb35fadb2a996fb702da0d22e066bf0a25235714"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0008-agent-b-90453925ff.wav": {
+      "size_bytes": 436268,
+      "sha256": "1dcd0d181945403fafad4ed040c97ce3d6560d080640f15f1217c9b7145e630c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0009-agent-a-b124c0d843.txt": {
+      "size_bytes": 75,
+      "sha256": "68fdc586644f91274439b06d411aa6d7bf1186f0e448956aefa07f314ecdafb6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0009-agent-a-b124c0d843.wav": {
+      "size_bytes": 208428,
+      "sha256": "6c835db191ca609dd5fc1904a4db4d95417c377062761a56e172330c756e04fd"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0010-agent-b-85b5af48aa.txt": {
+      "size_bytes": 101,
+      "sha256": "e76846c72797998683b3271e6698b048ce8e5688d438f821152b45e78ba61c23"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0010-agent-b-85b5af48aa.wav": {
+      "size_bytes": 331308,
+      "sha256": "e90f5a1b50b960608872a343eca64c318d161958d7a2eee86291975868141b24"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0011-agent-a-d78fd6df98.txt": {
+      "size_bytes": 92,
+      "sha256": "4d2fd631cd36abd29ebc2fc72d859c5206de6a4d08ff8090b8b7a06720343680"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0011-agent-a-d78fd6df98.wav": {
+      "size_bytes": 211500,
+      "sha256": "badd3143f6ed98b0a1e25828aabe00c7c604e729a9ef0a0ad8750435374ea9d0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0012-agent-b-31a4e2ef6e.txt": {
+      "size_bytes": 91,
+      "sha256": "d580da034c2e4ef184af3c675dddc89883d3e90b7f293f08d9763afd4de8814b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0012-agent-b-31a4e2ef6e.wav": {
+      "size_bytes": 227372,
+      "sha256": "72419a1be71398879e23b8739f600026b3ae551c5bd6d10789a58e18e45b192b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0013-agent-a-da3fb6f4a7.txt": {
+      "size_bytes": 92,
+      "sha256": "68e509165717b46a3e87bf4ab9e7dea120f5fe0570518e2c19f75cd735d7ad97"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\74aba0daec75\\0013-agent-a-da3fb6f4a7.wav": {
+      "size_bytes": 291372,
+      "sha256": "5a5d41bb7916cd743893679eccf55532426d0033596ccc84e003b91b5a000a29"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0001-agent-a-426d134027.txt": {
+      "size_bytes": 113,
+      "sha256": "a9165bef89ad8801dbb3f4218b6df9b7e53eabe9104c1e92771de861982eabf5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0001-agent-a-426d134027.wav": {
+      "size_bytes": 312876,
+      "sha256": "e68273cbb265833f922699d07b77125c47a8d74d9eb79bd26a4b3e4924f099af"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0002-agent-b-93de909911.txt": {
+      "size_bytes": 117,
+      "sha256": "49889d06756d6bbd9494b6761d052077d46a61eb5666335ab4cff39b17adef0a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0002-agent-b-93de909911.wav": {
+      "size_bytes": 355884,
+      "sha256": "b3aabb4abd75e9f9429680c2e697b191fd130f9ef5f04fbc714aad1365865293"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0003-agent-a-47c08dc0d2.txt": {
+      "size_bytes": 83,
+      "sha256": "9dff8e8e796fdbaf756f2a9da355abc65859091524a9c6e520b44c94cc5f1aaf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0003-agent-a-47c08dc0d2.wav": {
+      "size_bytes": 210988,
+      "sha256": "f5fc1b8b99457165b5cc3891e726b5a285a680b4d5b6b4692170ef85abffd7df"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0004-agent-b-35fded592f.txt": {
+      "size_bytes": 148,
+      "sha256": "ae145381e547f7b498a1e878a22a1c59d5a94cd178164f379c5fb9dd89223bb6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0004-agent-b-35fded592f.wav": {
+      "size_bytes": 489516,
+      "sha256": "4956b1323f3ec39d81c4dda3247ced415c3a006627602a8422db4336f253e7c2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0005-agent-a-3b644d1e11.txt": {
+      "size_bytes": 76,
+      "sha256": "9c58e657b3c53df0e993399e6639eef0032457e0c5530188c7d90d116053513f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0005-agent-a-3b644d1e11.wav": {
+      "size_bytes": 224300,
+      "sha256": "10f1707d3b5b51b2304c8e358f82b14f8a3e6e42086d0dfb84e28bb3913f42f1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0006-agent-b-b2e42577c0.txt": {
+      "size_bytes": 174,
+      "sha256": "fb2633251199778ae21da1dd8b1695ab39f976f2c697ed42ca0f054e92df7cee"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0006-agent-b-b2e42577c0.wav": {
+      "size_bytes": 562220,
+      "sha256": "7d973f5dbdbf30b12744f613b081b79b7dd22a6a4bc3bebfc6561155b1113dc5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0007-agent-a-9fcb9bb5a2.txt": {
+      "size_bytes": 89,
+      "sha256": "5efe95a50178c6ee3e51e00dba95f440c36e5ed1373b169e0175073b0ec27b4a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0007-agent-a-9fcb9bb5a2.wav": {
+      "size_bytes": 256556,
+      "sha256": "9c5a27135c52367aee7098b6f5afebf74d5a99e5114caaef76dcfcbd8742a2da"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0008-agent-b-a5985a4155.txt": {
+      "size_bytes": 179,
+      "sha256": "5bb006dcdbafe2033720970464b5ecc035b5ea3c84db43b8fe0df4d789d2d144"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0008-agent-b-a5985a4155.wav": {
+      "size_bytes": 562732,
+      "sha256": "2522b0d8f4048e2894cdfb3ffcc5dac8d899cb37d760b3a4a973ed8f38981c6f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0009-agent-a-e2c2dccaf8.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\82d7116685ed\\0009-agent-a-e2c2dccaf8.wav": {
+      "size_bytes": 176684,
+      "sha256": "19f83fece9effa976b3a3c08219c5ac36b77cfc085a64badcf2fe0108a91d3a4"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0001-agent-a-c641ae30f7.txt": {
+      "size_bytes": 118,
+      "sha256": "6f8baf8e195eaf2d88800acfe89f6df6be66a2961f4e7d15b906137c40eb462a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0001-agent-a-c641ae30f7.wav": {
+      "size_bytes": 189948,
+      "sha256": "b054eea5abaf13756a32cca2927676e9c326a7c143466b7575419f86249a162b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0002-agent-b-fe5aedc658.txt": {
+      "size_bytes": 91,
+      "sha256": "ed57395de11f7ec2d46014840ec31abda7766314c834c22727f2e3549f6f3120"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0002-agent-b-fe5aedc658.wav": {
+      "size_bytes": 113964,
+      "sha256": "f8371efc04f382710afc16ab09bbf7ceb54ed221d21c25048e38782e6b28afb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0003-agent-a-364e19493a.txt": {
+      "size_bytes": 67,
+      "sha256": "472a389519567a70fce19c75a9520e6ccd5dde9005c3ceec95c6d979b98bf0ac"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0003-agent-a-364e19493a.wav": {
+      "size_bytes": 97556,
+      "sha256": "86ed423a5ea70e4039eb6cc42697f97480e9f8934684be3aefd122e4babf247b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0004-agent-b-a25f0596eb.txt": {
+      "size_bytes": 123,
+      "sha256": "cfda4da81c8a386f903c56de38aa3b45524c92b53fd9090e5e6fe73e941edba6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0004-agent-b-a25f0596eb.wav": {
+      "size_bytes": 155776,
+      "sha256": "164ef07374d1bebe3788d17dedc5ca1a4eb8c2d8598d4a10d52826bd2cf64e81"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0005-agent-a-d55dd61150.txt": {
+      "size_bytes": 62,
+      "sha256": "a7436fda265b2d7f696a2692eb10c7817f0222ebb846873979136638f1ef087c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0005-agent-a-d55dd61150.wav": {
+      "size_bytes": 97556,
+      "sha256": "86ed423a5ea70e4039eb6cc42697f97480e9f8934684be3aefd122e4babf247b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0006-agent-b-aa700a1534.txt": {
+      "size_bytes": 153,
+      "sha256": "617027fba8478fe002bbfaba13b2c7c7d135584d9e69dc95ea616ddf39f0b1f1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0006-agent-b-aa700a1534.wav": {
+      "size_bytes": 191404,
+      "sha256": "103a28879c62aaebbff1993d0085678eac21d8f3c4268b7054fc4ee74a615b81"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0007-agent-a-7247dcfa88.txt": {
+      "size_bytes": 39,
+      "sha256": "9743610ac32884ad89ae83a8b62e8a1b42ac179441fbc15181056653a7ec8243"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0007-agent-a-7247dcfa88.wav": {
+      "size_bytes": 61192,
+      "sha256": "14267b6e9c13285a588b989bb15fdddd2a9be58944eeffef017519795a063b87"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0008-agent-b-dbfeee0aa6.txt": {
+      "size_bytes": 20,
+      "sha256": "dceb5a29a7b42b265058eac5c8a3f0171f53e2ebf6cda07ccb6c93efc0270da8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0008-agent-b-dbfeee0aa6.wav": {
+      "size_bytes": 30336,
+      "sha256": "7a419540c02bf5543aaaac1fe34a82d12201c160888ade5ff86dd075bcb84fa1"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0009-agent-a-8610fad248.txt": {
+      "size_bytes": 79,
+      "sha256": "36b847c014ec2bc87138cfd0dfe43068afc4f0605928b7d8371fa7c61d07d4b9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0009-agent-a-8610fad248.wav": {
+      "size_bytes": 104828,
+      "sha256": "5b478826cdc5c361584e66aba046f54c1670cf85eb855f28436ee8123243bda8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0010-agent-b-9501a30900.txt": {
+      "size_bytes": 148,
+      "sha256": "830fd3499680eaced7f00465e8d97a603f732df56eea89b4afe36758801252c4"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0010-agent-b-9501a30900.wav": {
+      "size_bytes": 181590,
+      "sha256": "ce811fd64f28cf26dcd933bb8347983db6bf32d03609bcf15cf0699f92f3b822"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0011-agent-a-12aa3bdf13.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0011-agent-a-12aa3bdf13.wav": {
+      "size_bytes": 160858,
+      "sha256": "4d61837eaf9233315b0a28470ea1326adb69c0390a9603a73528472f3ffae618"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0012-agent-b-86138f6b51.txt": {
+      "size_bytes": 147,
+      "sha256": "9cea60f70a8f67c7d485d9b04a37d5521742754d192d4b5c9df4039b95503edc"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0012-agent-b-86138f6b51.wav": {
+      "size_bytes": 186924,
+      "sha256": "dcb44d87c38e509a2810c42a904b7ed43f5edde2187ef2ec9dc8b7897f3858c9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0013-agent-a-b7efcca34b.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\88f87d032ac0\\0013-agent-a-b7efcca34b.wav": {
+      "size_bytes": 88130,
+      "sha256": "82f7b1915319cd7daceee46888f262b4a0082acffb71acaaf74e59ece9214c08"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0001-agent-a-f55782a8a2.txt": {
+      "size_bytes": 134,
+      "sha256": "a803c3226ac84fdc32fd5bdea68a040cb817b9bb654f7540733790df8a5dd54e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0001-agent-a-f55782a8a2.wav": {
+      "size_bytes": 221554,
+      "sha256": "14ebf0564a5972f9261e2406dc8e405de96524df0849c3f934f96b2f761b482d"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0002-agent-b-fe5aedc658.txt": {
+      "size_bytes": 91,
+      "sha256": "ed57395de11f7ec2d46014840ec31abda7766314c834c22727f2e3549f6f3120"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0002-agent-b-fe5aedc658.wav": {
+      "size_bytes": 115650,
+      "sha256": "811a8935c1200573250369929093faa91bad734ff40bcbaebc617966cb549fb2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0003-agent-a-7d3c69fdf3.txt": {
+      "size_bytes": 78,
+      "sha256": "f847950fb8d568e9aa3ee6e60e6172ab2d633b10629177fce41ce4332c1557ab"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0003-agent-a-7d3c69fdf3.wav": {
+      "size_bytes": 129110,
+      "sha256": "0d1186c5f0b84ef7e5de3561c56581e0705781f6c4e9723cc5baf478111bae7e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0004-agent-b-2e40b31601.txt": {
+      "size_bytes": 150,
+      "sha256": "23ad0b48ec0176e4a64d33f67fbeda07f7574c81c51a4211169a26bb9ace8e8b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0004-agent-b-2e40b31601.wav": {
+      "size_bytes": 193628,
+      "sha256": "47ecc31b006a5e7c19b9b4e46db0fcc977587cfb379c3e21dda8ebaa7188dd00"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0005-agent-a-02681403a7.txt": {
+      "size_bytes": 89,
+      "sha256": "5efe95a50178c6ee3e51e00dba95f440c36e5ed1373b169e0175073b0ec27b4a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0005-agent-a-02681403a7.wav": {
+      "size_bytes": 124630,
+      "sha256": "105753d709d0dfc39d414fe271b037d5f14f7aa04de3344a3e1651d508765587"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0006-agent-b-bc12854ec0.txt": {
+      "size_bytes": 154,
+      "sha256": "d7b100829fca6251303e5fcb8d9690af5b271adc1aef703f541ed9006b4a7df0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0006-agent-b-bc12854ec0.wav": {
+      "size_bytes": 185090,
+      "sha256": "b6589cae3940b9a187a134a1bcd1137e73a58d924f085e854868223407ab6363"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0007-agent-a-c355ab3470.txt": {
+      "size_bytes": 116,
+      "sha256": "21434030e7c42798e76a68dbb6885118d8d7144f0221b5054dd3f51340837391"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0007-agent-a-c355ab3470.wav": {
+      "size_bytes": 178888,
+      "sha256": "d89733d60d200ccc9258b76b1be94c8b1b6253ae15676d949fed17c45c5bc47c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0008-agent-b-f0a56a5b6a.txt": {
+      "size_bytes": 165,
+      "sha256": "dabf1843a3147e597b38f3d933cee360be0fb2676f45fff0d4d438b6f422c4f0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0008-agent-b-f0a56a5b6a.wav": {
+      "size_bytes": 219622,
+      "sha256": "26d680a29fdd49b69bd9612c468abb7efda89b22244598742e9fbaa85c5883f6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0009-agent-a-423013a008.txt": {
+      "size_bytes": 56,
+      "sha256": "387e78521cf7cfda6d69b9783267afd9cc1b1a1547e3ecc16efa8d5c29ed7316"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\8b4f579800c0\\0009-agent-a-423013a008.wav": {
+      "size_bytes": 96186,
+      "sha256": "04c4bb3d6f9148a42877030888c9bc332919e42f8bcd1d014eb582c570702d9b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0001-agent-a-6f44d47c35.txt": {
+      "size_bytes": 115,
+      "sha256": "b05ef9582490e78934aab28f1f3fe87f4047da114a85f483a2ed586e3f479474"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0001-agent-a-6f44d47c35.wav": {
+      "size_bytes": 182676,
+      "sha256": "70bd12bf8abc3bcea1f2f7b8211165f87a86fcf74bab9d339c95ff8b8b89e618"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0002-agent-b-5b72a0ec0e.txt": {
+      "size_bytes": 91,
+      "sha256": "d39476dec4849ed6c7029ed4c30edfad22b1aaf3a11b5af0da8f973d0a1fd2ff"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0002-agent-b-5b72a0ec0e.wav": {
+      "size_bytes": 113964,
+      "sha256": "f8371efc04f382710afc16ab09bbf7ceb54ed221d21c25048e38782e6b28afb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0003-agent-a-9b5cb0538e.txt": {
+      "size_bytes": 71,
+      "sha256": "3dc8e4c87be6aaad2d9c76df156430203b4b17e8145bc797138136723cb40183"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0003-agent-a-9b5cb0538e.wav": {
+      "size_bytes": 104828,
+      "sha256": "5b478826cdc5c361584e66aba046f54c1670cf85eb855f28436ee8123243bda8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0004-agent-b-b0c7f34694.txt": {
+      "size_bytes": 154,
+      "sha256": "f3510252f2e1356da5a2eee507d5f6d99d0f4228758d406b87538cdbabad3dad"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0004-agent-b-b0c7f34694.wav": {
+      "size_bytes": 181590,
+      "sha256": "ce811fd64f28cf26dcd933bb8347983db6bf32d03609bcf15cf0699f92f3b822"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0005-agent-a-55687d3b08.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0005-agent-a-55687d3b08.wav": {
+      "size_bytes": 160858,
+      "sha256": "4d61837eaf9233315b0a28470ea1326adb69c0390a9603a73528472f3ffae618"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0006-agent-b-24437de69d.txt": {
+      "size_bytes": 116,
+      "sha256": "4daf986b1179eb494dfc58f2eb4798489da89a0b78189315dba8ea59747bdd2e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0006-agent-b-24437de69d.wav": {
+      "size_bytes": 150444,
+      "sha256": "6a0961bcbb503151699181facfc0da08c94dad9e6a446b5b77c65c42ee2a4c60"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0007-agent-a-d39b7e6b19.txt": {
+      "size_bytes": 92,
+      "sha256": "4d2fd631cd36abd29ebc2fc72d859c5206de6a4d08ff8090b8b7a06720343680"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0007-agent-a-d39b7e6b19.wav": {
+      "size_bytes": 133920,
+      "sha256": "f8b4d3ce98af0d9158944880d06c065aafca35d20ebfbb9376a4017b647a2901"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0008-agent-b-c3925cce13.txt": {
+      "size_bytes": 95,
+      "sha256": "478900ec791ad2c48c598868c8d1b518aad9426ad1aec032fc27da214a7f4002"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0008-agent-b-c3925cce13.wav": {
+      "size_bytes": 113964,
+      "sha256": "f8371efc04f382710afc16ab09bbf7ceb54ed221d21c25048e38782e6b28afb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0009-agent-a-094c99032b.txt": {
+      "size_bytes": 67,
+      "sha256": "77e075fec9a5d136ae178939f6b61e67e5801ef8662eb7197c52aa52b64795d2"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0009-agent-a-094c99032b.wav": {
+      "size_bytes": 97556,
+      "sha256": "86ed423a5ea70e4039eb6cc42697f97480e9f8934684be3aefd122e4babf247b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0010-agent-b-c04a5d5e81.txt": {
+      "size_bytes": 91,
+      "sha256": "d580da034c2e4ef184af3c675dddc89883d3e90b7f293f08d9763afd4de8814b"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0010-agent-b-c04a5d5e81.wav": {
+      "size_bytes": 94336,
+      "sha256": "730347fbb626c2ad7cdb307e955b348548e10123075b5e33a19328098abc6bba"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0011-agent-a-29db92c76a.txt": {
+      "size_bytes": 57,
+      "sha256": "84c54331f1ca3cde68b5225d19bf915b5b1c9fd07d18c3746de7be1e60594b8f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\b0ef7fd02924\\0011-agent-a-29db92c76a.wav": {
+      "size_bytes": 95404,
+      "sha256": "8ee8543cd4d6d288f7416e1da7ed7d42bfaf50286d64f9c97df3f7f7dc9c4763"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0001-agent-a-f3e5007875.txt": {
+      "size_bytes": 115,
+      "sha256": "b05ef9582490e78934aab28f1f3fe87f4047da114a85f483a2ed586e3f479474"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0001-agent-a-f3e5007875.wav": {
+      "size_bytes": 288300,
+      "sha256": "4342635b32df8f4aca7afe10684d4f207cc6d2b367227fdb7b09ffccf4c9cfb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0002-agent-b-1d54cb5f2b.txt": {
+      "size_bytes": 99,
+      "sha256": "3dd52ae50b1b556427e02a4d1edd8f1a3e80e68e2dde7adbb66da71574735d2c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0002-agent-b-1d54cb5f2b.wav": {
+      "size_bytes": 306220,
+      "sha256": "17154ee3e986ee8e1bda1a16706c6e3747a8315c452a7505d79ac5b5ad063fc9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0003-agent-a-d63fee045e.txt": {
+      "size_bytes": 71,
+      "sha256": "3dc8e4c87be6aaad2d9c76df156430203b4b17e8145bc797138136723cb40183"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0003-agent-a-d63fee045e.wav": {
+      "size_bytes": 191020,
+      "sha256": "d0556769edaa0af3926073d2d8dce4adfeb94545e4a27aa58c1e1efc08259d58"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0004-agent-b-e3c9875767.txt": {
+      "size_bytes": 117,
+      "sha256": "36beb81800bdef022a3e0b438c21fe54d04a7370a51cdc847a89b34b2a2b0d27"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0004-agent-b-e3c9875767.wav": {
+      "size_bytes": 362540,
+      "sha256": "d1cd394f1ef75ee1e99dcc5d276ead65cd9b712601f886c9e86566f554ec9bb8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0005-agent-a-3ca88e71ff.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0005-agent-a-3ca88e71ff.wav": {
+      "size_bytes": 288812,
+      "sha256": "9cf882eeebf18e2346cf5af58f36ecb27dbc9abc69a1a09c6616c79ea0d5808f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0006-agent-b-10a6bcae8b.txt": {
+      "size_bytes": 122,
+      "sha256": "3f694426f1dbea0424c9bafce3c8d2a85fac61bace3515bc3d30f741c91fb6b3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0006-agent-b-10a6bcae8b.wav": {
+      "size_bytes": 404012,
+      "sha256": "ab37ae32e559a45095b65df1acf9ee689b662c36b7801366a5ae6bb2728b8982"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0007-agent-a-6c7c72af43.txt": {
+      "size_bytes": 92,
+      "sha256": "4d2fd631cd36abd29ebc2fc72d859c5206de6a4d08ff8090b8b7a06720343680"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0007-agent-a-6c7c72af43.wav": {
+      "size_bytes": 191020,
+      "sha256": "d1e1f07dd00259a1727b74f0e290f1e9d276597a52c429db372c7fb0696ae6f6"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0008-agent-b-b6c62540ad.txt": {
+      "size_bytes": 125,
+      "sha256": "2d75a7362231ef24e6dfba2a5b24d24052d7c22e62fa4997f9e01c074b455667"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0008-agent-b-b6c62540ad.wav": {
+      "size_bytes": 408108,
+      "sha256": "06e5aa9cdd75e9c277520d0372d2afb405f8a97000cebaeaf943d5d9d08d69e5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0009-agent-a-e2c2dccaf8.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\d671f200c2f9\\0009-agent-a-e2c2dccaf8.wav": {
+      "size_bytes": 176172,
+      "sha256": "3445cb7a7ed73cad61f4b2b5bac2c4ea83b2964aa5ee9d408eea34a15c965521"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0001-agent-a-5142f4ee65.txt": {
+      "size_bytes": 118,
+      "sha256": "6f8baf8e195eaf2d88800acfe89f6df6be66a2961f4e7d15b906137c40eb462a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0001-agent-a-5142f4ee65.wav": {
+      "size_bytes": 317996,
+      "sha256": "aa0f3a154fe4a986e7a45964a7caf2ea0f2e2d23b5d7fd907de9de2bfb883e70"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0002-agent-b-c47270013a.txt": {
+      "size_bytes": 95,
+      "sha256": "5bfc839daa5662c4c29118c7ec7fe08d77ba7112c820bceaf8d523485b9810f8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0002-agent-b-c47270013a.wav": {
+      "size_bytes": 310828,
+      "sha256": "fd61ffcf7243402e542556bddb345457b09e66b98f910bc898d57fcd4a7dfdff"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0003-agent-a-12eb6e6d71.txt": {
+      "size_bytes": 62,
+      "sha256": "a7436fda265b2d7f696a2692eb10c7817f0222ebb846873979136638f1ef087c"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0003-agent-a-12eb6e6d71.wav": {
+      "size_bytes": 156716,
+      "sha256": "12de64414db908e7f248a665437a1eee4eca731efc3f137f0cad1dddaf93cb8f"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0004-agent-b-a65e52c3f9.txt": {
+      "size_bytes": 146,
+      "sha256": "69efe1d3ad9a59aab0d7253f42ed2a9462fd9215bc210dfacdb01a82a83eecc8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0004-agent-b-a65e52c3f9.wav": {
+      "size_bytes": 459308,
+      "sha256": "372374f63a488acf19faaa99f0fcb9b8f23be692a7258040c79dac87cd01b6ab"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0005-agent-a-e65b614c4d.txt": {
+      "size_bytes": 79,
+      "sha256": "36b847c014ec2bc87138cfd0dfe43068afc4f0605928b7d8371fa7c61d07d4b9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0005-agent-a-e65b614c4d.wav": {
+      "size_bytes": 196140,
+      "sha256": "1e7ab40bfba28909256b7824d4f1c9fff3434073676df830b6eca31a692b1c75"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0006-agent-b-a0304abdb8.txt": {
+      "size_bytes": 165,
+      "sha256": "42440ae2e626db3545b9bf7719e690fcdeb5f45e4713dcc9751d8128399e63e5"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0006-agent-b-a0304abdb8.wav": {
+      "size_bytes": 559660,
+      "sha256": "4dc62b643ae472fd87a37845c34ba72f43ff6417182760ca9581aa47908ef23a"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0007-agent-a-4cb66384c9.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0007-agent-a-4cb66384c9.wav": {
+      "size_bytes": 287788,
+      "sha256": "f91f036bc6cc071a083e87864f5d07e12c74047700a0fc7868decd74acc6ac55"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0008-agent-b-f43a0c43f3.txt": {
+      "size_bytes": 124,
+      "sha256": "676f5af2b34d352a3cb2cbd9a752466c4deca0517da438dcc0c3a4276d9e5c81"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0008-agent-b-f43a0c43f3.wav": {
+      "size_bytes": 398380,
+      "sha256": "9b8bd26a2fe84f4e99b7cefdb8c718559621ad31b788eecbb40839c634905517"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0009-agent-a-e2c2dccaf8.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\e582d82a7071\\0009-agent-a-e2c2dccaf8.wav": {
+      "size_bytes": 169004,
+      "sha256": "0d4921be1afc8995ff5472fdd18eb9363192d966f73fccc05cfb4a971e56e035"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0001-agent-a-f3e5007875.txt": {
+      "size_bytes": 115,
+      "sha256": "b05ef9582490e78934aab28f1f3fe87f4047da114a85f483a2ed586e3f479474"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0001-agent-a-f3e5007875.wav": {
+      "size_bytes": 288300,
+      "sha256": "4342635b32df8f4aca7afe10684d4f207cc6d2b367227fdb7b09ffccf4c9cfb3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0002-agent-b-cb6bd7879f.txt": {
+      "size_bytes": 91,
+      "sha256": "d39476dec4849ed6c7029ed4c30edfad22b1aaf3a11b5af0da8f973d0a1fd2ff"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0002-agent-b-cb6bd7879f.wav": {
+      "size_bytes": 293932,
+      "sha256": "62c7e6ac99eaaaeadeaa1dc50065169b8860d23e175d23445f9b952890ca28e3"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0003-agent-a-d63fee045e.txt": {
+      "size_bytes": 71,
+      "sha256": "3dc8e4c87be6aaad2d9c76df156430203b4b17e8145bc797138136723cb40183"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0003-agent-a-d63fee045e.wav": {
+      "size_bytes": 188460,
+      "sha256": "1386d8239dcfbc1597adc5d5687bdb9deeeadb027b71cb043823f5990dc453c9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0004-agent-b-d2d12fbdfc.txt": {
+      "size_bytes": 154,
+      "sha256": "f3510252f2e1356da5a2eee507d5f6d99d0f4228758d406b87538cdbabad3dad"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0004-agent-b-d2d12fbdfc.wav": {
+      "size_bytes": 492588,
+      "sha256": "c4a09556ecbedf4060d69ea21ecf9fd7886bb0020c75ce6cd273e01861949f35"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0005-agent-a-6569fa2e76.txt": {
+      "size_bytes": 41,
+      "sha256": "8f442b9b63d35d9c823e05a61471deda181790b2a59722482e904f8e019009bf"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0005-agent-a-6569fa2e76.wav": {
+      "size_bytes": 114220,
+      "sha256": "de8cfa1267a931f1c549b68e9d7900777e91e890cc40aaba517481407a3d5ca9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0006-agent-b-a540c824a7.txt": {
+      "size_bytes": 21,
+      "sha256": "a1259d42df6a7c2218acc86d3d7026fd70a244e35fc980b4fdc95dadb565d948"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0006-agent-b-a540c824a7.wav": {
+      "size_bytes": 64556,
+      "sha256": "febed53be9cf6895f0f53cc9d539f5324b271814122f6cdaba040c93dafe1954"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0007-agent-a-4cb66384c9.txt": {
+      "size_bytes": 108,
+      "sha256": "57e332f39004a85ac238fcf6ab9adc28d21053191a3fab5af424fe74b32b44c8"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0007-agent-a-4cb66384c9.wav": {
+      "size_bytes": 288300,
+      "sha256": "921172d9216783c557bf58ef4e759c79ba081a987ceaf12ea1c93f7dd95ab897"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0008-agent-b-5c8766f467.txt": {
+      "size_bytes": 116,
+      "sha256": "4daf986b1179eb494dfc58f2eb4798489da89a0b78189315dba8ea59747bdd2e"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0008-agent-b-5c8766f467.wav": {
+      "size_bytes": 362028,
+      "sha256": "5256db4416115f1a5d3b0d91ee7384567beb4d5e6c094309f1fd877c46380fb9"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0009-agent-a-f2cc34c88e.txt": {
+      "size_bytes": 92,
+      "sha256": "4d2fd631cd36abd29ebc2fc72d859c5206de6a4d08ff8090b8b7a06720343680"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0009-agent-a-f2cc34c88e.wav": {
+      "size_bytes": 198700,
+      "sha256": "8d9c7c53b1911be18fed74e8a31cc34e708ece241e3deee65f67cba60d9b8ea0"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0010-agent-b-1e325172c1.txt": {
+      "size_bytes": 95,
+      "sha256": "478900ec791ad2c48c598868c8d1b518aad9426ad1aec032fc27da214a7f4002"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0010-agent-b-1e325172c1.wav": {
+      "size_bytes": 304684,
+      "sha256": "1d5469186d4fe34976e6de7bb2e1c3111bcb88b81cd6236128f5a9cc71a9cb09"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0011-agent-a-7aeaed9180.txt": {
+      "size_bytes": 52,
+      "sha256": "ca75e3e7abeed4ad28afeaaa16add6e547738cab48ba04b6ff493c0d45c85f88"
+    },
+    "C:\\Users\\sende\\PycharmProjects\\MiniLlama\\results\\agent_b\\model_comparison\\01-small-qwen2.5-1.5b\\userlm\\20260705_123702_b-n0026\\.turn_audio\\f4e2f8dc9a3e\\0011-agent-a-7aeaed9180.wav": {
+      "size_bytes": 166444,
+      "sha256": "47e8c4af549826b8de94958a4759bb4a5b40653c17ed80e5e870349e8f9f6ff4"
+    }
+  }
+}

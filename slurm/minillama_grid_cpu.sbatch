@@ -4,8 +4,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=10G
 #SBATCH --time=02:00:00
-#SBATCH --output=slurm-%A_%a.out
-#SBATCH --error=slurm-%A_%a.err
+#SBATCH --output=slurm/logs/slurm-%x-%A_%a.out
+#SBATCH --error=slurm/logs/slurm-%x-%A_%a.err
 
 set -euo pipefail
 PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$(pwd)}}"

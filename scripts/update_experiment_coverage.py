@@ -10,7 +10,12 @@ if str(ROOT) not in sys.path:
 
 from coop_navigation_sds.ResultsAndArtifacts.coverage import update_experiment_coverage  # noqa: E402
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import compact_existing_result_tree  # noqa: E402
-from coop_navigation_sds.ResultsAndArtifacts.comparison import compare_runs, discover_run_directories  # noqa: E402
+from coop_navigation_sds.ResultsAndArtifacts.comparison import (  # noqa: E402
+    compare_runs,
+    discover_evidence_run_directories,
+    discover_run_directories,
+    write_evidence_comparison,
+)
 
 
 def main():
@@ -33,6 +38,12 @@ def main():
             Path(args.results_dir).resolve() / "comparison",
         ).items():
             print(f"comparison_{name}: {path}")
+    if discover_evidence_run_directories([args.results_dir]):
+        for name, path in write_evidence_comparison(
+            [args.results_dir],
+            Path(args.results_dir).resolve() / "analysis",
+        ).items():
+            print(f"evidence_{name}: {path}")
 
 
 if __name__ == "__main__":

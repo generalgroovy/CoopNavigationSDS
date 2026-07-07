@@ -26,6 +26,18 @@ class ModelSizeTreatment:
     models: tuple[str, str]
 
 
+@dataclass(frozen=True)
+class AgentBModelProposal:
+    """Documented Agent B candidate beyond the two canonical size slots."""
+
+    size_tier: str
+    slot: str
+    model: str
+    provider: str
+    unique_aspect: str
+    use_case: str
+
+
 AGENT_B_MODEL_SIZE_TREATMENTS = {
     "small": ModelSizeTreatment(
         "small", 1.0, 1.5, ("llama3.2:1b", "qwen2.5:1.5b")
@@ -39,6 +51,76 @@ AGENT_B_MODEL_SIZE_TREATMENTS = {
 }
 
 MODEL_SIZE_ORDER = tuple(AGENT_B_MODEL_SIZE_TREATMENTS)
+
+
+AGENT_B_MODEL_PROPOSALS = {
+    "small": (
+        AgentBModelProposal(
+            "small", "small1", "llama3.2:1b", "ollama",
+            "canonical small Llama-family chat baseline",
+            "low-resource local dialogue-system baseline",
+        ),
+        AgentBModelProposal(
+            "small", "small2", "qwen2.5:1.5b", "ollama",
+            "larger multilingual Qwen-family small model",
+            "tests whether modest extra scale improves route grounding",
+        ),
+        AgentBModelProposal(
+            "small", "small3", "HuggingFaceTB/SmolLM2-360M-Instruct", "transformers",
+            "sub-billion Transformer baseline with very low memory",
+            "tests floor performance and fast smoke-test behavior",
+        ),
+        AgentBModelProposal(
+            "small", "small4", "Qwen/Qwen2.5-0.5B-Instruct", "transformers",
+            "very small multilingual instruction model without Ollama",
+            "tests provider effects and compact multilingual behavior",
+        ),
+    ),
+    "medium": (
+        AgentBModelProposal(
+            "medium", "medium1", "llama3.2:3b", "ollama",
+            "canonical medium Llama-family model",
+            "middle resource point between small baselines and 7B models",
+        ),
+        AgentBModelProposal(
+            "medium", "medium2", "phi3:mini", "ollama",
+            "non-Llama Phi architecture with compact reasoning focus",
+            "tests model-family effects on clarification and repair",
+        ),
+        AgentBModelProposal(
+            "medium", "medium3", "gemma2:2b", "ollama",
+            "Gemma-family instruction model with lower memory than Phi",
+            "tests another architecture at moderate local cost",
+        ),
+        AgentBModelProposal(
+            "medium", "medium4", "qwen3:4b", "ollama",
+            "newer Qwen generation with stronger multilingual instruction behavior",
+            "tests whether newer training improves constraint handling",
+        ),
+    ),
+    "large": (
+        AgentBModelProposal(
+            "large", "large1", "llama3.1:8b", "ollama",
+            "canonical large Llama-family baseline",
+            "high-quality local comparison point for route cooperation",
+        ),
+        AgentBModelProposal(
+            "large", "large2", "qwen2.5:7b", "ollama",
+            "large multilingual Qwen-family comparison model",
+            "tests cross-family behavior at similar resource scale",
+        ),
+        AgentBModelProposal(
+            "large", "large3", "mistral:7b", "ollama",
+            "Mistral-family 7B local model with different instruction tuning",
+            "tests whether non-Llama/Qwen architecture shifts repair quality",
+        ),
+        AgentBModelProposal(
+            "large", "large4", "microsoft/UserLM-8b", "transformers",
+            "user-simulator-trained model rather than assistant-chat model",
+            "candidate for Agent A or controlled Agent B ablations",
+        ),
+    ),
+}
 
 
 def model_store_platform(system_name=None):
@@ -97,6 +179,20 @@ def models_for_size_treatments(treatment_keys):
             )
         models.extend(AGENT_B_MODEL_SIZE_TREATMENTS[normalized].models)
     return tuple(dict.fromkeys(models))
+
+
+def agent_b_model_proposals(size_tier=None):
+    """Return documented model candidates grouped by experimental size tier."""
+    if size_tier is None:
+        return {
+            key: tuple(proposals)
+            for key, proposals in AGENT_B_MODEL_PROPOSALS.items()
+        }
+    normalized = str(size_tier).strip().lower()
+    if normalized not in AGENT_B_MODEL_PROPOSALS:
+        available = ", ".join(AGENT_B_MODEL_PROPOSALS)
+        raise ValueError(f"Unknown model proposal tier '{size_tier}'. Use one of: {available}.")
+    return tuple(AGENT_B_MODEL_PROPOSALS[normalized])
 
 
 def model_size_treatment(model_name):

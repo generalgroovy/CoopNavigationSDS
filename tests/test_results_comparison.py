@@ -11,6 +11,7 @@ from coop_navigation_sds.ResultsAndArtifacts.comparison import (
     identify_metric_outliers,
     summarize_metric_indicators,
     summarize_run_outcomes,
+    write_evidence_comparison,
 )
 
 
@@ -239,3 +240,79 @@ def test_run_metric_matrix_sorts_models_smallest_to_largest(tmp_path):
     assert [row["agent_b_llm_size"] for row in rows] == ["small", "large"]
     assert [row["source_run"] for row in rows] == ["z-small", "a-large"]
     assert 'class="phase-header"' in report
+
+
+def test_evidence_comparison_includes_partial_and_preflight_runs_without_mutation(tmp_path):
+    completed = tmp_path / "run-partial"
+    preflight = tmp_path / "run-preflight"
+    completed.mkdir()
+    preflight.mkdir()
+    fields = [
+        "condition_id", "pair_id", "run_type", "scenario_key", "persona_key",
+        "speech_pattern_key", "agent_a_type", "agent_b_model", "agent_b_llm_size",
+        "configured_tts_engine", "configured_asr_engine", "asr_beam_size", "network_seed",
+    ]
+    planned_rows = [
+        {
+            "condition_id": "condition-complete", "pair_id": "pair", "run_type": "audio_variant",
+            "scenario_key": "scenario", "persona_key": "persona", "speech_pattern_key": "clean",
+            "agent_a_type": "userlm", "agent_b_model": "/models/qwen", "agent_b_llm_size": "small",
+            "configured_tts_engine": "piper", "configured_asr_engine": "faster_whisper",
+            "asr_beam_size": "6", "network_seed": "42",
+        },
+        {
+            "condition_id": "condition-missing", "pair_id": "pair", "run_type": "text_only",
+            "scenario_key": "scenario", "persona_key": "persona", "speech_pattern_key": "clean",
+            "agent_a_type": "userlm", "agent_b_model": "/models/qwen", "agent_b_llm_size": "small",
+            "configured_tts_engine": "piper", "configured_asr_engine": "faster_whisper",
+            "asr_beam_size": "6", "network_seed": "42",
+        },
+    ]
+    for directory, rows in ((completed, planned_rows), (preflight, planned_rows[:1])):
+        (directory / "experiment_job.json").write_text('{"schema_version":1}', encoding="utf-8")
+        with (directory / "condition_configuration_breakdown.csv").open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+    events = [
+        {"name": "batch.condition.start", "payload": {"condition_id": "condition-complete"}},
+        {"name": "telemetry.speech", "payload": {
+            "turn": 1, "speaker": "Agent A", "generated_text": "Need a route.",
+            "outgoing_text": "Need a route.", "raw_asr_transcript": "Need a route.",
+            "agent_input_transcript": "Need a route.", "pipeline_ok": True,
+            "tts_latency_sec": 0.1, "asr_latency_sec": 0.2, "pipeline_latency_sec": 0.3,
+        }},
+        {"name": "telemetry.phase_timing", "payload": {
+            "turn": 1, "natural_language_generation_sec": 0.05,
+            "text_to_speech_processing_sec": 0.1,
+            "automatic_speech_recognition_processing_sec": 0.2,
+            "speech_pipeline_wall_sec": 0.3,
+        }},
+        {"name": "metrics", "payload": {"metrics": (
+            "[Run]\nOutcome: satisfied\nTask success: True\nStop reason: agent_a_closed\n"
+            "[Task]\nRoute valid: True\nDestination reached: True\nDuration: 12 min\n"
+            "Duration limit: 20 min\nConstraints satisfied: 2/2 met\n"
+            "[Comparison]\nOptimal duration: 10 min\nDuration gap: 2 min\nCandidates compared: 2\n"
+            "Revisions: 1\n[Execution]\nTurns: 3\nRuntime: 4.5 s\n"
+        )}},
+        {"name": "batch.condition.end", "payload": {"status": "ok"}},
+    ]
+    event_path = completed / "batch-condition.jsonl"
+    event_path.write_text("".join(json.dumps(row) + "\n" for row in events), encoding="utf-8")
+    source_before = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+
+    paths = write_evidence_comparison([tmp_path], tmp_path / "analysis")
+
+    source_after = {path: path.read_bytes() for path in source_before}
+    assert source_before == source_after
+    inventory = list(csv.DictReader(paths["run_inventory"].open(encoding="utf-8")))
+    outcomes = list(csv.DictReader(paths["outcomes"].open(encoding="utf-8")))
+    assert {row["run_state"] for row in inventory} == {"partial", "preflight_only"}
+    completed_row = next(row for row in outcomes if row["condition_id"] == "condition-complete")
+    missing_rows = [row for row in outcomes if row["condition_state"] == "not_started"]
+    assert completed_row["task_success"] == "True"
+    assert missing_rows and all(row["task_success"] == "" for row in missing_rows)
+    manifest = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+    assert manifest["source_evidence_unchanged"] is True
+    assert manifest["discovered_run_count"] == 2
+    assert paths["overview"].is_file()
