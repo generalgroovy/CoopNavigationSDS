@@ -613,6 +613,24 @@ The project speech runtime supports Python 3.11 through 3.14, including Python
 main runtime. Provider setup validates capabilities and installed packages; it
 does not require one exact main-runtime minor version.
 
+Coqui setup is analogous to the other speech providers once a compatible
+interpreter exists. The setup script searches, in order, an explicit
+`--coqui-python`, `COOP_NAVIGATION_SDS_COQUI_PYTHON`, `.runtime/python311`,
+`.runtime/python310`, `python3.11`, and `python3.10`; it then creates and
+registers `.speech-providers/coqui` in `providers.json`.
+
+```bash
+python3.11 -m venv .runtime/python311
+python scripts/setup_speech_providers.py \
+  --coqui-only \
+  --coqui-python .runtime/python311/bin/python
+python scripts/setup_speech_providers.py --status
+```
+
+If Coqui is intentionally not part of a run, use `--skip-coqui` during provider
+installation. If Coqui is selected as TTS, `--coqui-only` should fail loudly
+with the missing interpreter or package reason instead of silently skipping.
+
 Optional providers use isolated environments and local model directories.
 Preparation may download requested assets; experiment runtime does not replace
 or download an unrequested model. Exact requirements are listed in
