@@ -825,6 +825,20 @@ condition writes to the single `results/` root. Ollama-backed jobs start a
 per-task local Ollama service on a task-specific port. Transformers jobs do not
 require Ollama but must pass model-asset preflight.
 
+All UserLM Agent B Slurm jobs share the same non-model condition design. The
+only intended treatment change is Agent B model identity and its required
+runtime provider/profile. Scenario, persona, caller and operator audio persona,
+speech pattern, TTS, ASR, ASR beam width, network seed, repair limits, transfer
+tolerance, text/audio pairing, and objective are held constant. The analysis
+layer records a `model_comparison_condition_key` that ignores model-only fields
+and joins identical condition cells across models.
+
+Slurm resource requests are computed from registered model memory estimates:
+UserLM caller memory plus Agent B model memory plus speech/runtime overhead,
+rounded upward to a scheduler-friendly value. This avoids using one excessive
+memory request for every model in a size tier and improves backfill priority
+without changing the experiment condition.
+
 Override paths without editing job files when needed:
 
 ```bash
@@ -1095,14 +1109,23 @@ python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
 
 `comparison_overview.html` links normalized evidence and aggregate views: run
 lifecycle, configuration groups, task outcomes, task success by configuration,
-Agent B model summary, phase metrics, phase summary by model, dialogue state,
-dialogue summary, and conversation turns. `analysis_guide.md` explains how to
-use each file. Every planned condition is represented as `completed`,
+model-by-configuration matrix, Agent B model summary, phase metrics, phase
+summary by model, dialogue state, dialogue summary, and conversation turns.
+`analysis_guide.md` explains how to use each file. Every planned condition is
+represented as `completed`,
 `interrupted`, or
 `not_started`. Missing outcomes remain blank and are never converted to failure
 or zero. `analysis_manifest.json` hashes source evidence before and after
 generation and aborts if any source file changes. The command writes only
 derived files beneath `results/analysis`.
+
+`model_configuration_matrix.csv` and `model_configuration_matrix.html` are the
+primary Slurm comparison views. Each row is one non-model condition:
+scenario, persona, audio personas, speech pattern, TTS, ASR, beam width, seed,
+run type, and repair settings. Each Agent B model becomes a column with task
+success, route validity, constraint satisfaction, word error rate, turn count,
+failure phase, and source run. Green/red coloring is visual only; the CSV is
+the graphable source.
 
 Coverage can be rebuilt independently:
 

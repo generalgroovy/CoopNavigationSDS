@@ -10,6 +10,13 @@ from scripts.run_agent_b_llm_batch import (
     job_overview,
     load_batch_manifest,
 )
+from coop_navigation_sds.Configuration.jobs import (
+    job_linked_profiles,
+    job_parameter_grid,
+    job_parameter_profiles,
+    load_experiment_job,
+)
+from coop_navigation_sds.experiments import build_condition_grid
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +28,8 @@ USERLM_SLURM_ARRAYS = {
     "userlm_small2_cpu_array.sbatch": ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid" / "small" / "02-qwen2.5-1.5b.job",
     "userlm_large2_cpu_array.sbatch": USERLM_LARGE2_JOB,
 }
+USERLM_SPEECH_ROOT = ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid"
+USERLM_TRANSFORMERS_ROOT = ROOT / "jobs" / "agent_b_llm" / "userlm_transformers_speech_grid"
 
 
 def test_complete_manifest_resolves_twelve_unique_jobs():
@@ -49,6 +58,68 @@ def test_userlm_expanded_speech_manifest_has_six_matched_jobs():
     assert {row["agent_b_size"] for row in rows} == {"small", "medium", "large"}
     assert {row["agent_a_model"] for row in rows} == {"microsoft/UserLM-8b"}
     assert all(row["conditions"] == 84 for row in rows)
+
+
+def _model_independent_condition_signature(condition):
+    parameters = dict(condition.parameter_values)
+    for key in (
+        "agent_b_llm_size",
+        "agent_b_model_role",
+        "agent_b_model_slot",
+        "matrix_family",
+    ):
+        parameters.pop(key, None)
+    return (
+        condition.test_case_key,
+        condition.persona_key,
+        condition.scenario_key,
+        condition.speech_pattern_key,
+        condition.model_param_key,
+        condition.objective_mode,
+        condition.iteration,
+        condition.agent_a_audio_persona,
+        condition.agent_b_audio_persona,
+        condition.run_type,
+        condition.tts_engine,
+        condition.asr_engine,
+        tuple(sorted(parameters.items())),
+    )
+
+
+def _condition_signatures(job_path):
+    job = load_experiment_job(job_path)
+    grid = job["grid"]
+    return {
+        _model_independent_condition_signature(condition)
+        for condition in build_condition_grid(
+            test_case_keys=grid.get("test_cases"),
+            persona_keys=grid.get("personas"),
+            speech_pattern_keys=grid.get("speech_patterns"),
+            model_param_keys=grid.get("model_params"),
+            objective_modes=grid.get("objective_modes"),
+            agent_a_audio_persona_keys=grid.get("agent_a_audio_personas"),
+            agent_b_audio_persona_keys=grid.get("agent_b_audio_personas"),
+            tts_engine_keys=grid.get("tts_engines"),
+            asr_engine_keys=grid.get("asr_engines"),
+            agent_b_model_keys=grid.get("agent_b_models"),
+            iterations=job["iterations"],
+            parameter_grid=job_parameter_grid(job),
+            parameter_profiles=job_parameter_profiles(job),
+            linked_profiles=job_linked_profiles(job),
+            coverage_strategy=job["coverage_strategy"],
+            pair_audio_with_text=bool(job["config"].get("paired_audio_text_runs", False)),
+        )
+    }
+
+
+def test_userlm_agent_b_slurm_jobs_share_identical_non_model_condition_coverage():
+    job_paths = sorted(USERLM_SPEECH_ROOT.glob("*/*.job")) + sorted(USERLM_TRANSFORMERS_ROOT.glob("*/*.job"))
+    assert len(job_paths) == 18
+    reference = _condition_signatures(job_paths[0])
+    assert job_condition_count(job_paths[0]) == 84
+    assert len(reference) >= 60
+    for job_path in job_paths[1:]:
+        assert _condition_signatures(job_path) == reference
 
 
 def test_transformers_agent_b_manifest_has_four_models_per_size_and_eighty_four_conditions_each():

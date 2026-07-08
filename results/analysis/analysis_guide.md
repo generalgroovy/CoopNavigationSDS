@@ -12,6 +12,8 @@ before and after generation, and aborts if source evidence changes.
 | `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |
 | `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |
 | `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |
+| `model_configuration_matrix.csv` | Wide matrix joining identical non-model conditions across Agent B models. |
+| `model_configuration_matrix.html` | Color-coded inspection view of the same model-by-configuration matrix. |
 | `agent_b_model_summary.csv` | One row per Agent B model and Agent A pairing, sorted by Agent B size and model. |
 | `phase_metric_comparison.csv` | One row per condition and dialogue-system phase with telemetry counts and timings. |
 | `phase_summary_by_model.csv` | Phase-level aggregates by Agent A, Agent B, run type, TTS, ASR, and phase. |
@@ -36,6 +38,8 @@ before and after generation, and aborts if source evidence changes.
 - `configuration_groups.csv`
 - `task_outcome_comparison.csv`
 - `task_success_by_configuration.csv`
+- `model_configuration_matrix.csv`
+- `model_configuration_matrix.html`
 - `agent_b_model_summary.csv`
 - `phase_metric_comparison.csv`
 - `phase_summary_by_model.csv`

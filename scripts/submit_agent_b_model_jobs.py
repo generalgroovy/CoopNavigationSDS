@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 import hashlib
+import math
 from pathlib import Path
 import shutil
 import subprocess
@@ -26,6 +27,7 @@ from coop_navigation_sds.Configuration.jobs import (  # noqa: E402
     load_experiment_job,
 )
 from coop_navigation_sds.experiments import build_condition_grid  # noqa: E402
+from coop_navigation_sds.NaturalLanguageGeneration.models import model_memory_requirement_gb  # noqa: E402
 
 
 DEFAULT_ROOTS = {
@@ -147,17 +149,28 @@ def discover_jobs(args) -> list[ModelJob]:
 
 
 def resources_for(job: ModelJob, args) -> tuple[int, str, str]:
-    if job.agent_a_type == "userlm" and job.provider == "transformers":
-        cpus, memory, time_limit = {
-            "small": (8, "72G", "03:59:00"),
-            "medium": (10, "96G", "03:59:00"),
-            "large": (12, "128G", "03:59:00"),
-        }.get(job.tier, (8, "96G", "03:59:00"))
-    else:
-        cpus, memory, time_limit = RESOURCE_TABLE.get(
-            (job.family, job.tier),
-            RESOURCE_TABLE.get((job.agent_a_type, job.tier), (4, "24G", "01:59:00")),
-        )
+    cpus, memory, time_limit = RESOURCE_TABLE.get(
+        (job.family, job.tier),
+        RESOURCE_TABLE.get((job.agent_a_type, job.tier), (4, "24G", "01:59:00")),
+    )
+    if job.agent_a_type == "userlm":
+        agent_a_memory = model_memory_requirement_gb("microsoft/UserLM-8b", "transformers") or 34.0
+        agent_b_memory = model_memory_requirement_gb(job.model_name, job.provider) or 8.0
+        speech_and_runtime_overhead = 10.0 if job.provider == "ollama" else 12.0
+        if job.tier == "large":
+            speech_and_runtime_overhead += 4.0
+        required = agent_a_memory + agent_b_memory + speech_and_runtime_overhead
+        memory = f"{max(24, int(math.ceil(required / 4.0) * 4))}G"
+        cpus = {
+            "small": 6 if job.provider == "ollama" else 8,
+            "medium": 8 if job.provider == "ollama" else 10,
+            "large": 8 if job.provider == "ollama" else 12,
+        }.get(job.tier, cpus)
+        time_limit = {
+            "small": "01:59:00",
+            "medium": "02:59:00",
+            "large": "03:59:00",
+        }.get(job.tier, time_limit)
     return (
         int(args.cpus_per_task or cpus),
         args.memory or memory,

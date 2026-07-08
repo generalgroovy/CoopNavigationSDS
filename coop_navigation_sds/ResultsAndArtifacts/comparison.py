@@ -44,6 +44,25 @@ CONDITION_ANALYSIS_METRICS = (
 SPEECH_BAND_RANK = {"floor": 0, "challenging": 1, "nominal": 2, "ceiling": 3}
 SPEECH_BAND_SCORE_TOLERANCE = 0.02
 AGENT_B_SIZE_ORDER = {"small": 0, "medium": 1, "large": 2, "hosted": 3, "custom": 4, "": 9}
+MODEL_COMPARISON_DIMENSIONS = (
+    "agent_a_type",
+    "scenario_key",
+    "persona_key",
+    "speech_pattern_key",
+    "run_type",
+    "tts_engine",
+    "asr_engine",
+    "asr_beam_size",
+    "network_seed",
+    "agent_a_audio_persona",
+    "agent_b_audio_persona",
+    "speech_performance_band",
+    "model_param_key",
+    "objective_mode",
+    "iteration",
+    "transfer_tolerance",
+    "dialogue_stagnation_limit",
+)
 
 
 def discover_run_directories(paths):
@@ -79,6 +98,28 @@ def _write_csv(path, rows):
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _comparison_condition_key(row):
+    """Return a stable key for comparing identical conditions across Agent B models."""
+    aliases = {
+        "tts_engine": ("configured_tts_engine",),
+        "asr_engine": ("configured_asr_engine",),
+        "asr_beam_size": ("asr_search_width",),
+        "network_seed": ("experiment_seed",),
+    }
+    payload = {}
+    for key in MODEL_COMPARISON_DIMENSIONS:
+        value = row.get(key, "")
+        for alias in aliases.get(key, ()):
+            if value not in (None, ""):
+                break
+            value = row.get(alias, "")
+        payload[key] = str(value or "")
+    digest = hashlib.sha1(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:12]
+    return f"MC-{digest}"
 
 
 def _number(value):
@@ -224,23 +265,33 @@ def _condition_runtime_view(run_id, run_directory, planned, session):
     comparison = sections.get("comparison", {})
     execution = sections.get("execution", {})
     constraint_match = re.search(r"(\d+)\s*/\s*(\d+)", task.get("constraints satisfied", ""))
-    return {
+    row = {
         "source_run": run_id,
         "source_path": str(run_directory),
         "condition_id": condition_id,
         "condition_state": state,
         "run_type": planned.get("run_type", ""),
         "pair_id": planned.get("pair_id", ""),
+        "model_comparison_condition_key": planned.get("model_comparison_condition_key", ""),
         "scenario_key": planned.get("scenario_key", ""),
         "persona_key": planned.get("persona_key", ""),
         "speech_pattern_key": planned.get("speech_pattern_key", ""),
+        "speech_performance_band": planned.get("speech_performance_band", ""),
         "agent_a_type": planned.get("agent_a_type", ""),
+        "agent_a_audio_persona": planned.get("agent_a_audio_persona", ""),
+        "agent_b_audio_persona": planned.get("agent_b_audio_persona", ""),
         "agent_b_model": _normalized_model_name(planned.get("agent_b_model")),
         "agent_b_llm_size": planned.get("agent_b_llm_size", ""),
+        "agent_b_model_role": planned.get("agent_b_model_role", ""),
+        "model_param_key": planned.get("model_param_key", ""),
+        "objective_mode": planned.get("objective_mode", ""),
+        "iteration": planned.get("iteration", ""),
         "tts_engine": planned.get("configured_tts_engine", ""),
         "asr_engine": planned.get("configured_asr_engine", ""),
         "asr_beam_size": planned.get("asr_beam_size", ""),
         "network_seed": planned.get("network_seed", ""),
+        "transfer_tolerance": planned.get("transfer_tolerance", ""),
+        "dialogue_stagnation_limit": planned.get("dialogue_stagnation_limit", ""),
         "outcome": run_section.get("outcome") if state == "completed" else None,
         "task_success": _text_boolean(run_section.get("task success")) if state == "completed" else None,
         "stop_reason": run_section.get("stop reason") if state == "completed" else None,
@@ -260,6 +311,8 @@ def _condition_runtime_view(run_id, run_directory, planned, session):
         "optimal_route": comparison.get("optimal route") if state == "completed" else None,
         "source_event_file": str(session["path"]) if session else None,
     }
+    row["model_comparison_condition_key"] = row["model_comparison_condition_key"] or _comparison_condition_key(row)
+    return row
 
 
 def _phase_comparison_rows(condition, session):
@@ -285,6 +338,7 @@ def _phase_comparison_rows(condition, session):
         row = {
             "source_run": condition["source_run"],
             "condition_id": condition["condition_id"],
+            "model_comparison_condition_key": condition["model_comparison_condition_key"],
             "condition_state": condition["condition_state"],
             "agent_a_type": condition["agent_a_type"],
             "agent_b_model": condition["agent_b_model"],
@@ -295,6 +349,8 @@ def _phase_comparison_rows(condition, session):
             "scenario_key": condition["scenario_key"],
             "persona_key": condition["persona_key"],
             "speech_pattern_key": condition["speech_pattern_key"],
+            "agent_a_audio_persona": condition.get("agent_a_audio_persona", ""),
+            "agent_b_audio_persona": condition.get("agent_b_audio_persona", ""),
             "phase_order": order,
             "phase": phase,
             "observation_count": len(values),
@@ -426,6 +482,8 @@ def _configuration_group_rows(condition_rows):
     dimensions = (
         "agent_a_type", "agent_b_model", "agent_b_llm_size", "tts_engine", "asr_engine",
         "scenario_key", "persona_key", "speech_pattern_key", "run_type", "asr_beam_size",
+        "network_seed", "agent_a_audio_persona", "agent_b_audio_persona",
+        "speech_performance_band", "transfer_tolerance", "dialogue_stagnation_limit",
     )
     groups = defaultdict(list)
     for row in condition_rows:
@@ -562,6 +620,129 @@ def _task_success_summary_rows(condition_rows):
     return sorted(output, key=_agent_b_sort_key)
 
 
+def _model_configuration_matrix_rows(condition_rows):
+    """Pivot matching non-model conditions so Agent B models are directly comparable."""
+    grouped = defaultdict(dict)
+    model_order = []
+    for row in condition_rows:
+        model = str(row.get("agent_b_model") or "unknown")
+        if model not in model_order:
+            model_order.append(model)
+        key = row.get("model_comparison_condition_key") or _comparison_condition_key(row)
+        grouped[key][model] = row
+    model_order.sort(key=lambda model: (
+        AGENT_B_SIZE_ORDER.get(str(next(
+            (
+                row.get("agent_b_llm_size")
+                for rows in grouped.values()
+                for candidate, row in rows.items()
+                if candidate == model
+            ),
+            "",
+        )).casefold(), 9),
+        model.casefold(),
+    ))
+    output = []
+    for key, by_model in sorted(grouped.items()):
+        exemplar = next(iter(by_model.values()))
+        row = {
+            "model_comparison_condition_key": key,
+            **{
+                dimension: exemplar.get(dimension, "")
+                for dimension in MODEL_COMPARISON_DIMENSIONS
+            },
+            "model_count": len(by_model),
+            "completed_model_count": sum(
+                item.get("condition_state") == "completed"
+                for item in by_model.values()
+            ),
+            "successful_model_count": sum(
+                item.get("task_success") is True
+                for item in by_model.values()
+            ),
+        }
+        for model in model_order:
+            item = by_model.get(model, {})
+            prefix = f"model::{model}"
+            row[f"{prefix}::condition_state"] = item.get("condition_state", "")
+            row[f"{prefix}::task_success"] = item.get("task_success", "")
+            row[f"{prefix}::route_valid"] = item.get("route_valid", "")
+            row[f"{prefix}::constraint_satisfaction"] = item.get("constraint_satisfaction")
+            if row[f"{prefix}::constraint_satisfaction"] in (None, ""):
+                row[f"{prefix}::constraint_satisfaction"] = (
+                    None
+                    if item.get("constraints_satisfied") is None or item.get("constraints_total") in (None, 0)
+                    else float(item.get("constraints_satisfied")) / float(item.get("constraints_total"))
+                )
+            row[f"{prefix}::word_error_rate"] = (
+                item.get("word_error_rate")
+                if item.get("word_error_rate") not in (None, "")
+                else item.get("word_error_rate", "")
+            )
+            row[f"{prefix}::turn_count"] = item.get("turn_count", "")
+            row[f"{prefix}::failure_phase"] = item.get("failure_phase") or item.get("pipeline_failure_type") or ""
+            row[f"{prefix}::source_run"] = item.get("source_run", "")
+        output.append(row)
+    return output
+
+
+def _write_model_configuration_matrix_html(path, rows):
+    """Write a compact visual matrix for model-by-configuration inspection."""
+    rows = list(rows)
+    model_names = []
+    for row in rows:
+        for key in row:
+            if key.startswith("model::") and key.endswith("::task_success"):
+                model = key.removeprefix("model::").removesuffix("::task_success")
+                if model not in model_names:
+                    model_names.append(model)
+    model_names.sort(key=str.casefold)
+    head = "".join(f"<th>{html.escape(model)}</th>" for model in model_names)
+    body = []
+    for row in rows:
+        config = "<br>".join(html.escape(str(row.get(key, ""))) for key in (
+            "scenario_key", "persona_key", "speech_pattern_key", "run_type",
+            "tts_engine", "asr_engine", "asr_beam_size", "network_seed",
+            "agent_a_audio_persona", "agent_b_audio_persona",
+        ))
+        cells = [f"<th>{config}</th>"]
+        for model in model_names:
+            prefix = f"model::{model}"
+            state = row.get(f"{prefix}::condition_state", "")
+            success = row.get(f"{prefix}::task_success", "")
+            route = row.get(f"{prefix}::route_valid", "")
+            constraints = _number(row.get(f"{prefix}::constraint_satisfaction"))
+            wer = _number(row.get(f"{prefix}::word_error_rate"))
+            turns = row.get(f"{prefix}::turn_count", "")
+            failure = row.get(f"{prefix}::failure_phase", "")
+            css = (
+                "success" if success is True or str(success).casefold() == "true"
+                else "failure" if success is False or str(success).casefold() == "false"
+                else "partial" if state
+                else "missing"
+            )
+            detail = (
+                f"state={state}; route={route}; constraints="
+                f"{'' if constraints is None else f'{constraints:.2f}'}; "
+                f"wer={'' if wer is None else f'{wer:.2f}'}; turns={turns}; failure={failure}"
+            )
+            label = (
+                "success" if css == "success"
+                else "failed" if css == "failure"
+                else state or "missing"
+            )
+            cells.append(
+                f'<td class="{css}" title="{html.escape(detail)}">'
+                f"{html.escape(label)}<br><small>{html.escape(detail)}</small></td>"
+            )
+        body.append("<tr>" + "".join(cells) + "</tr>")
+    document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Agent B model by configuration matrix</title>
+<style>body{{font:14px system-ui,sans-serif;background:#f3f5f7;color:#202a35;margin:0;padding:18px}}table{{border-collapse:separate;border-spacing:0;background:white}}th,td{{border:1px solid #dce2e8;padding:6px 8px;text-align:left;vertical-align:top;white-space:nowrap}}thead th{{position:sticky;top:0;background:#244b5a;color:white}}tbody th{{position:sticky;left:0;background:#eaf1ef;z-index:1}}.success{{background:#dff1e7}}.failure{{background:#f7dada}}.partial{{background:#fff0c9}}.missing{{background:#eef1f4;color:#5d6975}}small{{color:#44515d}}</style></head>
+<body><h1>Agent B model by configuration matrix</h1><p>Derived view. Rows are identical non-model experimental conditions; columns are Agent B models. Raw run files remain authoritative.</p><table><thead><tr><th>Configuration</th>{head}</tr></thead><tbody>{''.join(body)}</tbody></table></body></html>"""
+    Path(path).write_text(document, encoding="utf-8")
+
+
 def _phase_summary_rows(phase_rows):
     dimensions = (
         "agent_a_type", "agent_b_model", "agent_b_llm_size", "run_type",
@@ -696,6 +877,8 @@ def _write_analysis_guide(path, generated_files):
         "| `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |",
         "| `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |",
         "| `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |",
+        "| `model_configuration_matrix.csv` | Wide matrix joining identical non-model conditions across Agent B models. |",
+        "| `model_configuration_matrix.html` | Color-coded inspection view of the same model-by-configuration matrix. |",
         "| `agent_b_model_summary.csv` | One row per Agent B model and Agent A pairing, sorted by Agent B size and model. |",
         "| `phase_metric_comparison.csv` | One row per condition and dialogue-system phase with telemetry counts and timings. |",
         "| `phase_summary_by_model.csv` | Phase-level aggregates by Agent A, Agent B, run type, TTS, ASR, and phase. |",
@@ -791,9 +974,10 @@ th{{position:sticky;top:0;background:#244b5a;color:#fff}}.finalized,.completed{{
 .interrupted{{background:#f8dddd}}.preflight_only,.not_started{{background:#edf0f3;color:#56616c}}code{{background:#edf1f4;padding:2px 4px}}
 </style></head><body><main><h1>Result evidence comparison</h1>
 <p>Derived representation only. Source logs, audio, configuration, and outcomes are not modified. Blank values mean unavailable evidence, not zero or failure.</p>
-<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
+<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
 <section><h2>Run lifecycle</h2>{run_table}</section><section><h2>Configuration groups</h2>{config_table}</section>
 <section><h2>Task and success</h2>{outcome_table}</section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
+<section><h2>Model-by-configuration matrix</h2><p>Open <a href="model_configuration_matrix.html">model_configuration_matrix.html</a> for the full color-coded pivot table.</p></section>
 <section><h2>Agent B model summary</h2>{model_summary_table}</section>
 <section><h2>Phase metrics</h2>{phase_table}</section><section><h2>Phase summary by model</h2>{phase_summary_table}</section>
 <section><h2>Conversation and dialogue state</h2>{dialogue_table}</section><section><h2>Dialogue summary</h2>{dialogue_summary_table}</section></main></body></html>"""
@@ -834,6 +1018,7 @@ def write_evidence_comparison(inputs, output_directory):
         inventory_rows.append(_run_inventory_row(run_directory, planned, sessions, run_conditions))
     configuration_rows = _configuration_group_rows(condition_rows)
     task_summary_rows = _task_success_summary_rows(condition_rows)
+    model_configuration_rows = _model_configuration_matrix_rows(condition_rows)
     model_summary_rows = _agent_b_model_summary_rows(condition_rows, phase_rows, dialogue_rows)
     phase_summary_rows = _phase_summary_rows(phase_rows)
     dialogue_summary_rows = _dialogue_summary_rows(dialogue_rows)
@@ -844,6 +1029,8 @@ def write_evidence_comparison(inputs, output_directory):
         "configurations": output / "configuration_groups.csv",
         "outcomes": output / "task_outcome_comparison.csv",
         "task_summary": output / "task_success_by_configuration.csv",
+        "model_configuration_matrix": output / "model_configuration_matrix.csv",
+        "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "model_summary": output / "agent_b_model_summary.csv",
         "phases": output / "phase_metric_comparison.csv",
         "phase_summary": output / "phase_summary_by_model.csv",
@@ -855,12 +1042,17 @@ def write_evidence_comparison(inputs, output_directory):
     for key, rows in (
         ("run_inventory", inventory_rows), ("configurations", configuration_rows),
         ("outcomes", condition_rows), ("task_summary", task_summary_rows),
+        ("model_configuration_matrix", model_configuration_rows),
         ("model_summary", model_summary_rows),
         ("phases", phase_rows), ("phase_summary", phase_summary_rows),
         ("dialogue", dialogue_rows), ("dialogue_summary", dialogue_summary_rows),
         ("turns", conversation_rows),
     ):
         _write_csv(paths[key], rows)
+    _write_model_configuration_matrix_html(
+        paths["model_configuration_matrix_report"],
+        model_configuration_rows,
+    )
     generated_file_names = [path.name for key, path in paths.items() if key != "manifest"]
     _write_analysis_guide(paths["guide"], generated_file_names)
     _write_evidence_overview(
@@ -917,6 +1109,10 @@ def build_condition_analysis_rows(conditions, metrics):
             "source_run": run_id,
             "source_path": condition.get("source_path", ""),
             "condition_id": condition_id,
+            "model_comparison_condition_key": (
+                condition.get("model_comparison_condition_key")
+                or _comparison_condition_key(condition)
+            ),
             "pair_id": condition.get("pair_id", ""),
             "outcome": "success" if success else "failure",
             "task_success": success,
@@ -930,11 +1126,22 @@ def build_condition_analysis_rows(conditions, metrics):
             "speech_performance_band": condition.get("speech_performance_band", ""),
             "speech_performance_rank": condition.get("speech_performance_rank", ""),
             "agent_a_type": condition.get("agent_a_type", ""),
+            "agent_a_audio_persona": condition.get("agent_a_audio_persona", ""),
+            "agent_b_audio_persona": condition.get("agent_b_audio_persona", ""),
             "agent_b_model": condition.get("agent_b_model", ""),
             "agent_b_llm_size": condition.get("agent_b_llm_size", ""),
+            "agent_b_model_role": condition.get("agent_b_model_role", ""),
+            "model_param_key": condition.get("model_param_key", ""),
+            "objective_mode": condition.get("objective_mode", ""),
             "configured_tts_engine": condition.get("configured_tts_engine", condition.get("tts_engine", "")),
             "configured_asr_engine": condition.get("configured_asr_engine", condition.get("asr_engine", "")),
+            "tts_engine": condition.get("configured_tts_engine", condition.get("tts_engine", "")),
+            "asr_engine": condition.get("configured_asr_engine", condition.get("asr_engine", "")),
             "asr_search_width": condition.get("asr_search_width", ""),
+            "asr_beam_size": condition.get("asr_search_width", condition.get("asr_beam_size", "")),
+            "network_seed": condition.get("network_seed", condition.get("experiment_seed", "")),
+            "transfer_tolerance": condition.get("transfer_tolerance", ""),
+            "dialogue_stagnation_limit": condition.get("dialogue_stagnation_limit", ""),
             "experiment_seed": condition.get("experiment_seed", ""),
             "iteration": condition.get("iteration", ""),
             "route_valid": _truthy(condition.get("route_valid")),
@@ -1159,14 +1366,23 @@ def load_comparison_data(run_directories):
         summary = json.loads((run_dir / "run_summary.json").read_text(encoding="utf-8"))
         run_id = str(summary.get("result_run_id") or run_dir.name)
         condition_rows = _read_jsonl(run_dir / "conditions.jsonl")
-        by_condition = {str(row.get("condition_id")): row for row in condition_rows}
+        normalized_conditions = []
         for row in condition_rows:
+            normalized = dict(row)
+            normalized["model_comparison_condition_key"] = (
+                normalized.get("model_comparison_condition_key")
+                or _comparison_condition_key(normalized)
+            )
+            normalized_conditions.append(normalized)
+        by_condition = {str(row.get("condition_id")): row for row in normalized_conditions}
+        for row in normalized_conditions:
             conditions.append({"source_run": run_id, "source_path": str(run_dir), **row})
         for row in _read_csv(run_dir / "metrics_long.csv"):
             condition = by_condition.get(str(row.get("condition_id")), {})
             metrics.append({
                 "source_run": run_id,
                 "source_path": str(run_dir),
+                "model_comparison_condition_key": condition.get("model_comparison_condition_key", ""),
                 "matrix_family": condition.get("matrix_family", ""),
                 "experiment_platform": condition.get("experiment_platform", ""),
                 "agent_a_type": condition.get("agent_a_type", ""),
@@ -1190,7 +1406,7 @@ def summarize_metrics(metrics):
     groups = defaultdict(list)
     metadata = {}
     dimensions = (
-        "source_run", "matrix_family", "experiment_platform",
+        "source_run", "model_comparison_condition_key", "matrix_family", "experiment_platform",
         "scenario_key", "persona_key", "speech_pattern_key",
         "agent_a_type", "agent_a_audio_persona", "agent_b_audio_persona",
         "agent_b_model", "agent_b_llm_size", "tts_engine", "asr_engine",
@@ -2025,6 +2241,7 @@ def compare_runs(inputs, output_directory):
     outliers = identify_metric_outliers(metrics, conditions)
     metric_indicators = summarize_metric_indicators(outliers)
     condition_analysis = build_condition_analysis_rows(conditions, metrics)
+    model_configuration_rows = _model_configuration_matrix_rows(condition_analysis)
     performance_bands = build_performance_band_summary(condition_analysis)
     run_metric_matrix, run_metric_specifications, run_metric_outliers = build_run_phase_metric_matrix(
         conditions,
@@ -2041,6 +2258,8 @@ def compare_runs(inputs, output_directory):
         "run_metric_matrix": output / "run_phase_metric_matrix.csv",
         "run_metric_matrix_report": output / "run_phase_metric_matrix.html",
         "condition_analysis": output / "condition_analysis.csv",
+        "model_configuration_matrix": output / "model_configuration_matrix.csv",
+        "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "performance_band_summary": output / "performance_band_summary.csv",
     }
     for obsolete in (
@@ -2057,7 +2276,12 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["metric_indicators"], metric_indicators)
     _write_csv(paths["run_metric_matrix"], run_metric_matrix)
     _write_csv(paths["condition_analysis"], condition_analysis)
+    _write_csv(paths["model_configuration_matrix"], model_configuration_rows)
     _write_csv(paths["performance_band_summary"], performance_bands)
+    _write_model_configuration_matrix_html(
+        paths["model_configuration_matrix_report"],
+        model_configuration_rows,
+    )
     write_run_phase_metric_matrix_html(
         paths["run_metric_matrix_report"],
         run_metric_matrix,

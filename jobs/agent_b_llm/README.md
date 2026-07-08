@@ -45,6 +45,12 @@ persona, speech pattern, recognition beam width, and network seed vary only
 through registered job factors, so every result can be traced back to an
 explicit configuration row.
 
+All Slurm Agent B jobs in this matrix are designed to be comparable by
+construction. The non-model grid is identical for every UserLM Agent B job; the
+only intended treatment difference is the Agent B model and its required
+provider/profile. Derived result analysis writes `model_configuration_matrix`
+CSV/HTML files that join those identical non-model conditions across models.
+
 ## Layout
 
 ```text
@@ -144,9 +150,9 @@ sbatch slurm/userlm_small2_cpu_array.sbatch
 sbatch slurm/userlm_large2_cpu_array.sbatch
 ```
 
-Each wrapper runs one UserLM speech-grid job as eight single-condition array
-tasks with no GPU request. This improves backfill opportunities and prevents
-one unavailable node class from blocking the full model comparison.
+Each wrapper runs one UserLM speech-grid job as 84 single-condition array tasks
+with no GPU request. This improves backfill opportunities and prevents one
+unavailable node class from blocking the full model comparison.
 
 For non-Ollama Agent B runs, prepare selected Hugging Face assets and submit
 the tiered Slurm arrays:
@@ -179,9 +185,11 @@ python scripts/submit_agent_b_model_jobs.py --family all --tier small medium lar
 ```
 
 The submitter computes the correct Slurm array range from each resolved job
-definition and overrides the wrapper's default `#SBATCH --array`. Ollama-backed
-jobs start a per-task local Ollama server on a task-specific port; Transformers
-jobs run without Ollama.
+definition and overrides the wrapper's default `#SBATCH --array`. It also
+allocates memory from registered model estimates: caller model memory plus
+Agent B model memory plus speech/runtime overhead, rounded upward for Slurm.
+Ollama-backed jobs start a per-task local Ollama server on a task-specific
+port; Transformers jobs run without Ollama.
 
 ## Result Groups
 

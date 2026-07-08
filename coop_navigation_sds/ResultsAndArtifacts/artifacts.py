@@ -1371,7 +1371,7 @@ def write_standard_run_summary(
         metric = metric_by_condition.get(result.condition_id)
         extras = result.extra or {}
         parameters = dict(extras.get("parameter_values") or {})
-        condition_rows.append({
+        condition_row = {
             "result_schema_version": RESULT_SCHEMA_VERSION,
             "result_scope": result_scope,
             "result_run_id": output_dir.name,
@@ -1399,6 +1399,9 @@ def write_standard_run_summary(
             "configured_tts_engine": extras.get("configured_tts_engine") or extras.get("tts_engine"),
             "configured_asr_engine": extras.get("configured_asr_engine") or extras.get("asr_engine"),
             "asr_search_width": parameters.get("asr_beam_size"),
+            "network_seed": parameters.get("network_seed"),
+            "transfer_tolerance": parameters.get("transfer_tolerance"),
+            "dialogue_stagnation_limit": parameters.get("dialogue_stagnation_limit"),
             "matrix_family": parameters.get("matrix_family"),
             "experiment_platform": parameters.get("experiment_platform"),
             "experiment_seed": parameters.get("experiment_seed", parameters.get("network_seed")),
@@ -1425,7 +1428,15 @@ def write_standard_run_summary(
             "runtime_sec": result.runtime_sec,
             "automatic_eval_score": getattr(metric, "automatic_eval_score", None),
             "task_success": getattr(metric, "success", bool(result.route_correct)),
+        }
+        from coop_navigation_sds.ResultsAndArtifacts.comparison import _comparison_condition_key
+        condition_row["model_comparison_condition_key"] = _comparison_condition_key({
+            **condition_row,
+            "tts_engine": condition_row["configured_tts_engine"],
+            "asr_engine": condition_row["configured_asr_engine"],
+            "asr_beam_size": condition_row["asr_search_width"],
         })
+        condition_rows.append(condition_row)
     conditions_path = output_dir / RESULT_FILES["conditions"]
     write_jsonl(conditions_path, condition_rows)
     summary = {
