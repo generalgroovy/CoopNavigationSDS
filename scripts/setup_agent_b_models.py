@@ -30,6 +30,7 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (
     ollama_executable,
     ollama_model_inventory,
 )
+from scripts.progress import ProgressBar, progress_enabled  # noqa: E402
 
 
 def selected_model_names(tiers=(), models=()):
@@ -43,7 +44,7 @@ def selected_model_names(tiers=(), models=()):
     return tuple(selected)
 
 
-def pull_models(models, *, executable=None, base_url=OLLAMA_BASE_URL, models_dir=None):
+def pull_models(models, *, executable=None, base_url=OLLAMA_BASE_URL, models_dir=None, show_progress=True):
     """Download only selected Ollama models that preflight reported missing."""
     executable = executable or ollama_executable()
     if not executable:
@@ -55,7 +56,13 @@ def pull_models(models, *, executable=None, base_url=OLLAMA_BASE_URL, models_dir
     if parsed.netloc:
         environment["OLLAMA_HOST"] = parsed.netloc
     environment["OLLAMA_MODELS"] = str(resolve_agent_b_model_store(models_dir))
-    for model in models:
+    progress = ProgressBar(
+        len(models),
+        label="Ollama models",
+        enabled=show_progress,
+    )
+    for index, model in enumerate(models, start=1):
+        progress.update(index - 1, message=f"pulling {model}")
         print(f"PULLING  | {model}", flush=True)
         completed = subprocess.run(
             [str(executable), "pull", str(model)],
@@ -69,6 +76,8 @@ def pull_models(models, *, executable=None, base_url=OLLAMA_BASE_URL, models_dir
             detail = (completed.stderr or completed.stdout or "unknown provider error").strip()
             raise RuntimeError(f"Ollama could not pull '{model}': {detail[-1000:]}")
         print(f"READY    | {model}", flush=True)
+        progress.update(index, message=f"ready {model}")
+    progress.finish(message="all selected models ready")
 
 
 def initialize_platform_folders():
@@ -171,6 +180,7 @@ def main(argv=None):
         help="Ollama store override. Defaults to .model-providers/agent_b/<platform>/ollama.",
     )
     parser.add_argument("--timeout-sec", type=float, default=30.0)
+    parser.add_argument("--no-progress", action="store_true", help="Disable terminal progress display.")
     parser.add_argument("--json", action="store_true", help="Print machine-readable status.")
     args = parser.parse_args(argv)
 
@@ -206,6 +216,7 @@ def main(argv=None):
                 missing,
                 base_url=args.base_url,
                 models_dir=models_dir,
+                show_progress=progress_enabled(args.json, args.no_progress),
             )
             status = ensure_ollama_models_ready(
                 args.base_url,

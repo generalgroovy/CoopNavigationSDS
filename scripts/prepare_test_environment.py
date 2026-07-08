@@ -15,6 +15,11 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.progress import ProgressBar, progress_enabled  # noqa: E402
+
 ASSET_MANIFEST = ROOT / "coop_navigation_sds" / "Configuration" / "model_assets.json"
 READINESS_FILE = ROOT / ".speech-providers" / "readiness.json"
 
@@ -112,15 +117,24 @@ def _prepare_asset(key, spec):
         raise ValueError(f"Unsupported asset kind for {key}: {kind}")
 
 
-def prepare(download=True, asset_timeout_seconds=600):
+def prepare(download=True, asset_timeout_seconds=600, show_progress=True):
     manifest = json.loads(ASSET_MANIFEST.read_text(encoding="utf-8"))
     results = {}
     assets = {**manifest["models"], **manifest.get("executables", {})}
-    for key, spec in assets.items():
-        if platform.system() not in spec.get("platforms", [platform.system()]):
-            continue
+    platform_assets = [
+        (key, spec) for key, spec in assets.items()
+        if platform.system() in spec.get("platforms", [platform.system()])
+    ]
+    progress = ProgressBar(
+        len(platform_assets),
+        label="Provider assets",
+        enabled=show_progress,
+    )
+    for index, (key, spec) in enumerate(platform_assets, start=1):
+        progress.update(index - 1, message=f"checking {key}")
         try:
             if download and not _required_present(spec):
+                progress.update(index - 1, message=f"preparing {key}")
                 print(f"PREPARING | {key} | {spec['source']}", flush=True)
                 subprocess.run(
                     [sys.executable, str(Path(__file__).resolve()), "--asset", key],
@@ -130,12 +144,15 @@ def prepare(download=True, asset_timeout_seconds=600):
                 )
             ready = _required_present(spec)
             results[key] = {"ready": ready, "destination": str(_destination(spec)), "error": ""}
+            progress.update(index, message=f"{'ready' if ready else 'missing'} {key}")
         except Exception as exc:
             results[key] = {
                 "ready": False,
                 "destination": str(_destination(spec)),
                 "error": f"{type(exc).__name__}: {exc}",
             }
+            progress.update(index, message=f"failed {key}")
+    progress.finish(message="asset readiness recorded")
     report = {
         "schema_version": 1,
         "platform": platform.system(),
@@ -174,6 +191,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="Check existing assets without downloading.")
     parser.add_argument("--asset", help=argparse.SUPPRESS)
     parser.add_argument("--asset-timeout-seconds", type=int, default=600)
+    parser.add_argument("--no-progress", action="store_true", help="Disable terminal progress display.")
     args = parser.parse_args()
     if args.asset:
         manifest = json.loads(ASSET_MANIFEST.read_text(encoding="utf-8"))
@@ -183,6 +201,7 @@ def main():
     report = prepare(
         download=not args.check,
         asset_timeout_seconds=max(30, args.asset_timeout_seconds),
+        show_progress=progress_enabled(False, args.no_progress),
     )
     for key, item in report["models"].items():
         print(f"{'READY' if item['ready'] else 'MISSING'} | {key} | {item['error'] or item['destination']}")

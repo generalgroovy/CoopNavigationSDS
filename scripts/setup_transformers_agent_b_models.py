@@ -16,6 +16,7 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (  # noqa: E402
     MODEL_PROFILE_SPECS,
     model_profile_metadata,
 )
+from scripts.progress import ProgressBar, progress_enabled  # noqa: E402
 
 
 TRANSFORMERS_AGENT_B_PROFILES = {
@@ -88,13 +89,19 @@ def readiness_rows(profiles):
     return rows
 
 
-def download_profiles(profiles):
+def download_profiles(profiles, *, show_progress=True):
     from huggingface_hub import snapshot_download
 
-    for profile in profiles:
+    progress = ProgressBar(
+        len(profiles),
+        label="Transformers models",
+        enabled=show_progress,
+    )
+    for index, profile in enumerate(profiles, start=1):
         metadata = model_profile_metadata(profile)
         model = metadata["model"]
         destination = local_model_dir(model)
+        progress.update(index - 1, message=f"downloading {profile}")
         print(f"PREPARING | {profile} | {model}", flush=True)
         snapshot_download(
             repo_id=model,
@@ -102,6 +109,8 @@ def download_profiles(profiles):
             local_dir_use_symlinks=False,
         )
         print(f"READY     | {profile} | {destination}", flush=True)
+        progress.update(index, message=f"ready {profile}")
+    progress.finish(message="all selected assets ready")
 
 
 def main(argv=None):
@@ -110,6 +119,7 @@ def main(argv=None):
     parser.add_argument("--profile", action="append", default=[])
     parser.add_argument("--all", action="store_true", help="Select all registered Transformers Agent B proposals.")
     parser.add_argument("--download", action="store_true", help="Download missing selected model assets.")
+    parser.add_argument("--no-progress", action="store_true", help="Disable terminal progress display.")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -118,7 +128,10 @@ def main(argv=None):
     before = readiness_rows(profiles)
     missing = [row["profile"] for row in before if not row["ready"]]
     if args.download and missing:
-        download_profiles(missing)
+        download_profiles(
+            missing,
+            show_progress=progress_enabled(args.json, args.no_progress),
+        )
     rows = readiness_rows(profiles)
     ready = all(row["ready"] for row in rows)
     if args.json:

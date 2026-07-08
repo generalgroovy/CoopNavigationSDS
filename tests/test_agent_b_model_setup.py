@@ -77,6 +77,7 @@ class AgentBModelSetupTests(unittest.TestCase):
             ("qwen2.5:1.5b",),
             base_url=AGENT_B_OLLAMA_BASE_URL,
             models_dir=resolve_agent_b_model_store(),
+            show_progress=False,
         )
 
     def test_catalog_folders_sort_by_size_then_model(self):

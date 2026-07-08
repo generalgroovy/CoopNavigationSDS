@@ -454,6 +454,17 @@ python scripts/run_agent_b_llm_batch.py \
   --preview
 ```
 
+Model setup commands show a dependency-free progress bar in interactive
+terminals while keeping JSON output machine-readable. Use `--no-progress` for
+plain Slurm logs or scripted checks:
+
+```bash
+python scripts/setup_agent_b_models.py --tier small --pull
+python scripts/setup_transformers_agent_b_models.py --tier small --download
+python scripts/prepare_test_environment.py
+python scripts/prepare_test_environment.py --check --no-progress
+```
+
 `jobs/agent_b_llm/batches/08-transformers-agent-b-small-medium.json` is the
 recommended first cluster manifest because it covers eight non-Ollama Agent B
 models without the 7B/8B memory burden.
