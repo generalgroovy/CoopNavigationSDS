@@ -150,6 +150,13 @@ def test_comparison_discovers_runs_and_writes_portable_artifacts(tmp_path):
     assert (first / "condition_analysis.csv").is_file()
     assert "Matrix CSV" in matrix_report
     assert "Metric evidence" in matrix_report
+    phase_index = list(csv.DictReader(paths["phase_metric_files"].open(encoding="utf-8")))
+    assert phase_index[0]["phase"] == "whole_dialogue"
+    phase_file = tmp_path / "comparison" / phase_index[0]["file"]
+    phase_rows = list(csv.DictReader(phase_file.open(encoding="utf-8")))
+    assert len(phase_rows) == 2
+    assert {row["task_success"] for row in phase_rows} == {"True", "False"}
+    assert {row["metric_key"] for row in phase_rows} == {"whole_dialogue.task_success"}
     assert not (tmp_path / "comparison" / "comparison_report.html").exists()
     assert not (tmp_path / "comparison" / "phase_metric_overview.html").exists()
 

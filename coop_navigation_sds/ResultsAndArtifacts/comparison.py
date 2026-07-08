@@ -1813,6 +1813,118 @@ def write_phase_metric_outputs(metrics_or_path, output_directory):
     return paths
 
 
+def _safe_filename(value):
+    text = str(value or "unassigned").strip().lower()
+    cleaned = "".join(ch if ch.isalnum() else "_" for ch in text)
+    return "_".join(part for part in cleaned.split("_") if part) or "unassigned"
+
+
+def build_phase_condition_metric_rows(conditions, metrics):
+    """Join metric rows to condition outcomes for phase-wise cross-run inspection."""
+    def display(value):
+        return "" if value is None else value
+
+    condition_by_key = {}
+    first_condition_by_run = {}
+    for condition in conditions:
+        run_id = str(condition.get("source_run") or condition.get("result_run_id") or "")
+        condition_id = str(condition.get("condition_id") or "")
+        if run_id and condition_id:
+            condition_by_key[(run_id, condition_id)] = condition
+        first_condition_by_run.setdefault(run_id, condition)
+
+    rows = []
+    for metric in metrics:
+        if str(metric.get("available", "true")).casefold() not in {"true", "1", "yes"}:
+            continue
+        run_id = str(metric.get("source_run") or metric.get("result_run_id") or "")
+        condition_id = str(metric.get("condition_id") or "")
+        condition = condition_by_key.get((run_id, condition_id), first_condition_by_run.get(run_id, {}))
+        value = metric.get("value_numeric")
+        phase = str(metric.get("phase") or "unassigned")
+        rows.append({
+            "phase_order": _phase_order(metric.get("phase_order")),
+            "phase": phase,
+            "agent_b_llm_size": condition.get("agent_b_llm_size") or "",
+            "agent_a_type": condition.get("agent_a_type") or "",
+            "agent_b_model": condition.get("agent_b_model") or "",
+            "source_run": run_id,
+            "condition_id": condition_id,
+            "run_type": metric.get("run_type") or condition.get("run_type") or "",
+            "scenario_key": condition.get("scenario_key") or "",
+            "persona_key": condition.get("persona_key") or "",
+            "speech_pattern_key": condition.get("speech_pattern_key") or "",
+            "tts_engine": (
+                condition.get("configured_tts_engine")
+                or condition.get("tts_engine")
+                or metric.get("configured_tts_engine")
+                or ""
+            ),
+            "asr_engine": (
+                condition.get("configured_asr_engine")
+                or condition.get("asr_engine")
+                or metric.get("configured_asr_engine")
+                or ""
+            ),
+            "task_success": display(condition.get("task_success")),
+            "route_valid": display(condition.get("route_valid")),
+            "constraint_satisfaction": display(condition.get("constraint_satisfaction")),
+            "failure_phase": condition.get("failure_phase") or condition.get("pipeline_failure_type") or "",
+            "metric_key": metric.get("metric_key") or "",
+            "metric_label": metric.get("metric_label") or metric.get("metric_key") or "",
+            "value": value,
+            "unit": metric.get("unit") or "",
+            "range_min": metric.get("range_min") or "",
+            "range_max": metric.get("range_max") or "",
+            "higher_is_better": metric.get("higher_is_better") or "",
+            "formula": metric.get("formula") or "",
+            "operands_json": metric.get("operands_json") or "",
+        })
+    size_rank = {"small": 0, "medium": 1, "large": 2, "hosted": 3}
+    return sorted(rows, key=lambda row: (
+        row["phase_order"],
+        row["phase"],
+        size_rank.get(str(row["agent_b_llm_size"]).casefold(), 99),
+        str(row["agent_b_model"]).casefold(),
+        str(row["source_run"]).casefold(),
+        str(row["condition_id"]).casefold(),
+        str(row["metric_key"]).casefold(),
+    ))
+
+
+def write_phase_condition_metric_files(conditions, metrics, output_directory):
+    """Write one comparison-ready metric evidence file per dialogue phase."""
+    output = Path(output_directory)
+    phase_dir = output / "phase_metrics"
+    phase_dir.mkdir(parents=True, exist_ok=True)
+    for obsolete in phase_dir.glob("*.csv"):
+        obsolete.unlink()
+
+    rows = build_phase_condition_metric_rows(conditions, metrics)
+    grouped = defaultdict(list)
+    for row in rows:
+        grouped[row["phase"]].append(row)
+
+    index_rows = []
+    for phase, phase_rows in sorted(
+        grouped.items(),
+        key=lambda item: (min(row["phase_order"] for row in item[1]), item[0]),
+    ):
+        filename = f"{_safe_filename(phase)}.csv"
+        _write_csv(phase_dir / filename, phase_rows)
+        index_rows.append({
+            "phase_order": min(row["phase_order"] for row in phase_rows),
+            "phase": phase,
+            "file": f"phase_metrics/{filename}",
+            "row_count": len(phase_rows),
+            "condition_count": len({(row["source_run"], row["condition_id"]) for row in phase_rows}),
+            "metric_count": len({row["metric_key"] for row in phase_rows}),
+        })
+    index_path = output / "phase_metric_files.csv"
+    _write_csv(index_path, index_rows)
+    return index_path
+
+
 def _metric_cell_color(value, specification):
     """Map a metric to red/amber/green using its declared or observed extremes."""
     minimum = specification["range_min"]
@@ -2261,6 +2373,7 @@ def compare_runs(inputs, output_directory):
         "model_configuration_matrix": output / "model_configuration_matrix.csv",
         "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "performance_band_summary": output / "performance_band_summary.csv",
+        "phase_metric_files": output / "phase_metric_files.csv",
     }
     for obsolete in (
         "analysis_overview.html", "comparison_report.html",
@@ -2278,6 +2391,7 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["condition_analysis"], condition_analysis)
     _write_csv(paths["model_configuration_matrix"], model_configuration_rows)
     _write_csv(paths["performance_band_summary"], performance_bands)
+    write_phase_condition_metric_files(conditions, metrics, output)
     _write_model_configuration_matrix_html(
         paths["model_configuration_matrix_report"],
         model_configuration_rows,

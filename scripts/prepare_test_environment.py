@@ -148,7 +148,7 @@ def _prepare_asset(key, spec):
         raise ValueError(f"Unsupported asset kind for {key}: {kind}")
 
 
-def prepare(download=True, asset_timeout_seconds=600, show_progress=True):
+def prepare(download=True, asset_timeout_seconds=600, show_progress=True, fail_fast=False):
     manifest = json.loads(ASSET_MANIFEST.read_text(encoding="utf-8"))
     results = {}
     assets = {**manifest["models"], **manifest.get("executables", {})}
@@ -183,6 +183,18 @@ def prepare(download=True, asset_timeout_seconds=600, show_progress=True):
                 "error": f"{type(exc).__name__}: {exc}",
             }
             progress.update(index, message=f"failed {key}")
+            if fail_fast:
+                progress.finish(message=f"failed fast at {key}")
+                report = {
+                    "schema_version": 1,
+                    "platform": platform.system(),
+                    "python": sys.version,
+                    "models": results,
+                    "ready": False,
+                }
+                READINESS_FILE.parent.mkdir(parents=True, exist_ok=True)
+                READINESS_FILE.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+                raise RuntimeError(f"Asset preparation failed for {key}: {type(exc).__name__}: {exc}") from exc
     progress.finish(message="asset readiness recorded")
     report = {
         "schema_version": 1,
@@ -222,21 +234,32 @@ def main():
     parser.add_argument("--check", action="store_true", help="Check existing assets without downloading.")
     parser.add_argument("--asset", help=argparse.SUPPRESS)
     parser.add_argument("--asset-timeout-seconds", type=int, default=600)
+    parser.add_argument("--fail-fast", action="store_true", help="Stop at the first missing or failed asset.")
     parser.add_argument("--no-progress", action="store_true", help="Disable terminal progress display.")
     args = parser.parse_args()
     if args.asset:
         manifest = json.loads(ASSET_MANIFEST.read_text(encoding="utf-8"))
         assets = {**manifest["models"], **manifest.get("executables", {})}
+        if args.asset not in assets:
+            raise SystemExit(f"Unknown asset '{args.asset}'. Known assets: {', '.join(sorted(assets))}")
         _prepare_asset(args.asset, assets[args.asset])
         return
-    report = prepare(
-        download=not args.check,
-        asset_timeout_seconds=max(30, args.asset_timeout_seconds),
-        show_progress=progress_enabled(False, args.no_progress),
-    )
+    try:
+        report = prepare(
+            download=not args.check,
+            asset_timeout_seconds=max(30, args.asset_timeout_seconds),
+            show_progress=progress_enabled(False, args.no_progress),
+            fail_fast=args.fail_fast,
+        )
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
     for key, item in report["models"].items():
         print(f"{'READY' if item['ready'] else 'MISSING'} | {key} | {item['error'] or item['destination']}")
     print(f"Readiness manifest: {READINESS_FILE}")
+    if args.fail_fast:
+        missing = [key for key, item in report["models"].items() if not item["ready"]]
+        if missing:
+            raise SystemExit(f"Missing required assets: {', '.join(missing)}")
     raise SystemExit(0 if report["ready"] else 2)
 
 

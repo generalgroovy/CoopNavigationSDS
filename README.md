@@ -910,12 +910,30 @@ ssh-add /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/key2
 GIT_SSH_COMMAND="ssh -i /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/key2 -o IdentitiesOnly=yes -o HostName=ssh.github.com -o Port=443" \
   git pull --ff-only origin main
 source .venv-linux/bin/activate
-python3 scripts/setup_speech_providers.py --status
-python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium large --dry-run
-python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier small --array-concurrency 1
-python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier medium --array-concurrency 1
-python3 scripts/submit_agent_b_model_jobs.py --family userlm --tier large --array-concurrency 1
+scripts/cluster_userlm_agent_b_full_coverage.sh prepare
+scripts/cluster_userlm_agent_b_full_coverage.sh preview
+scripts/cluster_userlm_agent_b_full_coverage.sh submit
 ```
+
+The cluster helper is intentionally fail-fast. `prepare` verifies the Python
+environment, downloads or checks provider assets, prepares UserLM as Agent A,
+prepares every non-Ollama Transformers Agent B model, and writes the readiness
+manifest. `preview` prints the exact model-size-sorted Slurm arrays without
+calling `sbatch`. `submit` sends one independent array per Agent B model with
+the same condition grid and only the Agent B model changed. `refresh` should be
+run after jobs finish to rebuild coverage and comparison artifacts:
+
+```bash
+scripts/cluster_userlm_agent_b_full_coverage.sh refresh
+```
+
+The helper defaults to
+`jobs/agent_b_llm/userlm_transformers_speech_grid`, which avoids the Ollama
+daemon on clusters where it cannot be installed. Set `INCLUDE_OLLAMA=1` only on
+systems where `ollama` is available and serving is permitted; otherwise the
+script fails before submission instead of creating invalid runs. Useful
+overrides are `PYTHON_BIN`, `RESULTS_ROOT`, `MODEL_ROOT`,
+`ARRAY_CONCURRENCY`, and `ASSET_TIMEOUT_SECONDS`.
 
 If a cluster rejects the large tier because of memory, time, or partition
 limits, keep the completed small and medium jobs and submit large models one at
@@ -1125,9 +1143,13 @@ python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
 
 The canonical comparison output contains joined conditions, joined long
 metrics, metric summaries, paired deltas, robust outliers, a condition analysis
-table, and `run_phase_metric_matrix.html`. The matrix places completed runs in
-rows and phase-ordered metrics in columns. Color encodes outcome and descriptive
-outlier status; it does not establish causality or a validated threshold.
+table, `run_phase_metric_matrix.html`, and `phase_metrics/*.csv`. The matrix
+places completed runs in rows and phase-ordered metrics in columns. The
+phase-specific CSV files place each calculable metric beside the matching run,
+condition, task outcome, route validity, constraint satisfaction, TTS, ASR,
+scenario, and persona, so phase failures can be compared without reopening each
+run folder. Color encodes outcome and descriptive outlier status; it does not
+establish causality or a validated threshold.
 Positive-direction metrics use greener cells for larger normalized values;
 negative-direction metrics use greener cells for smaller normalized values.
 Unavailable metrics remain neutral with the unavailable reason in the derived
