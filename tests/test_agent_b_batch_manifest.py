@@ -10,6 +10,7 @@ from scripts.run_agent_b_llm_batch import (
     job_overview,
     load_batch_manifest,
 )
+from scripts.submit_agent_b_model_jobs import discover_jobs, resources_for
 from coop_navigation_sds.Configuration.jobs import (
     job_linked_profiles,
     job_parameter_grid,
@@ -134,6 +135,29 @@ def test_transformers_agent_b_manifest_has_four_models_per_size_and_eighty_four_
     } == {"small": 4, "medium": 4, "large": 4}
     assert {row["agent_a"] for row in rows} == {"tinyllama"}
     assert all(row["conditions"] == 84 for row in rows)
+
+
+def test_userlm_transformers_submitter_filters_and_sorts_by_model_size():
+    class Args:
+        root = [str(USERLM_TRANSFORMERS_ROOT)]
+        family = "all"
+        tier = ("small",)
+        provider = ("transformers",)
+        cpus_per_task = 0
+        memory = ""
+        time_limit = ""
+
+    jobs = discover_jobs(Args)
+
+    assert [job.family for job in jobs] == ["userlm"] * 4
+    assert [job.provider for job in jobs] == ["transformers"] * 4
+    assert [job.agent_b_memory_gb for job in jobs] == sorted(job.agent_b_memory_gb for job in jobs)
+    assert [resources_for(job, Args) for job in jobs] == [
+        (6, "48G", "01:59:00"),
+        (6, "48G", "01:59:00"),
+        (6, "52G", "01:59:00"),
+        (6, "52G", "01:59:00"),
+    ]
 
 
 def test_transformers_slurm_arrays_are_single_condition_shards():

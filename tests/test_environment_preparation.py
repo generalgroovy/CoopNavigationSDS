@@ -69,7 +69,10 @@ class EnvironmentPreparationTests(unittest.TestCase):
         self.assertIn("prepare_test_environment.py", text)
         self.assertIn("--fail-fast", text)
         self.assertIn("userlm_transformers_speech_grid", text)
-        self.assertIn("--tier small medium large", text)
+        self.assertIn('SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"', text)
+        self.assertIn("preview-small", text)
+        self.assertIn("submit-large", text)
+        self.assertIn("--provider transformers", text)
         self.assertIn("submit_agent_b_model_jobs.py", text)
 
 

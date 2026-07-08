@@ -816,18 +816,20 @@ per Agent B model. This prevents one unavailable model, endpoint, or node class
 from blocking the rest of the experiment.
 
 ```bash
-python scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium large --dry-run
-python scripts/submit_agent_b_model_jobs.py --family userlm --tier small --array-concurrency 1
-python scripts/submit_agent_b_model_jobs.py --family userlm --tier medium --array-concurrency 1
-python scripts/submit_agent_b_model_jobs.py --family userlm --tier large --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --dry-run
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier medium --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier large --array-concurrency 1
 ```
 
-`--family userlm` currently resolves 18 independent Agent B model jobs: six
-small, six medium, and six large. Each job has 84 conditions. The full UserLM
-coverage therefore contains 1512 array tasks. `--family all` adds the
-TinyLlama caller grid and resolves 30 jobs with 2520 condition tasks. The
-configured factors intentionally span ceiling, nominal, challenging, and floor
-speech performance so successful and unsuccessful dialogues can be compared
+The recommended cluster path uses only
+`jobs/agent_b_llm/userlm_transformers_speech_grid` and `--provider
+transformers`, which avoids Ollama service failures while preserving the same
+non-model condition coverage. It resolves 12 independent Agent B model jobs:
+four small, four medium, and four large. Each job has 84 conditions, so the
+full UserLM/Transformers coverage contains 1008 array tasks. The configured
+factors intentionally span ceiling, nominal, challenging, and floor speech
+performance so successful and unsuccessful dialogues can be compared
 phase-wise.
 
 The submitter writes Slurm stdout and stderr under `slurm/logs/`, uses unique
@@ -846,9 +848,12 @@ and joins identical condition cells across models.
 
 Slurm resource requests are computed from registered model memory estimates:
 UserLM caller memory plus Agent B model memory plus speech/runtime overhead,
-rounded upward to a scheduler-friendly value. This avoids using one excessive
-memory request for every model in a size tier and improves backfill priority
-without changing the experiment condition.
+rounded upward to a scheduler-friendly value. For UserLM/Transformers jobs the
+submitter uses 6 CPUs for small, 8 CPUs for medium, and 10 CPUs for large
+models, with per-model memory requests such as 48-52G for small, 52-56G for
+medium, and 72-76G for large. This avoids using one excessive request for
+every model in a size tier and improves backfill priority without changing the
+experiment condition.
 
 The independent Agent B arrays are CPU-first. `agent_b_model_cpu_array.sbatch`
 exports CPU-only CUDA guards and passes CPU devices for Agent A, Agent B, TTS,
@@ -878,7 +883,7 @@ Override paths without editing job files when needed:
 PROJECT_ROOT=/path/to/CoopNavigationSDS \
 PYTHON_BIN=/path/to/CoopNavigationSDS/.venv-linux/bin/python \
 RESULTS_ROOT=/path/to/CoopNavigationSDS/results \
-python scripts/submit_agent_b_model_jobs.py --family userlm --tier small --dry-run
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --dry-run
 ```
 
 Legacy single-model wrappers remain available for focused retries:
@@ -911,17 +916,23 @@ GIT_SSH_COMMAND="ssh -i /beegfs/home/users/g/generalgroovy/experiments/CoopNavig
   git pull --ff-only origin main
 source .venv-linux/bin/activate
 scripts/cluster_userlm_agent_b_full_coverage.sh prepare
-scripts/cluster_userlm_agent_b_full_coverage.sh preview
-scripts/cluster_userlm_agent_b_full_coverage.sh submit
+scripts/cluster_userlm_agent_b_full_coverage.sh preview-small
+scripts/cluster_userlm_agent_b_full_coverage.sh submit-small
+scripts/cluster_userlm_agent_b_full_coverage.sh preview-medium
+scripts/cluster_userlm_agent_b_full_coverage.sh submit-medium
+scripts/cluster_userlm_agent_b_full_coverage.sh preview-large
+scripts/cluster_userlm_agent_b_full_coverage.sh submit-large
 ```
 
 The cluster helper is intentionally fail-fast. `prepare` verifies the Python
 environment, downloads or checks provider assets, prepares UserLM as Agent A,
 prepares every non-Ollama Transformers Agent B model, and writes the readiness
-manifest. `preview` prints the exact model-size-sorted Slurm arrays without
-calling `sbatch`. `submit` sends one independent array per Agent B model with
-the same condition grid and only the Agent B model changed. `refresh` should be
-run after jobs finish to rebuild coverage and comparison artifacts:
+manifest. `preview`, `preview-small`, `preview-medium`, and `preview-large`
+print the exact model-size-sorted Slurm arrays without calling `sbatch`.
+`submit`, `submit-small`, `submit-medium`, and `submit-large` send one
+independent array per Agent B model with the same condition grid and only the
+Agent B model changed. `refresh` should be run after jobs finish to rebuild
+coverage and comparison artifacts:
 
 ```bash
 scripts/cluster_userlm_agent_b_full_coverage.sh refresh

@@ -11,6 +11,7 @@ MODEL_ROOT="${MODEL_ROOT:-${PROJECT_ROOT}/jobs/agent_b_llm/userlm_transformers_s
 ARRAY_CONCURRENCY="${ARRAY_CONCURRENCY:-1}"
 ASSET_TIMEOUT_SECONDS="${ASSET_TIMEOUT_SECONDS:-1200}"
 INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
+SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
 
 cd "${PROJECT_ROOT}"
 
@@ -38,16 +39,25 @@ run_python() {
 
 action="${1:-all}"
 case "${action}" in
+  preview-small) action="preview"; SELECTED_TIERS="small" ;;
+  preview-medium) action="preview"; SELECTED_TIERS="medium" ;;
+  preview-large) action="preview"; SELECTED_TIERS="large" ;;
+  submit-small) action="submit"; SELECTED_TIERS="small" ;;
+  submit-medium) action="submit"; SELECTED_TIERS="medium" ;;
+  submit-large) action="submit"; SELECTED_TIERS="large" ;;
+esac
+case "${action}" in
   prepare|preview|submit|refresh|all) ;;
   *)
     cat >&2 <<'USAGE'
-Usage: scripts/cluster_userlm_agent_b_full_coverage.sh [prepare|preview|submit|refresh|all]
+Usage: scripts/cluster_userlm_agent_b_full_coverage.sh [prepare|preview|submit|refresh|all|preview-small|preview-medium|preview-large|submit-small|submit-medium|submit-large]
 
 Environment overrides:
   PROJECT_ROOT=/path/to/CoopNavigationSDS
   PYTHON_BIN=/path/to/.venv-linux/bin/python
   RESULTS_ROOT=/path/to/results
   MODEL_ROOT=/path/to/jobs/agent_b_llm/userlm_transformers_speech_grid
+  SELECTED_TIERS="small medium large"
   ARRAY_CONCURRENCY=1
   ASSET_TIMEOUT_SECONDS=1200
   INCLUDE_OLLAMA=0|1
@@ -62,6 +72,7 @@ require_file "${MODEL_ROOT}"
 mkdir -p "${RESULTS_ROOT}" "${PROJECT_ROOT}/slurm/logs"
 printf 'Project: %s\nPython:  %s\nResults: %s\nJobs:    %s\n' \
   "${PROJECT_ROOT}" "${PYTHON_BIN}" "${RESULTS_ROOT}" "${MODEL_ROOT}"
+printf 'Tiers:   %s\n' "${SELECTED_TIERS}"
 
 if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
   step "Prepare speech and provider assets with fail-fast progress"
@@ -114,7 +125,8 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
   step "Preview UserLM Agent A / Agent B arrays sorted by Agent B size"
   run_python -u scripts/submit_agent_b_model_jobs.py \
     --root "${MODEL_ROOT}" \
-    --tier small medium large \
+    --provider transformers \
+    --tier ${SELECTED_TIERS} \
     --results-dir "${RESULTS_ROOT}" \
     --python-bin "${PYTHON_BIN}" \
     --array-concurrency "${ARRAY_CONCURRENCY}" \
@@ -124,7 +136,8 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
     step "Submit independent fail-fast Slurm arrays"
     run_python -u scripts/submit_agent_b_model_jobs.py \
       --root "${MODEL_ROOT}" \
-      --tier small medium large \
+      --provider transformers \
+      --tier ${SELECTED_TIERS} \
       --results-dir "${RESULTS_ROOT}" \
       --python-bin "${PYTHON_BIN}" \
       --array-concurrency "${ARRAY_CONCURRENCY}"

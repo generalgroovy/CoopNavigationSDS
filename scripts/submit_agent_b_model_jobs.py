@@ -111,7 +111,10 @@ def condition_count(job: dict) -> int:
 
 def resolve_roots(args) -> list[tuple[str, Path]]:
     if args.root:
-        return [("custom", Path(value).expanduser().resolve()) for value in args.root]
+        return [
+            (infer_family_from_root(Path(value).expanduser().resolve()), Path(value).expanduser().resolve())
+            for value in args.root
+        ]
     if args.family == "all":
         return [
             (family, path)
@@ -121,8 +124,19 @@ def resolve_roots(args) -> list[tuple[str, Path]]:
     return [(args.family, path) for path in DEFAULT_ROOTS[args.family]]
 
 
+def infer_family_from_root(path: Path) -> str:
+    """Infer the caller family from a custom job root for readable output and resources."""
+    normalized = path.as_posix().casefold()
+    if "userlm" in normalized:
+        return "userlm"
+    if "tinyllama" in normalized or "transformers_speech_grid" in normalized:
+        return "tinyllama"
+    return "custom"
+
+
 def discover_jobs(args) -> list[ModelJob]:
     tiers = set(args.tier)
+    providers = set(args.provider)
     discovered: list[ModelJob] = []
     for family, root in resolve_roots(args):
         if not root.is_dir():
@@ -133,13 +147,16 @@ def discover_jobs(args) -> list[ModelJob]:
                 continue
             job = load_experiment_job(path)
             config = job["config"]
+            provider = str(config.get("model_provider") or "").strip().lower()
+            if "all" not in providers and provider not in providers:
+                continue
             discovered.append(ModelJob(
                 path=path,
                 family=family,
                 tier=tier,
                 name=job["name"],
                 agent_a_type=str(config.get("agent_a_type") or family),
-                provider=str(config.get("model_provider") or "").strip().lower(),
+                provider=provider,
                 model_name=str(config.get("model_name") or "").strip(),
                 condition_count=condition_count(job),
             ))
@@ -161,15 +178,15 @@ def resources_for(job: ModelJob, args) -> tuple[int, str, str]:
     if job.agent_a_type == "userlm":
         agent_a_memory = model_memory_requirement_gb("microsoft/UserLM-8b", "transformers") or 34.0
         agent_b_memory = model_memory_requirement_gb(job.model_name, job.provider) or 8.0
-        speech_and_runtime_overhead = 10.0 if job.provider == "ollama" else 12.0
+        speech_and_runtime_overhead = 10.0
         if job.tier == "large":
             speech_and_runtime_overhead += 4.0
         required = agent_a_memory + agent_b_memory + speech_and_runtime_overhead
         memory = f"{max(24, int(math.ceil(required / 4.0) * 4))}G"
         cpus = {
-            "small": 6 if job.provider == "ollama" else 8,
-            "medium": 8 if job.provider == "ollama" else 10,
-            "large": 8 if job.provider == "ollama" else 12,
+            "small": 6,
+            "medium": 8,
+            "large": 10 if job.provider == "transformers" else 8,
         }.get(job.tier, cpus)
         time_limit = {
             "small": "01:59:00",
@@ -211,6 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--family", choices=("all", "tinyllama", "userlm"), default="all")
     parser.add_argument("--root", action="append", help="Custom root containing tier subfolders with .job files.")
     parser.add_argument("--tier", nargs="+", choices=("small", "medium", "large"), default=("small", "medium", "large"))
+    parser.add_argument("--provider", nargs="+", choices=("all", "transformers", "ollama", "openai_compatible", "llama_cpp"), default=("all",))
     parser.add_argument("--results-dir", default=str(ROOT / "results"))
     parser.add_argument("--python-bin", default=str(ROOT / ".venv-linux" / "bin" / "python"))
     parser.add_argument("--array-concurrency", type=int, default=1)
