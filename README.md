@@ -858,6 +858,16 @@ exposes an old or incompatible NVIDIA driver. GPU use is intentionally separate:
 request it only with a dedicated GPU wrapper and a compatible PyTorch/driver
 stack.
 
+Single-condition Slurm array tasks do not rebuild the shared coverage registry
+while running. This prevents concurrent writes to root-level coverage CSV/HTML
+files. After an array or group of arrays completes, refresh the comparable
+coverage and result-analysis documents once:
+
+```bash
+python3 scripts/update_experiment_coverage.py --results-dir results
+python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/comparison
+```
+
 Override paths without editing job files when needed:
 
 ```bash

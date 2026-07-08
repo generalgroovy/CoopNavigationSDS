@@ -147,6 +147,7 @@ def test_transformers_slurm_arrays_are_single_condition_shards():
         assert "#SBATCH --array=0-83%1" in script
         assert "--condition-count 1" in script
         assert "--model-device cpu" in script
+        assert "--no-update-coverage-registry" in script
         assert "JOB_FILE" in script
         for job_path in (TRANSFORMERS_GRID_ROOT / tier).glob("*.job"):
             assert job_condition_count(job_path) == 84
@@ -161,8 +162,18 @@ def test_userlm_slurm_arrays_match_job_condition_count(script_name, job_path):
     assert job_path.name in script
     assert "--condition-count 1" in script
     assert "--model-device cpu" in script
+    assert "--no-update-coverage-registry" in script
     assert "--model-base-url" in script
     assert "#SBATCH --output=slurm/logs/" in script
+
+
+def test_generic_agent_b_model_array_disables_live_coverage_registry_updates():
+    script = (ROOT / "slurm" / "agent_b_model_cpu_array.sbatch").read_text(encoding="utf-8")
+
+    assert "--condition-count 1" in script
+    assert "--model-device cpu" in script
+    assert "--agent-a-model-device cpu" in script
+    assert "--no-update-coverage-registry" in script
 
 
 def test_overviews_have_unique_model_grouped_result_paths():

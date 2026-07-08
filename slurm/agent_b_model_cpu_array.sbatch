@@ -55,5 +55,6 @@ fi
   --agent-a-model-device cpu \
   --tts-device cpu \
   --asr-device cpu \
+  --no-update-coverage-registry \
   --progress \
   "${extra_args[@]}"

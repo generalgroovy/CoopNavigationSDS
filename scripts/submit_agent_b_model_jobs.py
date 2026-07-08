@@ -61,6 +61,10 @@ class ModelJob:
     condition_count: int
 
     @property
+    def agent_b_memory_gb(self) -> float:
+        return float(model_memory_requirement_gb(self.model_name, self.provider) or 0.0)
+
+    @property
     def starts_ollama(self) -> bool:
         return self.provider == "ollama"
 
@@ -144,6 +148,7 @@ def discover_jobs(args) -> list[ModelJob]:
     return sorted(discovered, key=lambda job: (
         job.family,
         TIER_ORDER.get(job.tier, 99),
+        job.agent_b_memory_gb,
         job.path.name,
     ))
 
@@ -230,7 +235,8 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"{index:02d}. {job.family}/{job.tier} | Agent A={job.agent_a_type} | "
             f"Agent B={job.model_name} | provider={job.provider} | "
-            f"conditions={job.condition_count} | cpus={cpus} mem={memory} time={time_limit}"
+            f"model_mem={job.agent_b_memory_gb:g}G | conditions={job.condition_count} | "
+            f"cpus={cpus} mem={memory} time={time_limit}"
         )
         print("    " + " ".join(command))
         if not args.dry_run:

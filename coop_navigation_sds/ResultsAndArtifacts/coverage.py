@@ -8,6 +8,7 @@ import html
 import json
 import os
 import platform
+import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -643,7 +644,7 @@ def _agent_model_html(rows, controls):
 def _atomic_csv(path, rows):
     rows = list(rows)
     fields = list(dict.fromkeys(key for row in rows for key in row))
-    temporary = Path(f"{path}.tmp")
+    temporary = Path(f"{path}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     with temporary.open("w", newline="", encoding="utf-8") as handle:
         if fields:
             writer = csv.DictWriter(handle, fieldnames=fields)
@@ -770,13 +771,13 @@ def update_experiment_coverage(results_root, job_roots=None):
     _atomic_csv(paths["matrix"], matrices)
     _atomic_csv(paths["agent_model_matrix"], agent_model_rows)
     _atomic_csv(paths["case_coverage"], case_rows)
-    temporary_summary = Path(f"{paths['summary']}.tmp")
+    temporary_summary = Path(f"{paths['summary']}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     temporary_summary.write_text(json.dumps(summary, indent=2, ensure_ascii=True), encoding="utf-8")
     temporary_summary.replace(paths["summary"])
-    temporary_report = Path(f"{paths['report']}.tmp")
+    temporary_report = Path(f"{paths['report']}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     temporary_report.write_text(_html_report(summary, matrices, case_rows), encoding="utf-8")
     temporary_report.replace(paths["report"])
-    temporary_agent_report = Path(f"{paths['agent_model_report']}.tmp")
+    temporary_agent_report = Path(f"{paths['agent_model_report']}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     temporary_agent_report.write_text(
         _agent_model_html(agent_model_rows, control_runs),
         encoding="utf-8",

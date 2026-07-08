@@ -200,6 +200,14 @@ an incompatible NVIDIA driver without failing during preflight. GPU execution
 must be requested deliberately with a dedicated GPU wrapper and compatible
 drivers.
 
+Array tasks also pass `--no-update-coverage-registry`. Run coverage and
+comparison refresh once after the scheduler jobs finish:
+
+```bash
+python3 scripts/update_experiment_coverage.py --results-dir results
+python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/comparison
+```
+
 ## Result Groups
 
 ```text
