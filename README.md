@@ -839,6 +839,14 @@ rounded upward to a scheduler-friendly value. This avoids using one excessive
 memory request for every model in a size tier and improves backfill priority
 without changing the experiment condition.
 
+The independent Agent B arrays are CPU-first. `agent_b_model_cpu_array.sbatch`
+exports CPU-only CUDA guards and passes CPU devices for Agent A, Agent B, TTS,
+and ASR. The Transformers loader repeats that guard before tokenizer/model
+loading, so CPU submissions do not fail when Slurm places them on a node that
+exposes an old or incompatible NVIDIA driver. GPU use is intentionally separate:
+request it only with a dedicated GPU wrapper and a compatible PyTorch/driver
+stack.
+
 Override paths without editing job files when needed:
 
 ```bash

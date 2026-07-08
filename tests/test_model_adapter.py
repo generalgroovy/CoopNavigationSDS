@@ -23,6 +23,7 @@ from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import create_m
 from coop_navigation_sds.NaturalLanguageGeneration.model_runtime import (
     MODEL_CACHE_DIR,
     _prepared_model,
+    _resolve_model_device,
     _trust_remote_code,
 )
 from coop_navigation_sds.Configuration.model_matrix import (
@@ -107,6 +108,47 @@ class TransformersModelAdapterTests(unittest.TestCase):
         self.assertTrue(Path(MODEL_CACHE_DIR).is_absolute())
         self.assertTrue(resolved.is_absolute())
         self.assertEqual(resolved.parent, Path(MODEL_CACHE_DIR))
+
+    def test_cpu_device_forces_cpu_only_environment_before_transformers_load(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "CUDA_VISIBLE_DEVICES": "0",
+                "NVIDIA_VISIBLE_DEVICES": "all",
+                "ACCELERATE_USE_CPU": "false",
+                "PYTORCH_NVML_BASED_CUDA_CHECK": "1",
+            },
+            clear=False,
+        ):
+            resolved = _resolve_model_device("cpu")
+
+            self.assertEqual(resolved, "cpu")
+            self.assertEqual(__import__("os").environ["CUDA_VISIBLE_DEVICES"], "")
+            self.assertEqual(__import__("os").environ["NVIDIA_VISIBLE_DEVICES"], "void")
+            self.assertEqual(__import__("os").environ["ACCELERATE_USE_CPU"], "true")
+            self.assertEqual(__import__("os").environ["PYTORCH_NVML_BASED_CUDA_CHECK"], "0")
+
+    def test_auto_device_falls_back_to_cpu_when_cuda_probe_fails(self):
+        class BrokenCuda:
+            @staticmethod
+            def is_available():
+                raise RuntimeError("The NVIDIA driver on your system is too old")
+
+        fake_torch = SimpleNamespace(cuda=BrokenCuda())
+        with patch.dict("os.environ", {}, clear=True), patch.dict(sys.modules, {"torch": fake_torch}):
+            resolved = _resolve_model_device("auto")
+
+            self.assertEqual(resolved, "cpu")
+            self.assertEqual(__import__("os").environ["CUDA_VISIBLE_DEVICES"], "")
+
+    def test_cuda_request_with_cpu_only_environment_fails_before_driver_probe(self):
+        with patch.dict(
+            "os.environ",
+            {"CUDA_VISIBLE_DEVICES": "", "ACCELERATE_USE_CPU": "true"},
+            clear=True,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "CPU-only"):
+                _resolve_model_device("cuda")
 
     def test_ollama_preflight_accepts_installed_model(self):
         with patch(

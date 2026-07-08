@@ -191,6 +191,15 @@ Agent B model memory plus speech/runtime overhead, rounded upward for Slurm.
 Ollama-backed jobs start a per-task local Ollama server on a task-specific
 port; Transformers jobs run without Ollama.
 
+The generated arrays use `slurm/agent_b_model_cpu_array.sbatch`, which is
+CPU-first by design. The wrapper exports CPU-only CUDA guards and passes
+`--model-device cpu`, `--agent-a-model-device cpu`, `--tts-device cpu`, and
+`--asr-device cpu`. The Transformers runtime enforces the same policy before
+loading tokenizer or model weights, so a CPU job can land on a node that exposes
+an incompatible NVIDIA driver without failing during preflight. GPU execution
+must be requested deliberately with a dedicated GPU wrapper and compatible
+drivers.
+
 ## Result Groups
 
 ```text

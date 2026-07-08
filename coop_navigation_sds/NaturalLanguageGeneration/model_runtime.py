@@ -38,6 +38,12 @@ def _model_cache_dir():
 
 MODEL_CACHE_DIR = str(_model_cache_dir())
 USERLM_MODEL_NAME = "microsoft/UserLM-8b"
+CPU_ONLY_ENVIRONMENT = {
+    "CUDA_VISIBLE_DEVICES": "",
+    "NVIDIA_VISIBLE_DEVICES": "void",
+    "ACCELERATE_USE_CPU": "true",
+    "PYTORCH_NVML_BASED_CUDA_CHECK": "0",
+}
 
 
 def _prepared_model(model_name):
@@ -52,6 +58,60 @@ def _trust_remote_code(model_name):
     """Return whether a registered model explicitly requires Hub model code."""
     normalized = str(model_name).replace("\\", "/").rstrip("/")
     return normalized.endswith((USERLM_MODEL_NAME, "microsoft--UserLM-8b"))
+
+
+def _force_cpu_runtime():
+    """Prevent CPU-requested runs from probing broken or unavailable CUDA drivers."""
+    for key, value in CPU_ONLY_ENVIRONMENT.items():
+        os.environ[key] = value
+
+
+def _cpu_environment_requested():
+    return (
+        os.environ.get("ACCELERATE_USE_CPU", "").strip().lower() in {"1", "true", "yes", "on"}
+        or os.environ.get("CUDA_VISIBLE_DEVICES", None) in {"", "-1"}
+        or os.environ.get("NVIDIA_VISIBLE_DEVICES", "").strip().lower() in {"void", "none"}
+    )
+
+
+def _resolve_model_device(device):
+    """Resolve a configured model device without letting auto mode break on stale CUDA."""
+    requested = str(device or "cpu").strip().lower()
+    if requested in {"", "cpu", "none"}:
+        _force_cpu_runtime()
+        return "cpu"
+    if requested == "auto":
+        if _cpu_environment_requested():
+            _force_cpu_runtime()
+            return "cpu"
+        try:
+            import torch
+            if torch.cuda.is_available():
+                return "cuda"
+        except Exception:
+            _force_cpu_runtime()
+            return "cpu"
+        _force_cpu_runtime()
+        return "cpu"
+    if requested.startswith("cuda"):
+        if _cpu_environment_requested():
+            raise RuntimeError(
+                "CUDA was requested for a Transformers model, but the runtime is configured "
+                "as CPU-only. Use --model-device cpu on CPU Slurm arrays, or submit to a "
+                "CUDA partition with compatible drivers and without CPU-only environment flags."
+            )
+        try:
+            import torch
+            if not torch.cuda.is_available():
+                raise RuntimeError("torch reports CUDA unavailable")
+        except Exception as exc:
+            raise RuntimeError(
+                "CUDA was requested for a Transformers model, but CUDA is not usable in this "
+                "environment. Use --model-device cpu / --agent-a-model-device cpu, or run on "
+                "a node with a PyTorch-compatible NVIDIA driver."
+            ) from exc
+        return requested
+    return requested
 
 
 def load_model_and_tokenizer(
@@ -70,6 +130,7 @@ def load_model_and_tokenizer(
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    device = _resolve_model_device(device)
     tokenizer = _load_tokenizer(model_name, token, allow_model_download)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -103,6 +164,7 @@ def create_transformers_adapter(
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    device = _resolve_model_device(device)
     tokenizer, model = load_model_and_tokenizer(
         model_name,
         token,
@@ -214,6 +276,7 @@ def _load_model(
     Returns:
         The computed value or side effect documented by the implementation.
     """
+    device = _resolve_model_device(device)
     import torch
     from transformers import AutoModelForCausalLM
     trust_remote_code = _trust_remote_code(model_name)
