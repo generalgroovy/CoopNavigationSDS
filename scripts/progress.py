@@ -14,6 +14,7 @@ class ProgressBar:
         self.width = max(8, int(width))
         self.enabled = bool(enabled)
         self.stream = stream or sys.stderr
+        self.interactive = bool(getattr(self.stream, "isatty", lambda: False)())
         self.current = 0
         self.started_at = time.monotonic()
         self._last_message = ""
@@ -48,9 +49,13 @@ class ProgressBar:
             f"\r{self.label}: [{bar}] {self.current}/{self.total} "
             f"{percent:3d}% {elapsed:5.1f}s{suffix}"
         )
-        print(line, end="\n" if done else "", file=self.stream, flush=True)
+        if self.interactive:
+            print(line, end="\n" if done else "", file=self.stream, flush=True)
+        else:
+            clean = line.lstrip("\r")
+            print(clean, file=self.stream, flush=True)
 
 
 def progress_enabled(json_output=False, quiet=False):
     """Return whether interactive progress should be shown."""
-    return not json_output and not quiet and sys.stderr.isatty()
+    return not json_output and not quiet

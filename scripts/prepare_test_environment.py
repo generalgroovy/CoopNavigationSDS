@@ -37,6 +37,29 @@ def _run(command):
     subprocess.run([str(value) for value in command], cwd=ROOT, check=True)
 
 
+def _download_reporthook(label):
+    started = {"printed": False}
+
+    def report(block_count, block_size, total_size):
+        if total_size <= 0:
+            if not started["printed"]:
+                print(f"DOWNLOAD | {label} | size unknown", flush=True)
+                started["printed"] = True
+            return
+        downloaded = min(block_count * block_size, total_size)
+        percent = int(downloaded * 100 / total_size)
+        mib_done = downloaded / (1024 * 1024)
+        mib_total = total_size / (1024 * 1024)
+        print(
+            f"\rDOWNLOAD | {label} | {percent:3d}% | "
+            f"{mib_done:.1f}/{mib_total:.1f} MiB",
+            end="\n" if downloaded >= total_size else "",
+            flush=True,
+        )
+
+    return report
+
+
 def _provider_python(engine):
     manifest = ROOT / ".speech-providers" / "providers.json"
     try:
@@ -50,7 +73,7 @@ def _provider_python(engine):
         return None
 
 
-def _download_archive(spec):
+def _download_archive(spec, *, label="archive"):
     destination = _destination(spec)
     destination.parent.mkdir(parents=True, exist_ok=True)
     suffix = (
@@ -60,7 +83,12 @@ def _download_archive(spec):
     )
     with tempfile.TemporaryDirectory(prefix="coop_navigation_assets_") as tmpdir:
         archive = Path(tmpdir) / f"asset{suffix}"
-        urllib.request.urlretrieve(spec["source"], archive)
+        urllib.request.urlretrieve(
+            spec["source"],
+            archive,
+            reporthook=_download_reporthook(label),
+        )
+        print(f"EXTRACT   | {label} | {archive.name}", flush=True)
         extract_root = Path(tmpdir) / "extract"
         extract_root.mkdir()
         if suffix == ".zip":
@@ -85,6 +113,7 @@ def _prepare_asset(key, spec):
     kind = spec["kind"]
     if kind == "huggingface_snapshot":
         from huggingface_hub import snapshot_download
+        print(f"DOWNLOAD | {key} | Hugging Face snapshot {spec['source']}", flush=True)
         snapshot_download(
             repo_id=spec["source"],
             local_dir=destination,
@@ -92,6 +121,7 @@ def _prepare_asset(key, spec):
         )
     elif kind == "huggingface_file":
         from huggingface_hub import hf_hub_download
+        print(f"DOWNLOAD | {key} | Hugging Face file {spec['source']}/{spec['filename']}", flush=True)
         hf_hub_download(
             repo_id=spec["source"],
             filename=spec["filename"],
@@ -101,9 +131,10 @@ def _prepare_asset(key, spec):
         _run((sys.executable, "-m", "piper.download_voices", "--data-dir", destination, spec["source"]))
     elif kind == "faster_whisper":
         from faster_whisper import WhisperModel
+        print(f"DOWNLOAD | {key} | faster-whisper {spec['source']}", flush=True)
         WhisperModel(spec["source"], device="cpu", compute_type="int8", download_root=str(destination))
     elif kind == "archive":
-        _download_archive(spec)
+        _download_archive(spec, label=key)
     elif kind == "github_release_archive":
         request = urllib.request.Request(
             f"https://api.github.com/repos/{spec['source']}/releases/latest",
@@ -112,7 +143,7 @@ def _prepare_asset(key, spec):
         with urllib.request.urlopen(request) as response:
             release = json.load(response)
         asset = next(item for item in release["assets"] if item["name"] == spec["asset"])
-        _download_archive({**spec, "source": asset["browser_download_url"]})
+        _download_archive({**spec, "source": asset["browser_download_url"]}, label=key)
     else:
         raise ValueError(f"Unsupported asset kind for {key}: {kind}")
 
