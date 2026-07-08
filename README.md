@@ -860,8 +860,12 @@ stack.
 
 Single-condition Slurm array tasks do not rebuild the shared coverage registry
 while running. This prevents concurrent writes to root-level coverage CSV/HTML
-files. After an array or group of arrays completes, refresh the comparable
-coverage and result-analysis documents once:
+files. They also pass `--fail-fast`: a selected condition exits nonzero as
+soon as model loading, TTS, ASR, dialogue execution, or another pipeline phase
+fails. The run folder still contains preflight/setup evidence created before
+the failure, but the scheduler state now clearly marks failed conditions.
+After an array or group of arrays completes, refresh the comparable coverage
+and result-analysis documents once:
 
 ```bash
 python3 scripts/update_experiment_coverage.py --results-dir results

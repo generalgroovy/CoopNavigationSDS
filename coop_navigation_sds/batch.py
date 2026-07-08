@@ -483,6 +483,11 @@ def main():
     parser.add_argument("--condition-start", type=int, default=0, help="Zero-based first expanded condition for a sequential shard.")
     parser.add_argument("--condition-count", type=int, help="Maximum conditions to execute from --condition-start.")
     parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Exit nonzero on the first condition failure instead of recording it and continuing.",
+    )
+    parser.add_argument(
         "--update-coverage-registry",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -842,9 +847,14 @@ def main():
             result, _metric = runner.run_condition(
                 condition,
                 compute_metrics=False,
-                capture_failure=True,
+                capture_failure=not args.fail_fast,
             )
         except Exception as exc:
+            if args.fail_fast:
+                raise SystemExit(
+                    f"Condition failed fast: {condition.condition_id}: "
+                    f"{type(exc).__name__}: {exc}"
+                ) from exc
             result = failed_condition_result(
                 condition,
                 runner,
@@ -877,10 +887,17 @@ def main():
             print(
                 f"failed {condition.condition_id}: "
                 f"{result.extra['pipeline_failure'].get('exception_type')}: "
-                f"{result.extra['pipeline_failure'].get('message')}; continuing",
+                f"{result.extra['pipeline_failure'].get('message')}; "
+                f"{'failing fast' if args.fail_fast else 'continuing'}",
                 file=sys.stderr,
                 flush=True,
             )
+            if args.fail_fast:
+                raise SystemExit(
+                    f"Condition failed fast: {condition.condition_id}: "
+                    f"{result.extra['pipeline_failure'].get('exception_type')}: "
+                    f"{result.extra['pipeline_failure'].get('message')}"
+                )
         elif args.progress:
             print(f"completed {condition.condition_id}", flush=True)
         if args.update_coverage_registry:

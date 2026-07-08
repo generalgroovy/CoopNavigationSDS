@@ -200,7 +200,10 @@ an incompatible NVIDIA driver without failing during preflight. GPU execution
 must be requested deliberately with a dedicated GPU wrapper and compatible
 drivers.
 
-Array tasks also pass `--no-update-coverage-registry`. Run coverage and
+Array tasks also pass `--no-update-coverage-registry` and `--fail-fast`.
+Coverage refresh is deferred to avoid concurrent root-level writes, and failed
+conditions exit nonzero immediately so Slurm marks them failed instead of
+looking successful with only a recorded condition failure. Run coverage and
 comparison refresh once after the scheduler jobs finish:
 
 ```bash
