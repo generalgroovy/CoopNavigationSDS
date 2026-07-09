@@ -57,6 +57,7 @@ class ModelJob:
     name: str
     agent_a_type: str
     provider: str
+    model_profile: str
     model_name: str
     condition_count: int
 
@@ -137,6 +138,11 @@ def infer_family_from_root(path: Path) -> str:
 def discover_jobs(args) -> list[ModelJob]:
     tiers = set(args.tier)
     providers = set(args.provider)
+    profiles = {
+        str(profile).strip()
+        for profile in (getattr(args, "profile", None) or ())
+        if str(profile).strip()
+    }
     discovered: list[ModelJob] = []
     for family, root in resolve_roots(args):
         if not root.is_dir():
@@ -150,6 +156,9 @@ def discover_jobs(args) -> list[ModelJob]:
             provider = str(config.get("model_provider") or "").strip().lower()
             if "all" not in providers and provider not in providers:
                 continue
+            model_profile = str(config.get("model_profile") or "").strip()
+            if profiles and model_profile not in profiles:
+                continue
             discovered.append(ModelJob(
                 path=path,
                 family=family,
@@ -157,6 +166,7 @@ def discover_jobs(args) -> list[ModelJob]:
                 name=job["name"],
                 agent_a_type=str(config.get("agent_a_type") or family),
                 provider=provider,
+                model_profile=model_profile,
                 model_name=str(config.get("model_name") or "").strip(),
                 condition_count=condition_count(job),
             ))
@@ -229,6 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", action="append", help="Custom root containing tier subfolders with .job files.")
     parser.add_argument("--tier", nargs="+", choices=("small", "medium", "large"), default=("small", "medium", "large"))
     parser.add_argument("--provider", nargs="+", choices=("all", "transformers", "ollama", "openai_compatible", "llama_cpp"), default=("all",))
+    parser.add_argument("--profile", action="append", help="Restrict submission to one registered model_profile. Repeat for multiple profiles.")
     parser.add_argument("--results-dir", default=str(ROOT / "results"))
     parser.add_argument("--python-bin", default=str(ROOT / ".venv-linux" / "bin" / "python"))
     parser.add_argument("--array-concurrency", type=int, default=1)
@@ -252,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         command = sbatch_command(job, args)
         print(
             f"{index:02d}. {job.family}/{job.tier} | Agent A={job.agent_a_type} | "
-            f"Agent B={job.model_name} | provider={job.provider} | "
+            f"Agent B={job.model_name} | profile={job.model_profile} | provider={job.provider} | "
             f"model_mem={job.agent_b_memory_gb:g}G | conditions={job.condition_count} | "
             f"cpus={cpus} mem={memory} time={time_limit}"
         )

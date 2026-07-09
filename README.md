@@ -444,9 +444,12 @@ are recorded as condition failures; they are not silently replaced by smaller
 models.
 
 ```bash
-python scripts/setup_transformers_agent_b_models.py --tier small --download
-python scripts/setup_transformers_agent_b_models.py --tier medium --download
-python scripts/setup_transformers_agent_b_models.py --tier large --download
+python scripts/setup_transformers_agent_b_models.py --cluster-safe --download
+python scripts/setup_transformers_agent_b_models.py --cluster-safe --json
+
+# Optional exhaustive preparation. Use this only when all listed models are
+# authorized and the cluster can tolerate the download/runtime footprint.
+python scripts/setup_transformers_agent_b_models.py --tier small --tier medium --tier large --download
 
 python scripts/run_agent_b_llm_batch.py \
   --batch jobs/agent_b_llm/batches/07-transformers-agent-b-all.json \
@@ -464,6 +467,12 @@ python scripts/setup_transformers_agent_b_models.py --tier small --download
 python scripts/prepare_test_environment.py
 python scripts/prepare_test_environment.py --check --no-progress
 ```
+
+Transformers readiness requires a local config file, tokenizer assets, and at
+least one model-weight file or shard. This deliberately rejects partial Hugging
+Face snapshots that contain only metadata; starting a Slurm array with such a
+folder would fail later during model loading and would corrupt coverage
+interpretation.
 
 `jobs/agent_b_llm/batches/08-transformers-agent-b-small-medium.json` is the
 recommended first cluster manifest because it covers eight non-Ollama Agent B
@@ -825,12 +834,15 @@ python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_trans
 The recommended cluster path uses only
 `jobs/agent_b_llm/userlm_transformers_speech_grid` and `--provider
 transformers`, which avoids Ollama service failures while preserving the same
-non-model condition coverage. It resolves 12 independent Agent B model jobs:
-four small, four medium, and four large. Each job has 84 conditions, so the
-full UserLM/Transformers coverage contains 1008 array tasks. The configured
-factors intentionally span ceiling, nominal, challenging, and floor speech
-performance so successful and unsuccessful dialogues can be compared
-phase-wise.
+non-model condition coverage. The default cluster helper selects six
+service-free Transformer profiles: two small, two medium, and two large. This
+is the recommended first thesis-scale run because it gives at least one, and
+normally two, comparisons in every model-size tier without requiring Ollama or
+known gated profiles. Each selected job has 84 conditions. Override
+`MODEL_PROFILES` when a site has additional authorized local models and the
+larger coverage is desired. The configured factors intentionally span ceiling,
+nominal, challenging, and floor speech performance so successful and
+unsuccessful dialogues can be compared phase-wise.
 
 The submitter writes Slurm stdout and stderr under `slurm/logs/`, uses unique
 job-name suffixes, and passes `RESULTS_ROOT` to the batch runner so every
@@ -869,6 +881,10 @@ files. They also pass `--fail-fast`: a selected condition exits nonzero as
 soon as model loading, TTS, ASR, dialogue execution, or another pipeline phase
 fails. The run folder still contains preflight/setup evidence created before
 the failure, but the scheduler state now clearly marks failed conditions.
+Speech performance-band completeness is written to `coverage_plan.json`.
+Incomplete per-treatment band coverage is a warning for pairwise Slurm grids,
+not a runtime blocker, because each array task executes one condition and the
+analysis layer handles missing bands explicitly.
 After an array or group of arrays completes, refresh the comparable coverage
 and result-analysis documents once:
 
@@ -926,13 +942,22 @@ scripts/cluster_userlm_agent_b_full_coverage.sh submit-large
 
 The cluster helper is intentionally fail-fast. `prepare` verifies the Python
 environment, downloads or checks only the speech-provider assets required by
-the selected non-Ollama grid, prepares UserLM as Agent A, prepares every
-non-Ollama Transformers Agent B model, and writes the readiness manifest. The
-default speech assets are `piper faster_whisper`; override `SPEECH_ASSETS` only
-when the job grid actually uses additional speech providers. Transformer model
-assets are prepared separately through `setup_transformers_agent_b_models.py`,
-so language models are not duplicated under `.speech-providers`. `preview`,
-`preview-small`, `preview-medium`, and `preview-large`
+the selected non-Ollama grid, prepares UserLM as Agent A, prepares the selected
+Transformer Agent B profiles, and writes the readiness manifest. The default
+speech assets are `piper faster_whisper`; override `SPEECH_ASSETS` only when
+the job grid actually uses additional speech providers. The default
+`MODEL_PROFILES` are:
+
+| Size | Profiles |
+| --- | --- |
+| Small | `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers` |
+| Medium | `qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers` |
+| Large | `qwen2_5_7b_transformers`, `falcon3_7b_transformers` |
+
+Transformer model assets are prepared separately through
+`setup_transformers_agent_b_models.py`, so language models are not duplicated
+under `.speech-providers`. `preview`, `preview-small`, `preview-medium`, and
+`preview-large`
 print the exact model-size-sorted Slurm arrays without calling `sbatch`.
 `submit`, `submit-small`, `submit-medium`, and `submit-large` send one
 independent array per Agent B model with the same condition grid and only the
@@ -949,7 +974,11 @@ daemon on clusters where it cannot be installed. Set `INCLUDE_OLLAMA=1` only on
 systems where `ollama` is available and serving is permitted; otherwise the
 script fails before submission instead of creating invalid runs. Useful
 overrides are `PYTHON_BIN`, `RESULTS_ROOT`, `MODEL_ROOT`,
-`ARRAY_CONCURRENCY`, `SPEECH_ASSETS`, and `ASSET_TIMEOUT_SECONDS`.
+`ARRAY_CONCURRENCY`, `SPEECH_ASSETS`, `MODEL_PROFILES`,
+`HF_MAX_WORKERS`, `ASSET_TIMEOUT_SECONDS`, and
+`MODEL_DOWNLOAD_TIMEOUT_SECONDS`. The model-download timeout is an external
+cluster safety guard around Hugging Face preparation; if a transfer stalls, the
+prepare step exits nonzero instead of leaving a silent terminal.
 
 If a cluster rejects the large tier because of memory, time, or partition
 limits, keep the completed small and medium jobs and submit large models one at

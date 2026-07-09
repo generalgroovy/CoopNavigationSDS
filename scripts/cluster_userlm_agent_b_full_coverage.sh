@@ -14,6 +14,8 @@ INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
 SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
 HF_MAX_WORKERS="${HF_MAX_WORKERS:-1}"
+MODEL_PROFILES="${MODEL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers falcon3_7b_transformers}"
+MODEL_DOWNLOAD_TIMEOUT_SECONDS="${MODEL_DOWNLOAD_TIMEOUT_SECONDS:-14400}"
 export HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"
 export HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER:-0}"
 export HF_HUB_DISABLE_TELEMETRY="${HF_HUB_DISABLE_TELEMETRY:-1}"
@@ -42,6 +44,23 @@ run_python() {
   "${PYTHON_BIN}" "$@"
 }
 
+run_python_with_model_timeout() {
+  if command -v timeout >/dev/null 2>&1; then
+    printf '+ timeout --foreground %q %s' "${MODEL_DOWNLOAD_TIMEOUT_SECONDS}" "${PYTHON_BIN}"
+    printf ' %q' "$@"
+    printf '\n'
+    timeout --foreground "${MODEL_DOWNLOAD_TIMEOUT_SECONDS}" "${PYTHON_BIN}" "$@"
+  else
+    echo "WARNING: coreutils timeout is unavailable; running without external model-download timeout." >&2
+    run_python "$@"
+  fi
+}
+
+model_profile_args=()
+for profile in ${MODEL_PROFILES}; do
+  model_profile_args+=(--profile "${profile}")
+done
+
 action="${1:-all}"
 case "${action}" in
   preview-small) action="preview"; SELECTED_TIERS="small" ;;
@@ -65,6 +84,8 @@ Environment overrides:
   SELECTED_TIERS="small medium large"
   SPEECH_ASSETS="piper faster_whisper"
   HF_MAX_WORKERS=1
+  MODEL_PROFILES="tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers falcon3_7b_transformers"
+  MODEL_DOWNLOAD_TIMEOUT_SECONDS=14400
   ARRAY_CONCURRENCY=1
   ASSET_TIMEOUT_SECONDS=1200
   INCLUDE_OLLAMA=0|1
@@ -81,7 +102,9 @@ printf 'Project: %s\nPython:  %s\nResults: %s\nJobs:    %s\n' \
   "${PROJECT_ROOT}" "${PYTHON_BIN}" "${RESULTS_ROOT}" "${MODEL_ROOT}"
 printf 'Tiers:   %s\n' "${SELECTED_TIERS}"
 printf 'Speech assets: %s\n' "${SPEECH_ASSETS}"
+printf 'Model profiles: %s\n' "${MODEL_PROFILES}"
 printf 'Hugging Face workers: %s\n' "${HF_MAX_WORKERS}"
+printf 'Model download timeout: %s seconds\n' "${MODEL_DOWNLOAD_TIMEOUT_SECONDS}"
 printf 'Hugging Face Xet disabled: %s\n' "${HF_HUB_DISABLE_XET}"
 
 if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
@@ -92,14 +115,14 @@ if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
     --asset-timeout-seconds "${ASSET_TIMEOUT_SECONDS}"
 
   step "Prepare UserLM Agent A model assets"
-  run_python -u scripts/setup_transformers_agent_b_models.py \
+  run_python_with_model_timeout -u scripts/setup_transformers_agent_b_models.py \
     --profile userlm_8b_transformers \
     --download \
     --max-workers "${HF_MAX_WORKERS}"
 
   step "Prepare all non-Ollama Transformers Agent B model assets"
-  run_python -u scripts/setup_transformers_agent_b_models.py \
-    --all \
+  run_python_with_model_timeout -u scripts/setup_transformers_agent_b_models.py \
+    "${model_profile_args[@]}" \
     --download \
     --max-workers "${HF_MAX_WORKERS}"
 
@@ -110,7 +133,7 @@ if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
     --fail-fast
   run_python -u scripts/setup_transformers_agent_b_models.py \
     --profile userlm_8b_transformers \
-    --all \
+    "${model_profile_args[@]}" \
     --json
 
   if [[ "${INCLUDE_OLLAMA}" == "1" ]]; then
@@ -143,6 +166,7 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
     --root "${MODEL_ROOT}" \
     --provider transformers \
     --tier ${SELECTED_TIERS} \
+    "${model_profile_args[@]}" \
     --results-dir "${RESULTS_ROOT}" \
     --python-bin "${PYTHON_BIN}" \
     --array-concurrency "${ARRAY_CONCURRENCY}" \
@@ -154,6 +178,7 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
       --root "${MODEL_ROOT}" \
       --provider transformers \
       --tier ${SELECTED_TIERS} \
+      "${model_profile_args[@]}" \
       --results-dir "${RESULTS_ROOT}" \
       --python-bin "${PYTHON_BIN}" \
       --array-concurrency "${ARRAY_CONCURRENCY}"

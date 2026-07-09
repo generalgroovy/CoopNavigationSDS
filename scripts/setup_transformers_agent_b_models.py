@@ -40,6 +40,15 @@ TRANSFORMERS_AGENT_B_PROFILES = {
     ),
 }
 
+CLUSTER_SAFE_AGENT_B_PROFILES = (
+    "tinyllama_1b_transformers",
+    "qwen2_5_0_5b_transformers",
+    "qwen2_5_1_5b_transformers",
+    "phi3_mini_4k_transformers",
+    "qwen2_5_7b_transformers",
+    "falcon3_7b_transformers",
+)
+
 TRANSFORMERS_RUNTIME_ALLOW_PATTERNS = (
     "config.json",
     "configuration*.py",
@@ -97,7 +106,17 @@ def local_model_dir(model_name):
 
 def model_ready(model_name):
     folder = local_model_dir(model_name)
-    return folder.is_dir() and any(folder.glob("config.json")) and any(folder.glob("tokenizer*"))
+    if not folder.is_dir():
+        return False
+    has_config = any(folder.glob("config.json"))
+    has_tokenizer = any(folder.glob("tokenizer*")) or any(folder.glob("*.model"))
+    has_weights = (
+        any(folder.glob("*.safetensors"))
+        or any(folder.glob("*.safetensors.index.json"))
+        or any(folder.glob("pytorch_model*.bin"))
+        or any(folder.glob("model*.bin"))
+    )
+    return has_config and has_tokenizer and has_weights
 
 
 def readiness_rows(profiles):
@@ -151,6 +170,11 @@ def main(argv=None):
     parser.add_argument("--tier", action="append", choices=tuple(TRANSFORMERS_AGENT_B_PROFILES))
     parser.add_argument("--profile", action="append", default=[])
     parser.add_argument("--all", action="store_true", help="Select all registered Transformers Agent B proposals.")
+    parser.add_argument(
+        "--cluster-safe",
+        action="store_true",
+        help="Select two likely ungated Transformers models per size tier for Slurm CPU runs.",
+    )
     parser.add_argument("--download", action="store_true", help="Download missing selected model assets.")
     parser.add_argument(
         "--max-workers",
@@ -163,7 +187,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     tiers = tuple(TRANSFORMERS_AGENT_B_PROFILES) if args.all else tuple(args.tier or ())
-    profiles = selected_profiles(tiers, args.profile)
+    requested_profiles = list(args.profile)
+    if args.cluster_safe:
+        requested_profiles.extend(CLUSTER_SAFE_AGENT_B_PROFILES)
+    profiles = selected_profiles(tiers, requested_profiles)
     before = readiness_rows(profiles)
     missing = [row["profile"] for row in before if not row["ready"]]
     if args.download and missing:

@@ -488,6 +488,16 @@ def main():
         help="Exit nonzero on the first condition failure instead of recording it and continuing.",
     )
     parser.add_argument(
+        "--require-complete-speech-performance-coverage",
+        action="store_true",
+        default=bool(job.get("require_complete_speech_performance_coverage", False)),
+        help=(
+            "Abort when the expanded job does not contain every configured speech "
+            "performance band in every comparable treatment group. By default this "
+            "is reported in coverage_plan.json but does not block sharded Slurm runs."
+        ),
+    )
+    parser.add_argument(
         "--update-coverage-registry",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -545,10 +555,14 @@ def main():
         incomplete = [
             row for row in performance_coverage["groups"] if not row["complete"]
         ]
-        raise SystemExit(
+        message = (
             "Speech performance coverage is incomplete for "
             f"{len(incomplete)} comparable treatment group(s)."
         )
+        if args.require_complete_speech_performance_coverage:
+            raise SystemExit(message)
+        if args.progress:
+            print(f"Coverage warning: {message}", flush=True)
     if args.coverage_strategy == "pairwise" and coverage_report["missing_pairs"]:
         raise SystemExit(
             "Pairwise coverage generation failed: "
