@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+import types
 
 from coop_navigation_sds.Configuration.model_matrix import (
     AGENT_B_OLLAMA_BASE_URL,
@@ -14,6 +15,7 @@ from scripts.setup_agent_b_models import (
 )
 from scripts.setup_transformers_agent_b_models import (
     TRANSFORMERS_AGENT_B_PROFILES,
+    download_profiles,
     selected_profiles as selected_transformers_profiles,
 )
 
@@ -122,6 +124,18 @@ class AgentBModelSetupTests(unittest.TestCase):
         selected = selected_transformers_profiles(("small", "large"), ())
         self.assertEqual(len(selected), 8)
         self.assertTrue(all("ollama" not in profile for profile in selected))
+
+    def test_transformers_download_uses_configurable_serial_workers(self):
+        fake_hub = types.SimpleNamespace()
+        with patch("scripts.setup_transformers_agent_b_models.model_profile_metadata", return_value={
+            "model": "example/model",
+        }), patch("scripts.setup_transformers_agent_b_models.local_model_dir", return_value="target"), patch(
+            "sys.modules", {"huggingface_hub": fake_hub}
+        ):
+            with patch.object(fake_hub, "snapshot_download", create=True) as snapshot:
+                download_profiles(("profile",), show_progress=False, max_workers=1)
+
+        self.assertEqual(snapshot.call_args.kwargs["max_workers"], 1)
 
     def test_unavailable_ollama_returns_actionable_status_without_traceback(self):
         with patch(

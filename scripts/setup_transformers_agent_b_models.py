@@ -89,7 +89,7 @@ def readiness_rows(profiles):
     return rows
 
 
-def download_profiles(profiles, *, show_progress=True):
+def download_profiles(profiles, *, show_progress=True, max_workers=1):
     from huggingface_hub import snapshot_download
 
     progress = ProgressBar(
@@ -103,10 +103,13 @@ def download_profiles(profiles, *, show_progress=True):
         destination = local_model_dir(model)
         progress.update(index - 1, message=f"downloading {profile}")
         print(f"PREPARING | {profile} | {model}", flush=True)
+        print(f"TARGET    | {destination}", flush=True)
+        print(f"WORKERS   | {max_workers}", flush=True)
         snapshot_download(
             repo_id=model,
             local_dir=destination,
             local_dir_use_symlinks=False,
+            max_workers=max(1, int(max_workers)),
         )
         print(f"READY     | {profile} | {destination}", flush=True)
         progress.update(index, message=f"ready {profile}")
@@ -119,6 +122,12 @@ def main(argv=None):
     parser.add_argument("--profile", action="append", default=[])
     parser.add_argument("--all", action="store_true", help="Select all registered Transformers Agent B proposals.")
     parser.add_argument("--download", action="store_true", help="Download missing selected model assets.")
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=1,
+        help="Maximum parallel Hugging Face file downloads per model. Use 1 on shared cluster filesystems.",
+    )
     parser.add_argument("--no-progress", action="store_true", help="Disable terminal progress display.")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
@@ -131,6 +140,7 @@ def main(argv=None):
         download_profiles(
             missing,
             show_progress=progress_enabled(args.json, args.no_progress),
+            max_workers=args.max_workers,
         )
     rows = readiness_rows(profiles)
     ready = all(row["ready"] for row in rows)

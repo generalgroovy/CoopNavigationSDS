@@ -13,6 +13,7 @@ ASSET_TIMEOUT_SECONDS="${ASSET_TIMEOUT_SECONDS:-1200}"
 INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
 SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
+HF_MAX_WORKERS="${HF_MAX_WORKERS:-1}"
 
 cd "${PROJECT_ROOT}"
 
@@ -60,6 +61,7 @@ Environment overrides:
   MODEL_ROOT=/path/to/jobs/agent_b_llm/userlm_transformers_speech_grid
   SELECTED_TIERS="small medium large"
   SPEECH_ASSETS="piper faster_whisper"
+  HF_MAX_WORKERS=1
   ARRAY_CONCURRENCY=1
   ASSET_TIMEOUT_SECONDS=1200
   INCLUDE_OLLAMA=0|1
@@ -76,6 +78,7 @@ printf 'Project: %s\nPython:  %s\nResults: %s\nJobs:    %s\n' \
   "${PROJECT_ROOT}" "${PYTHON_BIN}" "${RESULTS_ROOT}" "${MODEL_ROOT}"
 printf 'Tiers:   %s\n' "${SELECTED_TIERS}"
 printf 'Speech assets: %s\n' "${SPEECH_ASSETS}"
+printf 'Hugging Face workers: %s\n' "${HF_MAX_WORKERS}"
 
 if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
   step "Prepare selected speech assets with fail-fast progress"
@@ -87,12 +90,14 @@ if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
   step "Prepare UserLM Agent A model assets"
   run_python -u scripts/setup_transformers_agent_b_models.py \
     --profile userlm_8b_transformers \
-    --download
+    --download \
+    --max-workers "${HF_MAX_WORKERS}"
 
   step "Prepare all non-Ollama Transformers Agent B model assets"
   run_python -u scripts/setup_transformers_agent_b_models.py \
     --all \
-    --download
+    --download \
+    --max-workers "${HF_MAX_WORKERS}"
 
   step "Verify project-local asset readiness"
   run_python -u scripts/prepare_test_environment.py \
