@@ -15,6 +15,8 @@ from scripts.setup_agent_b_models import (
 )
 from scripts.setup_transformers_agent_b_models import (
     TRANSFORMERS_AGENT_B_PROFILES,
+    TRANSFORMERS_RUNTIME_ALLOW_PATTERNS,
+    TRANSFORMERS_RUNTIME_IGNORE_PATTERNS,
     download_profiles,
     selected_profiles as selected_transformers_profiles,
 )
@@ -136,6 +138,8 @@ class AgentBModelSetupTests(unittest.TestCase):
                 download_profiles(("profile",), show_progress=False, max_workers=1)
 
         self.assertEqual(snapshot.call_args.kwargs["max_workers"], 1)
+        self.assertEqual(snapshot.call_args.kwargs["allow_patterns"], TRANSFORMERS_RUNTIME_ALLOW_PATTERNS)
+        self.assertEqual(snapshot.call_args.kwargs["ignore_patterns"], TRANSFORMERS_RUNTIME_IGNORE_PATTERNS)
 
     def test_unavailable_ollama_returns_actionable_status_without_traceback(self):
         with patch(

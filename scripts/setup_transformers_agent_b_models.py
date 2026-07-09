@@ -40,6 +40,34 @@ TRANSFORMERS_AGENT_B_PROFILES = {
     ),
 }
 
+TRANSFORMERS_RUNTIME_ALLOW_PATTERNS = (
+    "config.json",
+    "configuration*.py",
+    "generation_config.json",
+    "tokenizer*",
+    "special_tokens_map.json",
+    "vocab.*",
+    "merges.txt",
+    "*.model",
+    "*.json",
+    "*.safetensors",
+    "*.safetensors.index.json",
+    "pytorch_model*.bin",
+)
+
+TRANSFORMERS_RUNTIME_IGNORE_PATTERNS = (
+    "README*",
+    ".gitattributes",
+    "all_results.json",
+    "eval_results.json",
+    "trainer_state.json",
+    "training_args.bin",
+    "optimizer.pt",
+    "scheduler.pt",
+    "runs/*",
+    "logs/*",
+)
+
 
 def selected_profiles(tiers=(), profiles=()):
     selected = []
@@ -109,6 +137,8 @@ def download_profiles(profiles, *, show_progress=True, max_workers=1):
             repo_id=model,
             local_dir=destination,
             local_dir_use_symlinks=False,
+            allow_patterns=TRANSFORMERS_RUNTIME_ALLOW_PATTERNS,
+            ignore_patterns=TRANSFORMERS_RUNTIME_IGNORE_PATTERNS,
             max_workers=max(1, int(max_workers)),
         )
         print(f"READY     | {profile} | {destination}", flush=True)

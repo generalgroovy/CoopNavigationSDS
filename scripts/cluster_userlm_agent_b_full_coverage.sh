@@ -14,6 +14,9 @@ INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
 SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
 HF_MAX_WORKERS="${HF_MAX_WORKERS:-1}"
+export HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"
+export HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER:-0}"
+export HF_HUB_DISABLE_TELEMETRY="${HF_HUB_DISABLE_TELEMETRY:-1}"
 
 cd "${PROJECT_ROOT}"
 
@@ -79,6 +82,7 @@ printf 'Project: %s\nPython:  %s\nResults: %s\nJobs:    %s\n' \
 printf 'Tiers:   %s\n' "${SELECTED_TIERS}"
 printf 'Speech assets: %s\n' "${SPEECH_ASSETS}"
 printf 'Hugging Face workers: %s\n' "${HF_MAX_WORKERS}"
+printf 'Hugging Face Xet disabled: %s\n' "${HF_HUB_DISABLE_XET}"
 
 if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
   step "Prepare selected speech assets with fail-fast progress"
