@@ -12,6 +12,7 @@ ARRAY_CONCURRENCY="${ARRAY_CONCURRENCY:-1}"
 ASSET_TIMEOUT_SECONDS="${ASSET_TIMEOUT_SECONDS:-1200}"
 INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
+SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
 
 cd "${PROJECT_ROOT}"
 
@@ -58,6 +59,7 @@ Environment overrides:
   RESULTS_ROOT=/path/to/results
   MODEL_ROOT=/path/to/jobs/agent_b_llm/userlm_transformers_speech_grid
   SELECTED_TIERS="small medium large"
+  SPEECH_ASSETS="piper faster_whisper"
   ARRAY_CONCURRENCY=1
   ASSET_TIMEOUT_SECONDS=1200
   INCLUDE_OLLAMA=0|1
@@ -73,10 +75,12 @@ mkdir -p "${RESULTS_ROOT}" "${PROJECT_ROOT}/slurm/logs"
 printf 'Project: %s\nPython:  %s\nResults: %s\nJobs:    %s\n' \
   "${PROJECT_ROOT}" "${PYTHON_BIN}" "${RESULTS_ROOT}" "${MODEL_ROOT}"
 printf 'Tiers:   %s\n' "${SELECTED_TIERS}"
+printf 'Speech assets: %s\n' "${SPEECH_ASSETS}"
 
 if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
-  step "Prepare speech and provider assets with fail-fast progress"
+  step "Prepare selected speech assets with fail-fast progress"
   run_python -u scripts/prepare_test_environment.py \
+    --only-assets ${SPEECH_ASSETS} \
     --fail-fast \
     --asset-timeout-seconds "${ASSET_TIMEOUT_SECONDS}"
 
@@ -91,7 +95,10 @@ if [[ "${action}" == "prepare" || "${action}" == "all" ]]; then
     --download
 
   step "Verify project-local asset readiness"
-  run_python -u scripts/prepare_test_environment.py --check --fail-fast
+  run_python -u scripts/prepare_test_environment.py \
+    --check \
+    --only-assets ${SPEECH_ASSETS} \
+    --fail-fast
   run_python -u scripts/setup_transformers_agent_b_models.py \
     --profile userlm_8b_transformers \
     --all \

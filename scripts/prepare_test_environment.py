@@ -148,10 +148,15 @@ def _prepare_asset(key, spec):
         raise ValueError(f"Unsupported asset kind for {key}: {kind}")
 
 
-def prepare(download=True, asset_timeout_seconds=600, show_progress=True, fail_fast=False):
+def prepare(download=True, asset_timeout_seconds=600, show_progress=True, fail_fast=False, selected_assets=None):
     manifest = json.loads(ASSET_MANIFEST.read_text(encoding="utf-8"))
     results = {}
     assets = {**manifest["models"], **manifest.get("executables", {})}
+    if selected_assets:
+        unknown = [key for key in selected_assets if key not in assets]
+        if unknown:
+            raise ValueError(f"Unknown assets: {', '.join(unknown)}")
+        assets = {key: assets[key] for key in selected_assets}
     platform_assets = [
         (key, spec) for key, spec in assets.items()
         if platform.system() in spec.get("platforms", [platform.system()])
@@ -233,6 +238,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Check existing assets without downloading.")
     parser.add_argument("--asset", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--only-assets",
+        nargs="+",
+        help="Prepare or check only the listed manifest assets, for example: piper faster_whisper.",
+    )
     parser.add_argument("--asset-timeout-seconds", type=int, default=600)
     parser.add_argument("--fail-fast", action="store_true", help="Stop at the first missing or failed asset.")
     parser.add_argument("--no-progress", action="store_true", help="Disable terminal progress display.")
@@ -250,6 +260,7 @@ def main():
             asset_timeout_seconds=max(30, args.asset_timeout_seconds),
             show_progress=progress_enabled(False, args.no_progress),
             fail_fast=args.fail_fast,
+            selected_assets=args.only_assets,
         )
     except RuntimeError as exc:
         raise SystemExit(str(exc)) from exc

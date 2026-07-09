@@ -925,9 +925,14 @@ scripts/cluster_userlm_agent_b_full_coverage.sh submit-large
 ```
 
 The cluster helper is intentionally fail-fast. `prepare` verifies the Python
-environment, downloads or checks provider assets, prepares UserLM as Agent A,
-prepares every non-Ollama Transformers Agent B model, and writes the readiness
-manifest. `preview`, `preview-small`, `preview-medium`, and `preview-large`
+environment, downloads or checks only the speech-provider assets required by
+the selected non-Ollama grid, prepares UserLM as Agent A, prepares every
+non-Ollama Transformers Agent B model, and writes the readiness manifest. The
+default speech assets are `piper faster_whisper`; override `SPEECH_ASSETS` only
+when the job grid actually uses additional speech providers. Transformer model
+assets are prepared separately through `setup_transformers_agent_b_models.py`,
+so language models are not duplicated under `.speech-providers`. `preview`,
+`preview-small`, `preview-medium`, and `preview-large`
 print the exact model-size-sorted Slurm arrays without calling `sbatch`.
 `submit`, `submit-small`, `submit-medium`, and `submit-large` send one
 independent array per Agent B model with the same condition grid and only the
@@ -944,7 +949,7 @@ daemon on clusters where it cannot be installed. Set `INCLUDE_OLLAMA=1` only on
 systems where `ollama` is available and serving is permitted; otherwise the
 script fails before submission instead of creating invalid runs. Useful
 overrides are `PYTHON_BIN`, `RESULTS_ROOT`, `MODEL_ROOT`,
-`ARRAY_CONCURRENCY`, and `ASSET_TIMEOUT_SECONDS`.
+`ARRAY_CONCURRENCY`, `SPEECH_ASSETS`, and `ASSET_TIMEOUT_SECONDS`.
 
 If a cluster rejects the large tier because of memory, time, or partition
 limits, keep the completed small and medium jobs and submit large models one at

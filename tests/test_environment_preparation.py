@@ -40,6 +40,23 @@ class EnvironmentPreparationTests(unittest.TestCase):
         downloader.assert_not_called()
         self.assertFalse(report["ready"])
 
+    def test_selected_asset_mode_limits_readiness_scope(self):
+        with tempfile.TemporaryDirectory() as tmpdir, patch.object(
+            prepare_test_environment, "ROOT", Path(tmpdir)
+        ), patch.object(
+            prepare_test_environment, "READINESS_FILE", Path(tmpdir) / "readiness.json"
+        ), patch.object(
+            prepare_test_environment, "_required_present", return_value=True
+        ):
+            report = prepare_test_environment.prepare(
+                download=False,
+                selected_assets=("piper", "faster_whisper"),
+                show_progress=False,
+            )
+
+        self.assertEqual(set(report["models"]), {"piper", "faster_whisper"})
+        self.assertTrue(report["ready"])
+
     def test_fail_fast_records_partial_readiness_and_raises(self):
         with tempfile.TemporaryDirectory() as tmpdir, patch.object(
             prepare_test_environment, "ROOT", Path(tmpdir)
@@ -68,6 +85,8 @@ class EnvironmentPreparationTests(unittest.TestCase):
         self.assertIn("set -Eeuo pipefail", text)
         self.assertIn("prepare_test_environment.py", text)
         self.assertIn("--fail-fast", text)
+        self.assertIn('SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"', text)
+        self.assertIn("--only-assets", text)
         self.assertIn("userlm_transformers_speech_grid", text)
         self.assertIn('SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"', text)
         self.assertIn("preview-small", text)
