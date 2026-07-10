@@ -905,6 +905,27 @@ python3 scripts/update_experiment_coverage.py --results-dir results
 python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/comparison
 ```
 
+For day-to-day cluster operation, `scripts/cluster_results_workflow.sh` wraps
+the most common post-run and next-run actions without changing the underlying
+experiment commands:
+
+```bash
+bash scripts/cluster_results_workflow.sh squeue
+bash scripts/cluster_results_workflow.sh refresh
+bash scripts/cluster_results_workflow.sh push-results
+bash scripts/cluster_results_workflow.sh preview-medium
+bash scripts/cluster_results_workflow.sh submit-medium
+bash scripts/cluster_results_workflow.sh preview-large
+bash scripts/cluster_results_workflow.sh submit-large
+```
+
+The wrapper uses the same default two-model-per-size UserLM/Transformer
+coverage as the full cluster helper: TinyLlama and Qwen 0.5B for small, Qwen
+1.5B and Phi-3 Mini for medium, and Qwen 7B and Falcon3 7B for large. It is a
+thin operational layer over `submit_agent_b_model_jobs.py`,
+`update_experiment_coverage.py`, and the comparison exporter; it does not define
+new experiment conditions.
+
 Override paths without editing job files when needed:
 
 ```bash
