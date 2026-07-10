@@ -179,9 +179,9 @@ failure or queue delay for one model from blocking the rest of the experiment.
 
 ```bash
 python scripts/submit_agent_b_model_jobs.py --dry-run
-python scripts/submit_agent_b_model_jobs.py --family tinyllama --tier small medium
-python scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium
-python scripts/submit_agent_b_model_jobs.py --family all --tier small medium large
+python scripts/submit_agent_b_model_jobs.py --family tinyllama --tier small medium --max-conditions-per-array 14
+python scripts/submit_agent_b_model_jobs.py --family userlm --tier small medium --max-conditions-per-array 14
+python scripts/submit_agent_b_model_jobs.py --family all --tier small medium large --max-conditions-per-array 14
 ```
 
 The submitter computes the correct Slurm array range from each resolved job
@@ -190,6 +190,15 @@ allocates memory from registered model estimates: caller model memory plus
 Agent B model memory plus speech/runtime overhead, rounded upward for Slurm.
 Ollama-backed jobs start a per-task local Ollama server on a task-specific
 port; Transformers jobs run without Ollama.
+
+For the current UserLM/Transformers cluster run, use the cluster-safe profile
+set: `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers`,
+`qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers`,
+`qwen2_5_7b_transformers`, and `falcon3_7b_transformers`. That gives two Agent
+B models per size tier. Each selected model has the same 84 non-model
+conditions and is split into six 14-condition arrays by default. Each array
+task runs a single condition with fail-fast behavior; the 14-condition limit
+only controls scheduler grouping and recovery granularity.
 
 The generated arrays use `slurm/agent_b_model_cpu_array.sbatch`, which is
 CPU-first by design. The wrapper exports CPU-only CUDA guards and passes

@@ -42,7 +42,7 @@ RESOURCE_TABLE = {
     ("tinyllama", "small"): (4, "18G", "01:29:00"),
     ("tinyllama", "medium"): (6, "32G", "02:29:00"),
     ("tinyllama", "large"): (8, "64G", "03:59:00"),
-    ("userlm", "small"): (6, "44G", "02:59:00"),
+    ("userlm", "small"): (6, "44G", "03:59:00"),
     ("userlm", "medium"): (8, "56G", "03:59:00"),
     ("userlm", "large"): (8, "72G", "03:59:00"),
 }
@@ -199,8 +199,8 @@ def resources_for(job: ModelJob, args) -> tuple[int, str, str]:
             "large": 10 if job.provider == "transformers" else 8,
         }.get(job.tier, cpus)
         time_limit = {
-            "small": "01:59:00",
-            "medium": "02:59:00",
+            "small": "03:59:00",
+            "medium": "03:59:00",
             "large": "03:59:00",
         }.get(job.tier, time_limit)
     return (
@@ -228,6 +228,14 @@ def condition_chunks(condition_count: int, chunk_count: int) -> list[tuple[int, 
         (start, end, index, total_ranges)
         for start, end, index, _ in ranges
     ]
+
+
+def condition_chunks_by_size(condition_count: int, max_conditions: int) -> list[tuple[int, int, int, int]]:
+    """Split condition indices so every submitted array has at most max_conditions tasks."""
+    total = max(0, int(condition_count))
+    maximum = max(1, int(max_conditions))
+    chunks = max(1, math.ceil(total / maximum))
+    return condition_chunks(total, chunks)
 
 
 def sbatch_command(
@@ -284,6 +292,15 @@ def main(argv: list[str] | None = None) -> int:
             "arrays. Each chunk keeps the same resource and time-limit request."
         ),
     )
+    parser.add_argument(
+        "--max-conditions-per-array",
+        type=int,
+        default=0,
+        help=(
+            "Prefer this operational limit over --array-chunks. For example, "
+            "14 turns an 84-condition model grid into six 14-task arrays."
+        ),
+    )
     parser.add_argument("--cpus-per-task", type=int, default=0, help="Override tier CPU default.")
     parser.add_argument("--memory", default="", help="Override tier memory default, for example 48G.")
     parser.add_argument("--time-limit", default="", help="Override tier time default, for example 03:59:00.")
@@ -294,6 +311,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--array-concurrency must be at least 1.")
     if args.array_chunks < 1:
         raise SystemExit("--array-chunks must be at least 1.")
+    if args.max_conditions_per_array < 0:
+        raise SystemExit("--max-conditions-per-array must be zero or positive.")
     if not args.dry_run and shutil.which("sbatch") is None:
         raise SystemExit("sbatch is not available. Use --dry-run locally or run on a Slurm login node.")
 
@@ -303,12 +322,17 @@ def main(argv: list[str] | None = None) -> int:
     failed: list[tuple[ModelJob, int, str]] = []
     for index, job in enumerate(jobs, start=1):
         cpus, memory, time_limit = resources_for(job, args)
-        chunks = condition_chunks(job.condition_count, args.array_chunks)
+        chunks = (
+            condition_chunks_by_size(job.condition_count, args.max_conditions_per_array)
+            if args.max_conditions_per_array
+            else condition_chunks(job.condition_count, args.array_chunks)
+        )
         print(
             f"{index:02d}. {job.family}/{job.tier} | Agent A={job.agent_a_type} | "
             f"Agent B={job.model_name} | profile={job.model_profile} | provider={job.provider} | "
             f"model_mem={job.agent_b_memory_gb:g}G | conditions={job.condition_count} | "
-            f"chunks={len(chunks)} | cpus={cpus} mem={memory} time={time_limit}"
+            f"chunks={len(chunks)} | max_array_conditions="
+            f"{args.max_conditions_per_array or 'auto'} | cpus={cpus} mem={memory} time={time_limit}"
         )
         for array_start, array_end, chunk_index, chunk_total in chunks:
             command = sbatch_command(

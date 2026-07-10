@@ -9,7 +9,8 @@ PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv-linux/bin/python}"
 RESULTS_ROOT="${RESULTS_ROOT:-${PROJECT_ROOT}/results}"
 MODEL_ROOT="${MODEL_ROOT:-${PROJECT_ROOT}/jobs/agent_b_llm/userlm_transformers_speech_grid}"
 ARRAY_CONCURRENCY="${ARRAY_CONCURRENCY:-1}"
-ARRAY_CHUNKS="${ARRAY_CHUNKS:-4}"
+ARRAY_CHUNKS="${ARRAY_CHUNKS:-1}"
+MAX_CONDITIONS_PER_ARRAY="${MAX_CONDITIONS_PER_ARRAY:-14}"
 ASSET_TIMEOUT_SECONDS="${ASSET_TIMEOUT_SECONDS:-1200}"
 INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
@@ -88,7 +89,8 @@ Environment overrides:
   MODEL_PROFILES="tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers falcon3_7b_transformers"
   MODEL_DOWNLOAD_TIMEOUT_SECONDS=14400
   ARRAY_CONCURRENCY=1
-  ARRAY_CHUNKS=4
+  MAX_CONDITIONS_PER_ARRAY=14
+  ARRAY_CHUNKS=1
   ASSET_TIMEOUT_SECONDS=1200
   INCLUDE_OLLAMA=0|1
 USAGE
@@ -104,6 +106,7 @@ printf 'Project: %s\nPython:  %s\nResults: %s\nJobs:    %s\n' \
   "${PROJECT_ROOT}" "${PYTHON_BIN}" "${RESULTS_ROOT}" "${MODEL_ROOT}"
 printf 'Tiers:   %s\n' "${SELECTED_TIERS}"
 printf 'Array chunks per model: %s\n' "${ARRAY_CHUNKS}"
+printf 'Maximum conditions per submitted array: %s\n' "${MAX_CONDITIONS_PER_ARRAY}"
 printf 'Speech assets: %s\n' "${SPEECH_ASSETS}"
 printf 'Model profiles: %s\n' "${MODEL_PROFILES}"
 printf 'Hugging Face workers: %s\n' "${HF_MAX_WORKERS}"
@@ -174,6 +177,7 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
     --python-bin "${PYTHON_BIN}" \
     --array-concurrency "${ARRAY_CONCURRENCY}" \
     --array-chunks "${ARRAY_CHUNKS}" \
+    --max-conditions-per-array "${MAX_CONDITIONS_PER_ARRAY}" \
     --dry-run
 
   if [[ "${action}" == "submit" || "${action}" == "all" ]]; then
@@ -186,7 +190,8 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
       --results-dir "${RESULTS_ROOT}" \
       --python-bin "${PYTHON_BIN}" \
       --array-concurrency "${ARRAY_CONCURRENCY}" \
-      --array-chunks "${ARRAY_CHUNKS}"
+      --array-chunks "${ARRAY_CHUNKS}" \
+      --max-conditions-per-array "${MAX_CONDITIONS_PER_ARRAY}"
   else
     step "Skip Slurm submission"
     echo "Preview mode does not call sbatch."

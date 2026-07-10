@@ -10,7 +10,12 @@ from scripts.run_agent_b_llm_batch import (
     job_overview,
     load_batch_manifest,
 )
-from scripts.submit_agent_b_model_jobs import condition_chunks, discover_jobs, resources_for
+from scripts.submit_agent_b_model_jobs import (
+    condition_chunks,
+    condition_chunks_by_size,
+    discover_jobs,
+    resources_for,
+)
 from coop_navigation_sds.Configuration.jobs import (
     job_linked_profiles,
     job_parameter_grid,
@@ -153,10 +158,10 @@ def test_userlm_transformers_submitter_filters_and_sorts_by_model_size():
     assert [job.provider for job in jobs] == ["transformers"] * 4
     assert [job.agent_b_memory_gb for job in jobs] == sorted(job.agent_b_memory_gb for job in jobs)
     assert [resources_for(job, Args) for job in jobs] == [
-        (6, "48G", "01:59:00"),
-        (6, "48G", "01:59:00"),
-        (6, "52G", "01:59:00"),
-        (6, "52G", "01:59:00"),
+        (6, "48G", "03:59:00"),
+        (6, "48G", "03:59:00"),
+        (6, "52G", "03:59:00"),
+        (6, "52G", "03:59:00"),
     ]
 
 
@@ -166,6 +171,17 @@ def test_submitter_splits_eighty_four_conditions_into_four_balanced_arrays():
         (21, 41, 2, 4),
         (42, 62, 3, 4),
         (63, 83, 4, 4),
+    ]
+
+
+def test_submitter_splits_eighty_four_conditions_into_reliable_fourteen_task_arrays():
+    assert condition_chunks_by_size(84, 14) == [
+        (0, 13, 1, 6),
+        (14, 27, 2, 6),
+        (28, 41, 3, 6),
+        (42, 55, 4, 6),
+        (56, 69, 5, 6),
+        (70, 83, 6, 6),
     ]
 
 

@@ -825,10 +825,10 @@ Slurm arrays per Agent B model. This prevents one unavailable model, endpoint,
 or node class from blocking the rest of the experiment.
 
 ```bash
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-chunks 4 --dry-run
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-concurrency 1 --array-chunks 4
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier medium --array-concurrency 1 --array-chunks 4
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier large --array-concurrency 1 --array-chunks 4
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --max-conditions-per-array 14 --dry-run
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-concurrency 1 --max-conditions-per-array 14
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier medium --array-concurrency 1 --max-conditions-per-array 14
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier large --array-concurrency 1 --max-conditions-per-array 14
 ```
 
 The recommended cluster path uses only
@@ -836,12 +836,13 @@ The recommended cluster path uses only
 transformers`, which avoids Ollama service failures while preserving the same
 non-model condition coverage. The default cluster helper selects six
 service-free Transformer profiles: two small, two medium, and two large. This
-is the recommended first thesis-scale run because it gives at least one, and
-normally two, comparisons in every model-size tier without requiring Ollama or
-known gated profiles. Each selected model has 84 conditions. The cluster helper
-submits four chunks by default, so each model becomes four smaller arrays:
-`0-20`, `21-41`, `42-62`, and `63-83`. Every chunk keeps the same CPU, memory,
-and time-limit request as the original full model array; only the number of
+is the recommended first thesis-scale run because it gives exactly two
+comparisons in every model-size tier without requiring Ollama or known gated
+profiles. Each selected model has 84 conditions. The cluster helper limits each
+submitted array to 14 condition indices by default, so each model becomes six
+smaller arrays: `0-13`, `14-27`, `28-41`, `42-55`, `56-69`, and `70-83`.
+Every array task still executes one condition, and every chunk keeps the same
+CPU, memory, and 3:59:00 per-task time-limit request; only the number of
 condition indices per submitted Slurm job changes. Override
 `MODEL_PROFILES` when a site has additional authorized local models and the
 larger coverage is desired. The configured factors intentionally span ceiling,
@@ -867,9 +868,11 @@ UserLM caller memory plus Agent B model memory plus speech/runtime overhead,
 rounded upward to a scheduler-friendly value. For UserLM/Transformers jobs the
 submitter uses 6 CPUs for small, 8 CPUs for medium, and 10 CPUs for large
 models, with per-model memory requests such as 48-52G for small, 52-56G for
-medium, and 72-76G for large. This avoids using one excessive request for
-every model in a size tier and improves backfill priority without changing the
-experiment condition.
+medium, and about 72G for the current large cluster-safe models. All UserLM
+Transformer tiers default to 3:59:00 per condition because previous evidence
+showed long NLG turns in otherwise valid runs. This avoids using one excessive
+memory request for every model in a size tier while giving each isolated
+condition enough wall time to finish.
 
 The independent Agent B arrays are CPU-first. `agent_b_model_cpu_array.sbatch`
 exports CPU-only CUDA guards and passes CPU devices for Agent A, Agent B, TTS,
@@ -965,10 +968,11 @@ under `.speech-providers`. `preview`, `preview-small`, `preview-medium`, and
 print the exact model-size-sorted and chunked Slurm arrays without calling `sbatch`.
 `submit`, `submit-small`, `submit-medium`, and `submit-large` send one
 set of chunked arrays per Agent B model with the same condition grid and only
-the Agent B model changed. `ARRAY_CHUNKS` defaults to `4`; lower it only when
-the scheduler strongly prefers fewer submitted jobs, and raise it only when
-individual chunks still exceed site time limits. `refresh` should be run after
-jobs finish to rebuild coverage and comparison artifacts:
+the Agent B model changed. `MAX_CONDITIONS_PER_ARRAY` defaults to `14`, which
+keeps each submitted array small enough to recover partial progress while
+avoiding excessive scheduler-job counts. `ARRAY_CHUNKS` remains available for
+manual fixed chunking, but the maximum-condition setting is preferred. `refresh`
+should be run after jobs finish to rebuild coverage and comparison artifacts:
 
 ```bash
 scripts/cluster_userlm_agent_b_full_coverage.sh refresh
@@ -980,8 +984,8 @@ daemon on clusters where it cannot be installed. Set `INCLUDE_OLLAMA=1` only on
 systems where `ollama` is available and serving is permitted; otherwise the
 script fails before submission instead of creating invalid runs. Useful
 overrides are `PYTHON_BIN`, `RESULTS_ROOT`, `MODEL_ROOT`,
-`ARRAY_CONCURRENCY`, `ARRAY_CHUNKS`, `SPEECH_ASSETS`, `MODEL_PROFILES`,
-`HF_MAX_WORKERS`, `ASSET_TIMEOUT_SECONDS`, and
+`ARRAY_CONCURRENCY`, `MAX_CONDITIONS_PER_ARRAY`, `ARRAY_CHUNKS`,
+`SPEECH_ASSETS`, `MODEL_PROFILES`, `HF_MAX_WORKERS`, `ASSET_TIMEOUT_SECONDS`, and
 `MODEL_DOWNLOAD_TIMEOUT_SECONDS`. The model-download timeout is an external
 cluster safety guard around Hugging Face preparation; if a transfer stalls, the
 prepare step exits nonzero instead of leaving a silent terminal.
