@@ -275,7 +275,7 @@ if [[ "${action}" == "preview" || "${action}" == "submit" || "${action}" == "all
     --dry-run
 
   if [[ "${action}" == "submit" || "${action}" == "all" ]]; then
-    step "Submit independent fail-fast Slurm arrays"
+    step "Submit independent Slurm arrays with fail-fast preflight"
     run_python -u scripts/submit_agent_b_model_jobs.py \
       --root "${MODEL_ROOT}" \
       --provider transformers \

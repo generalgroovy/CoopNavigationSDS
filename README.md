@@ -884,17 +884,19 @@ stack.
 
 Single-condition Slurm array tasks do not rebuild the shared coverage registry
 while running. This prevents concurrent writes to root-level coverage CSV/HTML
-files. They also pass `--fail-fast`: a selected condition exits nonzero as
-soon as model loading, TTS, ASR, dialogue execution, or another pipeline phase
-fails. The run folder still contains preflight/setup evidence created before
-the failure, but the scheduler state now clearly marks failed conditions.
+files. Setup and preflight errors remain fail-fast because a missing model,
+invalid speech asset, or corrupt environment cannot produce a valid condition.
+Once a condition starts, dialogue, TTS, ASR, model-response, and task failures
+are captured as experimental evidence and finalized into the standard result
+files. This keeps failed conversations analyzable instead of losing them as
+empty Slurm failures.
 Speech performance-band completeness is written to `coverage_plan.json`.
-Incomplete per-treatment band coverage is a warning for pairwise Slurm grids,
-not a runtime blocker, because each array task executes one condition and the
-analysis layer handles missing bands explicitly. The Slurm wrapper therefore
-passes `--no-require-complete-speech-performance-coverage`; otherwise sharded
-arrays can stop at preflight with only the warning `Speech performance coverage
-is incomplete...` and no condition execution.
+Incomplete per-treatment band coverage and incomplete pairwise factor-pair
+coverage are warnings for Slurm grids, not runtime blockers, because each array
+task executes one condition and the analysis layer handles missing bands and
+missing factor pairs explicitly. The Slurm wrapper therefore passes
+`--no-require-complete-speech-performance-coverage`; otherwise sharded arrays
+can stop at preflight with only a coverage warning and no condition execution.
 After an array or group of arrays completes, refresh the comparable coverage
 and result-analysis documents once:
 
@@ -950,12 +952,14 @@ scripts/cluster_userlm_agent_b_full_coverage.sh preview-large
 scripts/cluster_userlm_agent_b_full_coverage.sh submit-large
 ```
 
-The cluster helper is intentionally fail-fast. `prepare` verifies the Python
-environment, downloads or checks only the speech-provider assets required by
-the selected non-Ollama grid, prepares UserLM as Agent A, prepares the selected
-Transformer Agent B profiles, and writes the readiness manifest. The default
-speech assets are `piper faster_whisper`; override `SPEECH_ASSETS` only when
-the job grid actually uses additional speech providers. The default
+The cluster helper is intentionally fail-fast during environment preparation
+and Slurm submission. `prepare` verifies the Python environment, downloads or
+checks only the speech-provider assets required by the selected non-Ollama
+grid, prepares UserLM as Agent A, prepares the selected Transformer Agent B
+profiles, and writes the readiness manifest. The actual condition arrays then
+capture condition-level pipeline failures as result data. The default speech
+assets are `piper faster_whisper`; override `SPEECH_ASSETS` only when the job
+grid actually uses additional speech providers. The default
 `MODEL_PROFILES` are:
 
 | Size | Profiles |

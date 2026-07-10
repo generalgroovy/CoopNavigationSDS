@@ -36,5 +36,4 @@ mkdir -p slurm/logs
   --tts-device cpu \
   --asr-device cpu \
   --no-update-coverage-registry \
-  --fail-fast \
   --progress

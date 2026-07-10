@@ -563,10 +563,14 @@ def main():
             raise SystemExit(message)
         if args.progress:
             print(f"Coverage warning: {message}", flush=True)
-    if args.coverage_strategy == "pairwise" and coverage_report["missing_pairs"]:
-        raise SystemExit(
-            "Pairwise coverage generation failed: "
-            f"{len(coverage_report['missing_pairs'])} factor-level pairs are absent."
+    if args.coverage_strategy == "pairwise" and coverage_report["missing_pairs"] and args.progress:
+        print(
+            "Coverage warning: pairwise plan is incomplete for "
+            f"{len(coverage_report['missing_pairs'])} factor-level pairs. "
+            "The gap is recorded in coverage_plan.json and the selected "
+            "condition still runs.",
+            file=sys.stderr,
+            flush=True,
         )
     if args.progress:
         print(

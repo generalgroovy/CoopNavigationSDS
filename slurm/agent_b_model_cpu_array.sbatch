@@ -57,6 +57,5 @@ fi
   --asr-device cpu \
   --no-update-coverage-registry \
   --no-require-complete-speech-performance-coverage \
-  --fail-fast \
   --progress \
   "${extra_args[@]}"

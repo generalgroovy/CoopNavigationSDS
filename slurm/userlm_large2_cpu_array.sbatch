@@ -49,5 +49,4 @@ sleep "${OLLAMA_STARTUP_WAIT_SEC:-10}"
   --tts-device cpu \
   --asr-device cpu \
   --no-update-coverage-registry \
-  --fail-fast \
   --progress
