@@ -212,7 +212,10 @@ drivers.
 Array tasks also pass `--no-update-coverage-registry` and `--fail-fast`.
 Coverage refresh is deferred to avoid concurrent root-level writes, and failed
 conditions exit nonzero immediately so Slurm marks them failed instead of
-looking successful with only a recorded condition failure. Run coverage and
+looking successful with only a recorded condition failure. The wrapper also
+passes `--no-require-complete-speech-performance-coverage`; full
+floor-to-ceiling speech-band completeness is evaluated in analysis, not used as
+a preflight abort for one-condition Slurm shards. Run coverage and
 comparison refresh once after the scheduler jobs finish:
 
 ```bash

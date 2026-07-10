@@ -489,7 +489,7 @@ def main():
     )
     parser.add_argument(
         "--require-complete-speech-performance-coverage",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=bool(job.get("require_complete_speech_performance_coverage", False)),
         help=(
             "Abort when the expanded job does not contain every configured speech "

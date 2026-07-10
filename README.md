@@ -891,7 +891,10 @@ the failure, but the scheduler state now clearly marks failed conditions.
 Speech performance-band completeness is written to `coverage_plan.json`.
 Incomplete per-treatment band coverage is a warning for pairwise Slurm grids,
 not a runtime blocker, because each array task executes one condition and the
-analysis layer handles missing bands explicitly.
+analysis layer handles missing bands explicitly. The Slurm wrapper therefore
+passes `--no-require-complete-speech-performance-coverage`; otherwise sharded
+arrays can stop at preflight with only the warning `Speech performance coverage
+is incomplete...` and no condition execution.
 After an array or group of arrays completes, refresh the comparable coverage
 and result-analysis documents once:
 
@@ -976,6 +979,13 @@ should be run after jobs finish to rebuild coverage and comparison artifacts:
 
 ```bash
 scripts/cluster_userlm_agent_b_full_coverage.sh refresh
+```
+
+To refresh, stage, commit, and push result/log evidence from the Debian cluster
+in one reproducible step:
+
+```bash
+scripts/cluster_userlm_agent_b_full_coverage.sh push-results
 ```
 
 The helper defaults to

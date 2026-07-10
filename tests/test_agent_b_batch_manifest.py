@@ -225,6 +225,7 @@ def test_generic_agent_b_model_array_disables_live_coverage_registry_updates():
     assert "--model-device cpu" in script
     assert "--agent-a-model-device cpu" in script
     assert "--no-update-coverage-registry" in script
+    assert "--no-require-complete-speech-performance-coverage" in script
     assert "--fail-fast" in script
 
 

@@ -18,13 +18,17 @@ SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
 HF_MAX_WORKERS="${HF_MAX_WORKERS:-1}"
 MODEL_PROFILES="${MODEL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers falcon3_7b_transformers}"
 MODEL_DOWNLOAD_TIMEOUT_SECONDS="${MODEL_DOWNLOAD_TIMEOUT_SECONDS:-14400}"
+GIT_REMOTE="${GIT_REMOTE:-origin}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
+GIT_KEY_PATH="${GIT_KEY_PATH:-${PROJECT_ROOT}/key2}"
+RESULTS_COMMIT_MESSAGE="${RESULTS_COMMIT_MESSAGE:-Add cluster results and Slurm logs}"
 export HF_HUB_DISABLE_XET="${HF_HUB_DISABLE_XET:-1}"
 export HF_HUB_ENABLE_HF_TRANSFER="${HF_HUB_ENABLE_HF_TRANSFER:-0}"
 export HF_HUB_DISABLE_TELEMETRY="${HF_HUB_DISABLE_TELEMETRY:-1}"
 
 cd "${PROJECT_ROOT}"
 
-step_total=9
+step_total=10
 step_index=0
 
 step() {
@@ -73,10 +77,10 @@ case "${action}" in
   submit-large) action="submit"; SELECTED_TIERS="large" ;;
 esac
 case "${action}" in
-  prepare|preview|submit|refresh|all) ;;
+  prepare|preview|submit|refresh|push-results|all) ;;
   *)
     cat >&2 <<'USAGE'
-Usage: scripts/cluster_userlm_agent_b_full_coverage.sh [prepare|preview|submit|refresh|all|preview-small|preview-medium|preview-large|submit-small|submit-medium|submit-large]
+Usage: scripts/cluster_userlm_agent_b_full_coverage.sh [prepare|preview|submit|refresh|push-results|all|preview-small|preview-medium|preview-large|submit-small|submit-medium|submit-large]
 
 Environment overrides:
   PROJECT_ROOT=/path/to/CoopNavigationSDS
@@ -93,6 +97,9 @@ Environment overrides:
   ARRAY_CHUNKS=1
   ASSET_TIMEOUT_SECONDS=1200
   INCLUDE_OLLAMA=0|1
+  GIT_KEY_PATH=/path/to/key2
+  GIT_REMOTE=origin
+  GIT_BRANCH=main
 USAGE
     exit 2
     ;;
@@ -203,7 +210,7 @@ else
   echo "Action ${action} does not submit Slurm jobs."
 fi
 
-if [[ "${action}" == "refresh" || "${action}" == "all" ]]; then
+if [[ "${action}" == "refresh" || "${action}" == "push-results" || "${action}" == "all" ]]; then
   step "Refresh coverage and phase-wise comparison outputs"
   run_python -u scripts/update_experiment_coverage.py --results-dir "${RESULTS_ROOT}"
   run_python -u -m coop_navigation_sds.ResultsAndArtifacts.comparison \
@@ -213,6 +220,27 @@ if [[ "${action}" == "refresh" || "${action}" == "all" ]]; then
 else
   step "Skip result analysis refresh"
   echo "Run '${BASH_SOURCE[0]} refresh' after Slurm jobs finish."
+fi
+
+if [[ "${action}" == "push-results" ]]; then
+  step "Commit and push refreshed results and Slurm logs"
+  require_file "${GIT_KEY_PATH}"
+  git config user.name "${GIT_AUTHOR_NAME:-generalgroovy}"
+  git config user.email "${GIT_AUTHOR_EMAIL:-generalgroovy@users.noreply.github.com}"
+  eval "$(ssh-agent -s)"
+  ssh-add "${GIT_KEY_PATH}"
+  git add "${RESULTS_ROOT}" "${PROJECT_ROOT}/slurm/logs"
+  git status --short
+  if git diff --cached --quiet; then
+    echo "No staged result/log changes to commit."
+  else
+    git commit -m "${RESULTS_COMMIT_MESSAGE}"
+  fi
+  GIT_SSH_COMMAND="ssh -i ${GIT_KEY_PATH} -o IdentitiesOnly=yes -o HostName=ssh.github.com -o Port=443" \
+    git push "${GIT_REMOTE}" HEAD:"${GIT_BRANCH}"
+else
+  step "Skip result push"
+  echo "Action ${action} does not commit or push results."
 fi
 
 echo
