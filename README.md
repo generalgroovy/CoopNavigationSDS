@@ -820,15 +820,15 @@ root.
 
 The recommended thesis-scale Slurm path is the independent Agent B model
 submitter. It discovers every registered job file for the requested caller
-family and size tier, computes the condition count, and submits one Slurm array
-per Agent B model. This prevents one unavailable model, endpoint, or node class
-from blocking the rest of the experiment.
+family and size tier, computes the condition count, and submits independent
+Slurm arrays per Agent B model. This prevents one unavailable model, endpoint,
+or node class from blocking the rest of the experiment.
 
 ```bash
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --dry-run
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-concurrency 1
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier medium --array-concurrency 1
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier large --array-concurrency 1
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-chunks 4 --dry-run
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-concurrency 1 --array-chunks 4
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier medium --array-concurrency 1 --array-chunks 4
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier large --array-concurrency 1 --array-chunks 4
 ```
 
 The recommended cluster path uses only
@@ -838,7 +838,11 @@ non-model condition coverage. The default cluster helper selects six
 service-free Transformer profiles: two small, two medium, and two large. This
 is the recommended first thesis-scale run because it gives at least one, and
 normally two, comparisons in every model-size tier without requiring Ollama or
-known gated profiles. Each selected job has 84 conditions. Override
+known gated profiles. Each selected model has 84 conditions. The cluster helper
+submits four chunks by default, so each model becomes four smaller arrays:
+`0-20`, `21-41`, `42-62`, and `63-83`. Every chunk keeps the same CPU, memory,
+and time-limit request as the original full model array; only the number of
+condition indices per submitted Slurm job changes. Override
 `MODEL_PROFILES` when a site has additional authorized local models and the
 larger coverage is desired. The configured factors intentionally span ceiling,
 nominal, challenging, and floor speech performance so successful and
@@ -958,11 +962,13 @@ Transformer model assets are prepared separately through
 `setup_transformers_agent_b_models.py`, so language models are not duplicated
 under `.speech-providers`. `preview`, `preview-small`, `preview-medium`, and
 `preview-large`
-print the exact model-size-sorted Slurm arrays without calling `sbatch`.
+print the exact model-size-sorted and chunked Slurm arrays without calling `sbatch`.
 `submit`, `submit-small`, `submit-medium`, and `submit-large` send one
-independent array per Agent B model with the same condition grid and only the
-Agent B model changed. `refresh` should be run after jobs finish to rebuild
-coverage and comparison artifacts:
+set of chunked arrays per Agent B model with the same condition grid and only
+the Agent B model changed. `ARRAY_CHUNKS` defaults to `4`; lower it only when
+the scheduler strongly prefers fewer submitted jobs, and raise it only when
+individual chunks still exceed site time limits. `refresh` should be run after
+jobs finish to rebuild coverage and comparison artifacts:
 
 ```bash
 scripts/cluster_userlm_agent_b_full_coverage.sh refresh
@@ -974,7 +980,7 @@ daemon on clusters where it cannot be installed. Set `INCLUDE_OLLAMA=1` only on
 systems where `ollama` is available and serving is permitted; otherwise the
 script fails before submission instead of creating invalid runs. Useful
 overrides are `PYTHON_BIN`, `RESULTS_ROOT`, `MODEL_ROOT`,
-`ARRAY_CONCURRENCY`, `SPEECH_ASSETS`, `MODEL_PROFILES`,
+`ARRAY_CONCURRENCY`, `ARRAY_CHUNKS`, `SPEECH_ASSETS`, `MODEL_PROFILES`,
 `HF_MAX_WORKERS`, `ASSET_TIMEOUT_SECONDS`, and
 `MODEL_DOWNLOAD_TIMEOUT_SECONDS`. The model-download timeout is an external
 cluster safety guard around Hugging Face preparation; if a transfer stalls, the

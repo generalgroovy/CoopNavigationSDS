@@ -210,9 +210,41 @@ def resources_for(job: ModelJob, args) -> tuple[int, str, str]:
     )
 
 
-def sbatch_command(job: ModelJob, args) -> list[str]:
+def condition_chunks(condition_count: int, chunk_count: int) -> list[tuple[int, int, int, int]]:
+    """Split a condition index range into bounded Slurm array chunks."""
+    total = max(0, int(condition_count))
+    chunks = max(1, int(chunk_count))
+    if not total:
+        return [(0, 0, 1, 1)]
+    width = math.ceil(total / chunks)
+    ranges = []
+    start = 0
+    while start < total:
+        end = min(total - 1, start + width - 1)
+        ranges.append((start, end, len(ranges) + 1, 0))
+        start = end + 1
+    total_ranges = len(ranges)
+    return [
+        (start, end, index, total_ranges)
+        for start, end, index, _ in ranges
+    ]
+
+
+def sbatch_command(
+    job: ModelJob,
+    args,
+    *,
+    array_start: int | None = None,
+    array_end: int | None = None,
+    chunk_index: int = 1,
+    chunk_total: int = 1,
+) -> list[str]:
     cpus, memory, time_limit = resources_for(job, args)
-    array_last = max(0, job.condition_count - 1)
+    array_first = 0 if array_start is None else int(array_start)
+    array_last = max(array_first, max(0, job.condition_count - 1) if array_end is None else int(array_end))
+    job_name = job.job_name
+    if chunk_total > 1:
+        job_name = safe_slurm_name(f"{job.job_name}-c{chunk_index:02d}of{chunk_total:02d}")
     export_values = {
         "PROJECT_ROOT": str(ROOT),
         "PYTHON_BIN": args.python_bin,
@@ -223,8 +255,8 @@ def sbatch_command(job: ModelJob, args) -> list[str]:
     export_arg = "ALL," + ",".join(f"{key}={value}" for key, value in export_values.items())
     return [
         "sbatch",
-        f"--array=0-{array_last}%{args.array_concurrency}",
-        f"--job-name={job.job_name}",
+        f"--array={array_first}-{array_last}%{args.array_concurrency}",
+        f"--job-name={job_name}",
         f"--cpus-per-task={cpus}",
         f"--mem={memory}",
         f"--time={time_limit}",
@@ -243,6 +275,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--results-dir", default=str(ROOT / "results"))
     parser.add_argument("--python-bin", default=str(ROOT / ".venv-linux" / "bin" / "python"))
     parser.add_argument("--array-concurrency", type=int, default=1)
+    parser.add_argument(
+        "--array-chunks",
+        type=int,
+        default=1,
+        help=(
+            "Split each model's condition range into this many independent Slurm "
+            "arrays. Each chunk keeps the same resource and time-limit request."
+        ),
+    )
     parser.add_argument("--cpus-per-task", type=int, default=0, help="Override tier CPU default.")
     parser.add_argument("--memory", default="", help="Override tier memory default, for example 48G.")
     parser.add_argument("--time-limit", default="", help="Override tier time default, for example 03:59:00.")
@@ -251,6 +292,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.array_concurrency < 1:
         raise SystemExit("--array-concurrency must be at least 1.")
+    if args.array_chunks < 1:
+        raise SystemExit("--array-chunks must be at least 1.")
     if not args.dry_run and shutil.which("sbatch") is None:
         raise SystemExit("sbatch is not available. Use --dry-run locally or run on a Slurm login node.")
 
@@ -260,15 +303,25 @@ def main(argv: list[str] | None = None) -> int:
     failed: list[tuple[ModelJob, int, str]] = []
     for index, job in enumerate(jobs, start=1):
         cpus, memory, time_limit = resources_for(job, args)
-        command = sbatch_command(job, args)
+        chunks = condition_chunks(job.condition_count, args.array_chunks)
         print(
             f"{index:02d}. {job.family}/{job.tier} | Agent A={job.agent_a_type} | "
             f"Agent B={job.model_name} | profile={job.model_profile} | provider={job.provider} | "
             f"model_mem={job.agent_b_memory_gb:g}G | conditions={job.condition_count} | "
-            f"cpus={cpus} mem={memory} time={time_limit}"
+            f"chunks={len(chunks)} | cpus={cpus} mem={memory} time={time_limit}"
         )
-        print("    " + " ".join(command))
-        if not args.dry_run:
+        for array_start, array_end, chunk_index, chunk_total in chunks:
+            command = sbatch_command(
+                job,
+                args,
+                array_start=array_start,
+                array_end=array_end,
+                chunk_index=chunk_index,
+                chunk_total=chunk_total,
+            )
+            print("    " + " ".join(command))
+            if args.dry_run:
+                continue
             result = subprocess.run(
                 command,
                 cwd=ROOT,

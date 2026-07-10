@@ -10,7 +10,7 @@ from scripts.run_agent_b_llm_batch import (
     job_overview,
     load_batch_manifest,
 )
-from scripts.submit_agent_b_model_jobs import discover_jobs, resources_for
+from scripts.submit_agent_b_model_jobs import condition_chunks, discover_jobs, resources_for
 from coop_navigation_sds.Configuration.jobs import (
     job_linked_profiles,
     job_parameter_grid,
@@ -157,6 +157,15 @@ def test_userlm_transformers_submitter_filters_and_sorts_by_model_size():
         (6, "48G", "01:59:00"),
         (6, "52G", "01:59:00"),
         (6, "52G", "01:59:00"),
+    ]
+
+
+def test_submitter_splits_eighty_four_conditions_into_four_balanced_arrays():
+    assert condition_chunks(84, 4) == [
+        (0, 20, 1, 4),
+        (21, 41, 2, 4),
+        (42, 62, 3, 4),
+        (63, 83, 4, 4),
     ]
 
 
