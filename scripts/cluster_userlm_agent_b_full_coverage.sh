@@ -198,7 +198,8 @@ if [[ "${action}" == "refresh" || "${action}" == "all" ]]; then
   run_python -u scripts/update_experiment_coverage.py --results-dir "${RESULTS_ROOT}"
   run_python -u -m coop_navigation_sds.ResultsAndArtifacts.comparison \
     "${RESULTS_ROOT}" \
-    --output "${RESULTS_ROOT}/comparison"
+    --output "${RESULTS_ROOT}/comparison" \
+    --include-partial
 else
   step "Skip result analysis refresh"
   echo "Run '${BASH_SOURCE[0]} refresh' after Slurm jobs finish."
