@@ -62,6 +62,93 @@ run_python_with_model_timeout() {
   fi
 }
 
+print_result_summary() {
+  run_python - <<'PY'
+import csv
+import json
+from pathlib import Path
+
+root = Path("results")
+manifest_path = root / "comparison" / "analysis_manifest.json"
+coverage_path = root / "experiment_coverage_summary.json"
+inventory_path = root / "comparison" / "run_inventory.csv"
+
+if coverage_path.is_file():
+    coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    print(
+        "Coverage registry: "
+        f"completed_runs={coverage.get('completed_run_count')} "
+        f"completed_planned={coverage.get('completed_planned_configuration_count')} "
+        f"coverage={coverage.get('coverage_percentage')}%"
+    )
+else:
+    print("Coverage registry: missing")
+
+if manifest_path.is_file():
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    print(
+        "Partial-aware comparison: "
+        f"runs={manifest.get('discovered_run_count')} "
+        f"observed={manifest.get('observed_condition_count')} "
+        f"completed={manifest.get('completed_condition_count')} "
+        f"sources={manifest.get('source_file_count')}"
+    )
+else:
+    print("Partial-aware comparison: missing")
+
+if not inventory_path.is_file():
+    print("Run inventory: missing")
+    raise SystemExit(0)
+
+rows = list(csv.DictReader(inventory_path.open(encoding="utf-8")))
+groups = {}
+for row in rows:
+    key = (
+        row.get("agent_a_type") or "",
+        row.get("agent_b_llm_size") or "",
+        row.get("agent_b_model") or "",
+    )
+    item = groups.setdefault(key, {
+        "runs": 0,
+        "planned": 0,
+        "observed": 0,
+        "completed": 0,
+        "interrupted": 0,
+        "not_started": 0,
+        "success": 0,
+        "states": set(),
+    })
+    item["runs"] += 1
+    item["states"].add(row.get("run_state") or "")
+    for source, target in (
+        ("planned_condition_count", "planned"),
+        ("observed_condition_count", "observed"),
+        ("completed_condition_count", "completed"),
+        ("interrupted_condition_count", "interrupted"),
+        ("not_started_condition_count", "not_started"),
+        ("successful_condition_count", "success"),
+    ):
+        item[target] += int(float(row.get(source) or 0))
+
+print("Run inventory by Agent B:")
+for key, item in sorted(
+    groups.items(),
+    key=lambda value: (
+        {"small": 0, "medium": 1, "large": 2}.get(value[0][1], 9),
+        value[0][0],
+        value[0][2],
+    ),
+):
+    print(
+        f"  {key[0]} | {key[1]} | {key[2]} | "
+        f"runs={item['runs']} planned={item['planned']} observed={item['observed']} "
+        f"completed={item['completed']} interrupted={item['interrupted']} "
+        f"not_started={item['not_started']} success={item['success']} "
+        f"states={','.join(sorted(item['states']))}"
+    )
+PY
+}
+
 model_profile_args=()
 for profile in ${MODEL_PROFILES}; do
   model_profile_args+=(--profile "${profile}")
@@ -217,6 +304,7 @@ if [[ "${action}" == "refresh" || "${action}" == "push-results" || "${action}" =
     "${RESULTS_ROOT}" \
     --output "${RESULTS_ROOT}/comparison" \
     --include-partial
+  print_result_summary
 else
   step "Skip result analysis refresh"
   echo "Run '${BASH_SOURCE[0]} refresh' after Slurm jobs finish."
@@ -229,7 +317,8 @@ if [[ "${action}" == "push-results" ]]; then
   git config user.email "${GIT_AUTHOR_EMAIL:-generalgroovy@users.noreply.github.com}"
   eval "$(ssh-agent -s)"
   ssh-add "${GIT_KEY_PATH}"
-  git add "${RESULTS_ROOT}" "${PROJECT_ROOT}/slurm/logs"
+  git add "${RESULTS_ROOT}"
+  git add -f "${PROJECT_ROOT}/slurm/logs"
   git status --short
   if git diff --cached --quiet; then
     echo "No staged result/log changes to commit."
