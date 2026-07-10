@@ -229,6 +229,15 @@ def test_generic_agent_b_model_array_disables_live_coverage_registry_updates():
     assert "--fail-fast" in script
 
 
+def test_slurm_logs_are_not_ignored_because_cluster_diagnostics_are_result_evidence():
+    ignore_file = ROOT / ".gitignore"
+    text = ignore_file.read_text(encoding="utf-8") if ignore_file.exists() else ""
+
+    assert "slurm/logs/*.out" not in text
+    assert "slurm/logs/*.err" not in text
+    assert "slurm/logs/*.log" not in text
+
+
 def test_overviews_have_unique_model_grouped_result_paths():
     with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
         results = Path(temporary)
