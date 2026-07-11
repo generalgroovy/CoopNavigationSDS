@@ -1,0 +1,75 @@
+=== Conversation 1: C-MPCC-CAR-SC-PIP-VOS-TL1-DEFAU-SML-I0-f73e1ef96d-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MPCC-CAR-SC-PIP-VOS-TL1-DEFAU-SML-I0-f73e1ef96d-A
+Test case: morning_peak_cross_city:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: morning_peak_cross_city
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 32.21942165005021
+
+Conversation
+01. Agent A [2.000 seconds]: i met viability of them lines to have a which to like take
+    processing seconds: generation=0.0, synthesis=6.715596, recognition=3.402814, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=13.171296, observed_turn=13.171371, accounted_processing=13.171296
+02. Agent B [2.000 seconds]: i i'm sorry you can say omega
+    processing seconds: generation=0.000339, synthesis=1.647901, recognition=1.128127, understanding=0.00037, dialogue_management=0.000119
+    duration seconds: audio=4.723, speech_pipeline_wall=4.443379, observed_turn=4.723829, accounted_processing=4.444208
+03. Agent A [2.000 seconds]: well that's disappointing season
+    processing seconds: generation=0.014031, synthesis=1.722987, recognition=1.329547, understanding=None, dialogue_management=None
+    duration seconds: audio=5.056, speech_pipeline_wall=4.822677, observed_turn=5.070031, accounted_processing=4.836708
+04. Agent B [2.000 seconds]: this is starting as station sorry say only that
+    processing seconds: generation=0.000457, synthesis=1.699275, recognition=1.069281, understanding=0.000377, dialogue_management=0.000115
+    duration seconds: audio=5.214, speech_pipeline_wall=4.433361, observed_turn=5.214949, accounted_processing=4.43431
+05. Agent A [2.000 seconds]: the same information without i'm fooling around
+    processing seconds: generation=0.000938, synthesis=1.497912, recognition=1.661995, understanding=None, dialogue_management=None
+    duration seconds: audio=5.924, speech_pipeline_wall=5.145757, observed_turn=5.924938, accounted_processing=5.146695
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 08:07. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: um, I'm s-starting at s-station Bravo at eight oh seven. I n-need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: i met viability of them lines to have a which line to like take
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um", "I'm", "s-starting", "at", "s-station", "Bravo", "at", "eight", "oh", "seven"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["n-need", "to", "take", "transit"], "target_tokens": ["met", "viability", "of", "them"]}, {"operation": "replace", "source_tokens": ["Harbor"], "target_tokens": ["have", "a"]}, {"operation": "replace", "source_tokens": ["lines", "should", "I"], "target_tokens": ["to", "like"]}]
+    transcript corrections: []
+    understood transcript: i met viability of them lines to have a which to like take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/.turn_audio/135fd9db8ba8/0001-agent-a-8b8b44ced6-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I uh missed the starting station. Please say o-only that.
+    raw recognition: oh i i'm sorry you can say omega
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["uh", "missed", "the", "starting", "station", "Please"], "target_tokens": ["i'm", "sorry", "you", "can"]}, {"operation": "replace", "source_tokens": ["o-only", "that"], "target_tokens": ["omega"]}]
+    transcript corrections: []
+    understood transcript: i i'm sorry you can say omega
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/.turn_audio/135fd9db8ba8/0002-agent-b-4faa6d8504-channel.wav
+03. Agent A
+    generated: I need the actual route to Harbor. Give connected boarding stations.
+    outgoing speech text: I need t-the a-actual route to Harbor. Give connected boarding stations.
+    raw recognition: well that's disappointing season
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "need", "t-the", "a-actual", "route", "to", "Harbor", "Give", "connected", "boarding", "stations"], "target_tokens": ["well", "that's", "disappointing", "season"]}]
+    transcript corrections: []
+    understood transcript: well that's disappointing season
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/.turn_audio/135fd9db8ba8/0003-agent-a-d718c7f280-channel.wav
+04. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I missed the starting s-station. sorry, Please say uh only that.
+    raw recognition: this is starting as station sorry say only that
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["O-Okay", "I", "missed", "the"], "target_tokens": ["this", "is"]}, {"operation": "replace", "source_tokens": ["s-station"], "target_tokens": ["as", "station"]}, {"operation": "delete", "source_tokens": ["Please"], "target_tokens": []}, {"operation": "delete", "source_tokens": ["uh"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: this is starting as station sorry say only that
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/.turn_audio/135fd9db8ba8/0004-agent-b-770cf02ae3-channel.wav
+05. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I will stop here; we are r-repeating the same information without i-improving the route.
+    raw recognition: the same information without i'm fooling around
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["I", "will", "stop", "here", "we", "are", "r-repeating"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["i-improving", "the", "route"], "target_tokens": ["i'm", "fooling", "around"]}]
+    transcript corrections: []
+    understood transcript: the same information without i'm fooling around
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/.turn_audio/135fd9db8ba8/0005-agent-a-51d09387f7-channel.wav

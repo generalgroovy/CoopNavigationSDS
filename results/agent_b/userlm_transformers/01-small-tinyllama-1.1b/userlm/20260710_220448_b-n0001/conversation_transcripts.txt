@@ -1,0 +1,141 @@
+=== Conversation 1: C-MT-RAN-SC-PIP-VOS-TL1-DEFAU-SML-I0-c8e89e2ef3-T ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MT-RAN-SC-PIP-VOS-TL1-DEFAU-SML-I0-c8e89e2ef3-T
+Test case: midday_transfer:risk_averse_novice
+Persona: risk_averse_novice
+Scenario: midday_transfer
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: unsatisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 28
+Runtime seconds: 519.5569336449262
+
+Conversation
+01. Agent A [2.000 seconds]: um, I'm s-starting um, at s-station Echo at twelve eighteen. I n-need to take transit lines to Zulu. Which lines should I take?
+    processing seconds: generation=0.0, synthesis=0.886211, recognition=0.005033, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=0.892412, observed_turn=10.0, accounted_processing=0.892412
+02. Agent B [2.000 seconds]: Take tram line T1 from Echo to India; m-metro M3 from uh India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 c-changes.
+    processing seconds: generation=45.826737, synthesis=1.748854, recognition=0.005068, understanding=0.004173, dialogue_management=0.008727
+    duration seconds: audio=9.36, speech_pipeline_wall=1.754416, observed_turn=55.199637, accounted_processing=47.594053
+03. Agent A [2.000 seconds]: Okay, T-That r-route um, and timing work. Can you make it with as few l-line changes as reasonable?
+    processing seconds: generation=71.506057, synthesis=1.460231, recognition=0.004253, understanding=None, dialogue_management=None
+    duration seconds: audio=8.176, speech_pipeline_wall=1.46501, observed_turn=79.682057, accounted_processing=72.971067
+04. Agent B [2.000 seconds]: Walk 7 minutes from E-Echo to Foxtrot; metro M1 Foxtrot to Zulu. sorry, 31 m-minutes, uh 1 changes.
+    processing seconds: generation=34.575231, synthesis=1.587499, recognition=0.005992, understanding=0.013174, dialogue_management=0.005799
+    duration seconds: audio=7.532, speech_pipeline_wall=1.594147, observed_turn=42.126204, accounted_processing=36.188351
+05. Agent A [2.000 seconds]: Okay, The e-earlier route fits. Can you m-make it with lower delay risk?
+    processing seconds: generation=74.419724, synthesis=1.189526, recognition=0.004728, understanding=None, dialogue_management=None
+    duration seconds: audio=5.999, speech_pipeline_wall=1.194966, observed_turn=80.418724, accounted_processing=75.61469
+06. Agent B [2.000 seconds]: O-Okay, Walk 7 minutes from Echo to Foxtrot; m-metro M1 from Foxtrot to Zulu. 31 minutes, okay 1 c-changes. Delay risk is high.
+    processing seconds: generation=37.609053, synthesis=1.930545, recognition=0.00624, understanding=0.015926, dialogue_management=0.004115
+    duration seconds: audio=9.356, speech_pipeline_wall=1.937523, observed_turn=46.985093, accounted_processing=39.566616
+07. Agent A [2.000 seconds]: Okay, The uh e-earlier um, route fits. um, Can y-you make it with safer transfer t-timing?
+    processing seconds: generation=80.311409, synthesis=1.648496, recognition=0.005337, understanding=None, dialogue_management=None
+    duration seconds: audio=7.758, speech_pipeline_wall=1.654556, observed_turn=88.069409, accounted_processing=81.965965
+08. Agent B [2.000 seconds]: Walk 7 um, minutes from Echo to Foxtrot; metro M1 f-from Foxtrot uh to Z-Zulu. 31 minutes, 1 changes. um, Transfer miss r-risk is medium.
+    processing seconds: generation=39.730315, synthesis=1.81679, recognition=0.005781, understanding=0.008716, dialogue_management=0.004829
+    duration seconds: audio=10.0, speech_pipeline_wall=1.823287, observed_turn=49.74386, accounted_processing=41.567147
+09. Agent A [2.000 seconds]: Okay, I am um, n-not uh ready to choose y-yet. Please satisfy the current r-route requirement first.
+    processing seconds: generation=78.319945, synthesis=1.334456, recognition=0.004503, understanding=None, dialogue_management=None
+    duration seconds: audio=7.788, speech_pipeline_wall=1.339525, observed_turn=86.107945, accounted_processing=79.65947
+10. Agent B [2.000 seconds]: I have no new distinct v-viable route. The best earlier route s-still fits the current request.
+    processing seconds: generation=40.973254, synthesis=0.992058, recognition=0.005436, understanding=0.000593, dialogue_management=0.000131
+    duration seconds: audio=5.988, speech_pipeline_wall=0.997983, observed_turn=46.961978, accounted_processing=41.971961
+11. Agent A [2.000 seconds]: I will stop here; we are repeating the same information w-without improving t-the route.
+    processing seconds: generation=0.071187, synthesis=0.987596, recognition=0.005632, understanding=None, dialogue_management=None
+    duration seconds: audio=5.924, speech_pipeline_wall=0.993594, observed_turn=5.995187, accounted_processing=1.064781
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Echo at 12:18. I need to take transit lines to Zulu. Which lines should I take?
+    outgoing speech text: um, I'm s-starting um, at s-station Echo at twelve eighteen. I n-need to take transit lines to Zulu. Which lines should I take?
+    raw recognition: um, I'm s-starting um, at s-station Echo at twelve eighteen. I n-need to take transit lines to Zulu. Which lines should I take?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: um, I'm s-starting um, at s-station Echo at twelve eighteen. I n-need to take transit lines to Zulu. Which lines should I take?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0001-agent-a-76e50764ae.wav
+02. Agent B
+    generated: Take tram line T1 from Echo to India; metro M3 from India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 changes.
+    outgoing speech text: Take tram line T1 from Echo to India; m-metro M3 from uh India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 c-changes.
+    raw recognition: Take tram line T1 from Echo to India; m-metro M3 from uh India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 c-changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T1 from Echo to India; m-metro M3 from uh India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 c-changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0002-agent-b-6cfe3d1e24.wav
+03. Agent A
+    generated: That route and timing work. Can you make it with as few line changes as reasonable?
+    outgoing speech text: Okay, T-That r-route um, and timing work. Can you make it with as few l-line changes as reasonable?
+    raw recognition: Okay, T-That r-route um, and timing work. Can you make it with as few l-line changes as reasonable?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, T-That r-route um, and timing work. Can you make it with as few l-line changes as reasonable?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0003-agent-a-f45b81e521.wav
+04. Agent B
+    generated: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes.
+    outgoing speech text: Walk 7 minutes from E-Echo to Foxtrot; metro M1 from Foxtrot to Zulu. sorry, 31 m-minutes, uh 1 changes.
+    raw recognition: Walk 7 minutes from E-Echo to Foxtrot; metro M1 Foxtrot to Zulu. sorry, 31 m-minutes, uh 1 changes.
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["from"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: Walk 7 minutes from E-Echo to Foxtrot; metro M1 Foxtrot to Zulu. sorry, 31 m-minutes, uh 1 changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0004-agent-b-81f927a3df.wav
+05. Agent A
+    generated: The earlier route fits. Can you make it with lower delay risk?
+    outgoing speech text: Okay, The e-earlier route fits. Can you m-make it with lower delay risk?
+    raw recognition: Okay, The e-earlier route fits. Can you m-make it with lower delay risk?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, The e-earlier route fits. Can you m-make it with lower delay risk?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0005-agent-a-13b6314cca.wav
+06. Agent B
+    generated: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Delay risk is high.
+    outgoing speech text: O-Okay, Walk 7 minutes from Echo to Foxtrot; m-metro M1 from Foxtrot to Zulu. 31 minutes, okay 1 c-changes. Delay risk is high.
+    raw recognition: O-Okay, Walk 7 minutes from Echo to Foxtrot; m-metro M1 from Foxtrot to Zulu. 31 minutes, okay 1 c-changes. Delay risk is high.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: O-Okay, Walk 7 minutes from Echo to Foxtrot; m-metro M1 from Foxtrot to Zulu. 31 minutes, okay 1 c-changes. Delay risk is high.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0006-agent-b-54950abdcf.wav
+07. Agent A
+    generated: The earlier route fits. Can you make it with safer transfer timing?
+    outgoing speech text: Okay, The uh e-earlier um, route fits. um, Can y-you make it with safer transfer t-timing?
+    raw recognition: Okay, The uh e-earlier um, route fits. um, Can y-you make it with safer transfer t-timing?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, The uh e-earlier um, route fits. um, Can y-you make it with safer transfer t-timing?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0007-agent-a-db61eac41f.wav
+08. Agent B
+    generated: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Transfer miss risk is medium.
+    outgoing speech text: Walk 7 um, minutes from Echo to Foxtrot; metro M1 f-from Foxtrot uh to Z-Zulu. 31 minutes, 1 changes. um, Transfer miss r-risk is medium.
+    raw recognition: Walk 7 um, minutes from Echo to Foxtrot; metro M1 f-from Foxtrot uh to Z-Zulu. 31 minutes, 1 changes. um, Transfer miss r-risk is medium.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Walk 7 um, minutes from Echo to Foxtrot; metro M1 f-from Foxtrot uh to Z-Zulu. 31 minutes, 1 changes. um, Transfer miss r-risk is medium.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0008-agent-b-213d644543.wav
+09. Agent A
+    generated: I am not ready to choose yet. Please satisfy the current route requirement first.
+    outgoing speech text: Okay, I am um, n-not uh ready to choose y-yet. Please satisfy the current r-route requirement first.
+    raw recognition: Okay, I am um, n-not uh ready to choose y-yet. Please satisfy the current r-route requirement first.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, I am um, n-not uh ready to choose y-yet. Please satisfy the current r-route requirement first.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0009-agent-a-3857c1b39c.wav
+10. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct v-viable route. The best earlier route s-still fits the current request.
+    raw recognition: I have no new distinct v-viable route. The best earlier route s-still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I have no new distinct v-viable route. The best earlier route s-still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0010-agent-b-a191c2cafb.wav
+11. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I will stop here; we are repeating the same information w-without improving t-the route.
+    raw recognition: I will stop here; we are repeating the same information w-without improving t-the route.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I will stop here; we are repeating the same information w-without improving t-the route.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/.turn_audio/5215381e6d47/0011-agent-a-8fb70622fd.wav

@@ -1,0 +1,185 @@
+=== Conversation 1: C-CEE-RAN-SC-PIP-VOS-Q05-DEFAU-SML-I0-2aa0006b49-T ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-CEE-RAN-SC-PIP-VOS-Q05-DEFAU-SML-I0-2aa0006b49-T
+Test case: crowded_event_exit:risk_averse_novice
+Persona: risk_averse_novice
+Scenario: crowded_event_exit
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: Qwen/Qwen2.5-0.5B-Instruct
+Outcome: satisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 28
+Runtime seconds: 341.3328110189177
+
+Conversation
+01. Agent A [2.000 seconds]: um, I'm s-starting at s-station Sierra at twenty two e-eighteen. I need to take transit lines to Charlie. Which lines should I take?
+    processing seconds: generation=0.0, synthesis=0.801395, recognition=0.007661, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=0.810131, observed_turn=10.0, accounted_processing=0.810131
+02. Agent B [2.000 seconds]: I missed uh the departure time. Please say o-only that.
+    processing seconds: generation=0.000806, synthesis=0.323823, recognition=0.009037, understanding=0.000531, dialogue_management=0.000114
+    duration seconds: audio=3.94, speech_pipeline_wall=0.333146, observed_turn=3.941451, accounted_processing=0.334597
+03. Agent A [2.000 seconds]: Departure twenty t-two e-eighteen.
+    processing seconds: generation=0.002041, synthesis=0.257496, recognition=0.007289, understanding=None, dialogue_management=None
+    duration seconds: audio=2.69, speech_pipeline_wall=0.265087, observed_turn=2.692041, accounted_processing=0.267128
+04. Agent B [2.000 seconds]: I missed the t-time. sorry, Please say uh only that.
+    processing seconds: generation=0.000804, synthesis=0.383472, recognition=0.005841, understanding=0.000573, dialogue_management=0.000593
+    duration seconds: audio=4.43, speech_pipeline_wall=0.389632, observed_turn=4.43197, accounted_processing=0.391602
+05. Agent A [2.000 seconds]: S-Starting station: um, Sierra. Destination station: C-Charlie. Departure time: twenty two e-eighteen.
+    processing seconds: generation=0.00122, synthesis=0.871372, recognition=0.00884, understanding=None, dialogue_management=None
+    duration seconds: audio=6.356, speech_pipeline_wall=0.880532, observed_turn=6.35722, accounted_processing=0.881752
+06. Agent B [2.000 seconds]: I s-still need the departure time. P-Please say only the departure time.
+    processing seconds: generation=0.001453, synthesis=0.634593, recognition=0.00954, understanding=0.000983, dialogue_management=0.000121
+    duration seconds: audio=4.818, speech_pipeline_wall=0.644712, observed_turn=4.820557, accounted_processing=0.647269
+07. Agent A [2.000 seconds]: Starting um, S-Sierra. uh um, Destination station: Charlie. okay um, D-Departure time: t-twenty two eighteen.
+    processing seconds: generation=0.001441, synthesis=1.457579, recognition=0.011556, understanding=None, dialogue_management=None
+    duration seconds: audio=8.115, speech_pipeline_wall=1.469474, observed_turn=8.116441, accounted_processing=1.470915
+08. Agent B [2.000 seconds]: Take uh tram line T4 from Sierra to Golf; b-bus B1 from G-Golf to Charlie. 28 minutes, 1 uh changes.
+    processing seconds: generation=25.14477, synthesis=1.280556, recognition=0.007906, understanding=0.005627, dialogue_management=0.008707
+    duration seconds: audio=7.627, speech_pipeline_wall=1.288869, observed_turn=32.786104, accounted_processing=26.447973
+09. Agent A [2.000 seconds]: Okay, T-That route um, and uh t-timing work. Can you make it w-with as few line changes as reasonable?
+    processing seconds: generation=75.548407, synthesis=1.696668, recognition=0.007348, understanding=None, dialogue_management=None
+    duration seconds: audio=8.5, speech_pipeline_wall=1.704617, observed_turn=84.048407, accounted_processing=77.253024
+10. Agent B [2.000 seconds]: Take tram line T3 f-from Sierra to Tango; bus B4 from Tango to B-Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    processing seconds: generation=15.316972, synthesis=1.655548, recognition=0.010433, understanding=0.016737, dialogue_management=0.005651
+    duration seconds: audio=9.068, speech_pipeline_wall=1.666492, observed_turn=24.40736, accounted_processing=17.005852
+11. Agent A [2.000 seconds]: T-That meets the current requirement. Can you m-make it with l-lower delay risk?
+    processing seconds: generation=96.093397, synthesis=0.969858, recognition=0.007311, understanding=None, dialogue_management=None
+    duration seconds: audio=6.092, speech_pipeline_wall=0.977876, observed_turn=102.185397, accounted_processing=97.071273
+12. Agent B [2.000 seconds]: Okay, Take tram l-line T3 from Sierra to Xray; metro M1 uh from Xray to Oscar; metro M4 from Oscar to Charlie. 39 m-minutes, 2 changes. Delay risk is high.
+    processing seconds: generation=15.159504, synthesis=1.731308, recognition=0.007672, understanding=0.0015, dialogue_management=0.009959
+    duration seconds: audio=10.0, speech_pipeline_wall=1.73961, observed_turn=25.170962, accounted_processing=16.910572
+13. Agent A [2.000 seconds]: That reaches C-Charlie, but 51 minutes is t-too long. Find 41 minutes or less?
+    processing seconds: generation=81.959405, synthesis=1.046057, recognition=0.008844, understanding=None, dialogue_management=None
+    duration seconds: audio=6.323, speech_pipeline_wall=1.055655, observed_turn=88.282405, accounted_processing=83.01506
+14. Agent B [2.000 seconds]: um, Take tram line T4 from Sierra to Y-Yankee; metro M1 from Yankee to Oscar; metro M4 from O-Oscar to Charlie. 43 minutes, 2 c-changes.
+    processing seconds: generation=15.228005, synthesis=1.635922, recognition=0.007242, understanding=0.019504, dialogue_management=0.009121
+    duration seconds: audio=9.851, speech_pipeline_wall=1.643653, observed_turn=25.10763, accounted_processing=16.900283
+15. Agent A [2.000 seconds]: I will stop h-here s-semi-satisfied; uh I have a r-route, but it still m-misses of my constraints.
+    processing seconds: generation=0.000796, synthesis=1.509106, recognition=0.00963, understanding=None, dialogue_management=None
+    duration seconds: audio=8.425, speech_pipeline_wall=1.519284, observed_turn=8.425796, accounted_processing=1.52008
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Sierra at 22:18. I need to take transit lines to Charlie. Which lines should I take?
+    outgoing speech text: um, I'm s-starting at s-station Sierra at twenty two e-eighteen. I need to take transit lines to Charlie. Which lines should I take?
+    raw recognition: um, I'm s-starting at s-station Sierra at twenty two e-eighteen. I need to take transit lines to Charlie. Which lines should I take?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: um, I'm s-starting at s-station Sierra at twenty two e-eighteen. I need to take transit lines to Charlie. Which lines should I take?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0001-agent-a-d3baac936c.wav
+02. Agent B
+    generated: I missed the departure time. Please say only that.
+    outgoing speech text: I missed uh the departure time. Please say o-only that.
+    raw recognition: I missed uh the departure time. Please say o-only that.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I missed uh the departure time. Please say o-only that.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0002-agent-b-68e6097f93.wav
+03. Agent A
+    generated: Departure time: 22:18.
+    outgoing speech text: Departure time: twenty t-two e-eighteen.
+    raw recognition: Departure twenty t-two e-eighteen.
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["time"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: Departure twenty t-two e-eighteen.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0003-agent-a-83bc516d61.wav
+04. Agent B
+    generated: I missed the departure time. Please say only that.
+    outgoing speech text: I missed the departure t-time. sorry, Please say uh only that.
+    raw recognition: I missed the t-time. sorry, Please say uh only that.
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["departure"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: I missed the t-time. sorry, Please say uh only that.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0004-agent-b-53785a7585.wav
+05. Agent A
+    generated: Starting station: Sierra. Destination station: Charlie. Departure time: 22:18.
+    outgoing speech text: S-Starting station: um, Sierra. Destination station: C-Charlie. Departure time: twenty two e-eighteen.
+    raw recognition: S-Starting station: um, Sierra. Destination station: C-Charlie. Departure time: twenty two e-eighteen.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: S-Starting station: um, Sierra. Destination station: C-Charlie. Departure time: twenty two e-eighteen.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0005-agent-a-c1f588a8c3.wav
+06. Agent B
+    generated: I still need the departure time. Please say only the departure time.
+    outgoing speech text: I s-still need the departure time. P-Please say only the departure time.
+    raw recognition: I s-still need the departure time. P-Please say only the departure time.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I s-still need the departure time. P-Please say only the departure time.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0006-agent-b-c5a88f1cd4.wav
+07. Agent A
+    generated: Starting station: Sierra. Destination station: Charlie. Departure time: 22:18.
+    outgoing speech text: Starting station: um, S-Sierra. uh um, Destination station: Charlie. okay um, D-Departure time: t-twenty two eighteen.
+    raw recognition: Starting um, S-Sierra. uh um, Destination station: Charlie. okay um, D-Departure time: t-twenty two eighteen.
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["station"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: Starting um, S-Sierra. uh um, Destination station: Charlie. okay um, D-Departure time: t-twenty two eighteen.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0007-agent-a-6d6cd5bf28.wav
+08. Agent B
+    generated: Take tram line T4 from Sierra to Golf; bus B1 from Golf to Charlie. 28 minutes, 1 changes.
+    outgoing speech text: Take uh tram line T4 from Sierra to Golf; b-bus B1 from G-Golf to Charlie. 28 minutes, 1 uh changes.
+    raw recognition: Take uh tram line T4 from Sierra to Golf; b-bus B1 from G-Golf to Charlie. 28 minutes, 1 uh changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take uh tram line T4 from Sierra to Golf; b-bus B1 from G-Golf to Charlie. 28 minutes, 1 uh changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0008-agent-b-1a6e4c20a5.wav
+09. Agent A
+    generated: That route and timing work. Can you make it with as few line changes as reasonable?
+    outgoing speech text: Okay, T-That route um, and uh t-timing work. Can you make it w-with as few line changes as reasonable?
+    raw recognition: Okay, T-That route um, and uh t-timing work. Can you make it w-with as few line changes as reasonable?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, T-That route um, and uh t-timing work. Can you make it w-with as few line changes as reasonable?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0009-agent-a-196c51d1ec.wav
+10. Agent B
+    generated: Take tram line T3 from Sierra to Tango; bus B4 from Tango to Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    outgoing speech text: Take tram line T3 f-from Sierra to Tango; bus B4 from Tango to B-Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    raw recognition: Take tram line T3 f-from Sierra to Tango; bus B4 from Tango to B-Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T3 f-from Sierra to Tango; bus B4 from Tango to B-Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0010-agent-b-7e1683aa77.wav
+11. Agent A
+    generated: That meets the current requirement. Can you make it with lower delay risk?
+    outgoing speech text: T-That meets the current requirement. Can you m-make it with l-lower delay risk?
+    raw recognition: T-That meets the current requirement. Can you m-make it with l-lower delay risk?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: T-That meets the current requirement. Can you m-make it with l-lower delay risk?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0011-agent-a-62d142fa57.wav
+12. Agent B
+    generated: Take tram line T3 from Sierra to Xray; metro M1 from Xray to Oscar; metro M4 from Oscar to Charlie. 39 minutes, 2 changes. Delay risk is high.
+    outgoing speech text: Okay, Take tram l-line T3 from Sierra to Xray; metro M1 uh from Xray to Oscar; metro M4 from Oscar to Charlie. 39 m-minutes, 2 changes. Delay risk is high.
+    raw recognition: Okay, Take tram l-line T3 from Sierra to Xray; metro M1 uh from Xray to Oscar; metro M4 from Oscar to Charlie. 39 m-minutes, 2 changes. Delay risk is high.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, Take tram l-line T3 from Sierra to Xray; metro M1 uh from Xray to Oscar; metro M4 from Oscar to Charlie. 39 m-minutes, 2 changes. Delay risk is high.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0012-agent-b-5968758ccf.wav
+13. Agent A
+    generated: That reaches Charlie, but 51 minutes is too long. Find 41 minutes or less?
+    outgoing speech text: That reaches C-Charlie, but 51 minutes is t-too long. Find 41 minutes or less?
+    raw recognition: That reaches C-Charlie, but 51 minutes is t-too long. Find 41 minutes or less?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That reaches C-Charlie, but 51 minutes is t-too long. Find 41 minutes or less?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0013-agent-a-bc41e3172f.wav
+14. Agent B
+    generated: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Oscar; metro M4 from Oscar to Charlie. 43 minutes, 2 changes.
+    outgoing speech text: um, Take tram line T4 from Sierra to Y-Yankee; metro M1 from Yankee to Oscar; metro M4 from O-Oscar to Charlie. 43 minutes, 2 c-changes.
+    raw recognition: um, Take tram line T4 from Sierra to Y-Yankee; metro M1 from Yankee to Oscar; metro M4 from O-Oscar to Charlie. 43 minutes, 2 c-changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: um, Take tram line T4 from Sierra to Y-Yankee; metro M1 from Yankee to Oscar; metro M4 from O-Oscar to Charlie. 43 minutes, 2 c-changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0014-agent-b-56e259093c.wav
+15. Agent A
+    generated: I will stop here semi-satisfied; I have a route, but it still misses one of my constraints.
+    outgoing speech text: I will stop h-here s-semi-satisfied; uh I have a r-route, but it still m-misses one of my constraints.
+    raw recognition: I will stop h-here s-semi-satisfied; uh I have a r-route, but it still m-misses of my constraints.
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["one"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: I will stop h-here s-semi-satisfied; uh I have a r-route, but it still m-misses of my constraints.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/.turn_audio/4f0a8d85b185/0015-agent-a-fefe6a9b53.wav

@@ -1,0 +1,20 @@
+Coverage warning: pairwise plan is incomplete for 72 factor-level pairs. The gap is recorded in coverage_plan.json and the selected condition still runs.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/coop_navigation_sds/batch.py", line 1045, in <module>
+    main()
+    ~~~~^^
+  File "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/coop_navigation_sds/batch.py", line 658, in main
+    run_dir = create_execution_run_dir(
+        args.results_dir,
+        label=batch_run_label(len(conditions)),
+    )
+  File "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/coop_navigation_sds/ResultsAndArtifacts/artifacts.py", line 65, in create_execution_run_dir
+    candidate.mkdir(parents=True, exist_ok=False)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.13/pathlib/_local.py", line 724, in mkdir
+    os.mkdir(self, mode)
+    ~~~~~~~~^^^^^^^^^^^^
+FileExistsError: [Errno 17] File exists: '/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001_02'
+slurmstepd-gpu021: error: pam_close_session: Cannot make/remove an entry for the specified session
