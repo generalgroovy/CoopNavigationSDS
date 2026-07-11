@@ -59,11 +59,13 @@ def create_execution_run_dir(base_dir, label=None, timestamp=None):
     run_id = execution_run_id(label, timestamp)
     candidate = base_dir / run_id
     suffix = 2
-    while candidate.exists():
-        candidate = base_dir / f"{run_id}_{suffix:02d}"
-        suffix += 1
-    candidate.mkdir(parents=True, exist_ok=False)
-    return candidate
+    while True:
+        try:
+            candidate.mkdir(parents=True, exist_ok=False)
+            return candidate
+        except FileExistsError:
+            candidate = base_dir / f"{run_id}_{suffix:02d}"
+            suffix += 1
 
 
 def _metric_export_context(output_dir, scope):

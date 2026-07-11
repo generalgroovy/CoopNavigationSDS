@@ -540,6 +540,20 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(first.name, "20260531_120000_single_case")
         self.assertEqual(second.name, "20260531_120000_single_case_02")
 
+    def test_create_execution_run_dir_retries_existing_parallel_suffixes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base = Path(tmpdir)
+            (base / "20260531_120000_parallel_case").mkdir()
+            (base / "20260531_120000_parallel_case_02").mkdir()
+
+            created = create_execution_run_dir(
+                base,
+                label="Parallel Case",
+                timestamp="20260531_120000",
+            )
+
+        self.assertEqual(created.name, "20260531_120000_parallel_case_03")
+
     def test_write_experiment_manifest_documents_scientific_design(self):
         condition = ExperimentCondition(
             condition_id="case__persona__clean__greedy__0",
