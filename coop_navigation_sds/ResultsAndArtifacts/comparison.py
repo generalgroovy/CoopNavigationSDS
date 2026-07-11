@@ -30,6 +30,7 @@ DISPLAY_METRIC_HINTS = (
 OUTLIER_EXCLUDED_PHASES = frozenset({"task_outcome", "whole_dialogue", "metric_validity"})
 OUTLIER_MINIMUM_SAMPLES = 5
 OUTLIER_MODIFIED_Z_THRESHOLD = 3.5
+CORRELATION_MINIMUM_SAMPLES = 5
 CONDITION_ANALYSIS_METRICS = (
     ("route_validity", "task_outcome_route_validity"),
     ("constraint_satisfaction", "task_outcome_constraint_satisfaction_rate"),
@@ -1005,6 +1006,8 @@ def _write_analysis_guide(path, generated_files):
         "| `run_inventory.csv` | One row per discovered run folder, including lifecycle state and completed/observed counts. |",
         "| `program_execution_summary.csv` | Program execution completion by Agent B model, independent of task success or route satisfaction. |",
         "| `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |",
+        "| `configuration_conditions.csv` | Exact generated job conditions with staged-validity audit. |",
+        "| `configuration_condition_overview.html` | Human-readable overview of planned configuration conditions. |",
         "| `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |",
         "| `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |",
         "| `model_configuration_matrix.csv` | Wide matrix joining identical non-model conditions across Agent B models. |",
@@ -1012,6 +1015,8 @@ def _write_analysis_guide(path, generated_files):
         "| `agent_b_model_summary.csv` | One row per Agent B model and Agent A pairing, sorted by Agent B size and model. |",
         "| `phase_metric_comparison.csv` | One row per condition and dialogue-system phase with telemetry counts and timings. |",
         "| `phase_summary_by_model.csv` | Phase-level aggregates by Agent A, Agent B, run type, TTS, ASR, and phase. |",
+        "| `../comparison/metric_outcome_correlations.csv` | Descriptive Pearson correlations between pre-outcome metrics and task outcomes for finalized runs. |",
+        "| `../comparison/metric_outcome_correlations.html` | Phase-wise readable correlation overview. |",
         "| `dialogue_state_comparison.csv` | One row per condition with memory, route, candidate, and agreement evidence. |",
         "| `dialogue_state_summary.csv` | Dialogue-state aggregates by run, scenario, persona, and run type. |",
         "| `conversation_turns.csv` | Turn-level intended text, TTS text, raw ASR, understood text, and correction counts. |",
@@ -1112,7 +1117,7 @@ th{{position:sticky;top:0;background:#244b5a;color:#fff}}.finalized,.completed{{
 .interrupted{{background:#f8dddd}}.preflight_only,.not_started{{background:#edf0f3;color:#56616c}}code{{background:#edf1f4;padding:2px 4px}}
 </style></head><body><main><h1>Result evidence comparison</h1>
 <p>Derived representation only. Source logs, audio, configuration, and outcomes are not modified. Blank values mean unavailable evidence, not zero or failure.</p>
-<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="program_execution_summary.csv">Program execution</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
+<nav><a href="analysis_guide.md">Guide</a><a href="configuration_condition_overview.html">Planned conditions</a><a href="run_inventory.csv">Runs</a><a href="program_execution_summary.csv">Program execution</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="../comparison/metric_outcome_correlations.html">Correlations</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
 <section><h2>Run lifecycle</h2>{run_table}</section><section><h2>Configuration groups</h2>{config_table}</section>
 <section><h2>Program execution, independent of task satisfaction</h2><p>This table counts whether the software finalized and completed each configured condition. It does not judge route quality, constraint satisfaction, or dialogue success.</p>{program_execution_table}</section>
 <section><h2>Task and success</h2>{outcome_table}</section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
@@ -2115,17 +2120,18 @@ def write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers
     by_phase = defaultdict(list)
     for column in metric_columns:
         by_phase[specifications[column]["phase"]].append(column)
+    ordered_phases = list(by_phase.items())
     fixed_header_html = "".join(
         f'<th rowspan="2">{html.escape(fixed_labels[column])}</th>' for column in fixed_columns
     )
     phase_header_html = "".join(
-        f'<th colspan="{len(columns)}" class="phase-header">{html.escape(phase)}</th>'
-        for phase, columns in by_phase.items()
+        f'<th colspan="{len(columns)}" class="phase-header">{index}. {html.escape(phase)}</th>'
+        for index, (phase, columns) in enumerate(ordered_phases, start=1)
     )
     metric_header_html = "".join(
         f'<th title="{html.escape(specifications[column]["metric_key"])}">'
         f'{html.escape(specifications[column]["metric_label"])}</th>'
-        for columns in by_phase.values() for column in columns
+        for _phase, columns in ordered_phases for column in columns
     )
     body = []
     for row in rows:
@@ -2177,7 +2183,7 @@ thead tr:nth-child(2) th{{position:sticky;top:31px;background:#376879;color:whit
 .contradicting-outlier,.unknown-outlier{{box-shadow:inset 0 0 0 3px #6F4BA8}}.contradicting-outlier .outlier-badge,.unknown-outlier .outlier-badge{{color:#563884}}
 a{{color:#174F69}}nav{{margin-bottom:12px}}nav a{{margin-right:14px;font-weight:650}}
 </style></head><body><h1>Completed runs by phase metric</h1>
-<nav><a href="run_phase_metric_matrix.csv">Matrix CSV</a><a href="combined_metrics_long.csv">Metric evidence</a><a href="condition_analysis.csv">Conditions</a><a href="metric_outliers.csv">Outliers</a></nav>
+<nav><a href="run_phase_metric_matrix.csv">Matrix CSV</a><a href="combined_metrics_long.csv">Metric evidence</a><a href="condition_analysis.csv">Conditions</a><a href="metric_outcome_correlations.html">Correlations</a><a href="metric_outliers.csv">Outliers</a></nav>
 <p>Every finalized run appears once, ordered from smallest to largest Agent B. Outcome fields are green, amber, or red. Metric fill is normalized between declared or observed extremes and respects metric direction. Outlier borders are red for failure-aligned, green for success-aligned, and violet for contradictory or unknown alignment.</p>
 <table><thead><tr>{fixed_header_html}{phase_header_html}</tr><tr>{metric_header_html}</tr></thead><tbody>{''.join(body) or empty}</tbody></table></body></html>"""
     Path(path).write_text(document, encoding="utf-8")
@@ -2207,6 +2213,163 @@ def summarize_metric_indicators(outliers):
             "interpretation": "descriptive outlier alignment; requires held-out validation",
         })
     return output
+
+
+def _pearson_correlation(left, right):
+    pairs = [
+        (float(x), float(y))
+        for x, y in zip(left, right)
+        if x is not None and y is not None
+    ]
+    if len(pairs) < CORRELATION_MINIMUM_SAMPLES:
+        return None
+    xs, ys = zip(*pairs)
+    mean_x = statistics.fmean(xs)
+    mean_y = statistics.fmean(ys)
+    numerator = sum((x - mean_x) * (y - mean_y) for x, y in pairs)
+    denominator_x = math.sqrt(sum((x - mean_x) ** 2 for x in xs))
+    denominator_y = math.sqrt(sum((y - mean_y) ** 2 for y in ys))
+    if denominator_x == 0 or denominator_y == 0:
+        return None
+    return numerator / (denominator_x * denominator_y)
+
+
+def summarize_metric_outcome_correlations(metrics, conditions):
+    """Correlate pre-outcome metric values with observed task outcomes."""
+    outcomes = {
+        (str(row.get("source_run", "")), str(row.get("condition_id", ""))): row
+        for row in conditions
+    }
+    grouped = defaultdict(list)
+    metadata = {}
+    for row in metrics:
+        phase = str(row.get("phase", ""))
+        if phase in OUTLIER_EXCLUDED_PHASES:
+            continue
+        if str(row.get("available", "true")).casefold() not in {"true", "1", "yes"}:
+            continue
+        value = _number(row.get("value_numeric"))
+        if value is None:
+            continue
+        outcome = outcomes.get(
+            (str(row.get("source_run", "")), str(row.get("condition_id", ""))),
+            {},
+        )
+        if not outcome:
+            continue
+        key = (
+            phase,
+            str(row.get("metric_key", "")),
+            str(row.get("run_type", "")),
+        )
+        grouped[key].append({
+            "metric_value": value,
+            "task_success": 1.0 if outcome.get("task_success") is True else 0.0,
+            "route_validity": _number(outcome.get("route_validity")),
+            "constraint_satisfaction": _number(outcome.get("constraint_satisfaction")),
+        })
+        metadata[key] = {
+            "phase_order": _phase_order(row.get("phase_order")),
+            "phase": phase,
+            "metric_key": str(row.get("metric_key", "")),
+            "metric_label": str(row.get("metric_label") or row.get("metric_key") or ""),
+            "run_type": str(row.get("run_type", "")),
+            "higher_is_better": str(row.get("higher_is_better", "")).casefold() in {"true", "1", "yes"},
+        }
+
+    rows = []
+    for key, values in grouped.items():
+        metric_values = [row["metric_value"] for row in values]
+        base = {
+            **metadata[key],
+            "sample_count": len(values),
+            "metric_mean": statistics.fmean(metric_values),
+            "metric_minimum": min(metric_values),
+            "metric_maximum": max(metric_values),
+        }
+        for outcome_key, label in (
+            ("task_success", "Task success"),
+            ("route_validity", "Route validity"),
+            ("constraint_satisfaction", "Constraint satisfaction"),
+        ):
+            outcome_values = [row[outcome_key] for row in values]
+            correlation = _pearson_correlation(metric_values, outcome_values)
+            rows.append({
+                **base,
+                "outcome": outcome_key,
+                "outcome_label": label,
+                "outcome_mean": _mean(outcome_values),
+                "pearson_r": correlation,
+                "absolute_pearson_r": abs(correlation) if correlation is not None else None,
+                "interpretation": (
+                    "descriptive association; not causal and not validated without held-out data"
+                    if correlation is not None
+                    else f"unavailable; requires at least {CORRELATION_MINIMUM_SAMPLES} varying paired observations"
+                ),
+            })
+    return sorted(rows, key=lambda row: (
+        row["phase_order"],
+        row["phase"],
+        -1 if row["absolute_pearson_r"] is None else -row["absolute_pearson_r"],
+        row["metric_key"],
+        row["outcome"],
+    ))
+
+
+def write_metric_correlation_html(path, rows):
+    """Write a compact phase-wise correlation overview."""
+    rows = list(rows)
+    phases = defaultdict(list)
+    for row in rows:
+        phases[row["phase"]].append(row)
+    sections = []
+    for phase_index, (phase, phase_rows) in enumerate(
+        sorted(
+            phases.items(),
+            key=lambda item: (min(row["phase_order"] for row in item[1]), item[0]),
+        ),
+        start=1,
+    ):
+        body = []
+        for row in sorted(
+            phase_rows,
+            key=lambda item: (
+                -1 if item["absolute_pearson_r"] is None else -item["absolute_pearson_r"],
+                item["metric_key"],
+                item["outcome"],
+            ),
+        )[:80]:
+            value = row["pearson_r"]
+            strength = "" if value is None else f"{value:.3f}"
+            color_value = None if value is None else abs(value)
+            color = _metric_cell_color(
+                color_value,
+                {"range_min": 0.0, "range_max": 1.0, "higher_is_better": True},
+            )
+            body.append(
+                "<tr>"
+                f"<td>{html.escape(row['metric_label'])}</td>"
+                f"<td>{html.escape(row['run_type'])}</td>"
+                f"<td>{html.escape(row['outcome_label'])}</td>"
+                f"<td>{row['sample_count']}</td>"
+                f"<td style=\"background:{color}\">{strength}</td>"
+                f"<td>{html.escape(row['interpretation'])}</td>"
+                "</tr>"
+            )
+        sections.append(
+            f"<section><h2>{phase_index}. {html.escape(phase)}</h2>"
+            "<table><thead><tr><th>Metric</th><th>Run type</th><th>Outcome</th>"
+            "<th>N</th><th>Pearson r</th><th>Interpretation</th></tr></thead>"
+            f"<tbody>{''.join(body)}</tbody></table></section>"
+        )
+    document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metric outcome correlations</title>
+<style>body{{font:14px system-ui,sans-serif;color:#202A35;background:#F3F5F7;margin:0;padding:20px}}main{{max-width:1500px;margin:auto}}section{{background:white;border:1px solid #CBD3DC;margin:12px 0;padding:12px;overflow:auto}}table{{border-collapse:collapse;width:100%}}th,td{{border-bottom:1px solid #DCE2E8;padding:6px 8px;text-align:left;white-space:nowrap}}th{{background:#244B5A;color:white}}p{{max-width:1000px}}</style></head>
+<body><main><h1>Metric outcome correlations</h1>
+<p>Descriptive Pearson correlations between pre-outcome metric values and task outcomes. Correlations summarize association only; they do not prove causation, and sparse or non-varying samples remain unavailable.</p>
+{''.join(sections) or '<p>No correlations available.</p>'}</main></body></html>"""
+    Path(path).write_text(document, encoding="utf-8")
 
 
 def _selected_chart_rows(summaries, limit=12):
@@ -2264,6 +2427,7 @@ def write_analysis_overview(
     condition_analysis,
     phase_scorecard,
     outliers=(),
+    metric_correlations=(),
 ):
     """Write the primary analysis-first landing page for runs and batches."""
     path = Path(path)
@@ -2374,7 +2538,27 @@ def write_analysis_overview(
         for row in outliers
     ) or '<tr><td colspan="7">No robust pre-outcome outliers detected.</td></tr>'
 
-    phase_headers = "".join(f"<th>{html.escape(phase)}</th>" for phase in phases)
+    phase_headers = "".join(
+        f"<th>{index}. {html.escape(phase)}</th>"
+        for index, phase in enumerate(phases, start=1)
+    )
+    correlation_rows = "".join(
+        f'<tr><td>{html.escape(str(row.get("phase", "")))}</td>'
+        f'<td>{html.escape(str(row.get("metric_label", row.get("metric_key", ""))))}</td>'
+        f'<td>{html.escape(str(row.get("run_type", "")))}</td>'
+        f'<td>{html.escape(str(row.get("outcome_label", "")))}</td>'
+        f'<td>{row.get("sample_count", "")}</td>'
+        f'<td>{_display_number(row.get("pearson_r"), decimals=3)}</td>'
+        f'<td>{html.escape(str(row.get("interpretation", "")))}</td></tr>'
+        for row in sorted(
+            metric_correlations,
+            key=lambda item: (
+                -1 if item.get("absolute_pearson_r") is None else -float(item["absolute_pearson_r"]),
+                str(item.get("phase", "")),
+                str(item.get("metric_key", "")),
+            ),
+        )[:40]
+    ) or '<tr><td colspan="7">No metric-outcome correlations available.</td></tr>'
     document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Experiment analysis overview</title>
 <style>
@@ -2386,13 +2570,15 @@ section{{background:white;border:1px solid var(--line);margin:12px 0;padding:12p
 .controls{{display:flex;gap:8px;align-items:center;margin:8px 0}}input{{min-width:300px;padding:7px;border:1px solid var(--line)}}button{{padding:7px 10px;border:1px solid #9eabb7;background:white;cursor:pointer}}button:hover{{background:#eaf1ef}}code{{font-size:12px}}small{{color:#44515d}}
 @media(max-width:800px){{.summary{{grid-template-columns:repeat(2,1fr)}}main{{padding:10px}}nav{{margin:0 -10px 10px}}}}
 </style></head><body><main>
-<nav><a href="#runs">Runs</a><a href="#phases">Phases</a><a href="#conditions">Conditions</a><a href="#outliers">Outliers</a></nav>
+<nav><a href="#runs">Runs</a><a href="#phases">Phases</a><a href="#correlations">Correlations</a><a href="#conditions">Conditions</a><a href="#outliers">Outliers</a></nav>
 <h1>Experiment analysis overview</h1><p>Analysis-first index over canonical result tables. Raw metrics and protocol evidence remain authoritative.</p>
 <div class="summary"><div><strong>{len(run_analysis)}</strong><small>finalized runs</small></div><div><strong>{total_conditions}</strong><small>conditions</small></div><div><strong>{successful}</strong><small>successful</small></div><div><strong>{failed}</strong><small>failed</small></div></div>
 <section id="runs"><h2>Run comparison</h2><p>Matched audio/text delta is audio success minus its paired text control. A dash means the comparison is unavailable.</p>
 <table><thead><tr><th>Run</th><th>Size</th><th>Agent A</th><th>Agent B</th><th>TTS</th><th>ASR</th><th>N</th><th>Success</th><th>Audio</th><th>Text</th><th>Audio delta</th><th>Route valid</th><th>Constraints</th><th>Audio WER</th><th>Repair</th><th>Turns</th><th>Runtime s</th><th>Failure phases</th><th>Evidence</th></tr></thead><tbody>{''.join(run_rows)}</tbody></table></section>
 <section id="phases"><h2>Phase scorecard</h2><p>Equal-weighted descriptive mean over available metrics with declared ranges. Coverage is shown in every cell; compare component metrics before drawing conclusions.</p>
 <table><thead><tr><th>Run</th>{phase_headers}</tr></thead><tbody>{''.join(phase_rows)}</tbody></table></section>
+<section id="correlations"><h2>Metric-outcome correlations</h2><p>Top descriptive Pearson correlations between pre-outcome metrics and task outcomes. These are associations for inspection, not validated predictors.</p>
+<table><thead><tr><th>Phase</th><th>Metric</th><th>Run type</th><th>Outcome</th><th>N</th><th>Pearson r</th><th>Interpretation</th></tr></thead><tbody>{correlation_rows}</tbody></table></section>
 <section id="conditions"><h2>Condition explorer</h2><div class="controls"><input id="condition-search" type="search" placeholder="Search run, condition, scenario, persona, provider..."><button type="button" data-filter="all">All</button><button type="button" data-filter="failure">Failures</button><button type="button" data-filter="audio_variant">Audio</button><button type="button" data-filter="text_only">Text</button></div>
 <table id="condition-table"><thead><tr><th>Outcome</th><th>Run</th><th>Condition</th><th>Scenario</th><th>Persona</th><th>Type</th><th>Speech</th><th>TTS</th><th>ASR</th><th>Beam</th><th>Seed</th><th>Route valid</th><th>Constraints</th><th>WER</th><th>Entity error</th><th>Repair</th><th>Grounding</th><th>Turns</th><th>Runtime s</th><th>Failure phase</th></tr></thead><tbody>{''.join(condition_rows)}</tbody></table></section>
 <section id="outliers"><h2>Robust metric outliers</h2><p>Modified z-scores are descriptive associations and are not validated causal indicators.</p><table><thead><tr><th>Run</th><th>Condition</th><th>Phase</th><th>Metric</th><th>Value</th><th>Modified z</th><th>Alignment</th></tr></thead><tbody>{outlier_rows}</tbody></table></section>
@@ -2499,6 +2685,7 @@ def compare_runs(inputs, output_directory):
     deltas = calculate_run_deltas(summaries)
     outliers = identify_metric_outliers(metrics, conditions)
     metric_indicators = summarize_metric_indicators(outliers)
+    metric_correlations = summarize_metric_outcome_correlations(metrics, conditions)
     condition_analysis = build_condition_analysis_rows(conditions, metrics)
     program_execution_rows = _program_execution_summary_rows(condition_analysis, run_directories)
     model_configuration_rows = _model_configuration_matrix_rows(condition_analysis)
@@ -2515,6 +2702,8 @@ def compare_runs(inputs, output_directory):
         "deltas": output / "metric_deltas.csv",
         "outliers": output / "metric_outliers.csv",
         "metric_indicators": output / "metric_indicator_summary.csv",
+        "metric_correlations": output / "metric_outcome_correlations.csv",
+        "metric_correlation_report": output / "metric_outcome_correlations.html",
         "run_metric_matrix": output / "run_phase_metric_matrix.csv",
         "run_metric_matrix_report": output / "run_phase_metric_matrix.html",
         "condition_analysis": output / "condition_analysis.csv",
@@ -2536,6 +2725,7 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["deltas"], deltas)
     _write_csv(paths["outliers"], outliers)
     _write_csv(paths["metric_indicators"], metric_indicators)
+    _write_csv(paths["metric_correlations"], metric_correlations)
     _write_csv(paths["run_metric_matrix"], run_metric_matrix)
     _write_csv(paths["condition_analysis"], condition_analysis)
     _write_csv(paths["program_execution_summary"], program_execution_rows)
@@ -2552,6 +2742,7 @@ def compare_runs(inputs, output_directory):
         run_metric_specifications,
         run_metric_outliers,
     )
+    write_metric_correlation_html(paths["metric_correlation_report"], metric_correlations)
     for run_directory in run_directories:
         write_run_analysis_outputs(run_directory)
     return paths

@@ -11,6 +11,8 @@ before and after generation, and aborts if source evidence changes.
 | `run_inventory.csv` | One row per discovered run folder, including lifecycle state and completed/observed counts. |
 | `program_execution_summary.csv` | Program execution completion by Agent B model, independent of task success or route satisfaction. |
 | `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |
+| `configuration_conditions.csv` | Exact generated job conditions with staged-validity audit. |
+| `configuration_condition_overview.html` | Human-readable overview of planned configuration conditions. |
 | `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |
 | `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |
 | `model_configuration_matrix.csv` | Wide matrix joining identical non-model conditions across Agent B models. |
@@ -18,6 +20,8 @@ before and after generation, and aborts if source evidence changes.
 | `agent_b_model_summary.csv` | One row per Agent B model and Agent A pairing, sorted by Agent B size and model. |
 | `phase_metric_comparison.csv` | One row per condition and dialogue-system phase with telemetry counts and timings. |
 | `phase_summary_by_model.csv` | Phase-level aggregates by Agent A, Agent B, run type, TTS, ASR, and phase. |
+| `../comparison/metric_outcome_correlations.csv` | Descriptive Pearson correlations between pre-outcome metrics and task outcomes for finalized runs. |
+| `../comparison/metric_outcome_correlations.html` | Phase-wise readable correlation overview. |
 | `dialogue_state_comparison.csv` | One row per condition with memory, route, candidate, and agreement evidence. |
 | `dialogue_state_summary.csv` | Dialogue-state aggregates by run, scenario, persona, and run type. |
 | `conversation_turns.csv` | Turn-level intended text, TTS text, raw ASR, understood text, and correction counts. |

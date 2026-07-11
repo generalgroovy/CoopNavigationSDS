@@ -105,6 +105,21 @@ out batch.
   layer before dialogue evaluation.
 - Raw evidence remains authoritative; metrics and HTML reports are derived.
 
+### Design Decisions
+
+| Decision | Chosen design | Reasoning |
+| --- | --- | --- |
+| Unit of analysis | One expanded condition | Prevents treating turns from the same dialogue as independent samples. |
+| Agent knowledge | Agent A and Agent B keep separate memories | Preserves authentic dialogue-state errors and repair behavior. |
+| Route objective | Shortest valid route under progressively revealed constraints | Creates a verifiable task outcome and staged cooperation problem. |
+| Speech integrity | Listener consumes ASR/NLU output, not hidden source text | Keeps TTS, ASR, normalization, and repair effects measurable. |
+| Metrics | Retrospective calculation from captured evidence | Makes formula changes reproducible without rerunning expensive models. |
+| Missing data | Null value plus explicit unavailable reason | Avoids silently converting provider failure into a metric score. |
+| Model comparison | Same non-model condition grid for every Agent B model | Makes cross-model comparisons interpretable. |
+| Audio comparison | Paired `audio_variant` and `text_only` conditions | Separates speech-channel effects from model/task effects. |
+| Batch failure policy | Condition failure is recorded; batch continues | Preserves failure evidence while improving result yield. |
+| Result structure | Single `results/` root with derived top-level views | Keeps raw evidence traceable and comparison tables easy to join. |
+
 ## 2. Pipeline and Knowledge
 
 ```mermaid
@@ -1261,17 +1276,30 @@ python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
 
 The canonical comparison output contains joined conditions, joined long
 metrics, metric summaries, paired deltas, robust outliers, a condition analysis
-table, `run_phase_metric_matrix.html`, and `phase_metrics/*.csv`. The matrix
-places completed runs in rows and phase-ordered metrics in columns. The
-phase-specific CSV files place each calculable metric beside the matching run,
-condition, task outcome, route validity, constraint satisfaction, TTS, ASR,
-scenario, and persona, so phase failures can be compared without reopening each
-run folder. Color encodes outcome and descriptive outlier status; it does not
-establish causality or a validated threshold.
+table, metric-outcome correlations, `run_phase_metric_matrix.html`, and
+`phase_metrics/*.csv`. The matrix places completed runs in rows and numbered
+pipeline phases in columns. The phase-specific CSV files place each calculable
+metric beside the matching run, condition, task outcome, route validity,
+constraint satisfaction, TTS, ASR, scenario, and persona, so phase failures can
+be compared without reopening each run folder. Color encodes outcome,
+direction-adjusted metric position, descriptive outlier status, and correlation
+strength; it does not establish causality or a validated threshold.
 Positive-direction metrics use greener cells for larger normalized values;
 negative-direction metrics use greener cells for smaller normalized values.
 Unavailable metrics remain neutral with the unavailable reason in the derived
 tables. Raw result files are not modified during comparison generation.
+
+The most important comparison files are:
+
+| File | Primary use |
+| --- | --- |
+| `combined_conditions.csv` | Join key and immutable condition fields for completed runs |
+| `combined_metrics_long.csv` | Canonical graphable metric evidence |
+| `run_phase_metric_matrix.csv/.html` | One row per run; phase-numbered metric columns |
+| `metric_outcome_correlations.csv/.html` | Pearson correlations between pre-outcome metrics and task outcomes |
+| `metric_indicator_summary.csv` | Robust outlier alignment with success/failure |
+| `model_configuration_matrix.csv/.html` | Same non-model condition rows compared across Agent B models |
+| `phase_metrics/*.csv` | One file per numbered pipeline phase |
 
 Interrupted and preflight-only runs use a separate evidence-preserving general
 view:
@@ -1318,6 +1346,30 @@ and structurally valid?" rather than "what completed?". A condition is marked
 stage-valid only when the scenario can support the progressive route stages
 for validity, time, and constraints. Invalid staged designs are kept in the
 table so coverage gaps are explicit instead of hidden.
+
+Current planned-condition coverage is:
+
+| Dimension | Levels covered |
+| --- | --- |
+| Agent A | `tinyllama`, `userlm` |
+| Agent B size | `small`, `medium`, `large` |
+| Agent B models | 12 total: four per size tier |
+| Conditions per Agent A x Agent B model | 84 generated; 72 staged-valid; 12 invalid staged designs retained for audit |
+| Run types | `text_only`, `audio_variant` |
+| TTS | `piper` in the current controlled Slurm matrix |
+| ASR | `vosk`, `faster_whisper` |
+| Scenarios | `morning_peak_cross_city`, `midday_transfer`, `airport_connection`, `crowded_event_exit` |
+| Personas | `focused_commuter`, `crowd_averse_rider`, `delay_sensitive_traveler`, `risk_averse_novice` |
+| Speech bands | `ceiling`, `nominal`, `challenging`, `floor` |
+| ASR search widths | `1`, `6`, `11`, `16` |
+| Network seeds | `42`, `77` |
+| Model parameter profiles | `greedy`, `temp0.7`, `nucleus0.9` |
+
+Totals across the current Agent A and Agent B model matrix are `2016`
+generated conditions, `1728` staged-valid conditions, and `288` invalid
+staged designs. The exact row-level source is
+`results/general/configuration_conditions.csv`; the readable index is
+`results/general/configuration_condition_overview.html`.
 
 Coverage can be rebuilt independently:
 

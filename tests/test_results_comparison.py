@@ -10,6 +10,7 @@ from coop_navigation_sds.ResultsAndArtifacts.comparison import (
     discover_run_directories,
     identify_metric_outliers,
     summarize_metric_indicators,
+    summarize_metric_outcome_correlations,
     summarize_run_outcomes,
     write_evidence_comparison,
 )
@@ -76,6 +77,40 @@ def test_phase_scorecard_uses_recorded_pipeline_order():
     ])
 
     assert [row["phase"] for row in rows] == ["audio_input", "asr"]
+
+
+def test_metric_outcome_correlations_report_pre_outcome_associations():
+    conditions = []
+    metrics = []
+    for index, value in enumerate((0.1, 0.2, 0.3, 0.8, 0.9), start=1):
+        success = index >= 4
+        condition_id = f"c{index}"
+        conditions.append({
+            "source_run": "run",
+            "condition_id": condition_id,
+            "task_success": success,
+            "route_validity": 1.0 if success else 0.0,
+            "constraint_satisfaction": 1.0 if success else 0.0,
+        })
+        metrics.append({
+            "source_run": "run",
+            "condition_id": condition_id,
+            "phase": "asr",
+            "phase_order": 2,
+            "metric_key": "asr_station_f1",
+            "metric_label": "Station F1",
+            "run_type": "audio_variant",
+            "available": True,
+            "value_numeric": value,
+            "higher_is_better": True,
+        })
+
+    rows = summarize_metric_outcome_correlations(metrics, conditions)
+
+    task_rows = [row for row in rows if row["outcome"] == "task_success"]
+    assert len(task_rows) == 1
+    assert task_rows[0]["sample_count"] == 5
+    assert task_rows[0]["pearson_r"] > 0.8
 
 
 def _write_run(

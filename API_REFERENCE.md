@@ -127,9 +127,33 @@ No public runtime components are defined in this module.
 
 Batch experiment entry point for automatic evaluation of speech-dialog conditions.
 
+### Function `failed_condition_result(condition, runner, exc, runtime_sec)`
+
+Create an analyzable failure result when setup fails before dialogue capture.
+
+### Function `condition_configuration_rows(conditions, *, agent_a_type, agent_b_plugin)`
+
+Expand conditions into auditable rows with sequential and paired deltas.
+
+### Function `write_condition_configuration_breakdown(conditions, output_dir, *, agent_a_type, agent_b_plugin, coverage_report)`
+
+Write one complete, graphable view of the resolved run grid.
+
 ### Function `parse_csv_arg(value, all_values=None)`
 
 Parse a comma-separated CLI argument into a list.
+
+### Function `select_condition_shard(conditions, start=0, count=None)`
+
+Return one validated contiguous condition shard without changing order.
+
+### Function `batch_scenario_overrides(args)`
+
+Return scenario overrides shared by validity filtering and execution.
+
+### Function `valid_stage_conditions(conditions, args, scenario_overrides)`
+
+Filter conditions with cached staged-route viability checks.
 
 ### Function `parse_bool_flag(value)`
 
@@ -274,6 +298,7 @@ Collect one interactive run configuration.
 - `StartupConfigDialog._refresh_agent_selection(self)`: Internal class operation.
 - `StartupConfigDialog._refresh_speech_selection(self)`: Internal class operation.
 - `StartupConfigDialog._select_audio_persona(self)`: Internal class operation.
+- `StartupConfigDialog._select_speech_performance_band(self)`: Internal class operation.
 - `StartupConfigDialog._select_tts_engine(self)`: Internal class operation.
 - `StartupConfigDialog._select_asr_engine(self)`: Internal class operation.
 - `StartupConfigDialog._refresh_conditional_sections(self)`: Internal class operation.
@@ -328,7 +353,11 @@ Canonical Agent B model-size treatments used by research job matrices.
 
 ### Class `ModelSizeTreatment`
 
-One controlled model-size tier with two family-diverse local models.
+One controlled model-size tier with provider-compatible model slots.
+
+### Class `AgentBModelProposal`
+
+Documented Agent B candidate beyond the two canonical size slots.
 
 ### Function `model_store_platform(system_name=None)`
 
@@ -353,6 +382,10 @@ Return a size-first, stable catalog path for one registered model.
 ### Function `models_for_size_treatments(treatment_keys)`
 
 Resolve ordered model names for one or more declared size treatments.
+
+### Function `agent_b_model_proposals(size_tier=None)`
+
+Return documented model candidates grouped by experimental size tier.
 
 ### Function `model_size_treatment(model_name)`
 
@@ -464,6 +497,14 @@ Return one portable, bounded filename component.
 
 Return one stable results root independent of the process working directory.
 
+### Function `normalized_result_group_parts(group)`
+
+Return canonical result-group parts beneath the configured results root.
+
+### Function `resolve_result_group(results_root, group=None)`
+
+Resolve a portable relative result group beneath one results root.
+
 ### Class `RunArtifactPaths`
 
 Canonical flat artifact paths for one completed experiment run.
@@ -494,6 +535,65 @@ Merge saved JSON settings over supplied defaults.
 
 Atomically save persistent run settings and return their path.
 
+## `coop_navigation_sds/Configuration/slurm_grid.py`
+
+Deterministic, scheduler-neutral condition grids for Slurm array jobs.
+
+### Function `_tinyllama_backend()`
+
+Internal module operation.
+
+### Function `_immutable_mapping(values=None)`
+
+Internal module operation.
+
+### Function `_canonical_hash(values, length=12)`
+
+Internal module operation.
+
+### Function `_registry_selection(value, registry, label)`
+
+Internal module operation.
+
+### Function `_task_profiles(document)`
+
+Resolve validated case/persona pairs without creating blind cross-products.
+
+### Class `AgentBBackend`
+
+One plugin/model treatment independent of scheduler resources.
+
+- `AgentBBackend.from_value(cls, value)`: Internal class operation.
+- `AgentBBackend.as_dict(self)`: Internal class operation.
+
+### Class `SlurmCondition`
+
+One immutable scheduler-array treatment.
+
+- `SlurmCondition.experimental_factors(self)`: Internal class operation.
+- `SlurmCondition.condition_id(self)`: Internal class operation.
+- `SlurmCondition.as_dict(self, runtime_overrides=None)`: Internal class operation.
+
+### Class `SlurmConditionGrid`
+
+Validated condition collection with stable index ordering.
+
+- `SlurmConditionGrid.from_document(cls, document, source='')`: Internal class operation.
+- `SlurmConditionGrid.from_file(cls, path)`: Internal class operation.
+- `SlurmConditionGrid.condition(self, index)`: Internal class operation.
+
+### Function `condition_directory_name(condition, runtime_overrides=None)`
+
+Return a bounded directory name unique to factors and runtime overrides.
+
+### Function `reserve_condition_directory(results_root, condition, runtime_overrides=None)`
+
+Atomically reserve a new task folder without overwriting a prior attempt.
+
+### Function `export_condition_json(condition, path, runtime_overrides=None)`
+
+Write the exact resolved condition once; refuse accidental replacement.
+
 ## `coop_navigation_sds/Configuration/speech.py`
 
 Agent B configuration and speech simulation constants.
@@ -501,6 +601,14 @@ Agent B configuration and speech simulation constants.
 ### Function `_environment(name, legacy_name, default)`
 
 Internal module operation.
+
+### Function `speech_performance_profile(key)`
+
+Return one validated floor-to-ceiling speech treatment.
+
+### Function `speech_performance_profiles(keys=None)`
+
+Return ordered named speech treatments for job expansion.
 
 ### Function `_load_speech_pattern_presets()`
 
@@ -580,6 +688,10 @@ Tracks spoken route candidates so a dialog does not accept repeats.
 
 Persistent subprocess bridge for dependency-isolated speech providers.
 
+### Class `ProviderProcessStoppedError`
+
+Raised when an isolated provider exits before returning a response.
+
 ### Function `_provider_key(engine)`
 
 Internal module operation.
@@ -598,8 +710,9 @@ Maintain one JSON-lines worker so model weights remain loaded.
 
 - `ProviderProcessClient.__init__(self, python, stage, engine, timeout_seconds, log_path=None)`: Internal class operation.
 - `ProviderProcessClient._start(self)`: Internal class operation.
-- `ProviderProcessClient._read_responses(self)`: Internal class operation.
+- `ProviderProcessClient._read_responses(process, response_queue)`: Internal class operation.
 - `ProviderProcessClient.request(self, payload)`: Internal class operation.
+- `ProviderProcessClient._request_once(self, payload)`: Internal class operation.
 - `ProviderProcessClient.close(self)`: Internal class operation.
 - `ProviderProcessClient.__del__(self)`: Internal class operation.
 
@@ -926,6 +1039,10 @@ Apply reproducible lexical manifestations of the selected delivery style.
 
 Apply logged deterministic transcript degradation for controlled personas.
 
+### Function `_apply_audio_channel_impairment(signal, config, speaker)`
+
+Apply a deterministic PCM channel treatment between TTS and ASR.
+
 ### Class `SpeechTransport`
 
 Controller utility that composes TTS and ASR engines into one transmit operation.
@@ -934,7 +1051,7 @@ Controller utility that composes TTS and ASR engines into one transmit operation
 - `SpeechTransport._default_tts_engine(self)`: Internal class operation.
 - `SpeechTransport._default_asr_engine(self)`: Internal class operation.
 - `SpeechTransport._stage_engine(self, stage_engine)`: Internal class operation.
-- `SpeechTransport._isolated_stage(self, stage, engine)`: Use another Python 3.14 interpreter only when explicitly configured.
+- `SpeechTransport._isolated_stage(self, stage, engine)`: Use another provider interpreter only when explicitly configured.
 - `SpeechTransport.description(self)`: Description method for this module's MVC responsibility.
 - `SpeechTransport.validate_configuration(self)`: Fail early unless both stages are actual configured components.
 - `SpeechTransport.close(self)`: Release provider workers and their operating-system resources.
@@ -1298,12 +1415,28 @@ Data model for one batch experiment condition.
 
 - `ExperimentCondition.__post_init__(self)`: Internal class operation.
 
+### Function `resolved_condition_test_case(condition, scenario_overrides=None, *, default_num_turns=20)`
+
+Return the exact test-case shape used for route-stage preflight.
+
+### Function `condition_stage_viability(condition, scenario_overrides=None, *, default_transfer_tolerance=1, default_num_turns=20)`
+
+Return route-stage viability for a generated condition without running models.
+
+### Function `valid_stage_condition(condition, scenario_overrides=None, *, default_transfer_tolerance=1, default_num_turns=20)`
+
+Return whether a condition can support the staged route-dialogue design.
+
+### Function `condition_configuration_provenance(specification, condition)`
+
+Return distinct, reproducible identities for a batch and one condition.
+
 ### Class `ExperimentRunner`
 
 Batch controller for running one condition or a full condition grid.
 
 - `ExperimentRunner.__init__(self, model_adapter, num_turns, agent_b_plugin_key=AGENT_B_PLUGIN, tts_engine=SPEECH_TTS_ENGINE, asr_engine=SPEECH_ASR_ENGINE, speech_audio_dir=SPEECH_AUDIO_DIR, speech_playback_enabled=SPEECH_PLAYBACK_ENABLED, speech_realtime_enabled=SPEECH_REALTIME_ENABLED, speech_synthesis_config=None, transfer_tolerance=AGENT_A_TRANSFER_TOLERANCE, invalid_route_limit=INVALID_ROUTE_LIMIT, constraint_miss_limit=CONSTRAINT_MISS_LIMIT, stagnation_limit=2, max_turn_elapsed_sec=DEFAULT_MAX_TURN_ELAPSED_SEC, calculation_max_time_sec=GENERATION_MAX_TIME_SEC, llm_agent_a=LLM_AGENT_A, agent_a_type=None, log_profile=LOG_PROFILE_OFF, log_dir=SESSION_LOG_DIR, scenario_overrides=None, model_adapter_factory=None, agent_a_model_adapter=None, experiment_specification=None)`: init method for this module's MVC responsibility.
-- `ExperimentRunner.run_condition(self, condition: ExperimentCondition, *, compute_metrics=True)`: Run condition method for this module's MVC responsibility.
+- `ExperimentRunner.run_condition(self, condition: ExperimentCondition, *, compute_metrics=True, capture_failure=False)`: Run condition method for this module's MVC responsibility.
 - `ExperimentRunner._event_queue_for(self, condition: ExperimentCondition)`: Return a no-op queue by default, or a structured logger for batch audits.
 - `ExperimentRunner._configure_model_adapter_runtime(self, model_adapter, calculation_max_time_sec=None)`: Internal class operation.
 - `ExperimentRunner._agent_a_responder_for(self, model_adapter)`: Internal class operation.
@@ -1317,6 +1450,10 @@ Return deterministic strength-two rows covering every pair of factor levels.
 ### Function `condition_coverage_report(conditions)`
 
 Summarize value and pair coverage from expanded audio conditions.
+
+### Function `speech_performance_coverage_report(conditions)`
+
+Verify floor-to-ceiling bands within every comparable treatment cell.
 
 ### Function `build_condition_grid(test_case_keys=None, persona_keys=None, speech_pattern_keys=None, model_param_keys=None, objective_modes=None, agent_a_audio_persona_keys=None, agent_b_audio_persona_keys=None, tts_engine_keys=None, asr_engine_keys=None, agent_b_model_keys=None, iterations=1, parameter_grid=None, parameter_profiles=None, linked_profiles=None, coverage_strategy='full_factorial', pair_audio_with_text=False)`
 
@@ -1710,6 +1847,22 @@ Internal module operation.
 
 Internal module operation.
 
+### Function `_trust_remote_code(model_name)`
+
+Return whether a registered model explicitly requires Hub model code.
+
+### Function `_force_cpu_runtime()`
+
+Prevent CPU-requested runs from probing broken or unavailable CUDA drivers.
+
+### Function `_cpu_environment_requested()`
+
+Internal module operation.
+
+### Function `_resolve_model_device(device)`
+
+Resolve a configured model device without letting auto mode break on stale CUDA.
+
 ### Function `load_model_and_tokenizer(model_name: str=MODEL, token: str | None=TOKEN, device: str=DEVICE, allow_model_download: bool=ALLOW_MODEL_DOWNLOAD)`
 
 Load model and tokenizer function for this module's MVC responsibility.
@@ -1791,7 +1944,7 @@ Internal module operation.
 
 ### Function `research_model_profiles_by_tier()`
 
-Return the two primary Agent B model contrasts in each size tier.
+Return the selected Agent B model profiles in each size tier.
 
 ### Function `model_profile_defaults(key)`
 
@@ -1800,6 +1953,10 @@ Return provider settings for a registered model condition.
 ### Function `model_profile_metadata(key)`
 
 Internal module operation.
+
+### Function `model_memory_requirement_gb(model, provider=None)`
+
+Return the registered approximate runtime memory for one model.
 
 ### Function `matching_model_profile(provider, model)`
 
@@ -2014,6 +2171,18 @@ Create and return a unique output folder for one execution run.
 
 Internal module operation.
 
+### Function `_artifact_role(path)`
+
+Classify a result artifact by its research function.
+
+### Function `build_artifact_inventory(output_dir)`
+
+Return a hashed, role-aware inventory for an otherwise flat run folder.
+
+### Function `write_artifact_inventory(output_dir)`
+
+Write the integrity and provenance index for all run artifacts.
+
 ### Function `write_metrics_csv(metrics, path, context=None)`
 
 Write flat metric rows as CSV.
@@ -2024,7 +2193,7 @@ Write metrics as XLSX or CSV based on the requested file extension.
 
 ### Function `write_metric_phase_logs(metrics, output_dir, *, result_scope='run')`
 
-Write calculated phase metrics to one JSONL file and a matching catalog.
+Write canonical long and wide retrospective metric tables.
 
 ### Function `write_network_research_artifacts(current_time_min, output_dir, picture_dir=None)`
 
@@ -2049,6 +2218,46 @@ Internal module operation.
 ### Function `remove_empty_parent_dirs(start, roots)`
 
 Remove empty generated audio folders without climbing outside safe roots.
+
+### Function `_sha256_file(path)`
+
+Internal module operation.
+
+### Function `consolidate_completed_conversation_artifacts(output_dir, artifact_paths, *, remove_sources=True)`
+
+Combine per-condition protocol/TXT files without combining condition audio.
+
+### Function `_structured_log_events(path)`
+
+Internal module operation.
+
+### Function `consolidate_completed_runtime_logs(output_dir)`
+
+Combine condition session logs after completion and retain source checksums.
+
+### Function `consolidate_provider_runtime_logs(output_dir)`
+
+Flatten provider diagnostics while preserving source identity and bytes.
+
+### Function `compact_incomplete_run_artifacts(run_dir)`
+
+Create readable combined artifacts for an interrupted run without deleting evidence.
+
+### Function `_refresh_compacted_run_metadata(run_dir, compacted_paths)`
+
+Replace stale per-condition artifact references after verified compaction.
+
+### Function `compact_existing_result_tree(results_root)`
+
+Compact finalized runs without modifying canonical observations.
+
+### Function `remove_redundant_derived_artifacts(run_dir)`
+
+Remove verified copies whose information is present in canonical tables.
+
+### Function `refresh_result_inventory(run_dir)`
+
+Refresh integrity metadata for one already completed result folder.
 
 ### Function `build_combined_protocol(result, summary, turns, speech_turns, timing_turns, phase_timings, nlu_turns, agent_turn_segments, agent_timing_summary, runtime_events, candidate_events, verification, audio_manifest)`
 
@@ -2092,7 +2301,7 @@ Write protocol files plus compiled metric files for one interactive run.
 
 ### Function `write_conversation_protocols(results, output_dir)`
 
-Write protocol artifacts for all completed conversations.
+Write one protocol JSONL and one transcript TXT for a completed batch.
 
 ### Function `write_jsonl(path, rows)`
 
@@ -2134,9 +2343,173 @@ Internal module operation.
 
 Internal module operation.
 
+### Function `_comparison_condition_key(row)`
+
+Return a stable key for comparing identical conditions across Agent B models.
+
 ### Function `_number(value)`
 
 Internal module operation.
+
+### Function `_truthy(value)`
+
+Internal module operation.
+
+### Function `_mean(values)`
+
+Internal module operation.
+
+### Function `_phase_order(value)`
+
+Internal module operation.
+
+### Function `_joined_values(rows, key)`
+
+Internal module operation.
+
+### Function `discover_evidence_run_directories(paths)`
+
+Discover finalized and interrupted batch directories without changing them.
+
+### Function `_source_inventory(roots, excluded_directory)`
+
+Hash source evidence while excluding the derived analysis destination.
+
+### Function `_event_rows(path)`
+
+Internal module operation.
+
+### Function `_summary_sections(text)`
+
+Parse the runtime's human summary without inferring absent values.
+
+### Function `_text_number(value)`
+
+Internal module operation.
+
+### Function `_text_boolean(value)`
+
+Internal module operation.
+
+### Function `_normalized_model_name(value)`
+
+Internal module operation.
+
+### Function `_planned_conditions(run_directory)`
+
+Internal module operation.
+
+### Function `_condition_sessions(run_directory)`
+
+Load one immutable runtime event stream per observed condition.
+
+### Function `_condition_failures(run_directory)`
+
+Load captured condition failures without altering source evidence.
+
+### Function `_condition_state(session)`
+
+Internal module operation.
+
+### Function `_condition_runtime_view(run_id, run_directory, planned, session, failure=None)`
+
+Internal module operation.
+
+### Function `_phase_comparison_rows(condition, session)`
+
+Internal module operation.
+
+### Function `_state_agreement(snapshot_a, snapshot_b)`
+
+Internal module operation.
+
+### Function `_dialogue_state_row(condition, session)`
+
+Internal module operation.
+
+### Function `_conversation_rows(condition, session)`
+
+Internal module operation.
+
+### Function `_configuration_group_rows(condition_rows)`
+
+Internal module operation.
+
+### Function `_numeric_values(rows, key)`
+
+Internal module operation.
+
+### Function `_rate(rows, key, expected=True)`
+
+Internal module operation.
+
+### Function `_agent_b_sort_key(row)`
+
+Internal module operation.
+
+### Function `_agent_b_model_summary_rows(condition_rows, phase_rows, dialogue_rows)`
+
+Internal module operation.
+
+### Function `_program_execution_summary_rows(condition_rows, run_directories=None)`
+
+Summarize program/runtime completion separately from task satisfaction.
+
+### Function `_task_success_summary_rows(condition_rows)`
+
+Internal module operation.
+
+### Function `_model_configuration_matrix_rows(condition_rows)`
+
+Pivot matching non-model conditions so Agent B models are directly comparable.
+
+### Function `_write_model_configuration_matrix_html(path, rows)`
+
+Write a compact visual matrix for model-by-configuration inspection.
+
+### Function `_phase_summary_rows(phase_rows)`
+
+Internal module operation.
+
+### Function `_dialogue_summary_rows(dialogue_rows)`
+
+Internal module operation.
+
+### Function `_run_inventory_row(run_directory, planned, sessions, condition_rows)`
+
+Internal module operation.
+
+### Function `_html_table(rows, columns, *, limit=None)`
+
+Internal module operation.
+
+### Function `_write_analysis_guide(path, generated_files)`
+
+Internal module operation.
+
+### Function `_write_evidence_overview(path, inventory, configurations, outcomes, phases, dialogues, task_summary, model_summary, program_execution, phase_summary, dialogue_summary)`
+
+Internal module operation.
+
+### Function `write_evidence_comparison(inputs, output_directory)`
+
+Create comparable derived views for every discovered run lifecycle state.
+
+### Function `build_condition_analysis_rows(conditions, metrics)`
+
+Join headline factors, outcomes, and selected metrics per condition.
+
+### Function `build_run_analysis_rows(condition_rows)`
+
+Aggregate the condition explorer into one comparable row per run.
+
+### Function `build_performance_band_summary(condition_rows)`
+
+Aggregate outcome and diagnostic measures by preregistered speech band.
+
+### Function `build_run_phase_scorecard(metrics)`
+
+Build comparable per-run phase scores from declared-range metrics only.
 
 ### Function `load_comparison_data(run_directories)`
 
@@ -2150,19 +2523,65 @@ Aggregate each numeric metric by run and experimental component tuple.
 
 Calculate pairwise mean differences for matching metrics and run types.
 
-### Function `identify_metric_outliers(metrics, conditions, minimum_samples=5, modified_z_threshold=3.5)`
+### Function `identify_metric_outliers(metrics, conditions, minimum_samples=OUTLIER_MINIMUM_SAMPLES, modified_z_threshold=OUTLIER_MODIFIED_Z_THRESHOLD)`
 
-Find robust pre-outcome metric outliers and relate them descriptively to task
-outcomes without using outcome-phase metrics as predictors.
+Find robust pre-outcome metric outliers and relate them to task outcomes.
 
 ### Function `summarize_run_outcomes(conditions, outliers=())`
 
 Summarize condition-level task outcomes and aligned metric signals per run.
 
+### Function `build_run_phase_metric_matrix(conditions, metrics, outliers=())`
+
+Return one completed-run row with one mean-value column per phase metric.
+
+### Function `build_phase_metric_summary(metrics)`
+
+Aggregate available metric observations by finalized run and phase.
+
+### Function `write_phase_metric_overview(path, rows)`
+
+Write an auditable phase-grouped metric visualization.
+
+### Function `write_phase_metric_outputs(metrics_or_path, output_directory)`
+
+Write graphable and visual phase metric summaries from long-form metrics.
+
+### Function `_safe_filename(value)`
+
+Internal module operation.
+
+### Function `build_phase_condition_metric_rows(conditions, metrics)`
+
+Join metric rows to condition outcomes for phase-wise cross-run inspection.
+
+### Function `write_phase_condition_metric_files(conditions, metrics, output_directory)`
+
+Write one comparison-ready metric evidence file per dialogue phase.
+
+### Function `_metric_cell_color(value, specification)`
+
+Map a metric to red/amber/green using its declared or observed extremes.
+
+### Function `write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers=None)`
+
+Write the human-readable color matrix while retaining numeric cell values.
+
 ### Function `summarize_metric_indicators(outliers)`
 
-Aggregate which pre-outcome metric outliers align with observed success or
-failure, retaining contradictory evidence.
+Aggregate which metric outliers align with observed success or failure.
+
+### Function `_pearson_correlation(left, right)`
+
+Internal module operation.
+
+### Function `summarize_metric_outcome_correlations(metrics, conditions)`
+
+Correlate pre-outcome metric values with observed task outcomes.
+
+### Function `write_metric_correlation_html(path, rows)`
+
+Write a compact phase-wise correlation overview.
 
 ### Function `_selected_chart_rows(summaries, limit=12)`
 
@@ -2172,18 +2591,145 @@ Internal module operation.
 
 Internal module operation.
 
+### Function `_display_number(value, *, percentage=False, decimals=3)`
+
+Internal module operation.
+
+### Function `_relative_artifact_href(report_path, source_path, artifact)`
+
+Internal module operation.
+
+### Function `write_analysis_overview(path, run_analysis, condition_analysis, phase_scorecard, outliers=(), metric_correlations=())`
+
+Write the primary analysis-first landing page for runs and batches.
+
+### Function `write_run_analysis_outputs(run_directory)`
+
+Regenerate compact analysis artifacts for one finalized result folder.
+
 ### Function `write_html_report(path, run_directories, conditions, summaries, deltas, run_outcomes, outliers, metric_indicators)`
 
-Write a dependency-free color-coded HTML report with run outcomes, metric
-outlier alignment, and inline SVG comparisons.
+Write a dependency-free HTML report with inline SVG comparisons.
 
 ### Function `compare_runs(inputs, output_directory)`
 
-Build a complete comparison dataset and return its artifact paths.
+Build the canonical cross-run tables and one phase-wise HTML matrix.
 
 ### Function `main(argv=None)`
 
 Internal module operation.
+
+## `coop_navigation_sds/ResultsAndArtifacts/condition_overview.py`
+
+Derived configuration-condition overview for planned experiment grids.
+
+### Function `_write_csv(path, rows)`
+
+Internal module operation.
+
+### Function `_job_paths(job_roots)`
+
+Internal module operation.
+
+### Function `_condition_grid(job)`
+
+Internal module operation.
+
+### Function `_scenario_overrides(job)`
+
+Internal module operation.
+
+### Function `_configuration_condition_rows(job_paths, results_root)`
+
+Internal module operation.
+
+### Function `_model_summary_rows(condition_rows)`
+
+Internal module operation.
+
+### Function `_factor_level_rows(condition_rows)`
+
+Internal module operation.
+
+### Function `_configuration_group_rows(condition_rows)`
+
+Internal module operation.
+
+### Function `_write_html(path, *, condition_rows, model_rows, factor_rows, group_rows)`
+
+Internal module operation.
+
+### Function `write_configuration_condition_overview(job_roots=None, output_directory='results/general', *, results_root='results')`
+
+Write exact generated and valid-condition tables for selected job roots.
+
+## `coop_navigation_sds/ResultsAndArtifacts/coverage.py`
+
+Build a results-root registry of planned and completed experiment coverage.
+
+### Function `_total_physical_memory_gb()`
+
+Return installed physical memory, or None when the host cannot report it.
+
+### Function `_levels(job, key, fallback)`
+
+Internal module operation.
+
+### Function `_coverage_key(row)`
+
+Internal module operation.
+
+### Function `_planned_rows(job_path)`
+
+Internal module operation.
+
+### Function `_read_jsonl(path)`
+
+Internal module operation.
+
+### Function `_completed_rows(results_root)`
+
+Internal module operation.
+
+### Function `_merge_coverage(planned_rows, completed_rows)`
+
+Internal module operation.
+
+### Function `_matrix_rows(coverage_rows)`
+
+Internal module operation.
+
+### Function `_case_coverage_rows(coverage_rows)`
+
+Audit every planned test-case, persona, and network-seed treatment.
+
+### Function `_case_coverage_summary(case_rows)`
+
+Internal module operation.
+
+### Function `_active_run_rows(results_root)`
+
+Read non-finalized progress without treating it as completed evidence.
+
+### Function `_agent_model_combination_rows(coverage_rows, active_runs)`
+
+Build the two-caller by six-model-slot thesis coverage matrix.
+
+### Function `_agent_model_html(rows, controls)`
+
+Internal module operation.
+
+### Function `_atomic_csv(path, rows)`
+
+Internal module operation.
+
+### Function `_html_report(summary, matrix_rows, case_rows)`
+
+Internal module operation.
+
+### Function `update_experiment_coverage(results_root, job_roots=None)`
+
+Rebuild unified coverage artifacts from jobs and finalized result folders.
 
 ## `coop_navigation_sds/ResultsAndArtifacts/logging.py`
 
@@ -2266,13 +2812,13 @@ Return one normalized condition-level row per metric record.
 
 Return one normalized row per condition and metric.
 
-### Function `_write_table_exports(rows, csv_path, jsonl_path)`
+### Function `_write_csv(rows, path)`
 
 Internal module operation.
 
 ### Function `write_metric_long_exports(records, output_dir, context=None)`
 
-Write matching long and wide metric datasets for graphing and joins.
+Write canonical long and wide CSV datasets for graphing and joins.
 
 ## `coop_navigation_sds/ResultsAndArtifacts/speech_matrix.py`
 
@@ -2458,6 +3004,10 @@ Provider-environment catalog and setup utilities.
 
 Class component; see its typed members and call sites.
 
+### Function `project_python_supported(version)`
+
+Return whether a Python major/minor can host project speech providers.
+
 ## `coop_navigation_sds/TransportNetwork/__init__.py`
 
 Transit network, route constraints, scenarios, and route planning.
@@ -2470,7 +3020,7 @@ Constraint-aware route baselines for comparing agent proposals.
 
 ### Function `normalize_objective_mode(value)`
 
-Return a supported Agent A objective mode.
+Return the single controlled objective used by every new run.
 
 ### Class `RouteConstraintProfile`
 
