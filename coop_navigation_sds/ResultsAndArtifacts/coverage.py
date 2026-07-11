@@ -47,6 +47,7 @@ COVERAGE_FIELDS = (
     "agent_a_audio_persona",
     "agent_b_model",
     "agent_b_llm_size",
+    "agent_b_model_slot",
     "agent_b_model_role",
     "agent_b_audio_persona",
     "configured_tts_engine",
@@ -69,14 +70,33 @@ MATRIX_DEFINITIONS = (
 )
 
 AGENT_MODEL_SLOTS = (
-    ("small1", "small", "primary"),
-    ("small2", "small", "model_comparison"),
-    ("medium1", "medium", "primary"),
-    ("medium2", "medium", "model_comparison"),
-    ("large1", "large", "primary"),
-    ("large2", "large", "model_comparison"),
+    ("small1", "small"),
+    ("small2", "small"),
+    ("medium1", "medium"),
+    ("medium2", "medium"),
+    ("large1", "large"),
+    ("large2", "large"),
 )
 AGENT_MODEL_MATRIX_FAMILY = "agent_b_llm_comparison_v1"
+AGENT_MODEL_MATRIX_FAMILIES = {
+    AGENT_MODEL_MATRIX_FAMILY,
+    "userlm_8b_agent_b_model_comparison_v2",
+    "transformers_agent_b_speech_grid_v1",
+}
+AGENT_B_MODEL_SLOT_BY_MODEL = {
+    "tinyllama/tinyllama-1.1b-chat-v1.0": "small1",
+    "qwen/qwen2.5-0.5b-instruct": "small2",
+    "huggingfacetb/smollm2-360m-instruct": "small3",
+    "huggingfacetb/smollm2-1.7b-instruct": "small4",
+    "qwen/qwen2.5-1.5b-instruct": "medium1",
+    "microsoft/phi-3-mini-4k-instruct": "medium2",
+    "google/gemma-2-2b-it": "medium3",
+    "qwen/qwen3-4b-instruct-2507": "medium4",
+    "qwen/qwen2.5-7b-instruct": "large1",
+    "mistralai/mistral-7b-instruct-v0.3": "large2",
+    "meta-llama/llama-3.1-8b-instruct": "large3",
+    "tiiuae/falcon3-7b-instruct": "large4",
+}
 COVERAGE_SCHEMA_VERSION = 2
 
 
@@ -116,6 +136,10 @@ def _total_physical_memory_gb():
 def _levels(job, key, fallback):
     value = job.get("grid", {}).get(key, fallback)
     return list(value) if isinstance(value, (list, tuple)) else [value]
+
+
+def _model_slot_from_model(model):
+    return AGENT_B_MODEL_SLOT_BY_MODEL.get(str(model or "").strip().lower())
 
 
 def _coverage_key(row):
@@ -166,6 +190,7 @@ def _planned_rows(job_path):
             "agent_a_audio_persona": condition.agent_a_audio_persona,
             "agent_b_model": condition.agent_b_model,
             "agent_b_llm_size": parameters.get("agent_b_llm_size"),
+            "agent_b_model_slot": parameters.get("agent_b_model_slot"),
             "agent_b_model_role": parameters.get("agent_b_model_role"),
             "agent_b_audio_persona": condition.agent_b_audio_persona,
             "configured_tts_engine": condition.tts_engine,
@@ -212,6 +237,20 @@ def _completed_rows(results_root):
                 field: condition.get(field)
                 for field in COVERAGE_FIELDS
             }
+            parameters = dict(condition.get("parameter_values") or {})
+            if not parameters and condition.get("parameter_values_json"):
+                try:
+                    parameters = json.loads(condition["parameter_values_json"])
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    parameters = {}
+            row["matrix_family"] = row.get("matrix_family") or parameters.get("matrix_family")
+            row["agent_b_llm_size"] = row.get("agent_b_llm_size") or parameters.get("agent_b_llm_size")
+            row["agent_b_model_slot"] = (
+                row.get("agent_b_model_slot")
+                or parameters.get("agent_b_model_slot")
+                or _model_slot_from_model(row.get("agent_b_model"))
+            )
+            row["agent_b_model_role"] = row.get("agent_b_model_role") or parameters.get("agent_b_model_role")
             row["test_case_key"] = str(
                 condition.get("test_case_key") or condition.get("scenario_key") or ""
             ).split(":", 1)[0]
@@ -427,6 +466,7 @@ def _active_run_rows(results_root):
             "agent_a_type": first.get("agent_a_type"),
             "agent_b_model": first.get("agent_b_model"),
             "agent_b_llm_size": first.get("agent_b_llm_size"),
+            "agent_b_model_slot": first.get("agent_b_model_slot"),
             "agent_b_model_role": first.get("agent_b_model_role"),
             "matrix_family": first.get("matrix_family"),
             "planned_condition_count": len(conditions),
@@ -447,25 +487,23 @@ def _agent_model_combination_rows(coverage_rows, active_runs):
     rows = []
     canonical = [
         row for row in coverage_rows
-        if row.get("matrix_family") == AGENT_MODEL_MATRIX_FAMILY
+        if row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
     ]
     for agent_a_type in ("tinyllama", "userlm"):
-        for slot, size, role in AGENT_MODEL_SLOTS:
+        for slot, size in AGENT_MODEL_SLOTS:
             selected = [
                 row for row in canonical
                 if row.get("agent_a_type") == agent_a_type
-                and row.get("agent_b_llm_size") == size
-                and row.get("agent_b_model_role") == role
+                and row.get("agent_b_model_slot") == slot
             ]
             planned = sum(bool(row.get("planned")) for row in selected)
             completed = sum(bool(row.get("planned") and row.get("completed_count")) for row in selected)
             successes = sum(int(row.get("successful_count") or 0) for row in selected)
             active = [
                 row for row in active_runs
-                if row.get("matrix_family") == AGENT_MODEL_MATRIX_FAMILY
+                if row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
                 and row.get("agent_a_type") == agent_a_type
-                and row.get("agent_b_llm_size") == size
-                and row.get("agent_b_model_role") == role
+                and row.get("agent_b_model_slot") == slot
             ]
             active_observed = sum(int(row["observed_condition_count"]) for row in active)
             status = (
@@ -478,7 +516,7 @@ def _agent_model_combination_rows(coverage_rows, active_runs):
                 "agent_a_type": agent_a_type,
                 "model_slot": slot,
                 "agent_b_llm_size": size,
-                "agent_b_model_role": role,
+                "agent_b_model_role": ";".join(sorted({str(row.get("agent_b_model_role")) for row in selected if row.get("agent_b_model_role")})),
                 "agent_b_models": ";".join(sorted({str(row.get("agent_b_model")) for row in selected})),
                 "planned_configuration_count": planned,
                 "completed_configuration_count": completed,
@@ -492,7 +530,7 @@ def _agent_model_combination_rows(coverage_rows, active_runs):
             row = rows[-1]
             model_names = [name for name in row["agent_b_models"].split(";") if name]
             agent_b_ram = (
-                model_memory_requirement_gb(model_names[0], "ollama")
+                model_memory_requirement_gb(model_names[0])
                 if len(model_names) == 1 else None
             )
             agent_a_spec = agent_a_profiles[agent_a_type]
@@ -583,11 +621,11 @@ def _agent_model_html(rows, controls):
             default=float("inf"),
         ),
     )
-    headers = "".join(f"<th>{slot}</th>" for slot, _size, _role in display_slots)
+    headers = "".join(f"<th>{slot}</th>" for slot, _size in display_slots)
     body = []
     for agent in ("tinyllama", "userlm"):
         cells = []
-        for slot, _size, _role in display_slots:
+        for slot, _size in display_slots:
             row = lookup[(agent, slot)]
             model = html.escape(row["agent_b_models"] or "not resolved")
             cells.append(
@@ -734,8 +772,17 @@ def update_experiment_coverage(results_root, job_roots=None):
     case_summary = _case_coverage_summary(case_rows)
     active_runs = _active_run_rows(results_root)
     agent_model_rows, control_runs = _agent_model_combination_rows(coverage, active_runs)
-    planned_count = sum(bool(row["planned"]) for row in coverage)
-    completed_planned = sum(bool(row["planned"] and row["completed_count"]) for row in coverage)
+    global_planned_count = sum(bool(row["planned"]) for row in coverage)
+    global_completed_planned = sum(bool(row["planned"] and row["completed_count"]) for row in coverage)
+    selected_slots = {slot for slot, _size in AGENT_MODEL_SLOTS}
+    thesis_scope_rows = [
+        row for row in coverage
+        if row.get("planned")
+        and row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
+        and row.get("agent_b_model_slot") in selected_slots
+    ]
+    planned_count = len(thesis_scope_rows)
+    completed_planned = sum(bool(row.get("completed_count")) for row in thesis_scope_rows)
     summary = {
         "schema_version": COVERAGE_SCHEMA_VERSION,
         "updated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -743,6 +790,11 @@ def update_experiment_coverage(results_root, job_roots=None):
         "completed_run_count": len(runs),
         "planned_configuration_count": planned_count,
         "completed_planned_configuration_count": completed_planned,
+        "coverage_scope": "selected_thesis_agent_b_slots",
+        "selected_agent_b_model_slots": sorted(selected_slots),
+        "global_planned_configuration_count": global_planned_count,
+        "global_completed_planned_configuration_count": global_completed_planned,
+        "global_coverage_percentage": round(100.0 * global_completed_planned / global_planned_count, 6) if global_planned_count else 0.0,
         "observed_unplanned_configuration_count": sum(row["status"] == "observed_unplanned" for row in coverage),
         "coverage_percentage": round(100.0 * completed_planned / planned_count, 6) if planned_count else 0.0,
         "case_coverage": case_summary,

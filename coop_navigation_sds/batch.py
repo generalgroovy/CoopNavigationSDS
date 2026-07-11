@@ -212,6 +212,7 @@ def condition_configuration_rows(conditions, *, agent_a_type, agent_b_plugin):
             "channel_clip_threshold": parameters.get("channel_clip_threshold"),
             "channel_dropout_rate": parameters.get("channel_dropout_rate"),
             "agent_b_llm_size": parameters.get("agent_b_llm_size", ""),
+            "agent_b_model_slot": parameters.get("agent_b_model_slot", ""),
             "agent_b_model_role": parameters.get("agent_b_model_role", ""),
             "matrix_family": parameters.get("matrix_family", ""),
             "ticket_modes": ", ".join(preferences.get("ticket_modes", ())),

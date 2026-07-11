@@ -421,11 +421,14 @@ the deterministic agent because that would invalidate the condition label.
 
 #### Agent B Model Proposal Catalog
 
-The main thesis matrix uses four selected Transformers Agent B models per size
-tier. This keeps the Slurm design provider-compatible while still varying
-parameter scale, family, instruction tuning, and expected repair behavior. Each
-proposal has a distinct experimental reason; models are not added merely
-because they are available.
+The proposal catalog contains four Transformers Agent B candidates per size
+tier. The active thesis denominator uses two selected models per size tier
+(`small1`, `small2`, `medium1`, `medium2`, `large1`, `large2`) so every size
+class has equal weight and can be completed on shared cluster resources. The
+remaining catalog entries stay available for follow-up runs, sensitivity
+checks, or replacement when a selected model is unavailable. Each proposal has
+a distinct experimental reason; models are not added merely because they are
+available.
 
 | Tier | Slot | Model | Provider | Unique aspect | Best use |
 | --- | --- | --- | --- | --- | --- |
@@ -844,17 +847,18 @@ python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_trans
 
 The recommended cluster path uses only
 `jobs/agent_b_llm/userlm_transformers_speech_grid` and `--provider
-transformers`, which avoids Ollama service failures while preserving the same
-non-model condition coverage. The default cluster helper selects the twelve
-service-free Transformer profiles listed in the Agent B model catalog: four
-small, four medium, and four large. This is the recommended thesis-scale run
-because every Agent B model changes only the assistant backend while scenarios,
-personas, speech settings, constraints, seeds, and repair settings stay
-matched. Each selected model currently generates 84 candidate conditions and
-submits the 72 conditions that pass staged route viability. The 12 excluded
-conditions are invalid experiment designs, not failed dialogues: they lack the
-required viable route alternatives or route changes for at least one staged
-constraint-reveal phase. The submitter and Slurm wrapper both use
+transformers`, which avoids Ollama service failures while preserving matched
+non-model condition coverage. The thesis denominator is the six selected
+Transformer slots `small1`, `small2`, `medium1`, `medium2`, `large1`, and
+`large2`: two Agent B models per size tier. The larger twelve-model catalog is
+an extension pool, not the default percentage denominator. Every selected
+Agent B model changes only the assistant backend while scenarios, personas,
+speech settings, constraints, seeds, and repair settings stay matched. Each
+selected model currently generates 84 candidate conditions and submits the 72
+conditions that pass staged route viability. The 12 excluded conditions are
+invalid experiment designs, not failed dialogues: they lack the required viable
+route alternatives or route changes for at least one staged constraint-reveal
+phase. The submitter and Slurm wrapper both use
 `--valid-conditions-only`, so array indices refer to the filtered valid list.
 With `--max-conditions-per-array 14`, each model becomes six smaller arrays:
 `0-11`, `12-23`, `24-35`, `36-47`, `48-59`, and `60-71`. Every array task
@@ -937,8 +941,8 @@ bash scripts/cluster_results_workflow.sh preview-large
 bash scripts/cluster_results_workflow.sh submit-large
 ```
 
-The wrapper uses the same default four-model-per-size UserLM/Transformer
-coverage as the full cluster helper. It is a
+The wrapper defaults to the selected six-model UserLM/Transformer thesis
+coverage unless `MODEL_PROFILES` is expanded manually. It is a
 thin operational layer over `submit_agent_b_model_jobs.py`,
 `update_experiment_coverage.py`, and the comparison exporter; it does not define
 new experiment conditions.
@@ -997,14 +1001,19 @@ grid, prepares UserLM as Agent A, prepares the selected Transformer Agent B
 profiles, and writes the readiness manifest. The actual condition arrays then
 capture condition-level pipeline failures as result data. The default speech
 assets are `piper faster_whisper`; override `SPEECH_ASSETS` only when the job
-grid actually uses additional speech providers. The default
-`MODEL_PROFILES` are:
+grid actually uses additional speech providers. The default thesis
+`MODEL_PROFILES` are the two selected models per size tier:
 
 | Size | Profiles |
 | --- | --- |
-| Small | `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers`, `smollm2_360m_transformers`, `smollm2_1_7b_transformers` |
-| Medium | `qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers`, `gemma2_2b_it_transformers`, `qwen3_4b_instruct_transformers` |
-| Large | `qwen2_5_7b_transformers`, `mistral_7b_transformers`, `llama3_1_8b_transformers`, `falcon3_7b_transformers` |
+| Small | `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers` |
+| Medium | `qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers` |
+| Large | `qwen2_5_7b_transformers`, `mistral_7b_transformers` |
+
+Additional catalog profiles can be prepared and submitted explicitly:
+`smollm2_360m_transformers`, `smollm2_1_7b_transformers`,
+`gemma2_2b_it_transformers`, `qwen3_4b_instruct_transformers`,
+`llama3_1_8b_transformers`, and `falcon3_7b_transformers`.
 
 Transformer model assets are prepared separately through
 `setup_transformers_agent_b_models.py`, so language models are not duplicated
@@ -1347,14 +1356,21 @@ stage-valid only when the scenario can support the progressive route stages
 for validity, time, and constraints. Invalid staged designs are kept in the
 table so coverage gaps are explicit instead of hidden.
 
-Current planned-condition coverage is:
+Current planned-condition coverage is reported against the selected six Agent B
+model slots. The full generated-condition table still lists every configured
+job and extension profile, but `experiment_coverage_summary.json` uses the
+selected thesis slots for `planned_configuration_count`,
+`completed_planned_configuration_count`, and `coverage_percentage`; audit-wide
+counts are retained as `global_*` fields.
 
 | Dimension | Levels covered |
 | --- | --- |
 | Agent A | `tinyllama`, `userlm` |
 | Agent B size | `small`, `medium`, `large` |
-| Agent B models | 12 total: four per size tier |
-| Conditions per Agent A x Agent B model | 84 generated; 72 staged-valid; 12 invalid staged designs retained for audit |
+| Selected Agent B models | 6 total: two per size tier |
+| Extension Agent B models | 6 additional catalog profiles, excluded from headline percentage unless explicitly selected |
+| Executable rows per Agent A x Agent B model | 84 generated; 72 staged-valid Slurm rows; 12 invalid staged designs retained for audit |
+| Comparable coverage cells per Agent A x Agent B model | 62 unique condition keys after pairwise-grid duplicates are collapsed |
 | Run types | `text_only`, `audio_variant` |
 | TTS | `piper` in the current controlled Slurm matrix |
 | ASR | `vosk`, `faster_whisper` |
@@ -1365,11 +1381,14 @@ Current planned-condition coverage is:
 | Network seeds | `42`, `77` |
 | Model parameter profiles | `greedy`, `temp0.7`, `nucleus0.9` |
 
-Totals across the current Agent A and Agent B model matrix are `2016`
-generated conditions, `1728` staged-valid conditions, and `288` invalid
-staged designs. The exact row-level source is
-`results/general/configuration_conditions.csv`; the readable index is
-`results/general/configuration_condition_overview.html`.
+Totals for the selected thesis denominator are `744` unique comparable coverage
+cells when both Agent A callers are included (`6 Agent B models x 2 Agent A
+callers x 62 unique cells`). UserLM-only headline coverage is half of that
+(`372` cells). The Slurm execution denominator remains `72` staged-valid row
+instances per selected Agent B model because duplicate pairwise rows are still
+valid repetitions for execution, logging, and runtime evidence. The exact
+row-level source is `results/general/configuration_conditions.csv`; the
+readable index is `results/general/configuration_condition_overview.html`.
 
 Coverage can be rebuilt independently:
 
