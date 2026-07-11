@@ -20,6 +20,7 @@ from coop_navigation_sds.Configuration.jobs import (
     job_parameter_profiles,
     load_experiment_job,
 )
+from coop_navigation_sds.Configuration.schema import resolve_result_group
 from coop_navigation_sds.experiments import (
     build_condition_grid,
     condition_coverage_report,
@@ -190,9 +191,10 @@ class AudioPersonaAndJobTests(unittest.TestCase):
             self.assertEqual(job["config"]["num_turns"], 20)
             self.assertEqual(job["config"]["log_profile"], "full")
             group = job["config"]["result_group"]
-            self.assertTrue(group.startswith("agent_b/"))
-            self.assertNotIn(group, groups)
-            groups.add(group)
+            resolved_group = Path(resolve_result_group(ROOT / "results", group)).relative_to(ROOT / "results")
+            self.assertNotIn("agent_b", resolved_group.parts)
+            self.assertNotIn(resolved_group, groups)
+            groups.add(resolved_group)
 
     def test_userlm8b_expanded_speech_jobs_cover_two_models_per_size(self):
         paths = sorted((JOB_ROOT / "userlm_speech_grid").rglob("*.job"))

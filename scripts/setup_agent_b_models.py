@@ -1,4 +1,4 @@
-"""Prepare or verify the six controlled Agent B Ollama model conditions."""
+"""Prepare or verify optional Agent B Ollama model conditions."""
 from __future__ import annotations
 
 import argparse
@@ -15,13 +15,11 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from coop_navigation_sds.Configuration.model_matrix import (
-    AGENT_B_MODEL_SIZE_TREATMENTS,
     agent_b_model_platform_dir,
     agent_b_ollama_store_dir,
     model_catalog_folder,
     model_store_platform,
     model_size_treatment,
-    models_for_size_treatments,
     resolve_agent_b_model_store,
 )
 from coop_navigation_sds.Configuration.travel import OLLAMA_BASE_URL
@@ -33,10 +31,30 @@ from coop_navigation_sds.NaturalLanguageGeneration.models import (
 from scripts.progress import ProgressBar, progress_enabled  # noqa: E402
 
 
+OLLAMA_MODEL_SIZE_TREATMENTS = {
+    "small": ("llama3.2:1b", "qwen2.5:1.5b"),
+    "medium": ("llama3.2:3b", "phi3:mini"),
+    "large": ("qwen2.5:7b", "llama3.1:8b"),
+}
+
+
+def ollama_model_size_treatment(model):
+    """Return the optional Ollama comparison tier for one model."""
+    return next(
+        (
+            tier for tier, models in OLLAMA_MODEL_SIZE_TREATMENTS.items()
+            if model in models
+        ),
+        None,
+    )
+
+
 def selected_model_names(tiers=(), models=()):
     """Resolve an explicit model selection or all models in selected tiers."""
-    tiers = tuple(tiers or (() if models else AGENT_B_MODEL_SIZE_TREATMENTS))
-    selected = list(models_for_size_treatments(tiers))
+    tiers = tuple(tiers or (() if models else OLLAMA_MODEL_SIZE_TREATMENTS))
+    selected = []
+    for tier in tiers:
+        selected.extend(OLLAMA_MODEL_SIZE_TREATMENTS[str(tier)])
     for model in models or ():
         model = str(model).strip()
         if model and model not in selected:
@@ -110,7 +128,7 @@ def write_local_catalog(platform_key, selected_models, inventory):
         record = records.get(model, {})
         row = {
             "model": model,
-            "size_tier": model_size_treatment(model) or "custom",
+            "size_tier": model_size_treatment(model) or ollama_model_size_treatment(model) or "custom",
             "ready": bool(record),
             "digest": record.get("digest"),
             "size_bytes": record.get("size_bytes"),
@@ -146,7 +164,7 @@ def readiness_rows(selected_models, installed_models):
     return [
         {
             "model": model,
-            "size_tier": model_size_treatment(model) or "custom",
+            "size_tier": model_size_treatment(model) or ollama_model_size_treatment(model) or "custom",
             "ready": model in installed,
         }
         for model in selected_models
@@ -160,7 +178,7 @@ def main(argv=None):
     parser.add_argument(
         "--tier",
         action="append",
-        choices=tuple(AGENT_B_MODEL_SIZE_TREATMENTS),
+        choices=tuple(OLLAMA_MODEL_SIZE_TREATMENTS),
         help="Size tier to prepare; repeat for multiple tiers. Defaults to all tiers.",
     )
     parser.add_argument(

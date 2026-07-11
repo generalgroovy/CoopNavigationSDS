@@ -16,7 +16,7 @@ INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
 SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
 HF_MAX_WORKERS="${HF_MAX_WORKERS:-1}"
-MODEL_PROFILES="${MODEL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers falcon3_7b_transformers}"
+MODEL_PROFILES="${MODEL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers smollm2_360m_transformers smollm2_1_7b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers gemma2_2b_it_transformers qwen3_4b_instruct_transformers qwen2_5_7b_transformers mistral_7b_transformers llama3_1_8b_transformers falcon3_7b_transformers}"
 MODEL_DOWNLOAD_TIMEOUT_SECONDS="${MODEL_DOWNLOAD_TIMEOUT_SECONDS:-14400}"
 GIT_REMOTE="${GIT_REMOTE:-origin}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
@@ -74,9 +74,9 @@ import json
 from pathlib import Path
 
 root = Path("results")
-manifest_path = root / "comparison" / "analysis_manifest.json"
+manifest_path = root / "general" / "analysis_manifest.json"
 coverage_path = root / "experiment_coverage_summary.json"
-inventory_path = root / "comparison" / "run_inventory.csv"
+inventory_path = root / "general" / "run_inventory.csv"
 
 if coverage_path.is_file():
     coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
@@ -307,7 +307,7 @@ if [[ "${action}" == "refresh" || "${action}" == "push-results" || "${action}" =
   run_python -u scripts/update_experiment_coverage.py --results-dir "${RESULTS_ROOT}"
   run_python -u -m coop_navigation_sds.ResultsAndArtifacts.comparison \
     "${RESULTS_ROOT}" \
-    --output "${RESULTS_ROOT}/comparison" \
+    --output "${RESULTS_ROOT}/general" \
     --include-partial
   print_result_summary
 else

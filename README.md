@@ -373,12 +373,11 @@ Agent A supports deterministic staged policy, TinyLlama control, and Microsoft
 UserLM 8B. Agent B supports `simple`, `llm`, and custom plugin keys.
 
 Model providers are Transformers, Ollama, llama.cpp server, and
-OpenAI-compatible chat completion. Registered profiles cover meaningful
-resource and family contrasts, including SmolLM2 360M/1.7B, Qwen2.5
-0.5B/1.5B/7B, TinyLlama 1.1B, Gemma 2 2B, Llama 3.2 1B/3B, Phi-3 Mini,
-Qwen3 4B, Mistral 7B, Falcon3 7B, Llama 3.1 8B, UserLM 8B, and a hosted API
-profile. Availability depends on local assets or an explicitly configured
-service.
+OpenAI-compatible chat completion. The current thesis matrix uses
+Transformers-only Agent B models because they can run on Windows/Linux and on
+clusters without an Ollama daemon. Registered profiles still include optional
+Ollama, llama.cpp, and hosted API conditions for follow-up provider studies.
+Availability depends on local assets or an explicitly configured service.
 
 Model-specific behavior is registry-driven. Runtime metadata records provider,
 model identifier, profile, device, artifact location, and preflight status.
@@ -407,31 +406,28 @@ the deterministic agent because that would invalidate the condition label.
 
 #### Agent B Model Proposal Catalog
 
-The main thesis matrix uses two canonical Agent B models per size tier so the
-experiment remains tractable. Additional registered candidates are documented
-for follow-up batches or replacement when a cluster cannot run one canonical
-condition. Each proposal has a distinct experimental reason; models are not
-added merely because they are available.
+The main thesis matrix uses four selected Transformers Agent B models per size
+tier. This keeps the Slurm design provider-compatible while still varying
+parameter scale, family, instruction tuning, and expected repair behavior. Each
+proposal has a distinct experimental reason; models are not added merely
+because they are available.
 
 | Tier | Slot | Model | Provider | Unique aspect | Best use |
 | --- | --- | --- | --- | --- | --- |
-| Small | small1 | `llama3.2:1b` | Ollama | canonical small Llama-family chat baseline | low-resource local baseline |
-| Small | small2 | `qwen2.5:1.5b` | Ollama | larger multilingual Qwen-family small model | tests modest scale and family shift |
-| Small | small3 | `HuggingFaceTB/SmolLM2-360M-Instruct` | Transformers | sub-billion model with very low memory | floor condition and smoke tests |
-| Small | small4 | `Qwen/Qwen2.5-0.5B-Instruct` | Transformers | very small multilingual model without Ollama | provider/runtime contrast |
-| Medium | medium1 | `llama3.2:3b` | Ollama | canonical medium Llama-family model | middle resource point |
-| Medium | medium2 | `phi3:mini` | Ollama | non-Llama Phi architecture with compact reasoning focus | repair and clarification contrast |
-| Medium | medium3 | `gemma2:2b` | Ollama | Gemma-family model with lower memory than Phi | architecture contrast at moderate cost |
-| Medium | medium4 | `qwen3:4b` | Ollama | newer Qwen generation | constraint handling and multilingual contrast |
-| Large | large1 | `llama3.1:8b` | Ollama | canonical large Llama-family baseline | high-quality local baseline |
-| Large | large2 | `qwen2.5:7b` | Ollama | large multilingual Qwen comparison | cross-family large-model contrast |
-| Large | large3 | `mistral:7b` | Ollama | Mistral-family instruction model | non-Llama/Qwen repair behavior |
+| Small | small1 | `TinyLlama/TinyLlama-1.1B-Chat-v1.0` | Transformers | contained small chat baseline already used as a control model | low-resource baseline and Agent A control match |
+| Small | small2 | `Qwen/Qwen2.5-0.5B-Instruct` | Transformers | very small multilingual Qwen-family model | route-grounding floor and provider-compatible smoke runs |
+| Small | small3 | `HuggingFaceTB/SmolLM2-360M-Instruct` | Transformers | sub-billion model with very low memory | floor condition and fast smoke tests |
+| Small | small4 | `HuggingFaceTB/SmolLM2-1.7B-Instruct` | Transformers | compact model above the 1B boundary | small-to-medium transition behavior |
+| Medium | medium1 | `Qwen/Qwen2.5-1.5B-Instruct` | Transformers | medium-lite multilingual Qwen-family model | compact multilingual constraint handling |
+| Medium | medium2 | `microsoft/Phi-3-mini-4k-instruct` | Transformers | non-Llama Phi architecture with compact reasoning focus | repair and clarification contrast |
+| Medium | medium3 | `google/gemma-2-2b-it` | Transformers | Gemma-family instruction model | architecture contrast at moderate cost |
+| Medium | medium4 | `Qwen/Qwen3-4B-Instruct-2507` | Transformers | newer Qwen generation | constraint handling and multilingual contrast |
+| Large | large1 | `Qwen/Qwen2.5-7B-Instruct` | Transformers | large multilingual Qwen comparison | high-capacity route grounding |
+| Large | large2 | `mistralai/Mistral-7B-Instruct-v0.3` | Transformers | Mistral-family instruction model | non-Llama/Qwen repair behavior |
+| Large | large3 | `meta-llama/Llama-3.1-8B-Instruct` | Transformers | large Llama-family instruction baseline | high-quality dialogue management contrast |
 | Large | large4 | `tiiuae/Falcon3-7B-Instruct` | Transformers | Falcon-family assistant model with multilingual support | replaces UserLM as large Agent B proposal |
 
-The non-Ollama Transformers Agent B grid contains twelve registered proposals
-across the same size tiers. It is intended for clusters where Ollama cannot be
-installed or kept reachable, and it is also useful as a provider contrast when
-Ollama is available. The grid exists for both Agent A callers:
+The grid exists for both Agent A callers:
 
 - `transformers_speech_grid/` uses TinyLlama as Agent A for lower memory
   baseline coverage.
@@ -834,11 +830,12 @@ python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_trans
 The recommended cluster path uses only
 `jobs/agent_b_llm/userlm_transformers_speech_grid` and `--provider
 transformers`, which avoids Ollama service failures while preserving the same
-non-model condition coverage. The default cluster helper selects six
-service-free Transformer profiles: two small, two medium, and two large. This
-is the recommended first thesis-scale run because it gives exactly two
-comparisons in every model-size tier without requiring Ollama or known gated
-profiles. Each selected model currently generates 84 candidate conditions and
+non-model condition coverage. The default cluster helper selects the twelve
+service-free Transformer profiles listed in the Agent B model catalog: four
+small, four medium, and four large. This is the recommended thesis-scale run
+because every Agent B model changes only the assistant backend while scenarios,
+personas, speech settings, constraints, seeds, and repair settings stay
+matched. Each selected model currently generates 84 candidate conditions and
 submits the 72 conditions that pass staged route viability. The 12 excluded
 conditions are invalid experiment designs, not failed dialogues: they lack the
 required viable route alternatives or route changes for at least one staged
@@ -873,7 +870,7 @@ UserLM caller memory plus Agent B model memory plus speech/runtime overhead,
 rounded upward to a scheduler-friendly value. For UserLM/Transformers jobs the
 submitter uses 6 CPUs for small, 8 CPUs for medium, and 10 CPUs for large
 models, with per-model memory requests such as 48-52G for small, 52-56G for
-medium, and about 72G for the current large cluster-safe models. All UserLM
+medium, and about 72-76G for the current large Transformers models. All UserLM
 Transformer tiers default to 3:59:00 per condition because previous evidence
 showed long NLG turns in otherwise valid runs. This avoids using one excessive
 memory request for every model in a size tier while giving each isolated
@@ -908,6 +905,7 @@ and result-analysis documents once:
 ```bash
 python3 scripts/update_experiment_coverage.py --results-dir results
 python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/comparison
+python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/general --include-partial
 ```
 
 For day-to-day cluster operation, `scripts/cluster_results_workflow.sh` wraps
@@ -924,9 +922,8 @@ bash scripts/cluster_results_workflow.sh preview-large
 bash scripts/cluster_results_workflow.sh submit-large
 ```
 
-The wrapper uses the same default two-model-per-size UserLM/Transformer
-coverage as the full cluster helper: TinyLlama and Qwen 0.5B for small, Qwen
-1.5B and Phi-3 Mini for medium, and Qwen 7B and Falcon3 7B for large. It is a
+The wrapper uses the same default four-model-per-size UserLM/Transformer
+coverage as the full cluster helper. It is a
 thin operational layer over `submit_agent_b_model_jobs.py`,
 `update_experiment_coverage.py`, and the comparison exporter; it does not define
 new experiment conditions.
@@ -990,9 +987,9 @@ grid actually uses additional speech providers. The default
 
 | Size | Profiles |
 | --- | --- |
-| Small | `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers` |
-| Medium | `qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers` |
-| Large | `qwen2_5_7b_transformers`, `falcon3_7b_transformers` |
+| Small | `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers`, `smollm2_360m_transformers`, `smollm2_1_7b_transformers` |
+| Medium | `qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers`, `gemma2_2b_it_transformers`, `qwen3_4b_instruct_transformers` |
+| Large | `qwen2_5_7b_transformers`, `mistral_7b_transformers`, `llama3_1_8b_transformers`, `falcon3_7b_transformers` |
 
 Transformer model assets are prepared separately through
 `setup_transformers_agent_b_models.py`, so language models are not duplicated
@@ -1139,7 +1136,33 @@ Generated API details are in [API_REFERENCE.md](API_REFERENCE.md).
 ## 9. Results
 
 `results/` is the only result root. Every run has a unique folder. Model-group
-folders may organize batches, but each completed run remains self-contained.
+folders are intentionally shallow: each Agent B model receives its own folder,
+with the Agent A caller beneath it. General evidence views and finalized
+comparison views are top-level folders.
+
+```text
+results/
+  01-small-tinyllama-1.1b/
+    userlm/
+      20260711_021015_b-n0001/
+  02-medium-phi3-mini/
+    tinyllama/
+      20260707_164932_b-n0001/
+  general/
+    run_inventory.csv
+    task_outcome_comparison.csv
+    analysis_manifest.json
+  comparison/
+    run_phase_metric_matrix.csv
+    run_phase_metric_matrix.html
+    phase_metrics/
+```
+
+Legacy job groups such as
+`agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm` are normalized to
+`results/01-small-tinyllama-1.1b/userlm` at runtime. This keeps old job files
+usable while preventing new result trees from accumulating redundant grouping
+layers.
 
 ### Canonical Run Contract
 
@@ -1250,11 +1273,12 @@ negative-direction metrics use greener cells for smaller normalized values.
 Unavailable metrics remain neutral with the unavailable reason in the derived
 tables. Raw result files are not modified during comparison generation.
 
-Interrupted and preflight-only runs use a separate evidence-preserving view:
+Interrupted and preflight-only runs use a separate evidence-preserving general
+view:
 
 ```bash
 python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
-  results --output results/analysis --include-partial
+  results --output results/general --include-partial
 ```
 
 `comparison_overview.html` links normalized evidence and aggregate views: run
@@ -1267,7 +1291,7 @@ represented as `completed`,
 `not_started`. Missing outcomes remain blank and are never converted to failure
 or zero. `analysis_manifest.json` hashes source evidence before and after
 generation and aborts if any source file changes. The command writes only
-derived files beneath `results/analysis`.
+derived files beneath `results/general`.
 
 `model_configuration_matrix.csv` and `model_configuration_matrix.html` are the
 primary Slurm comparison views. Each row is one non-model condition:

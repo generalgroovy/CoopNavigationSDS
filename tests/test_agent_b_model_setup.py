@@ -86,12 +86,12 @@ class AgentBModelSetupTests(unittest.TestCase):
 
     def test_catalog_folders_sort_by_size_then_model(self):
         self.assertEqual(
-            model_catalog_folder("llama3.2:1b").as_posix(),
-            "01-small/01-llama3-2-1b",
+            model_catalog_folder("TinyLlama/TinyLlama-1.1B-Chat-v1.0").as_posix(),
+            "01-small/01-tinyllama-tinyllama-1-1b-chat-v1-0",
         )
         self.assertEqual(
-            model_catalog_folder("llama3.1:8b").as_posix(),
-            "03-large/02-llama3-1-8b",
+            model_catalog_folder("tiiuae/Falcon3-7B-Instruct").as_posix(),
+            "03-large/04-tiiuae-falcon3-7b-instruct",
         )
 
     def test_platform_model_stores_are_isolated(self):

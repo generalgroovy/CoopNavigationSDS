@@ -246,6 +246,7 @@ def test_overviews_have_unique_model_grouped_result_paths():
         paths = [Path(row["result_path"]) for row in rows]
         assert len(paths) == len(set(paths))
         assert all(results.resolve() in path.parents for path in paths)
+        assert all("agent_b" not in path.relative_to(results).parts for path in paths)
         assert {row["agent_b_size"] for row in rows} == {"small", "medium", "large"}
         assert {row["model_role"] for row in rows} == {"primary", "model_comparison"}
 

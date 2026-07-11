@@ -36,7 +36,7 @@ class ConfigModuleTests(unittest.TestCase):
     def test_result_groups_remain_beneath_the_single_results_root(self):
         root = Path(resolve_results_root("results"))
         grouped = Path(resolve_result_group(root, "agent_b/primary/01-small/userlm"))
-        self.assertEqual(grouped, root / "agent_b" / "primary" / "01-small" / "userlm")
+        self.assertEqual(grouped, root / "01-small" / "userlm")
         for invalid in ("../outside", "/absolute", "agent_b/../outside"):
             with self.assertRaises(ValueError):
                 resolve_result_group(root, invalid)

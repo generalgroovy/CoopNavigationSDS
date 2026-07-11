@@ -77,12 +77,17 @@ def resolve_results_root(value=None):
     return str(path.resolve())
 
 
-def resolve_result_group(results_root, group=None):
-    """Resolve a portable relative result group beneath one results root."""
-    root = Path(resolve_results_root(results_root))
+def normalized_result_group_parts(group):
+    """Return canonical result-group parts beneath the configured results root.
+
+    Model run folders are intentionally shallow: legacy groups such as
+    ``agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm`` resolve to
+    ``01-small-tinyllama-1.1b/userlm``. Derived cross-run artifacts use explicit
+    top-level groups such as ``comparison`` and ``general``.
+    """
     raw = str(group or "").strip().replace("\\", "/")
     if not raw:
-        return str(root)
+        return []
     raw_parts = raw.split("/")
     if (
         raw.startswith("/")
@@ -90,7 +95,17 @@ def resolve_result_group(results_root, group=None):
         or any(":" in part for part in raw_parts)
     ):
         raise ValueError("Result group must be a relative path without traversal.")
-    safe_parts = [safe_artifact_name(part, maximum_length=64) for part in raw_parts]
+    if raw_parts[0] == "agent_b" and len(raw_parts) >= 4:
+        raw_parts = raw_parts[-2:]
+    return [safe_artifact_name(part, maximum_length=64) for part in raw_parts]
+
+
+def resolve_result_group(results_root, group=None):
+    """Resolve a portable relative result group beneath one results root."""
+    root = Path(resolve_results_root(results_root))
+    safe_parts = normalized_result_group_parts(group)
+    if not safe_parts:
+        return str(root)
     selected = root.joinpath(*safe_parts).resolve()
     if root != selected and root not in selected.parents:
         raise ValueError("Result group resolves outside the configured results root.")

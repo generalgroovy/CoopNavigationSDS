@@ -76,6 +76,8 @@ def job_overview(path, results_root="results"):
     job = load_experiment_job(path)
     config = job["config"]
     parameters = job.get("parameter_values") or {}
+    result_path = Path(resolve_result_group(results_root, config.get("result_group")))
+    result_root = Path(resolve_results_root(results_root))
     return {
         "job": job["name"],
         "path": str(Path(path).resolve()),
@@ -89,8 +91,9 @@ def job_overview(path, results_root="results"):
         "agent_b_size": (parameters.get("agent_b_llm_size") or [None])[0],
         "model_role": (parameters.get("agent_b_model_role") or [None])[0],
         "conditions": job_condition_count(path),
-        "result_group": config.get("result_group"),
-        "result_path": resolve_result_group(results_root, config.get("result_group")),
+        "raw_result_group": config.get("result_group"),
+        "result_group": result_path.relative_to(result_root).as_posix(),
+        "result_path": str(result_path),
     }
 
 
@@ -118,7 +121,7 @@ def run_manifest(manifest_path, results_root="results", continue_on_error=False)
         }
         for path in manifest["jobs"]
     ]
-    table = results_root / "agent_b" / "experiment_run_table.csv"
+    table = results_root / "general" / "experiment_run_table.csv"
     _write_table(table, rows)
     for row in rows:
         row["status"] = "running"
@@ -149,8 +152,8 @@ def run_manifest(manifest_path, results_root="results", continue_on_error=False)
     completed = [row for row in rows if row["status"] == "completed"]
     if completed:
         compare_runs(
-            [results_root / "agent_b"],
-            results_root / "agent_b" / "comparison",
+            [results_root],
+            results_root / "comparison",
         )
     return table
 
@@ -175,7 +178,7 @@ def main(argv=None):
         return
     table = run_manifest(args.batch, args.results_dir, args.continue_on_error)
     print(f"Run table: {table}")
-    report = Path(args.results_dir).resolve() / "agent_b" / "comparison" / "comparison_report.html"
+    report = Path(args.results_dir).resolve() / "comparison" / "run_phase_metric_matrix.html"
     if report.is_file():
         print(f"Outcome and metric indicator report: {report}")
 

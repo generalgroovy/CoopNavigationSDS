@@ -93,12 +93,18 @@ class TransformersModelAdapterTests(unittest.TestCase):
 
         self.assertEqual(set(AGENT_B_MODEL_SIZE_TREATMENTS), {"small", "medium", "large"})
         self.assertEqual(len(all_models), len(set(all_models)))
-        self.assertEqual(model_size_treatment("phi3:mini"), "medium")
+        self.assertEqual(model_size_treatment("microsoft/Phi-3-mini-4k-instruct"), "medium")
         self.assertEqual(
             models_for_size_treatments(("small", "large")),
             (
-                "llama3.2:1b", "qwen2.5:1.5b",
-                "qwen2.5:7b", "llama3.1:8b",
+                "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                "Qwen/Qwen2.5-0.5B-Instruct",
+                "HuggingFaceTB/SmolLM2-360M-Instruct",
+                "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+                "Qwen/Qwen2.5-7B-Instruct",
+                "mistralai/Mistral-7B-Instruct-v0.3",
+                "meta-llama/Llama-3.1-8B-Instruct",
+                "tiiuae/Falcon3-7B-Instruct",
             ),
         )
 
@@ -228,18 +234,33 @@ class TransformersModelAdapterTests(unittest.TestCase):
         self.assertEqual(model_profile_metadata("mistral_7b_ollama")["size_tier"], "large")
         tiers = research_model_profiles_by_tier()
         self.assertEqual(set(tiers), {"small", "medium", "large"})
-        self.assertTrue(all(len(profiles) == 2 for profiles in tiers.values()))
+        self.assertTrue(all(len(profiles) == 4 for profiles in tiers.values()))
         self.assertEqual(
             tiers["small"],
-            ("llama3_2_1b_ollama", "qwen2_5_1_5b_ollama"),
+            (
+                "tinyllama_1b_transformers",
+                "qwen2_5_0_5b_transformers",
+                "smollm2_360m_transformers",
+                "smollm2_1_7b_transformers",
+            ),
         )
         self.assertEqual(
             tiers["medium"],
-            ("llama3_2_3b_ollama", "phi3_3_8b_ollama"),
+            (
+                "qwen2_5_1_5b_transformers",
+                "phi3_mini_4k_transformers",
+                "gemma2_2b_it_transformers",
+                "qwen3_4b_instruct_transformers",
+            ),
         )
         self.assertEqual(
             tiers["large"],
-            ("qwen2_5_7b_ollama", "llama3_1_8b_ollama"),
+            (
+                "qwen2_5_7b_transformers",
+                "mistral_7b_transformers",
+                "llama3_1_8b_transformers",
+                "falcon3_7b_transformers",
+            ),
         )
         self.assertEqual(
             model_profile_metadata(tiers["small"][0])["size_tier"],

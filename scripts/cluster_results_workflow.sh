@@ -13,9 +13,9 @@ GIT_BRANCH="${GIT_BRANCH:-main}"
 ARRAY_CONCURRENCY="${ARRAY_CONCURRENCY:-1}"
 MAX_CONDITIONS_PER_ARRAY="${MAX_CONDITIONS_PER_ARRAY:-14}"
 
-SMALL_PROFILES="${SMALL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers}"
-MEDIUM_PROFILES="${MEDIUM_PROFILES:-qwen2_5_1_5b_transformers phi3_mini_4k_transformers}"
-LARGE_PROFILES="${LARGE_PROFILES:-qwen2_5_7b_transformers falcon3_7b_transformers}"
+SMALL_PROFILES="${SMALL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers smollm2_360m_transformers smollm2_1_7b_transformers}"
+MEDIUM_PROFILES="${MEDIUM_PROFILES:-qwen2_5_1_5b_transformers phi3_mini_4k_transformers gemma2_2b_it_transformers qwen3_4b_instruct_transformers}"
+LARGE_PROFILES="${LARGE_PROFILES:-qwen2_5_7b_transformers mistral_7b_transformers llama3_1_8b_transformers falcon3_7b_transformers}"
 
 cd "${PROJECT_ROOT}"
 
@@ -54,7 +54,7 @@ refresh_results() {
   "${PYTHON_BIN}" -u scripts/update_experiment_coverage.py --results-dir "${RESULTS_ROOT}"
   "${PYTHON_BIN}" -u -m coop_navigation_sds.ResultsAndArtifacts.comparison \
     "${RESULTS_ROOT}" \
-    --output "${RESULTS_ROOT}/comparison" \
+    --output "${RESULTS_ROOT}/general" \
     --include-partial
   "${PYTHON_BIN}" - "${RESULTS_ROOT}" <<'PY'
 import csv
@@ -63,8 +63,8 @@ import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-manifest_path = root / "comparison" / "analysis_manifest.json"
-inventory_path = root / "comparison" / "run_inventory.csv"
+manifest_path = root / "general" / "analysis_manifest.json"
+inventory_path = root / "general" / "run_inventory.csv"
 coverage_path = root / "experiment_coverage_summary.json"
 
 if coverage_path.is_file():
@@ -78,7 +78,7 @@ if coverage_path.is_file():
 if manifest_path.is_file():
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     print(
-        "comparison:",
+        "general:",
         f"runs={manifest.get('discovered_run_count')}",
         f"observed={manifest.get('observed_condition_count')}",
         f"completed={manifest.get('completed_condition_count')}",
@@ -150,14 +150,14 @@ Actions:
   preview-small   Print small-model Slurm arrays only.
   preview-medium  Print medium-model Slurm arrays only.
   preview-large   Print large-model Slurm arrays only.
-  submit-small    Submit the two configured small Agent B models.
-  submit-medium   Submit the two configured medium Agent B models.
-  submit-large    Submit the two configured large Agent B models.
+  submit-small    Submit the configured small Agent B models.
+  submit-medium   Submit the configured medium Agent B models.
+  submit-large    Submit the configured large Agent B models.
 
 Default model coverage:
-  small:  tinyllama_1b_transformers qwen2_5_0_5b_transformers
-  medium: qwen2_5_1_5b_transformers phi3_mini_4k_transformers
-  large:  qwen2_5_7b_transformers falcon3_7b_transformers
+  small:  tinyllama_1b_transformers qwen2_5_0_5b_transformers smollm2_360m_transformers smollm2_1_7b_transformers
+  medium: qwen2_5_1_5b_transformers phi3_mini_4k_transformers gemma2_2b_it_transformers qwen3_4b_instruct_transformers
+  large:  qwen2_5_7b_transformers mistral_7b_transformers llama3_1_8b_transformers falcon3_7b_transformers
 
 Environment overrides:
   PROJECT_ROOT, PYTHON_BIN, RESULTS_ROOT, GIT_KEY_PATH, GIT_REMOTE, GIT_BRANCH

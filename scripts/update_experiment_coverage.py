@@ -41,7 +41,7 @@ def main():
     if discover_evidence_run_directories([args.results_dir]):
         for name, path in write_evidence_comparison(
             [args.results_dir],
-            Path(args.results_dir).resolve() / "analysis",
+            Path(args.results_dir).resolve() / "general",
         ).items():
             print(f"evidence_{name}: {path}")
 

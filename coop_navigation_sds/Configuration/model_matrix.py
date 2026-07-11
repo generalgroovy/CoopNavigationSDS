@@ -18,12 +18,12 @@ AGENT_B_OLLAMA_BASE_URL = os.environ.get(
 
 @dataclass(frozen=True)
 class ModelSizeTreatment:
-    """One controlled model-size tier with two family-diverse local models."""
+    """One controlled model-size tier with provider-compatible model slots."""
 
     key: str
     minimum_parameters_billion: float
     maximum_parameters_billion: float
-    models: tuple[str, str]
+    models: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -40,13 +40,28 @@ class AgentBModelProposal:
 
 AGENT_B_MODEL_SIZE_TREATMENTS = {
     "small": ModelSizeTreatment(
-        "small", 1.0, 1.5, ("llama3.2:1b", "qwen2.5:1.5b")
+        "small", 0.3, 1.7, (
+            "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+            "Qwen/Qwen2.5-0.5B-Instruct",
+            "HuggingFaceTB/SmolLM2-360M-Instruct",
+            "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+        )
     ),
     "medium": ModelSizeTreatment(
-        "medium", 3.0, 3.8, ("llama3.2:3b", "phi3:mini")
+        "medium", 1.5, 4.0, (
+            "Qwen/Qwen2.5-1.5B-Instruct",
+            "microsoft/Phi-3-mini-4k-instruct",
+            "google/gemma-2-2b-it",
+            "Qwen/Qwen3-4B-Instruct-2507",
+        )
     ),
     "large": ModelSizeTreatment(
-        "large", 7.0, 8.0, ("qwen2.5:7b", "llama3.1:8b")
+        "large", 7.0, 8.0, (
+            "Qwen/Qwen2.5-7B-Instruct",
+            "mistralai/Mistral-7B-Instruct-v0.3",
+            "meta-llama/Llama-3.1-8B-Instruct",
+            "tiiuae/Falcon3-7B-Instruct",
+        )
     ),
 }
 
@@ -56,14 +71,14 @@ MODEL_SIZE_ORDER = tuple(AGENT_B_MODEL_SIZE_TREATMENTS)
 AGENT_B_MODEL_PROPOSALS = {
     "small": (
         AgentBModelProposal(
-            "small", "small1", "llama3.2:1b", "ollama",
-            "canonical small Llama-family chat baseline",
-            "low-resource local dialogue-system baseline",
+            "small", "small1", "TinyLlama/TinyLlama-1.1B-Chat-v1.0", "transformers",
+            "contained small chat baseline already used as the control model",
+            "low-resource local dialogue-system baseline and Agent A control match",
         ),
         AgentBModelProposal(
-            "small", "small2", "qwen2.5:1.5b", "ollama",
-            "larger multilingual Qwen-family small model",
-            "tests whether modest extra scale improves route grounding",
+            "small", "small2", "Qwen/Qwen2.5-0.5B-Instruct", "transformers",
+            "very small multilingual Qwen-family model",
+            "tests provider-compatible floor performance and multilingual route grounding",
         ),
         AgentBModelProposal(
             "small", "small3", "HuggingFaceTB/SmolLM2-360M-Instruct", "transformers",
@@ -71,48 +86,48 @@ AGENT_B_MODEL_PROPOSALS = {
             "tests floor performance and fast smoke-test behavior",
         ),
         AgentBModelProposal(
-            "small", "small4", "Qwen/Qwen2.5-0.5B-Instruct", "transformers",
-            "very small multilingual instruction model without Ollama",
-            "tests provider effects and compact multilingual behavior",
+            "small", "small4", "HuggingFaceTB/SmolLM2-1.7B-Instruct", "transformers",
+            "compact model above the 1B boundary",
+            "tests small-to-medium transition behavior",
         ),
     ),
     "medium": (
         AgentBModelProposal(
-            "medium", "medium1", "llama3.2:3b", "ollama",
-            "canonical medium Llama-family model",
-            "middle resource point between small baselines and 7B models",
+            "medium", "medium1", "Qwen/Qwen2.5-1.5B-Instruct", "transformers",
+            "medium-lite multilingual Qwen-family model",
+            "bridges compact models and heavier reasoning-focused models",
         ),
         AgentBModelProposal(
-            "medium", "medium2", "phi3:mini", "ollama",
+            "medium", "medium2", "microsoft/Phi-3-mini-4k-instruct", "transformers",
             "non-Llama Phi architecture with compact reasoning focus",
             "tests model-family effects on clarification and repair",
         ),
         AgentBModelProposal(
-            "medium", "medium3", "gemma2:2b", "ollama",
+            "medium", "medium3", "google/gemma-2-2b-it", "transformers",
             "Gemma-family instruction model with lower memory than Phi",
             "tests another architecture at moderate local cost",
         ),
         AgentBModelProposal(
-            "medium", "medium4", "qwen3:4b", "ollama",
+            "medium", "medium4", "Qwen/Qwen3-4B-Instruct-2507", "transformers",
             "newer Qwen generation with stronger multilingual instruction behavior",
             "tests whether newer training improves constraint handling",
         ),
     ),
     "large": (
         AgentBModelProposal(
-            "large", "large1", "llama3.1:8b", "ollama",
-            "canonical large Llama-family baseline",
-            "high-quality local comparison point for route cooperation",
-        ),
-        AgentBModelProposal(
-            "large", "large2", "qwen2.5:7b", "ollama",
+            "large", "large1", "Qwen/Qwen2.5-7B-Instruct", "transformers",
             "large multilingual Qwen-family comparison model",
-            "tests cross-family behavior at similar resource scale",
+            "tests high-capacity route grounding and constraint handling",
         ),
         AgentBModelProposal(
-            "large", "large3", "mistral:7b", "ollama",
-            "Mistral-family 7B local model with different instruction tuning",
+            "large", "large2", "mistralai/Mistral-7B-Instruct-v0.3", "transformers",
+            "Mistral-family 7B model with different instruction tuning",
             "tests whether non-Llama/Qwen architecture shifts repair quality",
+        ),
+        AgentBModelProposal(
+            "large", "large3", "meta-llama/Llama-3.1-8B-Instruct", "transformers",
+            "large Llama-family instruction baseline",
+            "tests expected high-quality dialogue management against other 7B/8B families",
         ),
         AgentBModelProposal(
             "large", "large4", "tiiuae/Falcon3-7B-Instruct", "transformers",

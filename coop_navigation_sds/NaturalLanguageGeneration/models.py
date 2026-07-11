@@ -484,10 +484,9 @@ def available_model_profile_keys():
 
 
 def research_model_profiles_by_tier():
-    """Return the two primary Agent B model contrasts in each size tier."""
+    """Return the selected Agent B model profiles in each size tier."""
     profile_by_model = {
         spec.model: key for key, spec in MODEL_PROFILE_SPECS.items()
-        if spec.provider == "ollama"
     }
     return {
         tier: tuple(
