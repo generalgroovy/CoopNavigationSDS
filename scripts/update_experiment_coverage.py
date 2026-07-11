@@ -16,6 +16,9 @@ from coop_navigation_sds.ResultsAndArtifacts.comparison import (  # noqa: E402
     discover_run_directories,
     write_evidence_comparison,
 )
+from coop_navigation_sds.ResultsAndArtifacts.condition_overview import (  # noqa: E402
+    write_configuration_condition_overview,
+)
 
 
 def main():
@@ -31,6 +34,11 @@ def main():
         for report in compact_existing_result_tree(args.results_dir):
             print(f"compaction: {report}")
     for name, path in update_experiment_coverage(args.results_dir).items():
+        print(f"{name}: {path}")
+    for name, path in write_configuration_condition_overview(
+        output_directory=Path(args.results_dir).resolve() / "general",
+        results_root=args.results_dir,
+    ).items():
         print(f"{name}: {path}")
     if discover_run_directories([args.results_dir]):
         for name, path in compare_runs(

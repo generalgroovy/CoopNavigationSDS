@@ -1301,14 +1301,33 @@ success, route validity, constraint satisfaction, word error rate, turn count,
 failure phase, and source run. Green/red coloring is visual only; the CSV is
 the graphable source.
 
+The exact planned configuration space is exported separately from observed run
+results:
+
+| File | Meaning |
+| --- | --- |
+| `results/general/configuration_conditions.csv` | One row per generated job condition, including invalid staged designs before execution |
+| `results/general/configuration_model_overview.csv` | One row per Agent A and Agent B model cell with generated, valid, invalid, text-control, and audio-variant counts |
+| `results/general/configuration_factor_levels.csv` | One row per factor level, showing how often each scenario, persona, speech band, engine, beam width, seed, and model parameter appears |
+| `results/general/configuration_groups_exact.csv` | Exact comparable groups across Agent A type, model size, task, audio treatment, TTS, ASR, and ASR beam width |
+| `results/general/configuration_condition_overview.html` | Readable overview of the same planned-condition tables |
+
+These files are derived from `jobs/agent_b_llm/userlm_transformers_speech_grid`
+and `jobs/agent_b_llm/transformers_speech_grid`. They answer "what is planned
+and structurally valid?" rather than "what completed?". A condition is marked
+stage-valid only when the scenario can support the progressive route stages
+for validity, time, and constraints. Invalid staged designs are kept in the
+table so coverage gaps are explicit instead of hidden.
+
 Coverage can be rebuilt independently:
 
 ```bash
 python scripts/update_experiment_coverage.py --results-dir results
 ```
 
-That command now refreshes the evidence-preserving analysis automatically and
-adds the finalized-run comparison only when canonical finalized runs exist.
+That command refreshes planned configuration tables, evidence-preserving
+analysis, and finalized-run comparison files when canonical finalized runs
+exist.
 
 ### Recommended Analysis Workflow
 
