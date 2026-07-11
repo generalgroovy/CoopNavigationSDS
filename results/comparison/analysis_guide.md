@@ -9,6 +9,7 @@ before and after generation, and aborts if source evidence changes.
 | File | Purpose |
 | --- | --- |
 | `run_inventory.csv` | One row per discovered run folder, including lifecycle state and completed/observed counts. |
+| `program_execution_summary.csv` | Program execution completion by Agent B model, independent of task success or route satisfaction. |
 | `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |
 | `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |
 | `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |
@@ -35,6 +36,7 @@ before and after generation, and aborts if source evidence changes.
 - `comparison_overview.html`
 - `analysis_guide.md`
 - `run_inventory.csv`
+- `program_execution_summary.csv`
 - `configuration_groups.csv`
 - `task_outcome_comparison.csv`
 - `task_success_by_configuration.csv`

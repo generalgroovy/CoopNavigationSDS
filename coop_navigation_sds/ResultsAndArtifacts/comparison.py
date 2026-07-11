@@ -11,7 +11,7 @@ import math
 import os
 import re
 import statistics
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from coop_navigation_sds.NaturalLanguageGeneration.models import model_memory_requirement_gb
@@ -188,7 +188,8 @@ def _event_rows(path):
         with Path(path).open(encoding="utf-8") as handle:
             for line in handle:
                 if line.strip():
-                    rows.append(json.loads(line))
+                    row = json.loads(line)
+                    rows.append(row.get("event") if isinstance(row.get("event"), dict) else row)
     except (OSError, json.JSONDecodeError):
         return rows
     return rows
@@ -236,7 +237,11 @@ def _planned_conditions(run_directory):
 def _condition_sessions(run_directory):
     """Load one immutable runtime event stream per observed condition."""
     sessions = {}
-    for path in sorted(Path(run_directory).glob("batch-*.jsonl")):
+    paths = sorted(Path(run_directory).glob("batch-*.jsonl"))
+    runtime_events = Path(run_directory) / "runtime_events.jsonl"
+    if runtime_events.is_file():
+        paths.append(runtime_events)
+    for path in paths:
         events = _event_rows(path)
         start = next((row for row in events if row.get("name") == "batch.condition.start"), None)
         if start is None:
@@ -247,6 +252,19 @@ def _condition_sessions(run_directory):
     return sessions
 
 
+def _condition_failures(run_directory):
+    """Load captured condition failures without altering source evidence."""
+    path = Path(run_directory) / "condition_failures.jsonl"
+    if not path.is_file():
+        return {}
+    failures = {}
+    for row in _read_jsonl(path):
+        condition_id = str(row.get("condition_id") or "")
+        if condition_id:
+            failures[condition_id] = row
+    return failures
+
+
 def _condition_state(session):
     if session is None:
         return "not_started"
@@ -254,9 +272,9 @@ def _condition_state(session):
     return "completed" if "batch.condition.end" in names and "metrics" in names else "interrupted"
 
 
-def _condition_runtime_view(run_id, run_directory, planned, session):
+def _condition_runtime_view(run_id, run_directory, planned, session, failure=None):
     condition_id = str(planned.get("condition_id") or "")
-    state = _condition_state(session)
+    state = "interrupted" if failure is not None and session is None else _condition_state(session)
     events = session["events"] if session else []
     summary_event = next((row for row in reversed(events) if row.get("name") == "metrics"), None)
     sections = _summary_sections((summary_event or {}).get("payload", {}).get("metrics"))
@@ -306,11 +324,15 @@ def _condition_runtime_view(run_id, run_directory, planned, session):
         "candidates_compared": _text_number(comparison.get("candidates compared")) if state == "completed" else None,
         "route_revisions": _text_number(comparison.get("revisions")) if state == "completed" else None,
         "turn_count": _text_number(execution.get("turns")) if state == "completed" else None,
-        "runtime_sec": _text_number(execution.get("runtime")) if state == "completed" else None,
+        "runtime_sec": _text_number(execution.get("runtime")) if state == "completed" else _number((failure or {}).get("runtime_sec")),
         "selected_route": task.get("selected route") if state == "completed" else None,
         "optimal_route": comparison.get("optimal route") if state == "completed" else None,
         "source_event_file": str(session["path"]) if session else None,
     }
+    if failure is not None:
+        failure_detail = failure.get("failure") if isinstance(failure.get("failure"), dict) else {}
+        row["pipeline_failure_type"] = failure_detail.get("exception_type") or failure.get("pipeline_failure_type") or "captured_failure"
+        row["failure_message"] = failure_detail.get("message") or failure.get("error_message") or ""
     row["model_comparison_condition_key"] = row["model_comparison_condition_key"] or _comparison_condition_key(row)
     return row
 
@@ -581,6 +603,113 @@ def _agent_b_model_summary_rows(condition_rows, phase_rows, dialogue_rows):
             "mean_dialogue_state_agreement": _mean(_numeric_values(dialogues, "state_task_variable_agreement")),
             "mean_route_agreement": _mean(_numeric_values(dialogues, "current_route_agreement")),
             "evidence_source": "condition, phase, and dialogue summaries grouped by Agent B model",
+        })
+    return sorted(output, key=_agent_b_sort_key)
+
+
+def _program_execution_summary_rows(condition_rows, run_directories=None):
+    """Summarize program/runtime completion separately from task satisfaction."""
+    run_summary_groups = defaultdict(lambda: {
+        "run_count": 0,
+        "expected": 0,
+        "completed": 0,
+        "failures": 0,
+    })
+    for run_directory in run_directories or ():
+        run_directory = Path(run_directory)
+        summary_path = run_directory / "run_summary.json"
+        conditions_path = run_directory / "conditions.jsonl"
+        if not summary_path.is_file() or not conditions_path.is_file():
+            continue
+        try:
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            first_condition = next(iter(_read_jsonl(conditions_path)), {})
+        except Exception:
+            continue
+        identity = (
+            first_condition.get("agent_b_llm_size", ""),
+            _normalized_model_name(first_condition.get("agent_b_model", "")),
+            first_condition.get("agent_a_type", ""),
+        )
+        expected = int(_number(summary.get("condition_count")) or 0)
+        completed = int(_number(summary.get("completed_condition_count")) or 0)
+        failures = int(_number(summary.get("failed_condition_count")) or 0)
+        group = run_summary_groups[identity]
+        group["run_count"] += 1
+        group["expected"] += expected or max(completed + failures, 1)
+        group["completed"] += completed
+        group["failures"] += failures
+    groups = defaultdict(list)
+    for row in condition_rows:
+        groups[(row.get("agent_b_llm_size"), row.get("agent_b_model"), row.get("agent_a_type"))].append(row)
+    output = []
+    for identity in sorted(
+        set(groups) | set(run_summary_groups),
+        key=lambda item: (
+            AGENT_B_SIZE_ORDER.get(str(item[0] or "").casefold(), 8),
+            str(item[1] or "").casefold(),
+            str(item[2] or "").casefold(),
+        ),
+    ):
+        size, model, agent_a = identity
+        rows = groups.get(identity, [])
+        summary_group = run_summary_groups.get(identity)
+        if rows and any(str(row.get("condition_state") or "") for row in rows):
+            expected = len(rows)
+            completed = [
+                row for row in rows
+                if str(row.get("execution_status") or row.get("condition_state") or "").casefold() == "completed"
+            ]
+            captured_failures = sum(
+                str(row.get("condition_state") or "").casefold() == "interrupted"
+                for row in rows
+            )
+            missing = sum(
+                str(row.get("condition_state") or "").casefold() == "not_started"
+                for row in rows
+            )
+            finalized = expected - missing
+            completed_count = len(completed)
+        elif summary_group:
+            expected = summary_group["expected"]
+            finalized = expected
+            completed = rows
+            completed_count = summary_group["completed"]
+            captured_failures = summary_group["failures"]
+            missing = max(expected - completed_count - captured_failures, 0)
+        else:
+            expected = len(rows)
+            finalized = len(rows)
+            completed = rows
+            completed_count = len(rows)
+            captured_failures = 0
+            missing = 0
+        runtimes = _numeric_values(completed, "runtime_sec")
+        output.append({
+            "agent_b_llm_size": size,
+            "agent_b_model": model,
+            "agent_a_type": agent_a,
+            "expected_conditions": expected,
+            "observed_conditions": finalized,
+            "finalized_result_folders": finalized,
+            "finalized_rate": finalized / expected if expected else None,
+            "program_completed_conditions": completed_count,
+            "program_completion_rate": completed_count / expected if expected else None,
+            "captured_program_failures": captured_failures,
+            "missing_conditions": missing,
+            "mean_completed_runtime_sec": _mean(runtimes),
+            "max_completed_runtime_sec": max(runtimes) if runtimes else None,
+            "text_only_conditions": sum(row.get("run_type") == "text_only" for row in rows),
+            "audio_variant_conditions": sum(row.get("run_type") == "audio_variant" for row in rows),
+            "program_failure_types": ";".join(
+                f"{failure}:{count}"
+                for failure, count in sorted(Counter(
+                    row.get("pipeline_failure_type") or row.get("failure_phase") or "unknown"
+                    for row in rows
+                    if str(row.get("execution_status") or row.get("condition_state") or "").casefold() != "completed"
+                ).items())
+            ),
+            "interpretation": "program execution only; task satisfaction and route success are reported in task tables",
         })
     return sorted(output, key=_agent_b_sort_key)
 
@@ -874,6 +1003,7 @@ def _write_analysis_guide(path, generated_files):
         "| File | Purpose |",
         "| --- | --- |",
         "| `run_inventory.csv` | One row per discovered run folder, including lifecycle state and completed/observed counts. |",
+        "| `program_execution_summary.csv` | Program execution completion by Agent B model, independent of task success or route satisfaction. |",
         "| `configuration_groups.csv` | Planned and observed coverage grouped by controlled configuration factors. |",
         "| `task_outcome_comparison.csv` | One row per planned condition; unfinished outcomes remain blank. |",
         "| `task_success_by_configuration.csv` | Aggregated task success, route validity, duration gap, turns, and runtime by configuration. |",
@@ -903,7 +1033,7 @@ def _write_analysis_guide(path, generated_files):
     Path(path).write_text("\n".join(lines), encoding="utf-8")
 
 
-def _write_evidence_overview(path, inventory, configurations, outcomes, phases, dialogues, task_summary, model_summary, phase_summary, dialogue_summary):
+def _write_evidence_overview(path, inventory, configurations, outcomes, phases, dialogues, task_summary, model_summary, program_execution, phase_summary, dialogue_summary):
     run_table = _html_table(inventory, (
         ("source_run", "Run"), ("run_state", "State"), ("agent_a_type", "Agent A"),
         ("agent_b_model", "Agent B"), ("planned_condition_count", "Planned"),
@@ -949,6 +1079,14 @@ def _write_evidence_overview(path, inventory, configurations, outcomes, phases, 
         ("mean_phase_processing_sec", "Phase sec"), ("total_asr_misinterpretations", "ASR misheard"),
         ("mean_dialogue_state_agreement", "State agreement"),
     ), limit=120)
+    program_execution_table = _html_table(program_execution, (
+        ("agent_b_llm_size", "Size"), ("agent_b_model", "Agent B"), ("agent_a_type", "Agent A"),
+        ("expected_conditions", "Expected"), ("observed_conditions", "Observed"),
+        ("finalized_rate", "Finalized rate"), ("program_completed_conditions", "Program completed"),
+        ("program_completion_rate", "Program completion"), ("captured_program_failures", "Captured failures"),
+        ("missing_conditions", "Missing"), ("mean_completed_runtime_sec", "Mean runtime sec"),
+        ("max_completed_runtime_sec", "Max runtime sec"), ("program_failure_types", "Failure types"),
+    ), limit=120)
     phase_summary_table = _html_table(phase_summary, (
         ("agent_b_model", "Agent B"), ("run_type", "Run type"), ("phase", "Phase"),
         ("condition_phase_rows", "Rows"), ("mean_processing_sec", "Mean sec"),
@@ -974,8 +1112,9 @@ th{{position:sticky;top:0;background:#244b5a;color:#fff}}.finalized,.completed{{
 .interrupted{{background:#f8dddd}}.preflight_only,.not_started{{background:#edf0f3;color:#56616c}}code{{background:#edf1f4;padding:2px 4px}}
 </style></head><body><main><h1>Result evidence comparison</h1>
 <p>Derived representation only. Source logs, audio, configuration, and outcomes are not modified. Blank values mean unavailable evidence, not zero or failure.</p>
-<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
+<nav><a href="analysis_guide.md">Guide</a><a href="run_inventory.csv">Runs</a><a href="program_execution_summary.csv">Program execution</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
 <section><h2>Run lifecycle</h2>{run_table}</section><section><h2>Configuration groups</h2>{config_table}</section>
+<section><h2>Program execution, independent of task satisfaction</h2><p>This table counts whether the software finalized and completed each configured condition. It does not judge route quality, constraint satisfaction, or dialogue success.</p>{program_execution_table}</section>
 <section><h2>Task and success</h2>{outcome_table}</section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
 <section><h2>Model-by-configuration matrix</h2><p>Open <a href="model_configuration_matrix.html">model_configuration_matrix.html</a> for the full color-coded pivot table.</p></section>
 <section><h2>Agent B model summary</h2>{model_summary_table}</section>
@@ -1001,13 +1140,15 @@ def write_evidence_comparison(inputs, output_directory):
     for run_directory in runs:
         planned = _planned_conditions(run_directory)
         sessions = _condition_sessions(run_directory)
+        failures = _condition_failures(run_directory)
         if not planned and (run_directory / "conditions.jsonl").is_file():
             planned = _read_jsonl(run_directory / "conditions.jsonl")
         run_id = run_directory.name
         run_conditions = []
         for planned_row in planned:
+            condition_id = str(planned_row.get("condition_id") or "")
             condition = _condition_runtime_view(
-                run_id, run_directory, planned_row, sessions.get(str(planned_row.get("condition_id") or ""))
+                run_id, run_directory, planned_row, sessions.get(condition_id), failures.get(condition_id)
             )
             run_conditions.append(condition)
             session = sessions.get(condition["condition_id"])
@@ -1020,12 +1161,14 @@ def write_evidence_comparison(inputs, output_directory):
     task_summary_rows = _task_success_summary_rows(condition_rows)
     model_configuration_rows = _model_configuration_matrix_rows(condition_rows)
     model_summary_rows = _agent_b_model_summary_rows(condition_rows, phase_rows, dialogue_rows)
+    program_execution_rows = _program_execution_summary_rows(condition_rows, runs)
     phase_summary_rows = _phase_summary_rows(phase_rows)
     dialogue_summary_rows = _dialogue_summary_rows(dialogue_rows)
     paths = {
         "overview": output / "comparison_overview.html",
         "guide": output / "analysis_guide.md",
         "run_inventory": output / "run_inventory.csv",
+        "program_execution": output / "program_execution_summary.csv",
         "configurations": output / "configuration_groups.csv",
         "outcomes": output / "task_outcome_comparison.csv",
         "task_summary": output / "task_success_by_configuration.csv",
@@ -1041,6 +1184,7 @@ def write_evidence_comparison(inputs, output_directory):
     }
     for key, rows in (
         ("run_inventory", inventory_rows), ("configurations", configuration_rows),
+        ("program_execution", program_execution_rows),
         ("outcomes", condition_rows), ("task_summary", task_summary_rows),
         ("model_configuration_matrix", model_configuration_rows),
         ("model_summary", model_summary_rows),
@@ -1057,7 +1201,7 @@ def write_evidence_comparison(inputs, output_directory):
     _write_analysis_guide(paths["guide"], generated_file_names)
     _write_evidence_overview(
         paths["overview"], inventory_rows, configuration_rows, condition_rows,
-        phase_rows, dialogue_rows, task_summary_rows, model_summary_rows, phase_summary_rows,
+        phase_rows, dialogue_rows, task_summary_rows, model_summary_rows, program_execution_rows, phase_summary_rows,
         dialogue_summary_rows,
     )
     after = _source_inventory(roots, output)
@@ -1077,6 +1221,7 @@ def write_evidence_comparison(inputs, output_directory):
         "planned_condition_count": len(condition_rows),
         "observed_condition_count": sum(row["condition_state"] != "not_started" for row in condition_rows),
         "completed_condition_count": sum(row["condition_state"] == "completed" for row in condition_rows),
+        "program_execution_summary_count": len(program_execution_rows),
         "generated_files": generated_file_names,
         "source_files": before,
     }
@@ -1105,10 +1250,12 @@ def build_condition_analysis_rows(conditions, metrics):
         run_id = str(condition.get("source_run", ""))
         condition_id = str(condition.get("condition_id", ""))
         success = _truthy(condition.get("task_success"))
+        condition_state = condition.get("condition_state") or condition.get("execution_status") or "completed"
         row = {
             "source_run": run_id,
             "source_path": condition.get("source_path", ""),
             "condition_id": condition_id,
+            "condition_state": condition_state,
             "model_comparison_condition_key": (
                 condition.get("model_comparison_condition_key")
                 or _comparison_condition_key(condition)
@@ -1116,7 +1263,7 @@ def build_condition_analysis_rows(conditions, metrics):
             "pair_id": condition.get("pair_id", ""),
             "outcome": "success" if success else "failure",
             "task_success": success,
-            "execution_status": condition.get("execution_status", ""),
+            "execution_status": condition.get("execution_status", condition_state),
             "failure_phase": text_lookup.get((run_id, condition_id, "whole_dialogue_failure_phase"), ""),
             "pipeline_failure_type": condition.get("pipeline_failure_type", ""),
             "scenario_key": condition.get("scenario_key", ""),
@@ -1128,7 +1275,7 @@ def build_condition_analysis_rows(conditions, metrics):
             "agent_a_type": condition.get("agent_a_type", ""),
             "agent_a_audio_persona": condition.get("agent_a_audio_persona", ""),
             "agent_b_audio_persona": condition.get("agent_b_audio_persona", ""),
-            "agent_b_model": condition.get("agent_b_model", ""),
+            "agent_b_model": _normalized_model_name(condition.get("agent_b_model", "")),
             "agent_b_llm_size": condition.get("agent_b_llm_size", ""),
             "agent_b_model_role": condition.get("agent_b_model_role", ""),
             "model_param_key": condition.get("model_param_key", ""),
@@ -2353,6 +2500,7 @@ def compare_runs(inputs, output_directory):
     outliers = identify_metric_outliers(metrics, conditions)
     metric_indicators = summarize_metric_indicators(outliers)
     condition_analysis = build_condition_analysis_rows(conditions, metrics)
+    program_execution_rows = _program_execution_summary_rows(condition_analysis, run_directories)
     model_configuration_rows = _model_configuration_matrix_rows(condition_analysis)
     performance_bands = build_performance_band_summary(condition_analysis)
     run_metric_matrix, run_metric_specifications, run_metric_outliers = build_run_phase_metric_matrix(
@@ -2370,6 +2518,7 @@ def compare_runs(inputs, output_directory):
         "run_metric_matrix": output / "run_phase_metric_matrix.csv",
         "run_metric_matrix_report": output / "run_phase_metric_matrix.html",
         "condition_analysis": output / "condition_analysis.csv",
+        "program_execution_summary": output / "program_execution_summary.csv",
         "model_configuration_matrix": output / "model_configuration_matrix.csv",
         "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "performance_band_summary": output / "performance_band_summary.csv",
@@ -2389,6 +2538,7 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["metric_indicators"], metric_indicators)
     _write_csv(paths["run_metric_matrix"], run_metric_matrix)
     _write_csv(paths["condition_analysis"], condition_analysis)
+    _write_csv(paths["program_execution_summary"], program_execution_rows)
     _write_csv(paths["model_configuration_matrix"], model_configuration_rows)
     _write_csv(paths["performance_band_summary"], performance_bands)
     write_phase_condition_metric_files(conditions, metrics, output)
