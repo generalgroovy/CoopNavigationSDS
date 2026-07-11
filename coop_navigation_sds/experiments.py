@@ -100,6 +100,84 @@ class ExperimentCondition:
         object.__setattr__(self, "objective_mode", OBJECTIVE_SHORTEST_WITH_CONSTRAINTS)
 
 
+RUNTIME_PARAMETER_KEYS = {
+    "network_seed", "num_turns", "transfer_tolerance", "invalid_route_limit",
+    "constraint_miss_limit", "dialogue_stagnation_limit", "max_turn_elapsed_sec",
+    "calculation_max_time_sec", "profile_key", "agent_b_llm_size",
+    "matrix_family", "experiment_platform", "experiment_seed",
+    "repetition", "slurm_condition_index", "slurm_grid_name", "run_mode",
+    "agent_b_model_role", "agent_b_model_slot",
+}
+
+
+def resolved_condition_test_case(condition, scenario_overrides=None, *, default_num_turns=20):
+    """Return the exact test-case shape used for route-stage preflight."""
+    parameters = dict(condition.parameter_values)
+    base_case = get_test_case(condition.test_case_key)
+    test_case = base_case.with_persona(condition.persona_key)
+    num_turns = max(1, int(parameters.get("num_turns", default_num_turns)))
+    with_overrides = getattr(test_case, "with_scenario_overrides", None)
+    if not callable(with_overrides):
+        return test_case
+    speech_parameter_keys = set(SpeechPipelineConfig.__dataclass_fields__)
+    overrides = {
+        **dict(scenario_overrides or {}),
+        **{
+            key: value for key, value in parameters.items()
+            if key not in RUNTIME_PARAMETER_KEYS
+            and not key.endswith("_profile_key")
+            and key not in speech_parameter_keys
+        },
+    }
+    overrides.pop("network_seed", None)
+    return with_overrides(maximum_dialog_turns=num_turns, **overrides)
+
+
+def condition_stage_viability(condition, scenario_overrides=None, *, default_transfer_tolerance=1, default_num_turns=20):
+    """Return route-stage viability for a generated condition without running models."""
+    parameters = dict(condition.parameter_values)
+    network_seed = parameters.get("network_seed", (scenario_overrides or {}).get("network_seed"))
+    if network_seed is not None:
+        from coop_navigation_sds.TransportNetwork.network import rebuild_network
+        rebuild_network(network_seed, force=True)
+    test_case = resolved_condition_test_case(
+        condition,
+        scenario_overrides=scenario_overrides,
+        default_num_turns=default_num_turns,
+    )
+    from coop_navigation_sds.TransportNetwork.network import STATIONS
+    if {
+        test_case.scenario.get("start_station"),
+        test_case.scenario.get("destination_station"),
+    }.issubset(STATIONS):
+        from coop_navigation_sds.TransportNetwork.constraints import stage_viability_report
+        max_constraints = max(
+            0,
+            int(test_case.scenario.get("maximum_progressive_constraints", 2)),
+        )
+        transfer_tolerance = max(
+            0,
+            int(parameters.get("transfer_tolerance", default_transfer_tolerance)),
+        )
+        return stage_viability_report(
+            test_case.scenario,
+            test_case.persona,
+            transfer_tolerance=transfer_tolerance,
+            max_constraints=max_constraints,
+        )
+    return {"all_stage_requirements_satisfied": True, "stages": []}
+
+
+def valid_stage_condition(condition, scenario_overrides=None, *, default_transfer_tolerance=1, default_num_turns=20):
+    """Return whether a condition can support the staged route-dialogue design."""
+    return bool(condition_stage_viability(
+        condition,
+        scenario_overrides=scenario_overrides,
+        default_transfer_tolerance=default_transfer_tolerance,
+        default_num_turns=default_num_turns,
+    ).get("all_stage_requirements_satisfied"))
+
+
 def condition_configuration_provenance(specification, condition):
     """Return distinct, reproducible identities for a batch and one condition."""
     condition_values = {
@@ -211,8 +289,6 @@ class ExperimentRunner:
             if network_seed != self._active_network_seed:
                 self._viability_cache.clear()
             self._active_network_seed = network_seed
-        base_case = get_test_case(condition.test_case_key)
-        test_case = base_case.with_persona(condition.persona_key)
         num_turns = max(1, int(parameters.get("num_turns", self.num_turns)))
         transfer_tolerance = max(0, int(parameters.get("transfer_tolerance", self.transfer_tolerance)))
         invalid_route_limit = max(1, int(parameters.get("invalid_route_limit", self.invalid_route_limit)))
@@ -223,55 +299,29 @@ class ExperimentRunner:
             0.1,
             float(parameters.get("calculation_max_time_sec", self.calculation_max_time_sec)),
         )
-        runtime_parameter_keys = {
-            "network_seed", "num_turns", "transfer_tolerance", "invalid_route_limit",
-            "constraint_miss_limit", "dialogue_stagnation_limit", "max_turn_elapsed_sec",
-            "calculation_max_time_sec", "profile_key", "agent_b_llm_size",
-            "matrix_family", "experiment_platform", "experiment_seed",
-            "repetition", "slurm_condition_index", "slurm_grid_name", "run_mode",
-            "agent_b_model_role",
-        }
-        speech_parameter_keys = set(SpeechPipelineConfig.__dataclass_fields__)
-        with_overrides = getattr(test_case, "with_scenario_overrides", None)
-        if callable(with_overrides):
-            overrides = {
-                **self.scenario_overrides,
-                **{
-                    key: value for key, value in parameters.items()
-                    if key not in runtime_parameter_keys
-                    and not key.endswith("_profile_key")
-                    and key not in speech_parameter_keys
-                },
-            }
-            overrides.pop("network_seed", None)
-            test_case = with_overrides(
-                maximum_dialog_turns=num_turns,
-                **overrides,
-            )
+        test_case = resolved_condition_test_case(
+            condition,
+            scenario_overrides=self.scenario_overrides,
+            default_num_turns=self.num_turns,
+        )
         from coop_navigation_sds.TransportNetwork.network import STATIONS
         if {
             test_case.scenario.get("start_station"),
             test_case.scenario.get("destination_station"),
         }.issubset(STATIONS):
-            from coop_navigation_sds.TransportNetwork.constraints import stage_viability_report
-            max_constraints = max(
-                0,
-                int(test_case.scenario.get("maximum_progressive_constraints", 2)),
-            )
             viability_key = (
                 network_seed,
                 test_case.key,
-                max_constraints,
                 transfer_tolerance,
                 repr(sorted(test_case.scenario.items())),
             )
             viability = self._viability_cache.get(viability_key)
             if viability is None:
-                viability = stage_viability_report(
-                    test_case.scenario,
-                    test_case.persona,
-                    transfer_tolerance=transfer_tolerance,
-                    max_constraints=max_constraints,
+                viability = condition_stage_viability(
+                    condition,
+                    scenario_overrides=self.scenario_overrides,
+                    default_transfer_tolerance=transfer_tolerance,
+                    default_num_turns=self.num_turns,
                 )
                 self._viability_cache[viability_key] = viability
             if not viability["all_stage_requirements_satisfied"]:

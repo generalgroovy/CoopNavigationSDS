@@ -825,7 +825,7 @@ Slurm arrays per Agent B model. This prevents one unavailable model, endpoint,
 or node class from blocking the rest of the experiment.
 
 ```bash
-python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --max-conditions-per-array 14 --dry-run
+python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small medium large --max-conditions-per-array 14 --dry-run
 python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier small --array-concurrency 1 --max-conditions-per-array 14
 python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier medium --array-concurrency 1 --max-conditions-per-array 14
 python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_transformers_speech_grid --provider transformers --tier large --array-concurrency 1 --max-conditions-per-array 14
@@ -838,12 +838,17 @@ non-model condition coverage. The default cluster helper selects six
 service-free Transformer profiles: two small, two medium, and two large. This
 is the recommended first thesis-scale run because it gives exactly two
 comparisons in every model-size tier without requiring Ollama or known gated
-profiles. Each selected model has 84 conditions. The cluster helper limits each
-submitted array to 14 condition indices by default, so each model becomes six
-smaller arrays: `0-13`, `14-27`, `28-41`, `42-55`, `56-69`, and `70-83`.
-Every array task still executes one condition, and every chunk keeps the same
-CPU, memory, and 3:59:00 per-task time-limit request; only the number of
-condition indices per submitted Slurm job changes. Override
+profiles. Each selected model currently generates 84 candidate conditions and
+submits the 72 conditions that pass staged route viability. The 12 excluded
+conditions are invalid experiment designs, not failed dialogues: they lack the
+required viable route alternatives or route changes for at least one staged
+constraint-reveal phase. The submitter and Slurm wrapper both use
+`--valid-conditions-only`, so array indices refer to the filtered valid list.
+With `--max-conditions-per-array 14`, each model becomes six smaller arrays:
+`0-11`, `12-23`, `24-35`, `36-47`, `48-59`, and `60-71`. Every array task
+still executes one valid condition, and every chunk keeps the same CPU, memory,
+and 3:59:00 per-task time-limit request; only the number of condition indices
+per submitted Slurm job changes. Override
 `MODEL_PROFILES` when a site has additional authorized local models and the
 larger coverage is desired. The configured factors intentionally span ceiling,
 nominal, challenging, and floor speech performance so successful and

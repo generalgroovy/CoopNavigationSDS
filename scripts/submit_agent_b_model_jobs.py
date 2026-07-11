@@ -27,7 +27,9 @@ from coop_navigation_sds.Configuration.jobs import (  # noqa: E402
     load_experiment_job,
 )
 from coop_navigation_sds.experiments import build_condition_grid  # noqa: E402
+from coop_navigation_sds.experiments import valid_stage_condition  # noqa: E402
 from coop_navigation_sds.NaturalLanguageGeneration.models import model_memory_requirement_gb  # noqa: E402
+from coop_navigation_sds.Configuration.runtime import AGENT_A_TRANSFER_TOLERANCE, NUM_TURNS  # noqa: E402
 
 
 DEFAULT_ROOTS = {
@@ -47,6 +49,7 @@ RESOURCE_TABLE = {
     ("userlm", "large"): (8, "72G", "03:59:00"),
 }
 TIER_ORDER = {"small": 0, "medium": 1, "large": 2}
+_STAGE_VIABILITY_CACHE: dict[tuple, bool] = {}
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,8 @@ class ModelJob:
     model_profile: str
     model_name: str
     condition_count: int
+    generated_condition_count: int = 0
+    invalid_condition_count: int = 0
 
     @property
     def agent_b_memory_gb(self) -> float:
@@ -88,9 +93,9 @@ def safe_slurm_name(value: str, limit: int = 48) -> str:
     return cleaned[:limit]
 
 
-def condition_count(job: dict) -> int:
+def condition_list(job: dict) -> list:
     grid = job["grid"]
-    return len(list(build_condition_grid(
+    return list(build_condition_grid(
         test_case_keys=grid.get("test_cases"),
         persona_keys=grid.get("personas"),
         speech_pattern_keys=grid.get("speech_patterns"),
@@ -107,7 +112,52 @@ def condition_count(job: dict) -> int:
         linked_profiles=job_linked_profiles(job),
         coverage_strategy=job["coverage_strategy"],
         pair_audio_with_text=bool(job["config"].get("paired_audio_text_runs", False)),
-    )))
+    ))
+
+
+def scenario_overrides_for_job(job: dict) -> dict:
+    config = job.get("config", {})
+    return {
+        key: value
+        for key, value in {
+            "maximum_progressive_constraints": config.get("maximum_progressive_constraints"),
+            "minimum_compared_routes": config.get("minimum_compared_routes"),
+            "require_constraint_retention": config.get("require_constraint_retention"),
+            "acceptable_duration_ratio": config.get("acceptable_duration_ratio"),
+            "min_stage_suboptimal_options": config.get("minimum_stage_suboptimal_options"),
+            "require_stage_suboptimal_options": config.get("require_stage_suboptimal_options"),
+        }.items()
+        if value is not None
+    }
+
+
+def condition_count(job: dict, *, valid_only: bool = True) -> tuple[int, int, int]:
+    conditions = condition_list(job)
+    if not valid_only:
+        return len(conditions), len(conditions), 0
+    config = job.get("config", {})
+    overrides = scenario_overrides_for_job(job)
+    valid_conditions = []
+    for condition in conditions:
+        parameters = condition.parameter_values
+        cache_key = (
+            condition.test_case_key,
+            condition.persona_key,
+            parameters.get("network_seed"),
+            parameters.get("transfer_tolerance"),
+            parameters.get("minimum_stage_suboptimal_options"),
+            tuple(sorted(overrides.items())),
+        )
+        if cache_key not in _STAGE_VIABILITY_CACHE:
+            _STAGE_VIABILITY_CACHE[cache_key] = valid_stage_condition(
+                condition,
+                scenario_overrides=overrides,
+                default_transfer_tolerance=int(config.get("agent_a_transfer_tolerance", AGENT_A_TRANSFER_TOLERANCE)),
+                default_num_turns=int(config.get("num_turns", NUM_TURNS)),
+            )
+        if _STAGE_VIABILITY_CACHE[cache_key]:
+            valid_conditions.append(condition)
+    return len(valid_conditions), len(conditions), len(conditions) - len(valid_conditions)
 
 
 def resolve_roots(args) -> list[tuple[str, Path]]:
@@ -159,6 +209,10 @@ def discover_jobs(args) -> list[ModelJob]:
             model_profile = str(config.get("model_profile") or "").strip()
             if profiles and model_profile not in profiles:
                 continue
+            valid_only = bool(getattr(args, "valid_conditions_only", True))
+            valid_count, generated_count, invalid_count = condition_count(job, valid_only=valid_only)
+            if valid_count <= 0:
+                continue
             discovered.append(ModelJob(
                 path=path,
                 family=family,
@@ -168,7 +222,9 @@ def discover_jobs(args) -> list[ModelJob]:
                 provider=provider,
                 model_profile=model_profile,
                 model_name=str(config.get("model_name") or "").strip(),
-                condition_count=condition_count(job),
+                condition_count=valid_count,
+                generated_condition_count=generated_count,
+                invalid_condition_count=invalid_count,
             ))
     if not discovered:
         raise SystemExit("No Agent B model jobs matched the selected roots and tiers.")
@@ -259,6 +315,7 @@ def sbatch_command(
         "RESULTS_ROOT": str(Path(args.results_dir).expanduser()),
         "JOB_FILE": str(job.path),
         "START_OLLAMA": "1" if job.starts_ollama else "0",
+        "VALID_CONDITIONS_ONLY": "1" if args.valid_conditions_only else "0",
     }
     export_arg = "ALL," + ",".join(f"{key}={value}" for key, value in export_values.items())
     return [
@@ -304,6 +361,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cpus-per-task", type=int, default=0, help="Override tier CPU default.")
     parser.add_argument("--memory", default="", help="Override tier memory default, for example 48G.")
     parser.add_argument("--time-limit", default="", help="Override tier time default, for example 03:59:00.")
+    parser.add_argument(
+        "--valid-conditions-only",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Submit arrays over conditions that pass staged route viability. "
+            "Use --no-valid-conditions-only only for debugging invalid-condition handling."
+        ),
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -330,7 +396,8 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"{index:02d}. {job.family}/{job.tier} | Agent A={job.agent_a_type} | "
             f"Agent B={job.model_name} | profile={job.model_profile} | provider={job.provider} | "
-            f"model_mem={job.agent_b_memory_gb:g}G | conditions={job.condition_count} | "
+            f"model_mem={job.agent_b_memory_gb:g}G | valid_conditions={job.condition_count} | "
+            f"generated={job.generated_condition_count} | excluded_invalid={job.invalid_condition_count} | "
             f"chunks={len(chunks)} | max_array_conditions="
             f"{args.max_conditions_per_array or 'auto'} | cpus={cpus} mem={memory} time={time_limit}"
         )

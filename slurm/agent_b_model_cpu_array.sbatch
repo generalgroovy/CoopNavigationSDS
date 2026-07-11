@@ -24,6 +24,7 @@ PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv-linux/bin/python}"
 RESULTS_ROOT="${RESULTS_ROOT:-${PROJECT_ROOT}/results}"
 JOB_FILE="${JOB_FILE:?Set JOB_FILE to one Agent B .job file.}"
 START_OLLAMA="${START_OLLAMA:-0}"
+VALID_CONDITIONS_ONLY="${VALID_CONDITIONS_ONLY:-1}"
 CONDITION_INDEX="${SLURM_ARRAY_TASK_ID:?SLURM_ARRAY_TASK_ID is required}"
 
 cd "${PROJECT_ROOT}"
@@ -46,11 +47,19 @@ if [[ "${START_OLLAMA}" == "1" ]]; then
   extra_args+=(--model-base-url "http://${OLLAMA_HOST}/api")
 fi
 
+condition_args=()
+if [[ "${VALID_CONDITIONS_ONLY}" == "1" ]]; then
+  condition_args+=(--valid-conditions-only)
+else
+  condition_args+=(--no-valid-conditions-only)
+fi
+
 "${PYTHON_BIN}" -u -m coop_navigation_sds.batch \
   --job-file "${JOB_FILE}" \
   --results-dir "${RESULTS_ROOT}" \
   --condition-start "${CONDITION_INDEX}" \
   --condition-count 1 \
+  "${condition_args[@]}" \
   --model-device cpu \
   --agent-a-model-device cpu \
   --tts-device cpu \

@@ -62,6 +62,7 @@ from coop_navigation_sds.experiments import (
     ExperimentRunner,
     build_condition_grid,
     condition_coverage_report,
+    valid_stage_condition,
 )
 from coop_navigation_sds.EvaluationMetrics.metrics import apply_cross_run_metrics, apply_paired_run_metrics
 from coop_navigation_sds.ResultsAndArtifacts.artifacts import (
@@ -303,6 +304,57 @@ def select_condition_shard(conditions, start=0, count=None):
     return rows[start:start + count]
 
 
+def batch_scenario_overrides(args):
+    """Return scenario overrides shared by validity filtering and execution."""
+    return {
+        "network_seed": args.network_seed,
+        "clarification_max_attempts": args.clarification_max_attempts,
+        "dialogue_stagnation_limit": args.dialogue_stagnation_limit,
+        "ticket_modes": tuple(args.agent_a_ticket_modes.split(",")),
+        "max_walking_min": max(0, args.agent_a_max_walking_min),
+        "max_delay_probability": {"low": 0.24, "medium": 0.44, "high": 1.0}[args.agent_a_max_delay_risk],
+        "max_transfer_miss_probability": {"low": 0.24, "medium": 0.44, "high": 1.0}[args.agent_a_max_transfer_risk],
+        "maximum_progressive_constraints": args.maximum_progressive_constraints,
+        "minimum_compared_routes": args.minimum_compared_routes,
+        "require_constraint_retention": args.require_constraint_retention,
+        "acceptable_duration_ratio": args.acceptable_duration_ratio,
+        "min_stage_suboptimal_options": args.minimum_stage_suboptimal_options,
+        "require_stage_suboptimal_options": args.require_stage_suboptimal_options,
+        "agent_a_ticket_modes": args.agent_a_ticket_modes,
+        "agent_a_max_walking_min": args.agent_a_max_walking_min,
+        "agent_a_max_delay_risk": args.agent_a_max_delay_risk,
+        "agent_a_max_transfer_risk": args.agent_a_max_transfer_risk,
+        "parameter_grid": job_parameter_grid(args.loaded_job),
+    }
+
+
+def valid_stage_conditions(conditions, args, scenario_overrides):
+    """Filter conditions with cached staged-route viability checks."""
+    cache = {}
+    valid = []
+    scenario_key = json.dumps(scenario_overrides, sort_keys=True, default=str)
+    for condition in conditions:
+        parameters = condition.parameter_values
+        cache_key = (
+            condition.test_case_key,
+            condition.persona_key,
+            parameters.get("network_seed"),
+            parameters.get("transfer_tolerance"),
+            parameters.get("minimum_stage_suboptimal_options"),
+            scenario_key,
+        )
+        if cache_key not in cache:
+            cache[cache_key] = valid_stage_condition(
+                condition,
+                scenario_overrides=scenario_overrides,
+                default_transfer_tolerance=args.agent_a_transfer_tolerance,
+                default_num_turns=args.num_turns,
+            )
+        if cache[cache_key]:
+            valid.append(condition)
+    return valid
+
+
 def parse_bool_flag(value):
     """Parse CLI booleans."""
     normalized = value.lower()
@@ -483,6 +535,16 @@ def main():
     parser.add_argument("--condition-start", type=int, default=0, help="Zero-based first expanded condition for a sequential shard.")
     parser.add_argument("--condition-count", type=int, help="Maximum conditions to execute from --condition-start.")
     parser.add_argument(
+        "--valid-conditions-only",
+        action=argparse.BooleanOptionalAction,
+        default=bool(job.get("valid_conditions_only", False)),
+        help=(
+            "Filter generated conditions to those passing staged route viability "
+            "before sharding. Slurm arrays should use the same setting for "
+            "preview/submission and execution."
+        ),
+    )
+    parser.add_argument(
         "--fail-fast",
         action="store_true",
         help="Exit nonzero on the first condition failure instead of recording it and continuing.",
@@ -504,6 +566,7 @@ def main():
         help="Rebuild the results-root coverage registry after finalization.",
     )
     args = parser.parse_args()
+    args.loaded_job = job
     try:
         coverage_results_root = resolve_results_root(args.results_dir)
         args.results_dir = resolve_result_group(
@@ -548,6 +611,16 @@ def main():
         coverage_strategy=args.coverage_strategy,
         pair_audio_with_text=args.paired_audio_text,
     ))
+    generated_condition_count = len(conditions)
+    scenario_overrides = batch_scenario_overrides(args)
+    if args.valid_conditions_only:
+        conditions = valid_stage_conditions(conditions, args, scenario_overrides)
+        if args.progress:
+            print(
+                f"Validity filter: {len(conditions)}/{generated_condition_count} "
+                "conditions pass staged route viability.",
+                flush=True,
+            )
     full_conditions = conditions
     coverage_report = condition_coverage_report(full_conditions)
     performance_coverage = coverage_report["speech_performance_coverage"]
@@ -829,27 +902,7 @@ def main():
         agent_a_type=args.agent_a_type,
         log_profile=args.log_profile,
         log_dir=str(session_log_dir),
-        scenario_overrides={
-            "network_seed": args.network_seed,
-            "clarification_max_attempts": args.clarification_max_attempts,
-            "dialogue_stagnation_limit": args.dialogue_stagnation_limit,
-            "ticket_modes": tuple(args.agent_a_ticket_modes.split(",")),
-            "max_walking_min": max(0, args.agent_a_max_walking_min),
-            "max_delay_probability": {"low": 0.24, "medium": 0.44, "high": 1.0}[args.agent_a_max_delay_risk],
-            "max_transfer_miss_probability": {"low": 0.24, "medium": 0.44, "high": 1.0}[args.agent_a_max_transfer_risk],
-            "maximum_progressive_constraints": args.maximum_progressive_constraints,
-            "minimum_compared_routes": args.minimum_compared_routes,
-            "require_constraint_retention": args.require_constraint_retention,
-            "acceptable_duration_ratio": args.acceptable_duration_ratio,
-            "min_stage_suboptimal_options": args.minimum_stage_suboptimal_options,
-            "require_stage_suboptimal_options": args.require_stage_suboptimal_options,
-            "agent_a_ticket_modes": args.agent_a_ticket_modes,
-            "agent_a_max_walking_min": args.agent_a_max_walking_min,
-            "agent_a_max_delay_risk": args.agent_a_max_delay_risk,
-            "agent_a_max_transfer_risk": args.agent_a_max_transfer_risk,
-            "network_seed": args.network_seed,
-            "parameter_grid": job_parameter_grid(job),
-        },
+        scenario_overrides=scenario_overrides,
         model_adapter_factory=model_adapter_factory,
         agent_a_model_adapter=agent_a_model_adapter,
         experiment_specification=batch_specification,
