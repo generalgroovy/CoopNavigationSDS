@@ -28,6 +28,11 @@ export HF_HUB_DISABLE_TELEMETRY="${HF_HUB_DISABLE_TELEMETRY:-1}"
 
 cd "${PROJECT_ROOT}"
 
+configure_git_line_endings() {
+  git config core.autocrlf false
+  git config core.eol lf
+}
+
 step_total=10
 step_index=0
 
@@ -313,6 +318,7 @@ fi
 if [[ "${action}" == "push-results" ]]; then
   step "Commit and push refreshed results and Slurm logs"
   require_file "${GIT_KEY_PATH}"
+  configure_git_line_endings
   git config user.name "${GIT_AUTHOR_NAME:-generalgroovy}"
   git config user.email "${GIT_AUTHOR_EMAIL:-generalgroovy@users.noreply.github.com}"
   eval "$(ssh-agent -s)"

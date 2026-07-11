@@ -19,6 +19,11 @@ LARGE_PROFILES="${LARGE_PROFILES:-qwen2_5_7b_transformers falcon3_7b_transformer
 
 cd "${PROJECT_ROOT}"
 
+configure_git_line_endings() {
+  git config core.autocrlf false
+  git config core.eol lf
+}
+
 submit_or_preview_tier() {
   local tier="$1"
   local profiles="$2"
@@ -113,6 +118,7 @@ push_results() {
     echo "ERROR: Git key missing: ${GIT_KEY_PATH}" >&2
     exit 2
   fi
+  configure_git_line_endings
   git config user.name "${GIT_AUTHOR_NAME:-generalgroovy}"
   git config user.email "${GIT_AUTHOR_EMAIL:-generalgroovy@users.noreply.github.com}"
   eval "$(ssh-agent -s)"
