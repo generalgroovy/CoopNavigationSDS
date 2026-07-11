@@ -132,6 +132,10 @@ push_results() {
     git commit -m "${RESULTS_COMMIT_MESSAGE:-Add cluster experiment results}"
   fi
   GIT_SSH_COMMAND="ssh -i ${GIT_KEY_PATH} -o IdentitiesOnly=yes -o HostName=ssh.github.com -o Port=443" \
+    git fetch "${GIT_REMOTE}" "${GIT_BRANCH}"
+  GIT_SSH_COMMAND="ssh -i ${GIT_KEY_PATH} -o IdentitiesOnly=yes -o HostName=ssh.github.com -o Port=443" \
+    git rebase "${GIT_REMOTE}/${GIT_BRANCH}"
+  GIT_SSH_COMMAND="ssh -i ${GIT_KEY_PATH} -o IdentitiesOnly=yes -o HostName=ssh.github.com -o Port=443" \
     git push "${GIT_REMOTE}" HEAD:"${GIT_BRANCH}"
 }
 
