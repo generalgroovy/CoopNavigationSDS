@@ -1,0 +1,1682 @@
+Project: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+Python: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python
+Results: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+Git key: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/key2
+
+[2026-07-12T16:02:43+02:00] Refresh coverage registry
++ /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python -u scripts/update_experiment_coverage.py --results-dir /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_conditions.csv
+runs: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_runs.csv
+matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_matrix.csv
+summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_summary.json
+report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage.html
+agent_model_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_model_combination_coverage.csv
+agent_model_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_model_combination_coverage.html
+case_coverage: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_case_coverage.csv
+configuration_conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_conditions.csv
+configuration_model_overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_model_overview.csv
+configuration_factor_levels: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_factor_levels.csv
+configuration_groups_exact: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_groups_exact.csv
+configuration_condition_overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_condition_overview.html
+configuration_condition_manifest: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_condition_manifest.json
+comparison_conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_conditions.csv
+comparison_metrics: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_metrics_long.csv
+comparison_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_summary.csv
+comparison_deltas: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_deltas.csv
+comparison_outliers: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outliers.csv
+comparison_metric_indicators: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_indicator_summary.csv
+comparison_metric_correlations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.csv
+comparison_metric_correlation_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.html
+comparison_run_metric_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.csv
+comparison_run_metric_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.html
+comparison_condition_analysis: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/condition_analysis.csv
+comparison_program_execution_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/program_execution_summary.csv
+comparison_model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.csv
+comparison_model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.html
+comparison_performance_band_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/performance_band_summary.csv
+comparison_phase_metric_files: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/phase_metric_files.csv
+evidence_overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/comparison_overview.html
+evidence_guide: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_guide.md
+evidence_run_inventory: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/run_inventory.csv
+evidence_program_execution: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/program_execution_summary.csv
+evidence_configurations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_groups.csv
+evidence_outcomes: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_outcome_comparison.csv
+evidence_task_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_success_by_configuration.csv
+evidence_model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.csv
+evidence_model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.html
+evidence_model_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/agent_b_model_summary.csv
+evidence_phases: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_metric_comparison.csv
+evidence_phase_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_summary_by_model.csv
+evidence_dialogue: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_comparison.csv
+evidence_dialogue_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_summary.csv
+evidence_turns: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/conversation_turns.csv
+evidence_manifest: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_manifest.json
+
+[2026-07-12T16:09:15+02:00] Refresh finalized-run comparison views
++ /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python -u -m coop_navigation_sds.ResultsAndArtifacts.comparison /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results --output /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison
+conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_conditions.csv
+metrics: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_metrics_long.csv
+summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_summary.csv
+deltas: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_deltas.csv
+outliers: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outliers.csv
+metric_indicators: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_indicator_summary.csv
+metric_correlations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.csv
+metric_correlation_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.html
+run_metric_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.csv
+run_metric_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.html
+condition_analysis: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/condition_analysis.csv
+program_execution_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/program_execution_summary.csv
+model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.csv
+model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.html
+performance_band_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/performance_band_summary.csv
+phase_metric_files: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/phase_metric_files.csv
+
+[2026-07-12T16:10:15+02:00] Refresh partial-aware general views
++ /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python -u -m coop_navigation_sds.ResultsAndArtifacts.comparison /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results --output /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general --include-partial
+overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/comparison_overview.html
+guide: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_guide.md
+run_inventory: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/run_inventory.csv
+program_execution: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/program_execution_summary.csv
+configurations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_groups.csv
+outcomes: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_outcome_comparison.csv
+task_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_success_by_configuration.csv
+model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.csv
+model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.html
+model_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/agent_b_model_summary.csv
+phases: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_metric_comparison.csv
+phase_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_summary_by_model.csv
+dialogue: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_comparison.csv
+dialogue_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_summary.csv
+turns: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/conversation_turns.csv
+manifest: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_manifest.json
+
+[2026-07-12T16:13:17+02:00] Result summary
++ /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python - /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+run_summary files: 461
+results size MB: 1439.2
+analysis manifest: runs=583 observed=479 completed=220
+inventory rows: 583
+Agent pid 891118
+
+[2026-07-12T16:13:37+02:00] Git state preflight
+## HEAD (no branch)
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195541_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_195601_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200803_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200803_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200803_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200803_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_200831_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201032_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201202_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201202_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201202_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201202_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201202_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201202_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201432_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201432_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201432_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201633_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201633_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201633_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201633_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201833_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201833_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201833_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201933_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201933_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201933_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_201933_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202103_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202103_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202103_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202103_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202234_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202234_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202234_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202234_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202403_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202403_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202403_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202804_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202804_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202804_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_202804_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203104_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203104_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203104_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203335_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203335_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203335_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203335_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203635_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203635_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203635_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203835_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203835_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203835_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203835_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203905_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203905_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203905_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203936_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203936_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203936_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_203936_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204005_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204005_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204005_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204107_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204107_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204107_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204107_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204306_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204306_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204306_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204506_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204506_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204506_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204506_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204636_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204636_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204636_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204736_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204736_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204736_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204806_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204806_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204806_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204806_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204906_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204906_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204906_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204906_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204936_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204936_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_204936_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205137_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205137_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205137_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205637_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205637_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205637_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205637_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205838_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205838_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205838_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205838_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205937_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205937_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205937_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_205937_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210239_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210239_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210239_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210438_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210438_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210438_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210908_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210908_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210908_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210939_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210939_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_210939_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211109_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211109_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211109_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211109_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211239_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211239_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211239_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211239_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_211810_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212140_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212140_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212140_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212210_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212210_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212210_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212442_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212442_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_212442_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213012_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213112_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213112_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213112_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213112_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213212_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213212_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213212_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213212_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213643_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213643_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213643_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213913_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213913_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213913_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_213913_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214113_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214113_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214113_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214214_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214214_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214214_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214514_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214514_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214514_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_214514_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_03/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_03/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_03/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215015_b-n0001_03/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215616_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215616_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215616_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215746_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215746_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215746_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_215746_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220447_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220447_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220447_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220447_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220717_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220717_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_220717_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221448_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221448_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221448_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221448_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221548_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221548_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_221548_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222449_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222449_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222449_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222449_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222519_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222519_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_222519_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223250_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223250_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223250_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223250_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223251_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223251_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223251_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223420_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223420_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223420_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223420_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223550_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223550_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_223550_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224322_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224322_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224322_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224351_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224351_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224351_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_224351_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225222_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225222_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225222_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225222_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225453_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225453_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_225453_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230224_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230224_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230224_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230354_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230354_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230354_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_230354_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231056_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231056_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231056_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231056_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231525_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231525_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_231525_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_232430_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_232430_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_232430_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260710_232430_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260711_123222_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260711_123222_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260711_123222_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260711_195856_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260711_195856_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b/userlm/20260711_195856_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220317_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220317_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220317_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_220448_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221318_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221318_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221318_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221318_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221619_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221619_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221619_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_221619_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222319_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222319_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222319_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222449_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222619_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222619_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222619_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222619_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222620_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222620_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222620_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222749_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222749_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_222749_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_223621_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_223621_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_223621_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_223621_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224022_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224022_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224022_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224022_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224822_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224822_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224822_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224952_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224952_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224952_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_224952_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225052_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225052_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225052_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225152_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225152_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225152_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225152_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225252_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225252_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225252_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225323_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225323_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225323_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225423_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225423_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225423_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225423_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225453_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225453_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225453_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225453_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225553_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225553_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225553_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225623_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225623_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_225623_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230555_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230555_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230555_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230555_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230625_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230625_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230625_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_230625_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_231726_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_231726_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_231726_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232126_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232126_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232126_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232126_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232126_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232126_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232827_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232827_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232827_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_232827_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233127_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233127_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233127_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233127_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233429_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233732_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233732_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233732_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233828_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233828_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_233828_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234459_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234459_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234459_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234729_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234729_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234729_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234803_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234803_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234803_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234803_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234829_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234829_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234829_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_234829_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235630_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235630_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235630_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235630_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235830_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235830_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235830_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260710_235830_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000030_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000030_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000030_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000230_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000230_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000230_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000430_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000430_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000430_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000931_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000931_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000931_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000932_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000932_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000932_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_000932_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001301_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001301_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001301_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001301_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001504_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001504_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001504_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001504_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001901_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001901_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001901_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_001901_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_002202_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_002202_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_002202_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_002702_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_002702_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_002702_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003003_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003003_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003003_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003203_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003203_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003203_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003303_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003303_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003303_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003303_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003633_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003633_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003633_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003733_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003733_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003733_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_003733_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004003_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004003_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004003_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004003_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004234_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004234_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004234_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004234_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004736_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004736_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004736_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_004736_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005005_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005005_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005005_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005135_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005135_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005135_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005605_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005605_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_005605_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010106_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010106_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010106_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010106_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010107_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010107_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010107_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010136_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010136_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010136_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010136_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010706_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010706_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010706_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_010706_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011036_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011036_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011036_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011136_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011337_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011337_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011337_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011337_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011506_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011506_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011506_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011506_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011506_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_011506_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012109_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012109_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012109_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012109_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012438_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012438_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012438_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012438_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012539_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012539_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012539_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012539_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012638_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012638_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_012638_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013438_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013438_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013438_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013509_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013509_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013509_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013709_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013709_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013709_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013709_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013739_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013739_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_013739_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014439_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014439_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014439_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014439_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014510_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014510_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014510_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014510_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014809_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014809_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014809_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_014809_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_015512_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_015512_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_015512_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020012_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020012_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020012_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020514_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020514_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020514_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_020514_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_021015_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_021015_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_021015_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/01-small-tinyllama-1.1b/userlm/20260711_021015_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_152613_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_152613_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_152613_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_153746_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_153746_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_153746_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_153746_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155348_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155348_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155348_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155448_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155448_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155448_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155448_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155549_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155549_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_155549_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161151_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161151_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161151_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161151_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161752_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161752_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_161752_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162855_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162855_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162855_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162955_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162955_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162955_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_162955_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163055_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163055_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163055_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163155_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163155_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163155_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163155_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163155_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163626_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163626_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163626_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163626_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163726_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163726_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163726_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163726_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163726_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163827_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163827_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163827_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_163827_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164528_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164528_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164528_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164528_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164528_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164958_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164958_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164958_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164958_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_164958_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170200_b-n0001_02/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170731_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170731_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170731_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170731_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170831_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170831_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170831_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170831_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170831_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170932_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170932_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170932_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_170932_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171032_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171032_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171032_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171032_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171032_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171132_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171132_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171132_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171132_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171232_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171232_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171232_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171232_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171232_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171302_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171302_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171302_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171302_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171302_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_171332_b-n0001_02/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172504_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172504_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172504_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172504_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172504_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172635_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172635_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172635_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_172635_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173105_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173105_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173105_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173105_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173807_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173807_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173807_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173807_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173837_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173837_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173837_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173837_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_173837_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174334_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174334_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174334_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174334_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174516_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174516_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174516_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174516_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174516_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174939_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174939_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174939_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_174939_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175109_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175109_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175109_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175109_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175510_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175510_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175510_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175510_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175510_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175910_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175910_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175910_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175910_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_175910_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180141_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180141_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180141_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180141_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180141_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180311_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180311_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180311_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180311_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180311_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180341_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180341_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180341_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180341_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180912_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180912_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180912_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_180912_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001_02/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001_02/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001_02/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001_02/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_181543_b-n0001_02/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182043_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182043_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182043_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182043_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182113_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182113_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182113_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182113_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182113_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182744_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182744_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182744_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182744_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_182744_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183045_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183045_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183045_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183045_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183216_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183216_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183216_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183216_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183216_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183415_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183415_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183415_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_183415_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184217_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184217_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184217_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184217_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184217_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184517_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184517_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184517_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184517_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184617_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184617_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184617_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184617_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_184617_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185018_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185018_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185018_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185018_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185518_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185518_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185518_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185518_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185748_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185748_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185748_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185748_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_185748_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190149_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190149_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190149_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190149_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190249_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190249_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190249_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190249_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190419_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190419_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190419_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190419_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190419_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190720_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190720_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190720_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190720_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190720_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190920_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190920_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190920_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_190920_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191321_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191321_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191321_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191321_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191321_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191451_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191451_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191451_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191451_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191451_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191721_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191721_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191721_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191721_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191821_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191821_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191821_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191821_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191821_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191921_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191921_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191921_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_191921_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192121_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192121_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192121_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192121_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192121_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192622_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192622_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192622_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192622_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192722_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192722_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192722_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_192722_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193053_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193053_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193053_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193053_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193053_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193624_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193624_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193624_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193624_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193754_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193754_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193754_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193754_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193754_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193924_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193924_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193924_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193924_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_193924_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194355_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194355_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194355_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194355_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194755_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194755_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194755_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194755_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_194755_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195055_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195055_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195055_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195055_b-n0001/run_phase_scorecard.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195556_b-n0001/analysis_overview.html
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195556_b-n0001/condition_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195556_b-n0001/performance_band_summary.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195556_b-n0001/run_analysis.csv
+ M results/agent_b/userlm_transformers/02-medium-phi3-mini/userlm/20260711_195556_b-n0001/run_phase_scorecard.csv
+ M results/agent_model_combination_coverage.csv
+ M results/agent_model_combination_coverage.html
+ M results/comparison/combined_conditions.csv
+ M results/comparison/combined_metrics_long.csv
+ M results/comparison/condition_analysis.csv
+ M results/comparison/metric_deltas.csv
+ M results/comparison/metric_indicator_summary.csv
+ M results/comparison/metric_outliers.csv
+ M results/comparison/metric_summary.csv
+ M results/comparison/model_configuration_matrix.csv
+ M results/comparison/model_configuration_matrix.html
+ M results/comparison/performance_band_summary.csv
+ M results/comparison/phase_metric_files.csv
+ M results/comparison/phase_metrics/asr.csv
+ M results/comparison/phase_metrics/audio_input.csv
+ M results/comparison/phase_metrics/backend_task_execution.csv
+ M results/comparison/phase_metrics/dialogue_management.csv
+ M results/comparison/phase_metrics/dialogue_state_tracking.csv
+ M results/comparison/phase_metrics/nlg.csv
+ M results/comparison/phase_metrics/nlu.csv
+ M results/comparison/phase_metrics/task_outcome.csv
+ M results/comparison/phase_metrics/tts.csv
+ M results/comparison/phase_metrics/user_simulation.csv
+ M results/comparison/phase_metrics/whole_dialogue.csv
+ M results/comparison/run_phase_metric_matrix.csv
+ M results/comparison/run_phase_metric_matrix.html
+ M results/experiment_case_coverage.csv
+ M results/experiment_coverage.html
+ M results/experiment_coverage_conditions.csv
+ M results/experiment_coverage_matrix.csv
+ M results/experiment_coverage_runs.csv
+ M results/experiment_coverage_summary.json
+ M results/general/agent_b_model_summary.csv
+ M results/general/analysis_manifest.json
+ M results/general/comparison_overview.html
+ M results/general/configuration_groups.csv
+ M results/general/conversation_turns.csv
+ M results/general/dialogue_state_comparison.csv
+ M results/general/dialogue_state_summary.csv
+ M results/general/model_configuration_matrix.csv
+ M results/general/model_configuration_matrix.html
+ M results/general/phase_metric_comparison.csv
+ M results/general/phase_summary_by_model.csv
+ M results/general/run_inventory.csv
+ M results/general/task_outcome_comparison.csv
+ M results/general/task_success_by_configuration.csv
+ D tests/test_condition_overview.py
+?? .result_backups/
+?? push_results_in_chunks.sh
+?? repair_code_and_submit_userlm_remaining.sh
+?? results/02-medium-phi3-mini/
+?? results/02-medium-qwen2.5-1.5b/
+?? results/03-large-mistral-7b/
+?? results/03-large-qwen2.5-7b/
+?? results/comparison/metric_outcome_correlations.csv
+?? results/comparison/metric_outcome_correlations.html
+?? results/comparison/program_execution_summary.csv
+?? results/general/configuration_condition_manifest.json
+?? results/general/configuration_condition_overview.html
+?? results/general/configuration_conditions.csv
+?? results/general/configuration_factor_levels.csv
+?? results/general/configuration_groups_exact.csv
+?? results/general/configuration_model_overview.csv
+?? results/general/program_execution_summary.csv
+?? safe_push_results.sh
+?? scripts/continue_push_after_large_check.sh
+?? scripts/push_results_chunks_safe.sh
+?? scripts/repack_push_results_without_large_files.sh
+?? slurm/logs/prepare-push-results-1765694.err
+?? slurm/logs/prepare-push-results-1765694.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c01of24-1765205_0.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c01of24-1765205_0.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c01of24-1765205_1.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c01of24-1765205_1.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c01of24-1765205_2.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c01of24-1765205_2.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c02of24-1765206_3.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c02of24-1765206_3.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c02of24-1765206_4.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c02of24-1765206_4.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c02of24-1765206_5.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c02of24-1765206_5.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c03of24-1765207_6.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c03of24-1765207_6.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c03of24-1765207_7.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c03of24-1765207_7.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c03of24-1765207_8.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c03of24-1765207_8.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c04of24-1765208_10.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c04of24-1765208_10.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c04of24-1765208_11.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c04of24-1765208_11.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c04of24-1765208_9.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c04of24-1765208_9.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c05of24-1765209_12.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c05of24-1765209_12.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c05of24-1765209_13.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c05of24-1765209_13.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c05of24-1765209_14.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c05of24-1765209_14.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c06of24-1765210_15.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c06of24-1765210_15.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c06of24-1765210_16.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c06of24-1765210_16.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c06of24-1765210_17.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c06of24-1765210_17.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c07of24-1765211_18.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c07of24-1765211_18.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c07of24-1765211_19.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c07of24-1765211_19.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c07of24-1765211_20.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c07of24-1765211_20.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c08of24-1765212_21.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c08of24-1765212_21.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c08of24-1765212_22.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c08of24-1765212_22.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c08of24-1765212_23.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c08of24-1765212_23.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c09of24-1765213_24.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c09of24-1765213_24.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c09of24-1765213_25.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c09of24-1765213_25.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c09of24-1765213_26.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c09of24-1765213_26.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c10of24-1765214_27.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c10of24-1765214_27.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c10of24-1765214_28.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c10of24-1765214_28.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c10of24-1765214_29.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c10of24-1765214_29.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c11of24-1765215_30.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c11of24-1765215_30.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c11of24-1765215_31.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c11of24-1765215_31.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c11of24-1765215_32.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c11of24-1765215_32.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c12of24-1765216_33.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c12of24-1765216_33.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c12of24-1765216_34.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c12of24-1765216_34.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c12of24-1765216_35.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c12of24-1765216_35.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c13of24-1765217_36.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c13of24-1765217_36.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c13of24-1765217_37.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c13of24-1765217_37.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c13of24-1765217_38.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c13of24-1765217_38.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c14of24-1765218_39.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c14of24-1765218_39.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c14of24-1765218_40.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c14of24-1765218_40.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c14of24-1765218_41.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c14of24-1765218_41.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c15of24-1765219_42.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c15of24-1765219_42.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c15of24-1765219_43.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c15of24-1765219_43.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c15of24-1765219_44.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c15of24-1765219_44.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c16of24-1765220_45.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c16of24-1765220_45.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c16of24-1765220_46.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c16of24-1765220_46.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c16of24-1765220_47.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c16of24-1765220_47.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c17of24-1765221_48.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c17of24-1765221_48.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c17of24-1765221_49.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c17of24-1765221_49.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c17of24-1765221_50.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c17of24-1765221_50.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c18of24-1765222_51.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c18of24-1765222_51.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c18of24-1765222_52.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c18of24-1765222_52.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c18of24-1765222_53.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c18of24-1765222_53.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c19of24-1765223_54.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c19of24-1765223_54.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c19of24-1765223_55.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c19of24-1765223_55.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c19of24-1765223_56.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c19of24-1765223_56.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c20of24-1765224_57.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c20of24-1765224_57.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c20of24-1765224_58.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c20of24-1765224_58.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c20of24-1765224_59.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c20of24-1765224_59.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c21of24-1765225_60.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c21of24-1765225_60.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c21of24-1765225_61.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c21of24-1765225_61.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c21of24-1765225_62.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c21of24-1765225_62.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c22of24-1765226_63.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c22of24-1765226_63.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c22of24-1765226_64.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c22of24-1765226_64.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c22of24-1765226_65.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c22of24-1765226_65.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c23of24-1765227_66.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c23of24-1765227_66.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c23of24-1765227_67.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c23of24-1765227_67.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c23of24-1765227_68.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c23of24-1765227_68.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c24of24-1765228_69.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c24of24-1765228_69.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c24of24-1765228_70.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c24of24-1765228_70.out
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c24of24-1765228_71.err
+?? slurm/logs/slurm-userlm-large-01-qwen2-5-7b-a2ef92-c24of24-1765228_71.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c01of24-1765229_0.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c01of24-1765229_0.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c01of24-1765229_1.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c01of24-1765229_1.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c01of24-1765229_2.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c01of24-1765229_2.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c02of24-1765230_3.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c02of24-1765230_3.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c02of24-1765230_4.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c02of24-1765230_4.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c02of24-1765230_5.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c02of24-1765230_5.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c03of24-1765231_6.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c03of24-1765231_6.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c03of24-1765231_7.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c03of24-1765231_7.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c03of24-1765231_8.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c03of24-1765231_8.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c04of24-1765232_10.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c04of24-1765232_10.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c04of24-1765232_11.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c04of24-1765232_11.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c04of24-1765232_9.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c04of24-1765232_9.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c05of24-1765233_12.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c05of24-1765233_12.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c05of24-1765233_13.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c05of24-1765233_13.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c05of24-1765233_14.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c05of24-1765233_14.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c06of24-1765234_15.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c06of24-1765234_15.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c06of24-1765234_16.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c06of24-1765234_16.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c06of24-1765234_17.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c06of24-1765234_17.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c07of24-1765235_18.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c07of24-1765235_18.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c07of24-1765235_19.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c07of24-1765235_19.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c07of24-1765235_20.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c07of24-1765235_20.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c08of24-1765236_21.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c08of24-1765236_21.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c08of24-1765236_22.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c08of24-1765236_22.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c08of24-1765236_23.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c08of24-1765236_23.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c09of24-1765237_24.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c09of24-1765237_24.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c09of24-1765237_25.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c09of24-1765237_25.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c09of24-1765237_26.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c09of24-1765237_26.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c10of24-1765238_27.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c10of24-1765238_27.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c10of24-1765238_28.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c10of24-1765238_28.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c10of24-1765238_29.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c10of24-1765238_29.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c11of24-1765239_30.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c11of24-1765239_30.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c11of24-1765239_31.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c11of24-1765239_31.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c11of24-1765239_32.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c11of24-1765239_32.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c12of24-1765240_33.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c12of24-1765240_33.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c12of24-1765240_34.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c12of24-1765240_34.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c12of24-1765240_35.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c12of24-1765240_35.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c13of24-1765241_36.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c13of24-1765241_36.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c13of24-1765241_37.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c13of24-1765241_37.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c13of24-1765241_38.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c13of24-1765241_38.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c14of24-1765242_39.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c14of24-1765242_39.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c14of24-1765242_40.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c14of24-1765242_40.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c14of24-1765242_41.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c14of24-1765242_41.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c15of24-1765243_42.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c15of24-1765243_42.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c15of24-1765243_43.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c15of24-1765243_43.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c15of24-1765243_44.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c15of24-1765243_44.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c16of24-1765244_45.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c16of24-1765244_45.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c16of24-1765244_46.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c16of24-1765244_46.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c16of24-1765244_47.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c16of24-1765244_47.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c17of24-1765245_48.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c17of24-1765245_48.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c17of24-1765245_49.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c17of24-1765245_49.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c17of24-1765245_50.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c17of24-1765245_50.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c18of24-1765246_51.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c18of24-1765246_51.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c18of24-1765246_52.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c18of24-1765246_52.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c18of24-1765246_53.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c18of24-1765246_53.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c19of24-1765247_54.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c19of24-1765247_54.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c19of24-1765247_55.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c19of24-1765247_55.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c19of24-1765247_56.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c19of24-1765247_56.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c20of24-1765248_57.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c20of24-1765248_57.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c20of24-1765248_58.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c20of24-1765248_58.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c20of24-1765248_59.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c20of24-1765248_59.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c21of24-1765249_60.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c21of24-1765249_60.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c21of24-1765249_61.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c21of24-1765249_61.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c21of24-1765249_62.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c21of24-1765249_62.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c22of24-1765250_63.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c22of24-1765250_63.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c22of24-1765250_64.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c22of24-1765250_64.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c22of24-1765250_65.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c22of24-1765250_65.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c23of24-1765251_66.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c23of24-1765251_66.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c23of24-1765251_67.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c23of24-1765251_67.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c23of24-1765251_68.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c23of24-1765251_68.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c24of24-1765252_69.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c24of24-1765252_69.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c24of24-1765252_70.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c24of24-1765252_70.out
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c24of24-1765252_71.err
+?? slurm/logs/slurm-userlm-large-02-mistral-7b-ee65c2-c24of24-1765252_71.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_0.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_0.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_1.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_1.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_2.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_2.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_3.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_3.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_4.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_4.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_5.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c01of12-1765179_5.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_10.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_10.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_11.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_11.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_6.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_6.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_7.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_7.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_8.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_8.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_9.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c02of12-1765180_9.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_12.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_12.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_13.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_13.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_14.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_14.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_15.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_15.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_16.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_16.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_17.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c03of12-1765181_17.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_18.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_18.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_19.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_19.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_20.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_20.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_21.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_21.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_22.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_22.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_23.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c04of12-1765182_23.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_24.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_24.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_25.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_25.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_26.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_26.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_27.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_27.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_28.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_28.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_29.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c05of12-1765183_29.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_30.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_30.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_31.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_31.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_32.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_32.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_33.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_33.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_34.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_34.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_35.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c06of12-1765184_35.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_36.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_36.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_37.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_37.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_38.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_38.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_39.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_39.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_40.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_40.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_41.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c07of12-1765185_41.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_42.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_42.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_43.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_43.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_44.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_44.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_45.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_45.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_46.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_46.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_47.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c08of12-1765186_47.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_48.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_48.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_49.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_49.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_50.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_50.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_51.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_51.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_52.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_52.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_53.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c09of12-1765187_53.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_54.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_54.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_55.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_55.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_56.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_56.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_57.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_57.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_58.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_58.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_59.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c10of12-1765188_59.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_60.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_60.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_61.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_61.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_62.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_62.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_63.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_63.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_64.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_64.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_65.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c11of12-1765189_65.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_66.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_66.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_67.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_67.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_68.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_68.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_69.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_69.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_70.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_70.out
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_71.err
+?? slurm/logs/slurm-userlm-medium-01-qwen2-5-1-5b-97d958-c12of12-1765190_71.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_0.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_0.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_1.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_1.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_2.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_2.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_3.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_3.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_4.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_4.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_5.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c01of12-1765191_5.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_10.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_10.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_11.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_11.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_6.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_6.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_7.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_7.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_8.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_8.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_9.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c02of12-1765192_9.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_12.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_12.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_13.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_13.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_14.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_14.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_15.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_15.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_16.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_16.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_17.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c03of12-1765193_17.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_18.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_18.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_19.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_19.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_20.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_20.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_21.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_21.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_22.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_22.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_23.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c04of12-1765194_23.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_24.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_24.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_25.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_25.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_26.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_26.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_27.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_27.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_28.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_28.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_29.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c05of12-1765195_29.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_30.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_30.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_31.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_31.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_32.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_32.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_33.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_33.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_34.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_34.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_35.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c06of12-1765196_35.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_36.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_36.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_37.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_37.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_38.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_38.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_39.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_39.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_40.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_40.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_41.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c07of12-1765197_41.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_42.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_42.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_43.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_43.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_44.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_44.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_45.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_45.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_46.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_46.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_47.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c08of12-1765198_47.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_48.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_48.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_49.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_49.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_50.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_50.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_51.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_51.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_52.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_52.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_53.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c09of12-1765199_53.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_54.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_54.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_55.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_55.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_56.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_56.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_57.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_57.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_58.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_58.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_59.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c10of12-1765200_59.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_60.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_60.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_61.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_61.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_62.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_62.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_63.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_63.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_64.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_64.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_65.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c11of12-1765201_65.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_66.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_66.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_67.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_67.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_68.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_68.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_69.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_69.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_70.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_70.out
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_71.err
+?? slurm/logs/slurm-userlm-medium-02-phi3-mini-85aafd-c12of12-1765202_71.out
+?? slurm/prepare_and_push_results.sbatch
+?? slurm/prepare_results_and_push.sbatch
+?? slurm/push_results.sbatch
+?? slurm/push_results_chunks_safe.sbatch
+?? slurm/push_results_only.sbatch
+?? slurm/repair_prepare_push.sbatch
+
+[2026-07-12T16:13:42+02:00] Fetch remote before committing
+
+[2026-07-12T16:13:44+02:00] Stage results and Slurm logs
