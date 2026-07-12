@@ -75,6 +75,10 @@ agent_b_llm/
 |   |-- small/
 |   |-- medium/
 |   `-- large/
+|-- userlm_pressure_grid/
+|   |-- small/
+|   |-- medium/
+|   `-- large/
 |-- transformers_speech_grid/
 |   |-- small/
 |   |-- medium/
@@ -94,6 +98,62 @@ same condition design. Together they provide 18 independent UserLM Agent B jobs,
 or 1512 planned condition tasks at 84 conditions per job. The TinyLlama caller
 Transformers family provides 12 additional jobs, giving the full independent
 submitter 30 jobs and 2520 planned condition tasks.
+
+The `userlm_pressure_grid/` family is deliberately separate from the main
+balanced model-comparison denominator. It keeps Agent A fixed as UserLM and
+uses the same six selected Transformers Agent B models, but expands realistic
+pipeline pressure so the corpus contains more semi-successful and unsuccessful
+dialogues for metric-threshold analysis. It covers seven registered scenarios,
+six registered personas, three network seeds, and six linked pressure profiles.
+It does not replace or mutate the main speech-grid results.
+
+## Pressure Grid
+
+The pressure grid implements five preregistered stress proposals plus a ceiling
+control as linked profiles. Linked profiles are used because these values are
+not independent: realistic degradation changes audio persona, utterance style,
+ASR search, channel treatment, and dialogue budget together.
+
+| Profile | Proposal covered | Main changes | Expected role |
+| --- | --- | --- | --- |
+| `P0-ceiling-control` | Control | clear personas, clean speech, ASR beam 16, 20 turns | successful upper reference |
+| `P1-semi-success` | Semi-success amplifier | mild channel noise, beam 3, 16 turns | valid route likely, later constraints at risk |
+| `P2-constraint-pressure` | Constraint pressure | hesitant caller, stricter transfer tolerance, 14 turns | tests constraint retention and route revision |
+| `P3-asr-degradation` | ASR degradation ladder | beam 1, normalization off, moderate channel impairment | isolates transcript-driven failure |
+| `P4-audio-persona` | Audio persona ladder | barely understandable caller, degraded operator, stutter | tests TTS/ASR round-trip and repair |
+| `P5-turn-budget` | Turn-budget ladder | severe channel, beam 1, 8 turns, stagnation limit 1 | expected unsuccessful lower bound |
+
+The job-level route requirements stay fixed: shortest valid route with staged
+constraints, constraint retention, at least three route proposals, and at least
+two viable suboptimal options per stage. Per-condition pressure is recorded in
+`parameter_values_json`, including `pressure_strategy`,
+`expected_outcome_band`, ASR beam, channel values, turn budget, transfer
+tolerance, and stagnation limit.
+
+Preview without submitting:
+
+```bash
+python scripts/submit_agent_b_model_jobs.py \
+  --root jobs/agent_b_llm/userlm_pressure_grid \
+  --provider transformers \
+  --tier small medium large \
+  --max-conditions-per-array 8 \
+  --dry-run
+```
+
+Submit without touching existing jobs:
+
+```bash
+bash scripts/submit_userlm_pressure_followup.sh
+```
+
+The helper only submits new arrays from `jobs/agent_b_llm/userlm_pressure_grid`;
+it does not cancel, requeue, or modify any running cluster job. The local dry
+run currently resolves 92 generated conditions per model, 40 staged-valid
+conditions per model, and five Slurm chunks per selected Agent B model when
+`MAX_CONDITIONS_PER_ARRAY=8`. Excluded rows are invalid experiment designs, not
+failed conversations: they do not satisfy the staged route viability and
+route-change requirements before runtime.
 
 ## Preview and Run
 

@@ -581,6 +581,49 @@ reports completeness, ordered outcomes, a documented 0.02 score tolerance,
 and ceiling-minus-floor gaps. Monotonicity is a diagnostic, not a criterion
 for deleting or relabelling observations.
 
+### Realistic Pipeline-Pressure Grid
+
+The normal speech-performance grid is balanced for model comparison and has
+produced many successful runs. For metric-threshold analysis, the project also
+contains an isolated pressure grid under
+`jobs/agent_b_llm/userlm_pressure_grid/`. Its purpose is to increase legitimate
+semi-successful and unsuccessful cases without relabelling outcomes or
+weakening metric definitions.
+
+The pressure grid is not part of the main denominator unless selected
+explicitly. It keeps Agent A as UserLM, uses the same selected two small, two
+medium, and two large Transformers Agent B models, keeps route-stage viability
+audited, and changes only preregistered pressure profiles. The follow-up grid
+uses seven registered scenarios, six registered personas, and three network
+seeds so successful, semi-successful, and unsuccessful cases differ by
+traceable configuration rather than by post-hoc relabelling.
+
+| Profile | Experimental pressure | Intended evidence |
+| --- | --- | --- |
+| `P0-ceiling-control` | clear speech, ASR beam 16, 20 turns | positive reference |
+| `P1-semi-success` | mild noise, ASR beam 3, 16 turns | base route success with later constraint risk |
+| `P2-constraint-pressure` | stricter transfer tolerance, hesitant caller, 14 turns | route revision and constraint-retention stress |
+| `P3-asr-degradation` | ASR beam 1, normalization off | transcript-driven failure localization |
+| `P4-audio-persona` | barely understandable caller, degraded operator, stutter | TTS/ASR round-trip and repair stress |
+| `P5-turn-budget` | severe channel, ASR beam 1, 8 turns | lower-bound unsuccessful cases |
+
+Each profile records `pressure_strategy`, `expected_outcome_band`,
+`asr_beam_size`, channel treatment, turn budget, transfer tolerance, and
+stagnation limit in the condition breakdown. Expected outcome is a hypothesis
+label, not an observed outcome override. Final classification still comes from
+the same task-success, constraint-satisfaction, and execution-state metrics as
+all other runs.
+
+Cluster submission is intentionally separate and safe for active jobs:
+
+```bash
+bash scripts/submit_userlm_pressure_followup.sh
+```
+
+The script previews first, then submits only new arrays for
+`userlm_pressure_grid`. It does not cancel, requeue, overwrite, or otherwise
+modify existing Slurm jobs or result folders.
+
 ## 6. Configuration
 
 Precedence is explicit:
@@ -926,6 +969,22 @@ python3 scripts/update_experiment_coverage.py --results-dir results
 python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/comparison
 python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/general --include-partial
 ```
+
+On the cluster, use the Slurm-safe post-run wrapper when results need to be
+prepared and pushed from a long-running session. It refreshes derived views,
+stages `results/` and `slurm/logs/`, excludes generated files above the GitHub
+file-size limit, commits the remaining evidence, rebases, and pushes. It does
+not delete or rewrite canonical run folders.
+
+```bash
+mkdir -p slurm/logs
+sbatch --export=ALL,PROJECT_ROOT="$PWD",PYTHON_BIN="$PWD/.venv-linux/bin/python",RESULTS_ROOT="$PWD/results",GIT_KEY_PATH="$PWD/key2" \
+  slurm/prepare_push_results_safe.sbatch
+```
+
+The job fails fast if the repository is already in a rebase state or if
+`.git/index.lock` exists. Resolve that Git state first; do not remove locks
+while a Git process is still active.
 
 For day-to-day cluster operation, `scripts/cluster_results_workflow.sh` wraps
 the most common post-run and next-run actions without changing the underlying
@@ -1285,18 +1344,33 @@ python -m coop_navigation_sds.ResultsAndArtifacts.comparison \
 
 The canonical comparison output contains joined conditions, joined long
 metrics, metric summaries, paired deltas, robust outliers, a condition analysis
-table, metric-outcome correlations, `run_phase_metric_matrix.html`, and
-`phase_metrics/*.csv`. The matrix places completed runs in rows and numbered
+table, metric-outcome correlations, `run_phase_metric_matrix.html`,
+`run_outcome_band_summary.html`, `metric_value_heatmap.html`, and
+`phase_metrics/*.csv`. HTML files are compact reading layers: repeated fields
+are merged, long model/run names are shortened visually, and the complete value
+is retained in hover titles and CSVs. CSV files remain the authoritative
+graphable evidence layer. The matrix places completed runs in rows and numbered
 pipeline phases in columns. The phase-specific CSV files place each calculable
 metric beside the matching run, condition, task outcome, route validity,
 constraint satisfaction, TTS, ASR, scenario, and persona, so phase failures can
-be compared without reopening each run folder. Color encodes outcome,
-direction-adjusted metric position, descriptive outlier status, and correlation
-strength; it does not establish causality or a validated threshold.
-Positive-direction metrics use greener cells for larger normalized values;
-negative-direction metrics use greener cells for smaller normalized values.
-Unavailable metrics remain neutral with the unavailable reason in the derived
-tables. Raw result files are not modified during comparison generation.
+be compared without reopening each run folder.
+
+Outcome-band files group conditions as `successful`, `semi_successful`,
+`unsuccessful`, or `execution_incomplete`. A semi-successful condition made
+observable task progress, such as a valid route or partial constraint
+satisfaction, but did not meet the strict task-success definition. Execution
+incomplete is program/runtime evidence, not a route-dialogue failure.
+
+Color encodes outcome, direction-adjusted metric position, descriptive outlier
+status, and correlation strength; it does not establish causality or a validated
+threshold. Positive-direction metrics use greener cells for larger normalized
+values; negative-direction metrics use greener cells for smaller normalized
+values. The metric heatmap keeps normal values light and darkens cells when the
+grouped value is extreme compared with other runs of the same phase, metric, and
+run type. Outliers are marked compactly as `!n`, where `n` is the number of
+robust outlier records behind the cell. Unavailable metrics remain neutral with
+the unavailable reason in the derived tables. Raw result files are not modified
+during comparison generation.
 
 The most important comparison files are:
 
@@ -1304,7 +1378,9 @@ The most important comparison files are:
 | --- | --- |
 | `combined_conditions.csv` | Join key and immutable condition fields for completed runs |
 | `combined_metrics_long.csv` | Canonical graphable metric evidence |
-| `run_phase_metric_matrix.csv/.html` | One row per run; phase-numbered metric columns |
+| `run_phase_metric_matrix.csv/.html` | CSV has full run fields; compact HTML shows one row per run and phase-numbered metrics |
+| `run_outcome_band_summary.csv/.html` | Compact outcome groups for successful, semi-successful, unsuccessful, and incomplete conditions |
+| `metric_value_heatmap.csv/.html` | Compact phase metric heatmap by model, run type, and outcome band |
 | `metric_outcome_correlations.csv/.html` | Pearson correlations between pre-outcome metrics and task outcomes |
 | `metric_indicator_summary.csv` | Robust outlier alignment with success/failure |
 | `model_configuration_matrix.csv/.html` | Same non-model condition rows compared across Agent B models |
