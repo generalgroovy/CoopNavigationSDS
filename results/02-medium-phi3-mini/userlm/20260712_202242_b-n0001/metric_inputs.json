@@ -1,0 +1,242 @@
+{
+  "schema_version": 3,
+  "captured_before_metric_calculation": true,
+  "condition_count": 1,
+  "conditions": [
+    {
+      "schema_version": 3,
+      "result_schema_version": 2,
+      "captured_before_metric_calculation": true,
+      "condition_id": "C-CEE-AR-SC-PIP-FWH-MP3M4-PSS-MED-I0-d09d2a6628-A",
+      "scenario": {
+        "name": "Crowded event exit comfort evaluation",
+        "start_station": "Sierra",
+        "destination_station": "Charlie",
+        "destination_stations": [
+          "Charlie"
+        ],
+        "start_time_min": 1338,
+        "transfer_time_min": 2,
+        "max_transfer_miss_probability": 0.44,
+        "max_delay_probability": 1.0,
+        "acceptable_duration_ratio": 1.5,
+        "min_stage_suboptimal_options": 2,
+        "require_stage_suboptimal_options": true,
+        "require_constraint_route_changes": true,
+        "goal": "fastest_route",
+        "allow_unreachable": false,
+        "maximum_dialog_turns": 16,
+        "clarification_max_attempts": 2,
+        "dialogue_stagnation_limit": 2,
+        "ticket_modes": [
+          "metro",
+          "tram"
+        ],
+        "max_walking_min": 10,
+        "maximum_progressive_constraints": 3,
+        "minimum_compared_routes": 3,
+        "require_constraint_retention": true,
+        "agent_a_ticket_modes": "metro,tram",
+        "agent_a_max_walking_min": 10,
+        "agent_a_max_delay_risk": "high",
+        "agent_a_max_transfer_risk": "medium",
+        "parameter_grid": {
+          "matrix_family": [
+            "userlm_pressure_grid_v1"
+          ],
+          "agent_b_llm_size": [
+            "medium"
+          ],
+          "agent_b_model_role": [
+            "pressure_medium_phi3"
+          ],
+          "network_seed": [
+            42,
+            77,
+            123
+          ],
+          "asr_beam_size": [
+            16
+          ],
+          "dialogue_stagnation_limit": [
+            2
+          ],
+          "transfer_tolerance": [
+            1
+          ],
+          "experiment_platform": [
+            "linux"
+          ],
+          "minimum_stage_suboptimal_options": [
+            2
+          ],
+          "agent_b_model_slot": [
+            "medium2"
+          ]
+        },
+        "minimum_stage_suboptimal_options": 2,
+        "pressure_strategy": "semi_success_amplifier",
+        "expected_outcome_band": "semi_successful",
+        "speech_performance_band": "floor",
+        "speech_performance_rank": 0
+      },
+      "result": {
+        "condition_id": "C-CEE-AR-SC-PIP-FWH-MP3M4-PSS-MED-I0-d09d2a6628-A",
+        "test_case_key": "crowded_event_exit",
+        "persona_key": "accessibility_rider",
+        "scenario_key": "crowded_event_exit",
+        "speech_pattern_key": "severe_channel",
+        "model_name": "microsoft/Phi-3-mini-4k-instruct",
+        "conversation": [],
+        "route": [],
+        "route_steps": [],
+        "route_valid": false,
+        "route_reaches_goal": false,
+        "route_correct": false,
+        "route_duration_min": null,
+        "runtime_sec": 1.78606265806593,
+        "metrics_text": "",
+        "extra": {
+          "execution_status": "failed",
+          "pipeline_failure": {
+            "exception_type": "NameError",
+            "message": "name 'speech_parameter_keys' is not defined",
+            "diagnostics": {},
+            "traceback": "Traceback (most recent call last):\n  File \"/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/coop_navigation_sds/batch.py\", line 919, in main\n    result, _metric = runner.run_condition(\n                      ~~~~~~~~~~~~~~~~~~~~^\n        condition,\n        ^^^^^^^^^^\n        compute_metrics=False,\n        ^^^^^^^^^^^^^^^^^^^^^^\n        capture_failure=not args.fail_fast,\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/coop_navigation_sds/experiments.py\", line 364, in run_condition\n    speech_config.update({key: value for key, value in parameters.items() if key in speech_parameter_keys})\n                                                                                    ^^^^^^^^^^^^^^^^^^^^^\nNameError: name 'speech_parameter_keys' is not defined\n"
+          },
+          "conversation_outcome": "unsatisfied",
+          "messages": 0,
+          "model_param_key": "greedy",
+          "objective_mode": "shortest_valid_route_with_constraints",
+          "iteration": 0,
+          "agent_a_audio_persona": "barely_understandable_caller",
+          "agent_b_audio_persona": "barely_understandable_operator",
+          "parameter_values": {
+            "network_seed": 123,
+            "agent_b_llm_size": "medium",
+            "agent_b_model_role": "pressure_medium_phi3",
+            "agent_b_model_slot": "medium2",
+            "asr_beam_size": 1,
+            "dialogue_stagnation_limit": 2,
+            "experiment_platform": "linux",
+            "matrix_family": "userlm_pressure_grid_v1",
+            "minimum_stage_suboptimal_options": 2,
+            "transfer_tolerance": 1,
+            "profile_key": "P1-semi-success",
+            "pipeline_pressure_profile_key": "semi_success_amplifier",
+            "pressure_strategy": "semi_success_amplifier",
+            "expected_outcome_band": "semi_successful",
+            "asr_domain_normalization_enabled": false,
+            "asr_domain_similarity_threshold": 0.98,
+            "channel_noise_snr_db": 5.0,
+            "channel_gain_db": -12.0,
+            "channel_clip_threshold": 0.35,
+            "channel_dropout_rate": 0.15,
+            "num_turns": 16,
+            "max_turn_elapsed_sec": 6.0,
+            "speech_performance_profile_key": "floor",
+            "speech_performance_band": "floor",
+            "speech_performance_rank": 0,
+            "agent_a_custom_audio": false,
+            "agent_b_custom_audio": false,
+            "max_utterance_sec": 10.0
+          },
+          "pair_id": "P-d09d2a6628",
+          "run_type": "audio_variant",
+          "tts_engine": "piper",
+          "asr_engine": "faster_whisper",
+          "configured_tts_engine": "piper",
+          "configured_asr_engine": "faster_whisper",
+          "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+          "agent_a_type": "userlm",
+          "agent_b_plugin": "llm",
+          "condition_runtime_sec": 1.78606265806593,
+          "resolved_scenario": {
+            "name": "Crowded event exit comfort evaluation",
+            "start_station": "Sierra",
+            "destination_station": "Charlie",
+            "destination_stations": [
+              "Charlie"
+            ],
+            "start_time_min": 1338,
+            "transfer_time_min": 2,
+            "max_transfer_miss_probability": 0.44,
+            "max_delay_probability": 1.0,
+            "acceptable_duration_ratio": 1.5,
+            "min_stage_suboptimal_options": 2,
+            "require_stage_suboptimal_options": true,
+            "require_constraint_route_changes": true,
+            "goal": "fastest_route",
+            "allow_unreachable": false,
+            "maximum_dialog_turns": 16,
+            "clarification_max_attempts": 2,
+            "dialogue_stagnation_limit": 2,
+            "ticket_modes": [
+              "metro",
+              "tram"
+            ],
+            "max_walking_min": 10,
+            "maximum_progressive_constraints": 3,
+            "minimum_compared_routes": 3,
+            "require_constraint_retention": true,
+            "agent_a_ticket_modes": "metro,tram",
+            "agent_a_max_walking_min": 10,
+            "agent_a_max_delay_risk": "high",
+            "agent_a_max_transfer_risk": "medium",
+            "parameter_grid": {
+              "matrix_family": [
+                "userlm_pressure_grid_v1"
+              ],
+              "agent_b_llm_size": [
+                "medium"
+              ],
+              "agent_b_model_role": [
+                "pressure_medium_phi3"
+              ],
+              "network_seed": [
+                42,
+                77,
+                123
+              ],
+              "asr_beam_size": [
+                16
+              ],
+              "dialogue_stagnation_limit": [
+                2
+              ],
+              "transfer_tolerance": [
+                1
+              ],
+              "experiment_platform": [
+                "linux"
+              ],
+              "minimum_stage_suboptimal_options": [
+                2
+              ],
+              "agent_b_model_slot": [
+                "medium2"
+              ]
+            },
+            "minimum_stage_suboptimal_options": 2,
+            "pressure_strategy": "semi_success_amplifier",
+            "expected_outcome_band": "semi_successful",
+            "speech_performance_band": "floor",
+            "speech_performance_rank": 0
+          },
+          "agent_b_model_preflight": {}
+        }
+      },
+      "trace_collections": {
+        "conversation": [],
+        "agent_memories": {},
+        "speech_pipeline": [],
+        "timing": [],
+        "phase_timing": [],
+        "semantic_parsing": [],
+        "runtime_events": [],
+        "candidate_routes": [],
+        "prompt_audits": []
+      }
+    }
+  ]
+}

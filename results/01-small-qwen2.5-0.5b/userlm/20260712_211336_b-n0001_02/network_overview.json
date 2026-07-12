@@ -1,0 +1,501 @@
+{
+  "line_count": 14,
+  "station_count": 36,
+  "segment_count": 135,
+  "lines": [
+    {
+      "name": "B1",
+      "kind": "Bus",
+      "headway_min": 8,
+      "fullness_percent": 79,
+      "fullness_class": "high",
+      "delay_probability_class": "high",
+      "capacity_status": "not near capacity",
+      "stop_count": 30,
+      "route": "Alpha to Bravo to Charlie to Delta to Echo to Foxtrot to Golf to Juliett to Kilo to Lima to Mike to November to Oscar to Papa to Quebec to Tango to Uniform to Victor to Whiskey to Xray to Yankee to Zulu to Aster to Dover to Elm to Flint to Grove to Harbor to Ivy to Jasper",
+      "segments": "Alpha to Bravo: 6 minutes; Bravo to Charlie: 6 minutes; Charlie to Delta: 6 minutes; Delta to Echo: 6 minutes; Echo to Foxtrot: 6 minutes; Foxtrot to Golf: 6 minutes; Golf to Juliett: 6 minutes; Juliett to Kilo: 6 minutes; Kilo to Lima: 6 minutes; Lima to Mike: 6 minutes; Mike to November: 6 minutes; November to Oscar: 6 minutes; Oscar to Papa: 6 minutes; Papa to Quebec: 6 minutes; Quebec to Tango: 6 minutes; Tango to Uniform: 6 minutes; Uniform to Victor: 6 minutes; Victor to Whiskey: 6 minutes; Whiskey to Xray: 6 minutes; Xray to Yankee: 6 minutes; Yankee to Zulu: 6 minutes; Zulu to Aster: 6 minutes; Aster to Dover: 6 minutes; Dover to Elm: 6 minutes; Elm to Flint: 6 minutes; Flint to Grove: 6 minutes; Grove to Harbor: 6 minutes; Harbor to Ivy: 6 minutes; Ivy to Jasper: 6 minutes"
+    },
+    {
+      "name": "B2",
+      "kind": "East-West",
+      "headway_min": 8,
+      "fullness_percent": 84,
+      "fullness_class": "high",
+      "delay_probability_class": "high",
+      "capacity_status": "not near capacity",
+      "stop_count": 4,
+      "route": "Golf to Juliett to Kilo to Lima",
+      "segments": "Golf to Juliett: 6 minutes; Juliett to Kilo: 6 minutes; Kilo to Lima: 6 minutes"
+    },
+    {
+      "name": "B3",
+      "kind": "East-West",
+      "headway_min": 8,
+      "fullness_percent": 79,
+      "fullness_class": "high",
+      "delay_probability_class": "high",
+      "capacity_status": "not near capacity",
+      "stop_count": 4,
+      "route": "Yankee to Zulu to Aster to Dover",
+      "segments": "Yankee to Zulu: 6 minutes; Zulu to Aster: 6 minutes; Aster to Dover: 6 minutes"
+    },
+    {
+      "name": "B4",
+      "kind": "South-North",
+      "headway_min": 8,
+      "fullness_percent": 81,
+      "fullness_class": "high",
+      "delay_probability_class": "high",
+      "capacity_status": "not near capacity",
+      "stop_count": 5,
+      "route": "Bravo to November to Tango to Zulu to Flint",
+      "segments": "Bravo to November: 6 minutes; November to Tango: 5 minutes; Tango to Zulu: 5 minutes; Zulu to Flint: 5 minutes"
+    },
+    {
+      "name": "M1",
+      "kind": "Ring",
+      "headway_min": 4,
+      "fullness_percent": 75,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "not near capacity",
+      "stop_count": 17,
+      "route": "Echo to Foxtrot to Golf to Hotel to India to Oscar to Papa to Quebec to Romeo to Sierra to Yankee to Zulu to Aster to Birch to Cedar to Ivy to Jasper",
+      "segments": "Echo to Foxtrot: 3 minutes; Foxtrot to Golf: 6 minutes; Golf to Hotel: 3 minutes; Hotel to India: 3 minutes; India to Oscar: 3 minutes; Oscar to Papa: 3 minutes; Papa to Quebec: 3 minutes; Quebec to Romeo: 3 minutes; Romeo to Sierra: 6 minutes; Sierra to Yankee: 2 minutes; Yankee to Zulu: 3 minutes; Zulu to Aster: 3 minutes; Aster to Birch: 3 minutes; Birch to Cedar: 3 minutes; Cedar to Ivy: 2 minutes; Ivy to Jasper: 3 minutes; Jasper to Echo: 6 minutes"
+    },
+    {
+      "name": "M2",
+      "kind": "East-West",
+      "headway_min": 4,
+      "fullness_percent": 86,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "near capacity",
+      "stop_count": 4,
+      "route": "Oscar to Papa to Quebec to Romeo",
+      "segments": "Oscar to Papa: 3 minutes; Papa to Quebec: 3 minutes; Quebec to Romeo: 3 minutes"
+    },
+    {
+      "name": "M3",
+      "kind": "East-West",
+      "headway_min": 4,
+      "fullness_percent": 86,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "near capacity",
+      "stop_count": 2,
+      "route": "Ivy to Jasper",
+      "segments": "Ivy to Jasper: 3 minutes"
+    },
+    {
+      "name": "M4",
+      "kind": "South-North",
+      "headway_min": 4,
+      "fullness_percent": 83,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "not near capacity",
+      "stop_count": 3,
+      "route": "India to Oscar to Aster",
+      "segments": "India to Oscar: 2 minutes; Oscar to Aster: 4 minutes"
+    },
+    {
+      "name": "T1",
+      "kind": "Tram",
+      "headway_min": 6,
+      "fullness_percent": 80,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "not near capacity",
+      "stop_count": 25,
+      "route": "Alpha to Bravo to Charlie to Delta to Hotel to India to Juliett to Kilo to Lima to Mike to November to Romeo to Sierra to Tango to Uniform to Victor to Whiskey to Xray to Birch to Cedar to Dover to Elm to Flint to Grove to Harbor",
+      "segments": "Alpha to Bravo: 3 minutes; Bravo to Charlie: 3 minutes; Charlie to Delta: 4 minutes; Delta to Hotel: 6 minutes; Hotel to India: 3 minutes; India to Juliett: 3 minutes; Juliett to Kilo: 4 minutes; Kilo to Lima: 3 minutes; Lima to Mike: 6 minutes; Mike to November: 4 minutes; November to Romeo: 6 minutes; Romeo to Sierra: 6 minutes; Sierra to Tango: 4 minutes; Tango to Uniform: 3 minutes; Uniform to Victor: 4 minutes; Victor to Whiskey: 3 minutes; Whiskey to Xray: 4 minutes; Xray to Birch: 6 minutes; Birch to Cedar: 4 minutes; Cedar to Dover: 3 minutes; Dover to Elm: 6 minutes; Elm to Flint: 4 minutes; Flint to Grove: 4 minutes; Grove to Harbor: 4 minutes"
+    },
+    {
+      "name": "T2",
+      "kind": "East-West",
+      "headway_min": 6,
+      "fullness_percent": 81,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "not near capacity",
+      "stop_count": 4,
+      "route": "Alpha to Bravo to Charlie to Delta",
+      "segments": "Alpha to Bravo: 4 minutes; Bravo to Charlie: 4 minutes; Charlie to Delta: 4 minutes"
+    },
+    {
+      "name": "T3",
+      "kind": "East-West",
+      "headway_min": 6,
+      "fullness_percent": 84,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "not near capacity",
+      "stop_count": 6,
+      "route": "Sierra to Tango to Uniform to Victor to Whiskey to Xray",
+      "segments": "Sierra to Tango: 3 minutes; Tango to Uniform: 3 minutes; Uniform to Victor: 3 minutes; Victor to Whiskey: 3 minutes; Whiskey to Xray: 3 minutes"
+    },
+    {
+      "name": "T4",
+      "kind": "South-North",
+      "headway_min": 6,
+      "fullness_percent": 87,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "near capacity",
+      "stop_count": 4,
+      "route": "Alpha to Mike to Sierra to Elm",
+      "segments": "Alpha to Mike: 5 minutes; Mike to Sierra: 3 minutes; Sierra to Elm: 5 minutes"
+    },
+    {
+      "name": "T5",
+      "kind": "South-North",
+      "headway_min": 6,
+      "fullness_percent": 85,
+      "fullness_class": "high",
+      "delay_probability_class": "moderate",
+      "capacity_status": "near capacity",
+      "stop_count": 5,
+      "route": "Delta to Juliett to Victor to Birch to Harbor",
+      "segments": "Delta to Juliett: 3 minutes; Juliett to Victor: 5 minutes; Victor to Birch: 3 minutes; Birch to Harbor: 3 minutes"
+    },
+    {
+      "name": "Walking",
+      "kind": "Walking",
+      "headway_min": 0,
+      "fullness_percent": 78,
+      "fullness_class": "high",
+      "delay_probability_class": "low",
+      "capacity_status": "not near capacity",
+      "stop_count": 36,
+      "route": "Alpha to Bravo to Charlie to Delta to Echo to Foxtrot to Golf to Hotel to India to Juliett to Kilo to Lima to Mike to November to Oscar to Papa to Quebec to Romeo to Sierra to Tango to Uniform to Victor to Whiskey to Xray to Yankee to Zulu to Aster to Birch to Cedar to Dover to Elm to Flint to Grove to Harbor to Ivy to Jasper",
+      "segments": "Alpha to Bravo: 7 minutes; Bravo to Charlie: 7 minutes; Charlie to Delta: 7 minutes; Delta to Echo: 8 minutes; Echo to Foxtrot: 7 minutes; Foxtrot to Golf: 15 minutes; Golf to Hotel: 7 minutes; Hotel to India: 7 minutes; India to Juliett: 7 minutes; Juliett to Kilo: 7 minutes; Kilo to Lima: 7 minutes; Lima to Mike: 15 minutes; Mike to November: 7 minutes; November to Oscar: 7 minutes; Oscar to Papa: 7 minutes; Papa to Quebec: 7 minutes; Quebec to Romeo: 7 minutes; Romeo to Sierra: 15 minutes; Sierra to Tango: 7 minutes; Tango to Uniform: 7 minutes; Uniform to Victor: 7 minutes; Victor to Whiskey: 8 minutes; Whiskey to Xray: 7 minutes; Xray to Yankee: 15 minutes; Yankee to Zulu: 7 minutes; Zulu to Aster: 7 minutes; Aster to Birch: 7 minutes; Birch to Cedar: 7 minutes; Cedar to Dover: 7 minutes; Dover to Elm: 15 minutes; Elm to Flint: 7 minutes; Flint to Grove: 7 minutes; Grove to Harbor: 8 minutes; Harbor to Ivy: 7 minutes; Ivy to Jasper: 7 minutes"
+    }
+  ],
+  "stations": [
+    {
+      "name": "Alpha",
+      "fullness_percent": 82,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 6,
+      "lines": "B1, T1, T2, T4, Walking",
+      "neighbors": "Bravo, Mike",
+      "coordinates": "80,70"
+    },
+    {
+      "name": "Aster",
+      "fullness_percent": 74,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 6,
+      "lines": "B1, B3, M1, M4, Walking",
+      "neighbors": "Birch, Dover, Oscar, Zulu",
+      "coordinates": "320,430"
+    },
+    {
+      "name": "Birch",
+      "fullness_percent": 86,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 6,
+      "lines": "M1, T1, T5, Walking",
+      "neighbors": "Aster, Cedar, Harbor, Victor, Xray",
+      "coordinates": "440,430"
+    },
+    {
+      "name": "Bravo",
+      "fullness_percent": 78,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 7,
+      "lines": "B1, B4, T1, T2, Walking",
+      "neighbors": "Alpha, Charlie, November",
+      "coordinates": "200,70"
+    },
+    {
+      "name": "Cedar",
+      "fullness_percent": 52,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 3,
+      "lines": "M1, T1, Walking",
+      "neighbors": "Birch, Dover, Ivy",
+      "coordinates": "560,430"
+    },
+    {
+      "name": "Charlie",
+      "fullness_percent": 78,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, T1, T2, Walking",
+      "neighbors": "Bravo, Delta",
+      "coordinates": "320,70"
+    },
+    {
+      "name": "Delta",
+      "fullness_percent": 85,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 7,
+      "lines": "B1, T1, T2, T5, Walking",
+      "neighbors": "Charlie, Echo, Hotel, Juliett",
+      "coordinates": "440,70"
+    },
+    {
+      "name": "Dover",
+      "fullness_percent": 87,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, B3, T1, Walking",
+      "neighbors": "Aster, Cedar, Elm",
+      "coordinates": "680,430"
+    },
+    {
+      "name": "Echo",
+      "fullness_percent": 43,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, M1, Walking",
+      "neighbors": "Delta, Foxtrot, Jasper",
+      "coordinates": "560,70"
+    },
+    {
+      "name": "Elm",
+      "fullness_percent": 87,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, T1, T4, Walking",
+      "neighbors": "Dover, Flint, Sierra",
+      "coordinates": "105,520"
+    },
+    {
+      "name": "Flint",
+      "fullness_percent": 83,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 6,
+      "lines": "B1, B4, T1, Walking",
+      "neighbors": "Elm, Grove, Zulu",
+      "coordinates": "225,520"
+    },
+    {
+      "name": "Foxtrot",
+      "fullness_percent": 42,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, M1, Walking",
+      "neighbors": "Echo, Golf",
+      "coordinates": "680,70"
+    },
+    {
+      "name": "Golf",
+      "fullness_percent": 88,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, B2, M1, Walking",
+      "neighbors": "Foxtrot, Hotel, Juliett",
+      "coordinates": "105,160"
+    },
+    {
+      "name": "Grove",
+      "fullness_percent": 48,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, T1, Walking",
+      "neighbors": "Flint, Harbor",
+      "coordinates": "345,520"
+    },
+    {
+      "name": "Harbor",
+      "fullness_percent": 81,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, T1, T5, Walking",
+      "neighbors": "Birch, Grove, Ivy",
+      "coordinates": "465,520"
+    },
+    {
+      "name": "Hotel",
+      "fullness_percent": 39,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 3,
+      "lines": "M1, T1, Walking",
+      "neighbors": "Delta, Golf, India",
+      "coordinates": "225,160"
+    },
+    {
+      "name": "India",
+      "fullness_percent": 88,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 6,
+      "lines": "M1, M4, T1, Walking",
+      "neighbors": "Hotel, Juliett, Oscar",
+      "coordinates": "345,160"
+    },
+    {
+      "name": "Ivy",
+      "fullness_percent": 91,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, M1, M3, Walking",
+      "neighbors": "Cedar, Harbor, Jasper",
+      "coordinates": "585,520"
+    },
+    {
+      "name": "Jasper",
+      "fullness_percent": 82,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, M1, M3, Walking",
+      "neighbors": "Echo, Ivy",
+      "coordinates": "705,520"
+    },
+    {
+      "name": "Juliett",
+      "fullness_percent": 92,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 6,
+      "lines": "B1, B2, T1, T5, Walking",
+      "neighbors": "Delta, Golf, India, Kilo, Victor",
+      "coordinates": "465,160"
+    },
+    {
+      "name": "Kilo",
+      "fullness_percent": 83,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, B2, T1, Walking",
+      "neighbors": "Juliett, Lima",
+      "coordinates": "585,160"
+    },
+    {
+      "name": "Lima",
+      "fullness_percent": 75,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 6,
+      "lines": "B1, B2, T1, Walking",
+      "neighbors": "Kilo, Mike",
+      "coordinates": "705,160"
+    },
+    {
+      "name": "Mike",
+      "fullness_percent": 90,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 6,
+      "lines": "B1, T1, T4, Walking",
+      "neighbors": "Alpha, Lima, November, Sierra",
+      "coordinates": "80,250"
+    },
+    {
+      "name": "November",
+      "fullness_percent": 84,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 7,
+      "lines": "B1, B4, T1, Walking",
+      "neighbors": "Bravo, Mike, Oscar, Romeo, Tango",
+      "coordinates": "200,250"
+    },
+    {
+      "name": "Oscar",
+      "fullness_percent": 86,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, M1, M2, M4, Walking",
+      "neighbors": "Aster, India, November, Papa",
+      "coordinates": "320,250"
+    },
+    {
+      "name": "Papa",
+      "fullness_percent": 82,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, M1, M2, Walking",
+      "neighbors": "Oscar, Quebec",
+      "coordinates": "440,250"
+    },
+    {
+      "name": "Quebec",
+      "fullness_percent": 87,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, M1, M2, Walking",
+      "neighbors": "Papa, Romeo, Tango",
+      "coordinates": "560,250"
+    },
+    {
+      "name": "Romeo",
+      "fullness_percent": 88,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 5,
+      "lines": "M1, M2, T1, Walking",
+      "neighbors": "November, Quebec, Sierra",
+      "coordinates": "680,250"
+    },
+    {
+      "name": "Sierra",
+      "fullness_percent": 88,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 5,
+      "lines": "M1, T1, T3, T4, Walking",
+      "neighbors": "Elm, Mike, Romeo, Tango, Yankee",
+      "coordinates": "105,340"
+    },
+    {
+      "name": "Tango",
+      "fullness_percent": 81,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, B4, T1, T3, Walking",
+      "neighbors": "November, Quebec, Sierra, Uniform, Zulu",
+      "coordinates": "225,340"
+    },
+    {
+      "name": "Uniform",
+      "fullness_percent": 80,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 7,
+      "lines": "B1, T1, T3, Walking",
+      "neighbors": "Tango, Victor",
+      "coordinates": "345,340"
+    },
+    {
+      "name": "Victor",
+      "fullness_percent": 79,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, T1, T3, T5, Walking",
+      "neighbors": "Birch, Juliett, Uniform, Whiskey",
+      "coordinates": "465,340"
+    },
+    {
+      "name": "Whiskey",
+      "fullness_percent": 90,
+      "capacity_status": "near capacity",
+      "transfer_time_min": 7,
+      "lines": "B1, T1, T3, Walking",
+      "neighbors": "Victor, Xray",
+      "coordinates": "585,340"
+    },
+    {
+      "name": "Xray",
+      "fullness_percent": 84,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 5,
+      "lines": "B1, T1, T3, Walking",
+      "neighbors": "Birch, Whiskey, Yankee",
+      "coordinates": "705,340"
+    },
+    {
+      "name": "Yankee",
+      "fullness_percent": 76,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 4,
+      "lines": "B1, B3, M1, Walking",
+      "neighbors": "Sierra, Xray, Zulu",
+      "coordinates": "80,430"
+    },
+    {
+      "name": "Zulu",
+      "fullness_percent": 79,
+      "capacity_status": "not near capacity",
+      "transfer_time_min": 7,
+      "lines": "B1, B3, B4, M1, Walking",
+      "neighbors": "Aster, Flint, Tango, Yankee",
+      "coordinates": "200,430"
+    }
+  ]
+}
