@@ -1,34 +1,18 @@
 phase,metric_key,metric_label,outlier_count,failure_aligned_count,success_aligned_count,contradicting_count,direction_unknown_count,outcome_alignment_rate,interpretation
-asr,asr_character_error_rate,Character Error Rate,12,10,0,2,0,0.8333333333333334,descriptive outlier alignment; requires held-out validation
 asr,asr_domain_correction_yield,share of detected token misinterpretations corrected before agent input,2,0,2,0,0,1.0,descriptive outlier alignment; requires held-out validation
-asr,asr_entity_error_rate,Entity Error Rate,20,0,6,14,0,0.3,descriptive outlier alignment; requires held-out validation
-asr,asr_real_time_factor,ASR Real-Time Factor,13,0,7,6,0,0.5384615384615384,descriptive outlier alignment; requires held-out validation
-asr,asr_recognition_latency,Recognition Latency,20,5,8,7,0,0.65,descriptive outlier alignment; requires held-out validation
-asr,asr_sentence_error_rate,Sentence Error Rate,14,0,0,14,0,0.0,descriptive outlier alignment; requires held-out validation
-asr,asr_station_f1,Station F1,25,25,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-asr,asr_station_recall,Station Recall,25,25,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-asr,asr_wer,word recognition error rate,10,10,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-audio_input,audio_loudness_stability,Loudness Stability,25,3,22,0,0,1.0,descriptive outlier alignment; requires held-out validation
+asr,asr_real_time_factor,ASR Real-Time Factor,10,0,7,3,0,0.7,descriptive outlier alignment; requires held-out validation
+asr,asr_recognition_latency,Recognition Latency,21,5,9,7,0,0.6666666666666666,descriptive outlier alignment; requires held-out validation
+audio_input,audio_loudness_stability,Loudness Stability,27,4,23,0,0,1.0,descriptive outlier alignment; requires held-out validation
 audio_input,audio_raw_turn_latency,Raw Turn Latency,3,0,0,3,0,0.0,descriptive outlier alignment; requires held-out validation
-audio_input,audio_real_time_interaction_factor,Real-Time Interaction Factor,1,0,1,0,0,1.0,descriptive outlier alignment; requires held-out validation
-audio_input,audio_silence_ratio,Silence Ratio,55,0,43,12,0,0.7818181818181819,descriptive outlier alignment; requires held-out validation
-audio_input,audio_speech_rate_wpm,Speech Rate,37,0,33,4,0,0.8918918918918919,descriptive outlier alignment; requires held-out validation
+audio_input,audio_real_time_interaction_factor,Real-Time Interaction Factor,2,0,2,0,0,1.0,descriptive outlier alignment; requires held-out validation
+audio_input,audio_silence_ratio,Silence Ratio,57,0,45,12,0,0.7894736842105263,descriptive outlier alignment; requires held-out validation
+audio_input,audio_speech_rate_wpm,Speech Rate,40,0,36,4,0,0.9,descriptive outlier alignment; requires held-out validation
 audio_input,audio_utterance_duration,Utterance Duration,2,0,2,0,0,1.0,descriptive outlier alignment; requires held-out validation
-backend_task_execution,agent_b_dominated_proposal_rate,Dominated Proposal Rate,25,25,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-dialogue_management,dialogue_management_stagnation_rate,Stagnation Rate,27,25,0,2,0,0.9259259259259259,descriptive outlier alignment; requires held-out validation
-dialogue_management,dialogue_management_turn_efficiency,Turn Efficiency,14,14,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-nlg,nlg_distinct_1,Distinct-1,36,28,0,8,0,0.7777777777777778,descriptive outlier alignment; requires held-out validation
-nlg,nlg_distinct_2,Distinct-2,28,28,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-nlg,nlg_estimated_spoken_duration,Estimated Spoken Duration,18,14,4,0,0,1.0,descriptive outlier alignment; requires held-out validation
-nlg,nlg_lexical_diversity,Lexical Diversity,36,28,0,8,0,0.7777777777777778,descriptive outlier alignment; requires held-out validation
-nlg,nlg_prompt_repair_rate,share of language-model calls made by the bounded repair prompt,38,38,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-nlg,nlg_repetition_rate,Repetition Rate,14,0,0,14,0,0.0,descriptive outlier alignment; requires held-out validation
+backend_task_execution,agent_b_model_generation_latency,Model Generation Latency,6,0,0,6,0,0.0,descriptive outlier alignment; requires held-out validation
 nlu,nlu_latency,NLU Latency,4,0,0,4,0,0.0,descriptive outlier alignment; requires held-out validation
-tts,tts_audio_duration_error,Audio Duration Error,10,0,0,10,0,0.0,descriptive outlier alignment; requires held-out validation
-tts,tts_dnsmos,non-intrusive speech and background quality,14,11,0,3,0,0.7857142857142857,descriptive outlier alignment; requires held-out validation
-tts,tts_leading_trailing_silence,Leading/Trailing Silence,55,12,21,22,0,0.6,descriptive outlier alignment; requires held-out validation
-tts,tts_nisqa,non-intrusive synthesized-speech quality,37,12,0,25,0,0.32432432432432434,descriptive outlier alignment; requires held-out validation
+tts,tts_dnsmos,non-intrusive speech and background quality,15,11,0,4,0,0.7333333333333333,descriptive outlier alignment; requires held-out validation
+tts,tts_leading_trailing_silence,Leading/Trailing Silence,59,12,24,23,0,0.6101694915254238,descriptive outlier alignment; requires held-out validation
+tts,tts_nisqa,non-intrusive synthesized-speech quality,35,12,0,23,0,0.34285714285714286,descriptive outlier alignment; requires held-out validation
 tts,tts_pronunciation_accuracy,Pronunciation Accuracy,18,10,1,7,0,0.6111111111111112,descriptive outlier alignment; requires held-out validation
-tts,tts_real_time_factor,TTS Real-Time Factor,3,0,3,0,0,1.0,descriptive outlier alignment; requires held-out validation
+tts,tts_real_time_factor,TTS Real-Time Factor,4,0,3,1,0,0.75,descriptive outlier alignment; requires held-out validation
 tts,tts_station_pronunciation_accuracy,Station Pronunciation Accuracy,11,11,0,0,0,1.0,descriptive outlier alignment; requires held-out validation
-tts,tts_text_change_rate,Text Change Rate,43,0,31,12,0,0.7209302325581395,descriptive outlier alignment; requires held-out validation

@@ -1,0 +1,54 @@
+=== batch-c-mpcc-dst-sc-pip-vos-mp3m4-defau-med-i0-daf9c05fc9-a-20260711-190751.log | sha256=965e4257c0add4cfc07d6c7daf778477cf7606e4755657cb9125a086c052a553 ===
+[19:07:51] SESSION START batch-C-MPCC-DST-SC-PIP-VOS-MP3M4-DEFAU-MED-I0-daf9c05fc9-A
+[19:07:51] SEGMENT batch.condition.start status=ok duration=None seconds
+[19:07:51] SYSTEM timer.start
+[19:08:03] PHASE turn=1 speaker=Agent A phase=NLG duration_sec=0.0
+[19:08:03] PHASE turn=1 speaker=Agent A phase=TTS duration_sec=4.643535
+[19:08:03] PHASE turn=1 speaker=Agent A phase=ASR duration_sec=3.919367
+[19:08:03] SYSTEM telemetry.speech
+[19:08:03] MEMORY turn=1 reason=opening changed=Agent A,Agent B
+[19:08:03] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[19:08:03] SYSTEM telemetry.timing
+[19:08:03] TIMING turn=1 speaker=Agent A generation=0.0 synthesis=4.643535 audio=10.0 recognition=3.919367 understanding=None dialogue_management=None pipeline_wall=12.143111 turn_observed=12.143217
+[19:08:08] PHASE turn=2 speaker=Agent B phase=NLG duration_sec=0.0005061626434326172
+[19:08:08] PHASE turn=2 speaker=Agent B phase=TTS duration_sec=1.489917
+[19:08:08] PHASE turn=2 speaker=Agent B phase=ASR duration_sec=1.566828
+[19:08:08] SYSTEM telemetry.speech
+[19:08:08] SYSTEM telemetry.timing
+[19:08:09] MEMORY turn=2 reason=agent_b_reply changed=Agent A,Agent B
+[19:08:09] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[19:08:09] PHASE turn=2 speaker=Agent B phase=NLU duration_sec=0.000454
+[19:08:09] SYSTEM telemetry.nlu
+[19:08:09] PHASE turn=2 speaker=Agent B phase=DM duration_sec=0.0001357009168714285
+[19:08:09] TIMING turn=2 speaker=Agent B generation=0.000506 synthesis=1.489917 audio=4.723 recognition=1.566828 understanding=0.000454 dialogue_management=0.000136 pipeline_wall=5.042164 turn_observed=5.043335
+[19:08:14] PHASE turn=3 speaker=Agent A phase=NLG duration_sec=0.011046171188354492
+[19:08:14] PHASE turn=3 speaker=Agent A phase=TTS duration_sec=1.540641
+[19:08:14] PHASE turn=3 speaker=Agent A phase=ASR duration_sec=1.926722
+[19:08:14] SYSTEM telemetry.speech
+[19:08:14] SYSTEM telemetry.timing
+[19:08:14] TIMING turn=3 speaker=Agent A generation=0.011046 synthesis=1.540641 audio=5.056 recognition=1.926722 understanding=None dialogue_management=None pipeline_wall=5.644727 turn_observed=5.655829
+[19:08:14] MEMORY turn=3 reason=agent_a_reply changed=Agent A,Agent B
+[19:08:14] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[19:08:19] PHASE turn=4 speaker=Agent B phase=NLG duration_sec=0.0006225109100341797
+[19:08:19] PHASE turn=4 speaker=Agent B phase=TTS duration_sec=1.011165
+[19:08:19] PHASE turn=4 speaker=Agent B phase=ASR duration_sec=1.636209
+[19:08:19] SYSTEM telemetry.speech
+[19:08:19] SYSTEM telemetry.timing
+[19:08:19] MEMORY turn=4 reason=agent_b_reply changed=Agent A
+[19:08:19] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[19:08:19] PHASE turn=4 speaker=Agent B phase=NLU duration_sec=0.000525
+[19:08:19] SYSTEM telemetry.nlu
+[19:08:19] PHASE turn=4 speaker=Agent B phase=DM duration_sec=0.00012950203381478786
+[19:08:19] TIMING turn=4 speaker=Agent B generation=0.000623 synthesis=1.011165 audio=5.214 recognition=1.636209 understanding=0.000525 dialogue_management=0.00013 pipeline_wall=4.839632 turn_observed=5.215277
+[19:08:25] PHASE turn=5 speaker=Agent A phase=NLG duration_sec=0.015687227249145508
+[19:08:25] PHASE turn=5 speaker=Agent A phase=TTS duration_sec=1.316859
+[19:08:25] PHASE turn=5 speaker=Agent A phase=ASR duration_sec=1.916815
+[19:08:25] SYSTEM telemetry.speech
+[19:08:25] SYSTEM telemetry.timing
+[19:08:25] TIMING turn=5 speaker=Agent A generation=0.015687 synthesis=1.316859 audio=5.924 recognition=1.916815 understanding=None dialogue_management=None pipeline_wall=5.622777 turn_observed=5.939687
+[19:08:25] MEMORY turn=5 reason=agent_a_reply changed=Agent A,Agent B
+[19:08:25] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[19:08:25] SYSTEM metrics
+[19:08:25] SYSTEM done
+[19:08:25] SEGMENT batch.condition.end status=ok duration=33.47998 seconds
+[19:08:25] SESSION END batch-C-MPCC-DST-SC-PIP-VOS-MP3M4-DEFAU-MED-I0-daf9c05fc9-A

@@ -1,0 +1,850 @@
+{
+  "audio_condition_count": 42,
+  "condition_start": 32,
+  "coverage_strategy": "pairwise",
+  "covered_pair_count": 384,
+  "expected_pair_count": 456,
+  "factor_count": 11,
+  "full_condition_count": 84,
+  "levels": {
+    "agent_a_audio_persona": [
+      "barely_understandable_caller",
+      "degraded_caller",
+      "high_clarity_caller",
+      "neutral_caller"
+    ],
+    "agent_b_audio_persona": [
+      "barely_understandable_operator",
+      "clear_operator",
+      "degraded_operator",
+      "high_clarity_operator"
+    ],
+    "agent_b_model": [
+      "microsoft/Phi-3-mini-4k-instruct"
+    ],
+    "automatic_speech_recognition": [
+      "faster_whisper",
+      "vosk"
+    ],
+    "model_parameters": [
+      "greedy",
+      "nucleus0.9",
+      "temp0.7"
+    ],
+    "objective": [
+      "shortest_valid_route_with_constraints"
+    ],
+    "persona": [
+      "crowd_averse_rider",
+      "delay_sensitive_traveler",
+      "focused_commuter",
+      "risk_averse_novice"
+    ],
+    "speech_pattern": [
+      "clean",
+      "hesitant",
+      "mostly_clean",
+      "severe_channel"
+    ],
+    "speech_performance_profile": [
+      "ceiling",
+      "challenging",
+      "floor",
+      "nominal"
+    ],
+    "test_case": [
+      "airport_connection",
+      "crowded_event_exit",
+      "midday_transfer",
+      "morning_peak_cross_city"
+    ],
+    "text_to_speech": [
+      "piper"
+    ]
+  },
+  "missing_pairs": [
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "clear_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "degraded_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "high_clarity_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "barely_understandable_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "barely_understandable_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "clear_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "high_clarity_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "degraded_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "barely_understandable_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "clear_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "degraded_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "high_clarity_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "barely_understandable_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "degraded_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "agent_b_audio_persona",
+      "right_value": "high_clarity_operator"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_a_audio_persona",
+      "left_value": "neutral_caller",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "barely_understandable_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "clear_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "degraded_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "hesitant"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "mostly_clean"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_pattern",
+      "right_value": "severe_channel"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "agent_b_audio_persona",
+      "left_value": "high_clarity_operator",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "hesitant",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "hesitant",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "hesitant",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "mostly_clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "mostly_clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "mostly_clean",
+      "right_factor": "speech_performance_profile",
+      "right_value": "floor"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "severe_channel",
+      "right_factor": "speech_performance_profile",
+      "right_value": "ceiling"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "severe_channel",
+      "right_factor": "speech_performance_profile",
+      "right_value": "challenging"
+    },
+    {
+      "left_factor": "speech_pattern",
+      "left_value": "severe_channel",
+      "right_factor": "speech_performance_profile",
+      "right_value": "nominal"
+    }
+  ],
+  "pair_coverage_ratio": 0.842105,
+  "selected_condition_count": 1,
+  "speech_performance_coverage": {
+    "applicable": true,
+    "complete": false,
+    "complete_group_count": 1,
+    "group_count": 21,
+    "groups": [
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "floor"
+        ],
+        "observed_bands": [
+          "challenging"
+        ],
+        "persona_key": "delay_sensitive_traveler",
+        "test_case_key": "airport_connection",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "ceiling"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "airport_connection",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "floor"
+        ],
+        "observed_bands": [
+          "challenging"
+        ],
+        "persona_key": "delay_sensitive_traveler",
+        "test_case_key": "crowded_event_exit",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "ceiling"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "crowded_event_exit",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "ceiling"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "midday_transfer",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "nominal"
+        ],
+        "persona_key": "crowd_averse_rider",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "nominal"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "faster_whisper",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "challenging"
+        ],
+        "observed_bands": [
+          "floor"
+        ],
+        "persona_key": "risk_averse_novice",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "nominal"
+        ],
+        "persona_key": "crowd_averse_rider",
+        "test_case_key": "airport_connection",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "ceiling"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "airport_connection",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "challenging"
+        ],
+        "observed_bands": [
+          "floor"
+        ],
+        "persona_key": "risk_averse_novice",
+        "test_case_key": "airport_connection",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "nominal"
+        ],
+        "persona_key": "crowd_averse_rider",
+        "test_case_key": "crowded_event_exit",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "challenging"
+        ],
+        "observed_bands": [
+          "floor"
+        ],
+        "persona_key": "risk_averse_novice",
+        "test_case_key": "crowded_event_exit",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "nominal"
+        ],
+        "persona_key": "crowd_averse_rider",
+        "test_case_key": "midday_transfer",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "floor"
+        ],
+        "observed_bands": [
+          "challenging"
+        ],
+        "persona_key": "delay_sensitive_traveler",
+        "test_case_key": "midday_transfer",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "observed_bands": [
+          "ceiling"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "midday_transfer",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "ceiling",
+          "nominal",
+          "challenging"
+        ],
+        "observed_bands": [
+          "floor"
+        ],
+        "persona_key": "risk_averse_novice",
+        "test_case_key": "midday_transfer",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "nominal"
+        ],
+        "observed_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "persona_key": "crowd_averse_rider",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": true,
+        "missing_bands": [],
+        "observed_bands": [
+          "ceiling",
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "persona_key": "delay_sensitive_traveler",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "nominal"
+        ],
+        "observed_bands": [
+          "ceiling",
+          "challenging",
+          "floor"
+        ],
+        "persona_key": "focused_commuter",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      },
+      {
+        "agent_b_model": "microsoft/Phi-3-mini-4k-instruct",
+        "asr_engine": "vosk",
+        "complete": false,
+        "missing_bands": [
+          "floor"
+        ],
+        "observed_bands": [
+          "ceiling",
+          "nominal",
+          "challenging"
+        ],
+        "persona_key": "risk_averse_novice",
+        "test_case_key": "morning_peak_cross_city",
+        "tts_engine": "piper"
+      }
+    ],
+    "required_bands": [
+      "ceiling",
+      "nominal",
+      "challenging",
+      "floor"
+    ]
+  }
+}
