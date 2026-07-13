@@ -230,6 +230,35 @@ def _normalized_model_name(value):
     return text.rsplit("/", 1)[-1] if text else ""
 
 
+def _compact_text(value, limit=38):
+    """Return a short visible label while keeping full values in HTML titles."""
+    text = str(value or "")
+    if len(text) <= limit:
+        return text
+    return f"{text[: max(0, limit - 1)]}..."
+
+
+def _compact_model_label(value):
+    name = _normalized_model_name(value)
+    name = re.sub(r"[-_]?Instruct(?:-\w+)?$", "", name, flags=re.IGNORECASE)
+    name = name.replace("-Chat-v1.0", "").replace("-Chat", "")
+    return _compact_text(name, 30)
+
+
+def _compact_run_label(value):
+    text = str(value or "").replace("\\", "/").rstrip("/")
+    parts = [part for part in text.split("/") if part]
+    return _compact_text("/".join(parts[-3:]) if len(parts) >= 3 else text, 42)
+
+
+def _compact_phase_label(value):
+    return str(value or "").replace("_", " ")
+
+
+def _compact_metric_label(value, limit=28):
+    return _compact_text(str(value or "").replace("_", " "), limit)
+
+
 def _planned_conditions(run_directory):
     breakdown = Path(run_directory) / "condition_configuration_breakdown.csv"
     return _read_csv(breakdown) if breakdown.is_file() else []
@@ -1117,10 +1146,10 @@ th{{position:sticky;top:0;background:#244b5a;color:#fff}}.finalized,.completed{{
 .interrupted{{background:#f8dddd}}.preflight_only,.not_started{{background:#edf0f3;color:#56616c}}code{{background:#edf1f4;padding:2px 4px}}
 </style></head><body><main><h1>Result evidence comparison</h1>
 <p>Derived representation only. Source logs, audio, configuration, and outcomes are not modified. Blank values mean unavailable evidence, not zero or failure.</p>
-<nav><a href="analysis_guide.md">Guide</a><a href="configuration_condition_overview.html">Planned conditions</a><a href="run_inventory.csv">Runs</a><a href="program_execution_summary.csv">Program execution</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="../comparison/metric_outcome_correlations.html">Correlations</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
+<nav><a href="analysis_guide.md">Guide</a><a href="configuration_condition_overview.html">Planned conditions</a><a href="run_inventory.csv">Runs</a><a href="program_execution_summary.csv">Program execution</a><a href="configuration_groups.csv">Configurations</a><a href="task_outcome_comparison.csv">Tasks</a><a href="../comparison/run_outcome_band_summary.html">Outcome bands</a><a href="task_success_by_configuration.csv">Task summary</a><a href="model_configuration_matrix.html">Model matrix</a><a href="../comparison/metric_value_heatmap.html">Metric heatmap</a><a href="../comparison/metric_outcome_correlations.html">Correlations</a><a href="agent_b_model_summary.csv">Agent B summary</a><a href="phase_metric_comparison.csv">Phase metrics</a><a href="phase_summary_by_model.csv">Phase summary</a><a href="dialogue_state_comparison.csv">Dialogue state</a><a href="dialogue_state_summary.csv">Dialogue summary</a><a href="conversation_turns.csv">Turns</a><a href="analysis_manifest.json">Integrity manifest</a></nav>
 <section><h2>Run lifecycle</h2>{run_table}</section><section><h2>Configuration groups</h2>{config_table}</section>
 <section><h2>Program execution, independent of task satisfaction</h2><p>This table counts whether the software finalized and completed each configured condition. It does not judge route quality, constraint satisfaction, or dialogue success.</p>{program_execution_table}</section>
-<section><h2>Task and success</h2>{outcome_table}</section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
+<section><h2>Task and success</h2>{outcome_table}</section><section><h2>Outcome bands and indicating metrics</h2><p>Open <a href="../comparison/run_outcome_band_summary.html">run_outcome_band_summary.html</a> for successful, semi-successful, unsuccessful, and incomplete groups, and <a href="../comparison/metric_value_heatmap.html">metric_value_heatmap.html</a> for phase metric values colored by declared range and cross-run extremeness.</p></section><section><h2>Task summary by configuration</h2>{task_summary_table}</section>
 <section><h2>Model-by-configuration matrix</h2><p>Open <a href="model_configuration_matrix.html">model_configuration_matrix.html</a> for the full color-coded pivot table.</p></section>
 <section><h2>Agent B model summary</h2>{model_summary_table}</section>
 <section><h2>Phase metrics</h2>{phase_table}</section><section><h2>Phase summary by model</h2>{phase_summary_table}</section>
@@ -2093,6 +2122,337 @@ def _metric_cell_color(value, specification):
     return "#" + "".join(f"{channel:02X}" for channel in rgb)
 
 
+def _metric_score(value, specification):
+    """Return direction-adjusted 0..1 score for a metric value."""
+    minimum = specification.get("range_min")
+    maximum = specification.get("range_max")
+    if value is None or minimum is None or maximum is None:
+        return None
+    position = 0.5 if maximum == minimum else (float(value) - minimum) / (maximum - minimum)
+    position = min(1.0, max(0.0, position))
+    return position if specification.get("higher_is_better", True) else 1.0 - position
+
+
+def _value_from_row(row, *keys):
+    for key in keys:
+        value = row.get(key)
+        if value not in (None, ""):
+            return value
+    return ""
+
+
+def _outcome_band(row):
+    """Classify task result for comparison without changing source evidence."""
+    state = str(row.get("condition_state") or row.get("execution_status") or "").casefold()
+    if state and state not in {"completed", "finalized"}:
+        return "execution_incomplete"
+    if _truthy(row.get("task_success")):
+        return "successful"
+    route_valid = _truthy(row.get("route_valid"))
+    constraint_satisfaction = _number(row.get("constraint_satisfaction"))
+    evaluation = _number(row.get("automatic_eval_score"))
+    if route_valid or (constraint_satisfaction is not None and constraint_satisfaction > 0) or (
+        evaluation is not None and evaluation >= 0.5
+    ):
+        return "semi_successful"
+    return "unsuccessful"
+
+
+def _metric_context_key(row):
+    return (
+        str(row.get("phase") or "unassigned"),
+        str(row.get("metric_key") or "unnamed_metric"),
+        str(row.get("run_type") or ""),
+    )
+
+
+def _observed_metric_statistics(metrics):
+    grouped = defaultdict(list)
+    for row in metrics:
+        if str(row.get("available", "true")).casefold() not in {"true", "1", "yes"}:
+            continue
+        value = _number(row.get("value_numeric"))
+        if value is None:
+            continue
+        grouped[_metric_context_key(row)].append(value)
+    statistics_by_key = {}
+    for key, values in grouped.items():
+        values = sorted(values)
+        median = statistics.median(values)
+        deviations = [abs(value - median) for value in values]
+        mad = statistics.median(deviations) if deviations else None
+        statistics_by_key[key] = {
+            "observed_minimum": values[0],
+            "observed_maximum": values[-1],
+            "observed_median": median,
+            "observed_mad": mad,
+            "sample_count": len(values),
+            "values": values,
+        }
+    return statistics_by_key
+
+
+def _percentile_rank(sorted_values, value):
+    if not sorted_values:
+        return None
+    below_or_equal = sum(1 for item in sorted_values if item <= value)
+    return below_or_equal / len(sorted_values)
+
+
+def _heatmap_color(score, outlier_intensity=0.0):
+    """Return red/amber/green color; stronger outliers are darker."""
+    if score is None:
+        return "#EEF1F4"
+    base = _metric_cell_color(
+        score,
+        {"range_min": 0.0, "range_max": 1.0, "higher_is_better": True},
+    )
+    match = re.fullmatch(r"#([0-9A-Fa-f]{6})", base)
+    if not match:
+        return base
+    channels = [int(match.group(1)[index:index + 2], 16) for index in (0, 2, 4)]
+    intensity = min(1.0, max(0.0, float(outlier_intensity or 0.0)))
+    # Normal values stay light; increasingly extreme observed deviations become darker.
+    factor = 1.0 - 0.38 * intensity
+    channels = [round(channel * factor) for channel in channels]
+    return "#" + "".join(f"{channel:02X}" for channel in channels)
+
+
+def build_outcome_band_summary(condition_analysis):
+    """Summarize successful, semi-successful, unsuccessful, and incomplete conditions."""
+    dimensions = (
+        "agent_a_type", "agent_b_llm_size", "agent_b_model", "agent_b_model_role",
+        "run_type", "speech_performance_band", "configured_tts_engine",
+        "configured_asr_engine", "asr_search_width",
+    )
+    grouped = defaultdict(list)
+    for row in condition_analysis:
+        enriched = dict(row)
+        enriched["outcome_band"] = _outcome_band(row)
+        grouped[tuple(enriched.get(key, "") for key in (*dimensions, "outcome_band"))].append(enriched)
+    output = []
+    for identity, rows in grouped.items():
+        values = dict(zip((*dimensions, "outcome_band"), identity))
+        output.append({
+            **values,
+            "condition_count": len(rows),
+            "task_success_count": sum(_truthy(row.get("task_success")) for row in rows),
+            "route_valid_count": sum(_truthy(row.get("route_valid")) for row in rows),
+            "mean_constraint_satisfaction": _mean(_numeric_values(rows, "constraint_satisfaction")),
+            "mean_automatic_eval_score": _mean(_numeric_values(rows, "automatic_eval_score")),
+            "mean_word_error_rate": _mean(_numeric_values(rows, "word_error_rate")),
+            "mean_entity_error_rate": _mean(_numeric_values(rows, "entity_error_rate")),
+            "mean_repair_success_rate": _mean(_numeric_values(rows, "repair_success_rate")),
+            "mean_grounded_proposal_score": _mean(_numeric_values(rows, "grounded_proposal_score")),
+            "mean_turn_count": _mean(_numeric_values(rows, "turn_count")),
+            "mean_runtime_sec": _mean(_numeric_values(rows, "runtime_sec")),
+            "failure_phase_counts": ";".join(
+                f"{phase}:{count}"
+                for phase, count in sorted(Counter(
+                    row.get("failure_phase") or row.get("pipeline_failure_type") or "none"
+                    for row in rows
+                ).items())
+            ),
+            "interpretation": "derived outcome band; semi_successful means partial task progress without full task success",
+        })
+    band_order = {"successful": 0, "semi_successful": 1, "unsuccessful": 2, "execution_incomplete": 3}
+    return sorted(output, key=lambda row: (
+        AGENT_B_SIZE_ORDER.get(str(row.get("agent_b_llm_size", "")).casefold(), 9),
+        str(row.get("agent_b_model", "")).casefold(),
+        band_order.get(row.get("outcome_band"), 9),
+        str(row.get("run_type", "")).casefold(),
+    ))
+
+
+def build_metric_value_heatmap_summary(condition_analysis, metrics):
+    """Create compact phase/metric/outcome summaries for visual comparison."""
+    conditions = {
+        (str(row.get("source_run", "")), str(row.get("condition_id", ""))): row
+        for row in condition_analysis
+    }
+    observed = _observed_metric_statistics(metrics)
+    grouped = defaultdict(list)
+    for row in metrics:
+        if str(row.get("available", "true")).casefold() not in {"true", "1", "yes"}:
+            continue
+        value = _number(row.get("value_numeric"))
+        if value is None:
+            continue
+        condition = conditions.get((str(row.get("source_run", "")), str(row.get("condition_id", ""))), {})
+        if not condition:
+            continue
+        range_min = _number(row.get("range_min"))
+        range_max = _number(row.get("range_max"))
+        stats = observed.get(_metric_context_key(row), {})
+        if range_min is None:
+            range_min = stats.get("observed_minimum")
+        if range_max is None:
+            range_max = stats.get("observed_maximum")
+        higher_is_better = str(row.get("higher_is_better", "")).casefold() in {"true", "1", "yes"}
+        specification = {
+            "range_min": range_min,
+            "range_max": range_max,
+            "higher_is_better": higher_is_better,
+        }
+        score = _metric_score(value, specification)
+        mad = stats.get("observed_mad")
+        median = stats.get("observed_median")
+        modified_z = None
+        if mad and mad > 0 and median is not None:
+            modified_z = 0.67448975 * (value - median) / mad
+        percentile = _percentile_rank(stats.get("values", ()), value)
+        grouped[(
+            _phase_order(row.get("phase_order")),
+            str(row.get("phase") or "unassigned"),
+            str(row.get("metric_key") or "unnamed_metric"),
+            str(row.get("metric_label") or row.get("metric_key") or ""),
+            str(row.get("run_type") or condition.get("run_type") or ""),
+            str(condition.get("agent_b_llm_size") or ""),
+            str(condition.get("agent_b_model") or ""),
+            _outcome_band(condition),
+        )].append({
+            "value": value,
+            "score": score,
+            "modified_z": modified_z,
+            "absolute_modified_z": abs(modified_z) if modified_z is not None else None,
+            "percentile": percentile,
+            "range_min": range_min,
+            "range_max": range_max,
+            "higher_is_better": higher_is_better,
+        })
+    output = []
+    for identity, rows in grouped.items():
+        (
+            phase_order, phase, metric_key, metric_label, run_type,
+            size, model, outcome_band,
+        ) = identity
+        scores = [row["score"] for row in rows if row["score"] is not None]
+        absolute_z = [row["absolute_modified_z"] for row in rows if row["absolute_modified_z"] is not None]
+        mean_score = _mean(scores)
+        max_abs_z = max(absolute_z) if absolute_z else None
+        outlier_count = sum((row["absolute_modified_z"] or 0.0) >= OUTLIER_MODIFIED_Z_THRESHOLD for row in rows)
+        output.append({
+            "phase_order": phase_order,
+            "phase": phase,
+            "metric_key": metric_key,
+            "metric_label": metric_label or metric_key,
+            "run_type": run_type,
+            "agent_b_llm_size": size,
+            "agent_b_model": model,
+            "outcome_band": outcome_band,
+            "observation_count": len(rows),
+            "mean_value": _mean([row["value"] for row in rows]),
+            "observed_minimum": min(row["value"] for row in rows),
+            "observed_maximum": max(row["value"] for row in rows),
+            "mean_direction_adjusted_score": mean_score,
+            "mean_observed_percentile": _mean([row["percentile"] for row in rows if row["percentile"] is not None]),
+            "maximum_absolute_modified_z_score": max_abs_z,
+            "outlier_count": outlier_count,
+            "outlier_rate": outlier_count / len(rows) if rows else None,
+            "cell_color": _heatmap_color(mean_score, min(1.0, (max_abs_z or 0.0) / 8.0)),
+            "range_min": rows[0]["range_min"],
+            "range_max": rows[0]["range_max"],
+            "higher_is_better": rows[0]["higher_is_better"],
+            "interpretation": (
+                "green is favorable by declared metric direction; red is unfavorable; "
+                "darker cells are more extreme relative to other runs of the same phase/metric/run type"
+            ),
+        })
+    band_order = {"successful": 0, "semi_successful": 1, "unsuccessful": 2, "execution_incomplete": 3}
+    return sorted(output, key=lambda row: (
+        row["phase_order"],
+        row["phase"],
+        row["metric_key"],
+        AGENT_B_SIZE_ORDER.get(str(row["agent_b_llm_size"]).casefold(), 9),
+        str(row["agent_b_model"]).casefold(),
+        band_order.get(row["outcome_band"], 9),
+        str(row["run_type"]).casefold(),
+    ))
+
+
+def write_outcome_band_summary_html(path, rows):
+    """Write success/semi-success/failure overview focused on interpretable outcomes."""
+    band_class = {
+        "successful": "successful",
+        "semi_successful": "semi",
+        "unsuccessful": "unsuccessful",
+        "execution_incomplete": "incomplete",
+    }
+    body = []
+    for row in rows:
+        css = band_class.get(row.get("outcome_band"), "")
+        transport = " / ".join(
+            str(row.get(key, "") or "-")
+            for key in ("configured_tts_engine", "configured_asr_engine")
+        )
+        failure_phases = _compact_text(row.get("failure_phase_counts", ""), 56)
+        body.append(
+            f'<tr class="{css}">'
+            f'<td><strong>{html.escape(str(row.get("outcome_band", "")))}</strong></td>'
+            f'<td>{html.escape(str(row.get("agent_b_llm_size", "")))}</td>'
+            f'<td title="{html.escape(str(row.get("agent_b_model", "")))}">{html.escape(_compact_model_label(row.get("agent_b_model", "")))}</td>'
+            f'<td>{html.escape(str(row.get("run_type", "")))}</td>'
+            f'<td>{html.escape(str(row.get("speech_performance_band", "")))}</td>'
+            f'<td>{html.escape(str(row.get("condition_count", "")))}</td>'
+            f'<td>{html.escape(str(row.get("route_valid_count", "")))}</td>'
+            f'<td>{_display_number(row.get("mean_constraint_satisfaction"), percentage=True)}</td>'
+            f'<td>{_display_number(row.get("mean_automatic_eval_score"), percentage=True)}</td>'
+            f'<td>{_display_number(row.get("mean_word_error_rate"), percentage=True)} / {_display_number(row.get("mean_entity_error_rate"), percentage=True)}</td>'
+            f'<td>{html.escape(transport)}</td>'
+            f'<td>{_display_number(row.get("mean_turn_count"), decimals=1)}</td>'
+            f'<td title="{html.escape(str(row.get("failure_phase_counts", "")))}">{html.escape(failure_phases)}</td>'
+            "</tr>"
+        )
+    document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Outcome band summary</title><style>
+body{{font:13px system-ui,sans-serif;background:#f3f5f7;color:#202a35;margin:0;padding:12px}}
+section{{background:white;border:1px solid #cbd3dc;padding:10px;overflow:auto}}h1{{font-size:18px;margin:0 0 4px}}p{{margin:4px 0 8px;max-width:980px}}table{{border-collapse:separate;border-spacing:0;width:100%}}
+th,td{{border-right:1px solid #dce2e8;border-bottom:1px solid #dce2e8;padding:4px 6px;text-align:left;white-space:nowrap;vertical-align:top}}
+th{{position:sticky;top:0;background:#244b5a;color:white}}.successful{{background:#dff1e7}}.semi{{background:#fff0c9}}.unsuccessful{{background:#f7dada}}.incomplete{{background:#eef1f4;color:#5d6975}}
+</style></head><body><section><h1>Successful, semi-successful, and unsuccessful runs</h1>
+<p>Derived view only. Semi-successful means partial task progress without full task success. Full values remain in the CSV and hover titles.</p>
+<table><thead><tr><th>Outcome</th><th>Size</th><th>Agent B</th><th>Run</th><th>Speech</th><th>N</th><th>Valid</th><th>Constraints</th><th>Eval</th><th>WER / Entity</th><th>TTS / ASR</th><th>Turns</th><th>Failure phases</th></tr></thead><tbody>{''.join(body) or '<tr><td colspan="13">No rows.</td></tr>'}</tbody></table>
+</section></body></html>"""
+    Path(path).write_text(document, encoding="utf-8")
+
+
+def write_metric_value_heatmap_html(path, rows):
+    """Write compact metric heatmap with range and cross-run extremeness coloring."""
+    body = []
+    for row in rows:
+        title = (
+            f'range={row.get("range_min")}..{row.get("range_max")}; '
+            f'preferred={"higher" if row.get("higher_is_better") else "lower"}; '
+            f'max abs modified z={_display_number(row.get("maximum_absolute_modified_z_score"), decimals=2)}'
+        )
+        body.append(
+            f'<tr class="{html.escape(str(row.get("outcome_band", "")))}">'
+            f'<td>{html.escape(str(row.get("phase_order", "")))}</td>'
+            f'<td title="{html.escape(str(row.get("phase", "")))}">{html.escape(_compact_phase_label(row.get("phase", "")))}</td>'
+            f'<td title="{html.escape(str(row.get("metric_key", "")))}">{html.escape(_compact_metric_label(row.get("metric_label", "")))}</td>'
+            f'<td>{html.escape(str(row.get("agent_b_llm_size", "")))}</td>'
+            f'<td title="{html.escape(str(row.get("agent_b_model", "")))}">{html.escape(_compact_model_label(row.get("agent_b_model", "")))}</td>'
+            f'<td>{html.escape(str(row.get("run_type", "")))}</td>'
+            f'<td>{html.escape(str(row.get("outcome_band", "")))}</td>'
+            f'<td>{html.escape(str(row.get("observation_count", "")))}</td>'
+            f'<td style="background:{html.escape(str(row.get("cell_color", "#EEF1F4")))}" title="{html.escape(title)}">'
+            f'{_display_number(row.get("mean_value"), decimals=4)} ({_display_number(row.get("mean_direction_adjusted_score"), percentage=True)})</td>'
+            f'<td>{html.escape(str(row.get("outlier_count", "")))}</td>'
+            "</tr>"
+        )
+    document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<title>Metric value heatmap</title><style>
+body{{font:12px system-ui,sans-serif;background:#f3f5f7;color:#202a35;margin:0;padding:12px}}
+h1{{font-size:18px;margin:0 0 4px}}p{{max-width:1100px;margin:4px 0 8px}}section{{background:white;border:1px solid #cbd3dc;padding:10px;overflow:auto}}table{{border-collapse:separate;border-spacing:0;width:100%}}
+th,td{{border-right:1px solid #dce2e8;border-bottom:1px solid #dce2e8;padding:4px 5px;text-align:left;white-space:nowrap;vertical-align:top}}
+th{{position:sticky;top:0;background:#244b5a;color:white}}small{{color:#202a35}}.successful td:first-child{{border-left:5px solid #14804a}}.semi_successful td:first-child{{border-left:5px solid #c78300}}.unsuccessful td:first-child{{border-left:5px solid #b42318}}.execution_incomplete td:first-child{{border-left:5px solid #687485}}
+</style></head><body><section><h1>Phase metric heatmap by outcome band</h1>
+<p>Green is favorable, red unfavorable. Darker cells are more extreme within comparable phase/metric/run-type groups. Use CSV for plots and tests.</p>
+<table><thead><tr><th>#</th><th>Phase</th><th>Metric</th><th>Size</th><th>Agent B</th><th>Run type</th><th>Outcome</th><th>N</th><th>Value (favorable)</th><th>Outliers</th></tr></thead><tbody>{''.join(body) or '<tr><td colspan="10">No rows.</td></tr>'}</tbody></table>
+</section></body></html>"""
+    Path(path).write_text(document, encoding="utf-8")
+
+
 def write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers=None):
     """Write the human-readable color matrix while retaining numeric cell values."""
     metric_columns = sorted(
@@ -2105,17 +2465,13 @@ def write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers
     )
     cell_outliers = cell_outliers or {}
     fixed_columns = (
-        "agent_b_llm_size", "agent_a_type", "agent_b_model", "agent_b_model_role",
-        "source_run", "task_outcome_status", "condition_count",
-        "successful_condition_count", "failed_condition_count", "task_success_rate",
-        "metric_outlier_count",
+        "agent_b_llm_size", "agent_a_type", "agent_b_model", "source_run",
+        "task_outcome_status", "condition_count", "task_success_rate", "metric_outlier_count",
     )
     fixed_labels = {
-        "agent_b_llm_size": "Size", "agent_a_type": "Agent A", "agent_b_model": "Agent B model",
-        "agent_b_model_role": "Model role", "source_run": "Run", "task_outcome_status": "Outcome",
-        "condition_count": "Conditions", "successful_condition_count": "Successful",
-        "failed_condition_count": "Failed", "task_success_rate": "Success rate",
-        "metric_outlier_count": "Metric outliers",
+        "agent_b_llm_size": "Size", "agent_a_type": "Agent A", "agent_b_model": "Agent B",
+        "source_run": "Run", "task_outcome_status": "Outcome", "condition_count": "N",
+        "task_success_rate": "Success", "metric_outlier_count": "Outliers",
     }
     by_phase = defaultdict(list)
     for column in metric_columns:
@@ -2130,7 +2486,7 @@ def write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers
     )
     metric_header_html = "".join(
         f'<th title="{html.escape(specifications[column]["metric_key"])}">'
-        f'{html.escape(specifications[column]["metric_label"])}</th>'
+        f'{html.escape(_compact_metric_label(specifications[column]["metric_label"], 18))}</th>'
         for _phase, columns in ordered_phases for column in columns
     )
     body = []
@@ -2140,15 +2496,15 @@ def write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers
         for column in fixed_columns:
             value = row.get(column)
             display = f"{100 * value:.1f}%" if column == "task_success_rate" and value is not None else value
-            cells.append(f'<td class="{html.escape(status)}">{html.escape(str(display))}</td>')
+            if column == "agent_b_model":
+                display = _compact_model_label(value)
+            elif column == "source_run":
+                display = _compact_run_label(value)
+            title = html.escape(str(value if value is not None else ""))
+            cells.append(f'<td class="{html.escape(status)}" title="{title}">{html.escape(str(display))}</td>')
         for column in metric_columns:
             value = row.get(column)
             specification = specifications[column]
-            title = (
-                f'{specification["metric_label"]}; range {specification["range_min"]} to '
-                f'{specification["range_max"]}; '
-                f'{"higher" if specification["higher_is_better"] else "lower"} is better'
-            )
             display = "" if value is None else f"{value:.6g}"
             outlier_rows = cell_outliers.get((str(row["source_run"]), column), ())
             alignments = {str(item.get("outcome_alignment")) for item in outlier_rows}
@@ -2159,32 +2515,37 @@ def write_run_phase_metric_matrix_html(path, rows, specifications, cell_outliers
                 else "unknown-outlier" if outlier_rows
                 else ""
             )
-            badge = f'<span class="outlier-badge">{len(outlier_rows)} outlier</span>' if outlier_rows else ""
+            badge = f'<span class="outlier-badge">!{len(outlier_rows)}</span>' if outlier_rows else ""
+            title = ""
             if outlier_rows:
-                title += "; outliers=" + ", ".join(sorted(alignments))
+                title = (
+                    f'{specification["metric_label"]}: {_display_number(value, decimals=4)}; '
+                    "outliers=" + ", ".join(sorted(alignments))
+                )
+            title_attribute = f' title="{html.escape(title)}"' if title else ""
             cells.append(
                 f'<td class="metric-cell {outlier_class}" style="background:{_metric_cell_color(value, specification)}" '
-                f'title="{html.escape(title)}">{display}{badge}</td>'
+                f'{title_attribute}>{display}{badge}</td>'
             )
         body.append("<tr>" + "".join(cells) + "</tr>")
     empty = '<tr><td colspan="6">No finalized runs were found.</td></tr>'
     document = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>Run phase metric matrix</title><style>
-body{{font:14px system-ui,sans-serif;color:#202A35;background:#F3F5F7;margin:0;padding:20px}}
+body{{font:12px system-ui,sans-serif;color:#202A35;background:#F3F5F7;margin:0;padding:12px}}
 table{{border-collapse:separate;border-spacing:0;background:white;box-shadow:0 1px 4px #BBC3CC}}
-th,td{{border-right:1px solid #DCE2E8;border-bottom:1px solid #DCE2E8;padding:6px 8px;white-space:nowrap}}
+th,td{{border-right:1px solid #DCE2E8;border-bottom:1px solid #DCE2E8;padding:3px 5px;white-space:nowrap}}
 thead tr:first-child th{{position:sticky;top:0;background:#244B5A;color:white;text-align:left;z-index:3}}
-thead tr:nth-child(2) th{{position:sticky;top:31px;background:#376879;color:white;text-align:left;z-index:2}}
+thead tr:nth-child(2) th{{position:sticky;top:24px;background:#376879;color:white;text-align:left;z-index:2;max-width:92px;overflow:hidden;text-overflow:ellipsis}}
 .phase-header{{text-align:center!important;background:#173D4B!important}}
 .all_successful{{background:#DFF1E7}}.mixed{{background:#FFF0C9}}.all_failed{{background:#F7DADA}}
-.metric-cell{{position:relative;padding-right:9px}}.outlier-badge{{display:block;font-size:10px;font-weight:700;margin-top:3px}}
+.metric-cell{{position:relative;padding-right:6px;text-align:right}}.outlier-badge{{display:inline-block;font-size:10px;font-weight:700;margin-left:3px}}
 .failure-outlier{{box-shadow:inset 0 0 0 3px #B42318}}.failure-outlier .outlier-badge{{color:#8A1710}}
 .success-outlier{{box-shadow:inset 0 0 0 3px #14804A}}.success-outlier .outlier-badge{{color:#0D6338}}
 .contradicting-outlier,.unknown-outlier{{box-shadow:inset 0 0 0 3px #6F4BA8}}.contradicting-outlier .outlier-badge,.unknown-outlier .outlier-badge{{color:#563884}}
-a{{color:#174F69}}nav{{margin-bottom:12px}}nav a{{margin-right:14px;font-weight:650}}
+a{{color:#174F69}}nav{{margin-bottom:8px}}nav a{{margin-right:12px;font-weight:650}}h1{{font-size:18px;margin:0 0 4px}}p{{margin:4px 0 8px;max-width:1200px}}
 </style></head><body><h1>Completed runs by phase metric</h1>
 <nav><a href="run_phase_metric_matrix.csv">Matrix CSV</a><a href="combined_metrics_long.csv">Metric evidence</a><a href="condition_analysis.csv">Conditions</a><a href="metric_outcome_correlations.html">Correlations</a><a href="metric_outliers.csv">Outliers</a></nav>
-<p>Every finalized run appears once, ordered from smallest to largest Agent B. Outcome fields are green, amber, or red. Metric fill is normalized between declared or observed extremes and respects metric direction. Outlier borders are red for failure-aligned, green for success-aligned, and violet for contradictory or unknown alignment.</p>
+<p>One row per finalized run. Metric cells keep numeric values only; color encodes declared metric direction and range. <strong>!n</strong> marks robust outliers.</p>
 <table><thead><tr>{fixed_header_html}{phase_header_html}</tr><tr>{metric_header_html}</tr></thead><tbody>{''.join(body) or empty}</tbody></table></body></html>"""
     Path(path).write_text(document, encoding="utf-8")
 
@@ -2690,6 +3051,8 @@ def compare_runs(inputs, output_directory):
     program_execution_rows = _program_execution_summary_rows(condition_analysis, run_directories)
     model_configuration_rows = _model_configuration_matrix_rows(condition_analysis)
     performance_bands = build_performance_band_summary(condition_analysis)
+    outcome_band_summary = build_outcome_band_summary(condition_analysis)
+    metric_value_heatmap = build_metric_value_heatmap_summary(condition_analysis, metrics)
     run_metric_matrix, run_metric_specifications, run_metric_outliers = build_run_phase_metric_matrix(
         conditions,
         metrics,
@@ -2711,6 +3074,10 @@ def compare_runs(inputs, output_directory):
         "model_configuration_matrix": output / "model_configuration_matrix.csv",
         "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "performance_band_summary": output / "performance_band_summary.csv",
+        "outcome_band_summary": output / "run_outcome_band_summary.csv",
+        "outcome_band_summary_report": output / "run_outcome_band_summary.html",
+        "metric_value_heatmap": output / "metric_value_heatmap.csv",
+        "metric_value_heatmap_report": output / "metric_value_heatmap.html",
         "phase_metric_files": output / "phase_metric_files.csv",
     }
     for obsolete in (
@@ -2731,10 +3098,20 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["program_execution_summary"], program_execution_rows)
     _write_csv(paths["model_configuration_matrix"], model_configuration_rows)
     _write_csv(paths["performance_band_summary"], performance_bands)
+    _write_csv(paths["outcome_band_summary"], outcome_band_summary)
+    _write_csv(paths["metric_value_heatmap"], metric_value_heatmap)
     write_phase_condition_metric_files(conditions, metrics, output)
     _write_model_configuration_matrix_html(
         paths["model_configuration_matrix_report"],
         model_configuration_rows,
+    )
+    write_outcome_band_summary_html(
+        paths["outcome_band_summary_report"],
+        outcome_band_summary,
+    )
+    write_metric_value_heatmap_html(
+        paths["metric_value_heatmap_report"],
+        metric_value_heatmap,
     )
     write_run_phase_metric_matrix_html(
         paths["run_metric_matrix_report"],

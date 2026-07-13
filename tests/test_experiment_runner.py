@@ -167,6 +167,7 @@ class ExperimentRunnerTests(unittest.TestCase):
             speech_pattern_key="clean",
             model_param_key="temp0.7",
             iteration=0,
+            parameter_values={"asr_beam_size": 7},
         )
 
         returned_result, metric = runner.run_condition(condition)
@@ -179,6 +180,10 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertEqual(create_agent_b_plugin.call_args.args[1].model_parameters.temperature, 0.7)
         self.assertEqual(create_agent_b_plugin.call_args.args[1].max_time_sec, 4.5)
         self.assertEqual(dialog_manager_cls.call_args.kwargs["max_turn_elapsed_sec"], 4.0)
+        self.assertEqual(
+            dialog_manager_cls.call_args.kwargs["speech_transport"].config.asr_beam_size,
+            7,
+        )
         audio_dir = Path(dialog_manager_cls.call_args.kwargs["speech_transport"].config.audio_dir)
         self.assertEqual(audio_dir.parent.name, ".turn_audio")
         self.assertEqual(audio_dir.name, hashlib.sha256(condition.condition_id.encode("utf-8")).hexdigest()[:12])
@@ -312,6 +317,62 @@ class ExperimentRunnerTests(unittest.TestCase):
         self.assertFalse(first.route_correct)
         self.assertEqual(second.extra["execution_status"], "completed")
         self.assertEqual(dialog_manager_cls.return_value.run.call_count, 2)
+
+    @patch("coop_navigation_sds.experiments.condition_stage_viability")
+    @patch("coop_navigation_sds.experiments.get_test_case")
+    def test_run_condition_records_invalid_stage_setup_without_crashing_batch(
+        self,
+        get_test_case,
+        condition_stage_viability,
+    ):
+        base_case = SimpleNamespace(
+            key="case",
+            name="Case",
+            persona_key="focused_commuter",
+            scenario_key="scenario",
+            scenario={
+                "name": "Scenario",
+                "start_station": "Bravo",
+                "destination_station": "Harbor",
+                "start_time_min": 0,
+                "transfer_time_min": 2,
+            },
+        )
+        base_case.with_persona = lambda _persona_key: base_case
+        get_test_case.return_value = base_case
+        condition_stage_viability.return_value = {
+            "all_stage_requirements_satisfied": False,
+            "stages": [
+                {"stage": 1, "requirement_satisfied": False},
+                {"stage": 2, "requirement_satisfied": True},
+            ],
+        }
+        runner = ExperimentRunner(
+            FakeModelAdapter(),
+            num_turns=1,
+            agent_b_plugin_key="simple",
+            tts_engine="file",
+            asr_engine="file",
+            speech_playback_enabled=False,
+            speech_realtime_enabled=False,
+        )
+
+        result, metric = runner.run_condition(
+            ExperimentCondition(
+                condition_id="invalid-stage",
+                test_case_key="case",
+                persona_key="focused_commuter",
+                scenario_key="scenario",
+                speech_pattern_key="clean",
+                model_param_key="greedy",
+            ),
+            capture_failure=True,
+        )
+
+        self.assertEqual(result.extra["execution_status"], "skipped_invalid_condition")
+        self.assertEqual(result.extra["pipeline_failure"]["exception_type"], "InvalidCondition")
+        self.assertEqual(result.extra["pipeline_failure"]["failed_stages"], [1])
+        self.assertIsNotNone(metric)
 
     @patch("coop_navigation_sds.experiments.create_agent_b_plugin")
     @patch("coop_navigation_sds.experiments.DialogManager")

@@ -108,6 +108,7 @@ RUNTIME_PARAMETER_KEYS = {
     "repetition", "slurm_condition_index", "slurm_grid_name", "run_mode",
     "agent_b_model_role", "agent_b_model_slot",
 }
+SPEECH_PARAMETER_KEYS = set(SpeechPipelineConfig.__dataclass_fields__)
 
 
 def resolved_condition_test_case(condition, scenario_overrides=None, *, default_num_turns=20):
@@ -119,14 +120,13 @@ def resolved_condition_test_case(condition, scenario_overrides=None, *, default_
     with_overrides = getattr(test_case, "with_scenario_overrides", None)
     if not callable(with_overrides):
         return test_case
-    speech_parameter_keys = set(SpeechPipelineConfig.__dataclass_fields__)
     overrides = {
         **dict(scenario_overrides or {}),
         **{
             key: value for key, value in parameters.items()
             if key not in RUNTIME_PARAMETER_KEYS
             and not key.endswith("_profile_key")
-            and key not in speech_parameter_keys
+            and key not in SPEECH_PARAMETER_KEYS
         },
     }
     overrides.pop("network_seed", None)
@@ -326,9 +326,20 @@ class ExperimentRunner:
                 self._viability_cache[viability_key] = viability
             if not viability["all_stage_requirements_satisfied"]:
                 failed = [stage["stage"] for stage in viability["stages"] if not stage["requirement_satisfied"]]
-                raise ValueError(
+                message = (
                     f"Condition '{condition.condition_id}' has insufficient viable route alternatives "
                     f"for conversation stage(s) {failed}."
+                )
+                if not capture_failure:
+                    raise ValueError(message)
+                return self._skipped_invalid_condition_result(
+                    condition,
+                    test_case,
+                    message,
+                    failed,
+                    viability,
+                    started_perf=time.perf_counter(),
+                    compute_metrics=compute_metrics,
                 )
         agent_b_model_adapter = self._model_adapter_for(condition)
         agent_a_model_adapter = self.agent_a_model_adapter or agent_b_model_adapter
@@ -361,7 +372,7 @@ class ExperimentRunner:
                 ) if changed
             ),
         )
-        speech_config.update({key: value for key, value in parameters.items() if key in speech_parameter_keys})
+        speech_config.update({key: value for key, value in parameters.items() if key in SPEECH_PARAMETER_KEYS})
         speech_transport = SpeechTransport(
             config=SpeechPipelineConfig(**speech_config)
         )
@@ -483,6 +494,80 @@ class ExperimentRunner:
         model_parameters = getattr(agent_b_model_adapter, "model_parameters", None)
         if model_parameters is not None:
             result.extra["model_parameters"] = asdict(model_parameters)
+        metric = self.metric_computer.compute(result, test_case.scenario) if compute_metrics else None
+        if metric is not None and hasattr(metric, "pair_id"):
+            metric.pair_id = condition.pair_id
+            metric.run_type = condition.run_type
+        return result, metric
+
+    def _skipped_invalid_condition_result(
+        self,
+        condition: ExperimentCondition,
+        test_case,
+        message: str,
+        failed_stages,
+        viability,
+        *,
+        started_perf,
+        compute_metrics=True,
+    ):
+        """Return a structured non-dialogue result for invalid staged-route setups."""
+        runtime_sec = time.perf_counter() - started_perf
+        parameters = dict(condition.parameter_values)
+        result = DialogResult(
+            condition_id=condition.condition_id,
+            test_case_key=condition.test_case_key,
+            persona_key=condition.persona_key,
+            scenario_key=condition.scenario_key,
+            speech_pattern_key=condition.speech_pattern_key,
+            model_name=condition.agent_b_model,
+            conversation=[],
+            route=[],
+            route_steps=[],
+            route_valid=False,
+            route_reaches_goal=False,
+            route_correct=False,
+            route_duration_min=None,
+            runtime_sec=runtime_sec,
+            extra={
+                "execution_status": "skipped_invalid_condition",
+                "conversation_outcome": "not_started",
+                "pipeline_failure": {
+                    "exception_type": "InvalidCondition",
+                    "message": message,
+                    "failed_stages": list(failed_stages),
+                },
+                "stage_viability": viability,
+                "messages": 0,
+                "model_param_key": condition.model_param_key,
+                "objective_mode": condition.objective_mode,
+                "iteration": condition.iteration,
+                "agent_a_audio_persona": condition.agent_a_audio_persona,
+                "agent_b_audio_persona": condition.agent_b_audio_persona,
+                "parameter_values": parameters,
+                "pair_id": condition.pair_id,
+                "run_type": condition.run_type,
+                "tts_engine": "file" if condition.run_type == "text_only" else (condition.tts_engine or self.tts_engine),
+                "asr_engine": "file" if condition.run_type == "text_only" else (condition.asr_engine or self.asr_engine),
+                "configured_tts_engine": condition.tts_engine or self.tts_engine,
+                "configured_asr_engine": condition.asr_engine or self.asr_engine,
+                "agent_b_model": condition.agent_b_model,
+                "agent_a_type": self.agent_a_type,
+                "agent_b_plugin": self.agent_b_plugin_key,
+                "condition_runtime_sec": round(runtime_sec, 6),
+                "resolved_scenario": dict(test_case.scenario),
+            },
+        )
+        if self.experiment_specification is not None:
+            result.extra["resolved_run_config"] = self.experiment_specification.to_dict()
+            result.extra["configuration_provenance"] = self.experiment_specification.provenance()
+            result.extra["condition_provenance"] = condition_configuration_provenance(
+                self.experiment_specification,
+                condition,
+            )
+            result.extra["pipeline_contract"] = experiment_pipeline_contract(
+                self.experiment_specification
+            )
         metric = self.metric_computer.compute(result, test_case.scenario) if compute_metrics else None
         if metric is not None and hasattr(metric, "pair_id"):
             metric.pair_id = condition.pair_id
