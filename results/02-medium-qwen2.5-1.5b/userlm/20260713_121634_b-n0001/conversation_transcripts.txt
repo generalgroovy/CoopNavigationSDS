@@ -1,0 +1,53 @@
+=== Conversation 1: C-HA-FC-HESIT-PIP-FWH-QQ515-PTB-MED-I0-026af9e0e0-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-HA-FC-HESIT-PIP-FWH-QQ515-PTB-MED-I0-026af9e0e0-A
+Test case: hospital_appointment:focused_commuter
+Persona: focused_commuter
+Scenario: hospital_appointment
+Speech pattern: hesitant
+Agent A audio persona: degraded_caller
+Agent B audio persona: degraded_operator
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 37.00399121362716
+
+Conversation
+01. Agent A [4.000 seconds]: Um, I'm starting at station Alpha at 912, let see, I need to take transit lines to ID. Which lines should I take?
+    processing seconds: generation=0.0, synthesis=10.054247, recognition=6.829313, understanding=None, dialogue_management=None
+    duration seconds: audio=11.467, speech_pipeline_wall=19.310057, observed_turn=19.310165, accounted_processing=19.310057
+02. Agent B [4.000 seconds]: I miss dumb, the starting station. Please say only that.
+    processing seconds: generation=0.000333, synthesis=4.347281, recognition=2.964735, understanding=0.000368, dialogue_management=0.000109
+    duration seconds: audio=4.047, speech_pipeline_wall=8.316837, observed_turn=8.317711, accounted_processing=8.317648
+03. Agent A [4.000 seconds]: Okay, I will stop here. We are repeating the same information without improving the route.
+    processing seconds: generation=0.001649, synthesis=4.252412, recognition=3.202295, understanding=None, dialogue_management=None
+    duration seconds: audio=6.565, speech_pipeline_wall=9.258317, observed_turn=9.260026, accounted_processing=9.259966
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Alpha at 09:12. I need to take transit lines to Ivy. Which lines should I take?
+    outgoing speech text: um, I'm starting at station Alpha at nine twelve. let me see, I need to take transit lines to Ivy. Which lines should I take?
+    raw recognition: Um, I'm starting at station Alpha at 912, let me see, I need to take transit lines to ID. Which lines should I take?
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["nine", "twelve"], "target_tokens": ["912"]}, {"operation": "delete", "source_tokens": ["me"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["Ivy"], "target_tokens": ["ID"]}]
+    transcript corrections: []
+    understood transcript: Um, I'm starting at station Alpha at 912, let see, I need to take transit lines to ID. Which lines should I take?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_121634_b-n0001/.turn_audio/7f5d0493723f/0001-agent-a-4218d1a860-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: I missed um, the starting station. Please say only that.
+    raw recognition: I miss dumb, the starting station. Please say only that.
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["missed", "um"], "target_tokens": ["miss", "dumb"]}]
+    transcript corrections: []
+    understood transcript: I miss dumb, the starting station. Please say only that.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_121634_b-n0001/.turn_audio/7f5d0493723f/0002-agent-b-aad08d1404-channel.wav
+03. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: okay, I will stop here; we are repeating the same information without improving the route.
+    raw recognition: Okay, I will stop here. We are repeating the same information without improving the route.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Okay, I will stop here. We are repeating the same information without improving the route.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_121634_b-n0001/.turn_audio/7f5d0493723f/0003-agent-a-62bc5e9a2c-channel.wav

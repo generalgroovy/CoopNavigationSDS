@@ -1,0 +1,75 @@
+=== Conversation 1: C-MPCC-DST-SC-PIP-VOS-QQ515-DEFAU-MED-I0-8fc74e3a2a-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MPCC-DST-SC-PIP-VOS-QQ515-DEFAU-MED-I0-8fc74e3a2a-A
+Test case: morning_peak_cross_city:delay_sensitive_traveler
+Persona: delay_sensitive_traveler
+Scenario: morning_peak_cross_city
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 32.84166902396828
+
+Conversation
+01. Agent A [2.000 seconds]: i'm starting with a stick and probability of seven i need to take first applies to harvard law should i take
+    processing seconds: generation=0.0, synthesis=5.184483, recognition=3.672313, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=12.509776, observed_turn=12.509881, accounted_processing=12.509776
+02. Agent B [2.000 seconds]: okay i on the or omega
+    processing seconds: generation=0.000489, synthesis=1.289403, recognition=1.61643, understanding=0.000428, dialogue_management=0.000126
+    duration seconds: audio=4.723, speech_pipeline_wall=4.801902, observed_turn=4.803008, accounted_processing=4.802944
+03. Agent A [2.000 seconds]: well fifty sporting fishing
+    processing seconds: generation=0.01285, synthesis=1.204799, recognition=1.669553, understanding=None, dialogue_management=None
+    duration seconds: audio=5.056, speech_pipeline_wall=4.905523, observed_turn=5.06885, accounted_processing=4.918373
+04. Agent B [2.000 seconds]: this is voting as patients for say only that
+    processing seconds: generation=0.000566, synthesis=0.913244, recognition=1.649056, understanding=0.000436, dialogue_management=0.000122
+    duration seconds: audio=5.214, speech_pipeline_wall=4.605443, observed_turn=5.215124, accounted_processing=4.606567
+05. Agent A [2.000 seconds]: those are the same information without or into the the world
+    processing seconds: generation=0.027085, synthesis=1.371455, recognition=2.149546, understanding=None, dialogue_management=None
+    duration seconds: audio=5.924, speech_pipeline_wall=5.817497, observed_turn=5.951085, accounted_processing=5.844582
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 08:07. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: um, I'm s-starting at s-station Bravo at eight oh seven. I n-need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: i'm starting with a stick and probability of seven i need to take first applies to harvard law should i take
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["s-starting", "at", "s-station", "Bravo", "at", "eight", "oh"], "target_tokens": ["starting", "with", "a", "stick", "and", "probability", "of"]}, {"operation": "replace", "source_tokens": ["n-need"], "target_tokens": ["need"]}, {"operation": "replace", "source_tokens": ["transit", "lines"], "target_tokens": ["first", "applies"]}, {"operation": "replace", "source_tokens": ["Harbor", "Which", "lines"], "target_tokens": ["harvard", "law"]}]
+    transcript corrections: []
+    understood transcript: i'm starting with a stick and probability of seven i need to take first applies to harvard law should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_081149_b-n0001/.turn_audio/45411eb91a0c/0001-agent-a-8b8b44ced6-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I uh missed the starting station. Please say o-only that.
+    raw recognition: okay i on the or omega
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["O-Okay"], "target_tokens": ["okay"]}, {"operation": "replace", "source_tokens": ["uh", "missed"], "target_tokens": ["on"]}, {"operation": "replace", "source_tokens": ["starting", "station", "Please", "say", "o-only", "that"], "target_tokens": ["or", "omega"]}]
+    transcript corrections: []
+    understood transcript: okay i on the or omega
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_081149_b-n0001/.turn_audio/45411eb91a0c/0002-agent-b-4faa6d8504-channel.wav
+03. Agent A
+    generated: I need the actual route to Harbor. Give connected boarding stations.
+    outgoing speech text: I need t-the a-actual route to Harbor. Give connected boarding stations.
+    raw recognition: well fifty sporting fishing
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "need", "t-the", "a-actual", "route", "to", "Harbor", "Give", "connected", "boarding", "stations"], "target_tokens": ["well", "fifty", "sporting", "fishing"]}]
+    transcript corrections: []
+    understood transcript: well fifty sporting fishing
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_081149_b-n0001/.turn_audio/45411eb91a0c/0003-agent-a-d718c7f280-channel.wav
+04. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I missed the starting s-station. sorry, Please say uh only that.
+    raw recognition: this is voting as patients for say only that
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["O-Okay", "I", "missed", "the", "starting", "s-station", "sorry", "Please"], "target_tokens": ["this", "is", "voting", "as", "patients", "for"]}, {"operation": "delete", "source_tokens": ["uh"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: this is voting as patients for say only that
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_081149_b-n0001/.turn_audio/45411eb91a0c/0004-agent-b-770cf02ae3-channel.wav
+05. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I will stop here; we are r-repeating the same information without i-improving the route.
+    raw recognition: those are the same information without or into the the world
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "will", "stop", "here", "we"], "target_tokens": ["those"]}, {"operation": "delete", "source_tokens": ["r-repeating"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["i-improving"], "target_tokens": ["or", "into"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["the", "world"]}]
+    transcript corrections: []
+    understood transcript: those are the same information without or into the the world
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_081149_b-n0001/.turn_audio/45411eb91a0c/0005-agent-a-51d09387f7-channel.wav

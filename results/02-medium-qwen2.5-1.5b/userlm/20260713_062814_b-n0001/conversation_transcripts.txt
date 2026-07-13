@@ -1,0 +1,119 @@
+=== Conversation 1: C-MPCC-FC-SC-PIP-VOS-QQ515-DEFAU-MED-I0-3f3741423b-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MPCC-FC-SC-PIP-VOS-QQ515-DEFAU-MED-I0-3f3741423b-A
+Test case: morning_peak_cross_city:focused_commuter
+Persona: focused_commuter
+Scenario: morning_peak_cross_city
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 59.27582372399047
+
+Conversation
+01. Agent A [2.000 seconds]: i'm exploring other skills and bravo with it also i need it printed line to harvard which more like case
+    processing seconds: generation=0.0, synthesis=4.846587, recognition=4.358361, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=12.843298, observed_turn=12.843402, accounted_processing=12.843298
+02. Agent B [2.000 seconds]: i on this story it's a only them
+    processing seconds: generation=0.000545, synthesis=1.244886, recognition=1.687054, understanding=0.000517, dialogue_management=0.000136
+    duration seconds: audio=4.723, speech_pipeline_wall=4.852228, observed_turn=4.853487, accounted_processing=4.853427
+03. Agent A [2.000 seconds]: well you've been hoarding
+    processing seconds: generation=0.01844, synthesis=1.304781, recognition=1.476093, understanding=None, dialogue_management=None
+    duration seconds: audio=5.056, speech_pipeline_wall=4.917549, observed_turn=5.07444, accounted_processing=4.935989
+04. Agent B [2.000 seconds]: the starting estimation story they open them
+    processing seconds: generation=0.000649, synthesis=1.302974, recognition=2.058152, understanding=0.000459, dialogue_management=0.000123
+    duration seconds: audio=5.214, speech_pipeline_wall=5.465788, observed_turn=5.467087, accounted_processing=5.467019
+05. Agent A [2.000 seconds]: you need to start by starting
+    processing seconds: generation=0.010024, synthesis=0.611978, recognition=1.13353, understanding=None, dialogue_management=None
+    duration seconds: audio=2.984, speech_pipeline_wall=2.936785, observed_turn=2.994024, accounted_processing=2.946809
+06. Agent B [2.000 seconds]: they say i'm starting station destination station and departure
+    processing seconds: generation=0.000753, synthesis=1.857535, recognition=2.436152, understanding=0.000467, dialogue_management=0.000119
+    duration seconds: audio=5.799, speech_pipeline_wall=7.421032, observed_turn=7.422449, accounted_processing=7.42237
+07. Agent A [2.000 seconds]: that's not out of proportion if you get disconnected lines and the boarding safe
+    processing seconds: generation=0.016844, synthesis=1.323958, recognition=2.667827, understanding=None, dialogue_management=None
+    duration seconds: audio=7.882, speech_pipeline_wall=6.924854, observed_turn=7.898844, accounted_processing=6.941698
+08. Agent B [2.000 seconds]: let's reset the trip a old starting a station estimation satan and departure cheaper
+    processing seconds: generation=0.00092, synthesis=1.669552, recognition=2.71325, understanding=0.000514, dialogue_management=0.000122
+    duration seconds: audio=6.97, speech_pipeline_wall=8.008829, observed_turn=8.01045, accounted_processing=8.010385
+09. Agent A [2.000 seconds]: stop a few years even t the same information about improving the road
+    processing seconds: generation=0.001383, synthesis=1.055427, recognition=1.855641, understanding=None, dialogue_management=None
+    duration seconds: audio=6.249, speech_pipeline_wall=5.660078, observed_turn=6.250383, accounted_processing=5.661461
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 08:07. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: um, I'm s-starting at s-station Bravo at eight oh seven. I n-need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: i'm exploring other skills and bravo with it also i need it printed line to harvard which more like case
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["s-starting", "at", "s-station"], "target_tokens": ["exploring", "other", "skills", "and"]}, {"operation": "replace", "source_tokens": ["at", "eight", "oh", "seven"], "target_tokens": ["with", "it", "also"]}, {"operation": "replace", "source_tokens": ["n-need"], "target_tokens": ["need", "it", "printed", "line"]}, {"operation": "replace", "source_tokens": ["take", "transit", "lines", "to", "Harbor"], "target_tokens": ["harvard"]}, {"operation": "replace", "source_tokens": ["lines", "should", "I", "take"], "target_tokens": ["more", "like", "case"]}]
+    transcript corrections: []
+    understood transcript: i'm exploring other skills and bravo with it also i need it printed line to harvard which more like case
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0001-agent-a-8b8b44ced6-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I uh missed the starting station. Please say o-only that.
+    raw recognition: i on this story it's a only them
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["uh", "missed", "the", "starting", "station", "Please", "say", "o-only", "that"], "target_tokens": ["on", "this", "story", "it's", "a", "only", "them"]}]
+    transcript corrections: []
+    understood transcript: i on this story it's a only them
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0002-agent-b-4faa6d8504-channel.wav
+03. Agent A
+    generated: I need the actual route to Harbor. Give connected boarding stations.
+    outgoing speech text: I need t-the a-actual route to Harbor. Give connected boarding stations.
+    raw recognition: well you've been hoarding things
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "need", "t-the", "a-actual", "route", "to", "Harbor", "Give", "connected", "boarding", "stations"], "target_tokens": ["well", "you've", "been", "hoarding"]}]
+    transcript corrections: []
+    understood transcript: well you've been hoarding
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0003-agent-a-d718c7f280-channel.wav
+04. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I missed the starting s-station. sorry, Please say uh only that.
+    raw recognition: the starting estimation story they open them
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay", "I", "missed"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["s-station", "sorry", "Please", "say", "uh", "only", "that"], "target_tokens": ["estimation", "story", "they", "open", "them"]}]
+    transcript corrections: []
+    understood transcript: the starting estimation story they open them
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0004-agent-b-770cf02ae3-channel.wav
+05. Agent A
+    generated: Did you mean start by 'starting'?
+    outgoing speech text: Did you um, mean start by 'starting'?
+    raw recognition: you need to start by starting
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["Did"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["um", "mean"], "target_tokens": ["need", "to"]}, {"operation": "replace", "source_tokens": ["'starting'"], "target_tokens": ["starting"]}]
+    transcript corrections: []
+    understood transcript: you need to start by starting
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0005-agent-a-b3e10c0077-channel.wav
+06. Agent B
+    generated: Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    outgoing speech text: L-Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    raw recognition: they say i'm starting station destination station and departure
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["L-Let's", "reset", "the", "trip", "details"], "target_tokens": ["they"]}, {"operation": "replace", "source_tokens": ["only"], "target_tokens": ["i'm"]}, {"operation": "delete", "source_tokens": ["time"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: they say i'm starting station destination station and departure
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0006-agent-b-3f5a634853-channel.wav
+07. Agent A
+    generated: That still is not a usable route to Harbor. Give the connected lines and boarding stations.
+    outgoing speech text: That still is n-not a uh usable route to Harbor. um, G-Give the connected lines and b-boarding stations.
+    raw recognition: that's not out of proportion if you get disconnected lines and the boarding safe
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["That", "still", "is", "n-not", "a", "uh", "usable", "route", "to", "Harbor", "um", "G-Give", "the", "connected"], "target_tokens": ["that's", "not", "out", "of", "proportion", "if", "you", "get", "disconnected"]}, {"operation": "replace", "source_tokens": ["b-boarding", "stations"], "target_tokens": ["the", "boarding", "safe"]}]
+    transcript corrections: []
+    understood transcript: that's not out of proportion if you get disconnected lines and the boarding safe
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0007-agent-a-407c2cc571-channel.wav
+08. Agent B
+    generated: Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    outgoing speech text: uh Let's reset the trip details. Say o-only: starting s-station, destination station, uh and departure t-time.
+    raw recognition: let's reset the trip a old starting a station estimation satan and departure cheaper
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["uh"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["details", "Say", "o-only"], "target_tokens": ["a", "old"]}, {"operation": "replace", "source_tokens": ["s-station", "destination"], "target_tokens": ["a"]}, {"operation": "replace", "source_tokens": ["uh"], "target_tokens": ["estimation", "satan"]}, {"operation": "replace", "source_tokens": ["t-time"], "target_tokens": ["cheaper"]}]
+    transcript corrections: []
+    understood transcript: let's reset the trip a old starting a station estimation satan and departure cheaper
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0008-agent-b-a6747eedb4-channel.wav
+09. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I w-will stop h-here; we are repeating t-the same information without improving the route.
+    raw recognition: stop a few years even t the same information about improving the road
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["I", "w-will"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["h-here", "we", "are", "repeating", "t-the"], "target_tokens": ["a", "few", "years", "even", "t", "the"]}, {"operation": "replace", "source_tokens": ["without"], "target_tokens": ["about"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["road"]}]
+    transcript corrections: []
+    understood transcript: stop a few years even t the same information about improving the road
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_062814_b-n0001/.turn_audio/d3e7f8d38864/0009-agent-a-669951e5c9-channel.wav

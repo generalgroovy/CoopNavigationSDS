@@ -1,0 +1,141 @@
+=== Conversation 1: C-HA-MSER-CLEAN-PIP-FWH-QQ515-PCP-MED-I0-79aa897563-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-HA-MSER-CLEAN-PIP-FWH-QQ515-PCP-MED-I0-79aa897563-A
+Test case: hospital_appointment:multi_stop_errand_runner
+Persona: multi_stop_errand_runner
+Scenario: hospital_appointment
+Speech pattern: clean
+Agent A audio persona: high_clarity_caller
+Agent B audio persona: high_clarity_operator
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Outcome: satisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 34
+Runtime seconds: 507.79576816991903
+
+Conversation
+01. Agent A [5.000 seconds]: I'm station at station Alpha at 912. I need to take transit lines to Ivy. Which lines should I take?
+    processing seconds: generation=0.0, synthesis=11.974857, recognition=6.737298, understanding=None, dialogue_management=None
+    duration seconds: audio=11.008, speech_pipeline_wall=18.713409, observed_turn=18.713509, accounted_processing=18.713409
+02. Agent B [5.000 seconds]: Take tram line T5 from Alpha to Elm. Tram T1 from Elm to Ivy. 34 minutes, 1 changes.
+    processing seconds: generation=30.415272, synthesis=7.64796, recognition=4.832575, understanding=0.001404, dialogue_management=0.005496
+    duration seconds: audio=9.03, speech_pipeline_wall=12.480978, observed_turn=42.903226, accounted_processing=42.90315
+03. Agent A [5.000 seconds]: That route and timing work. Can you make it not near capacity?
+    processing seconds: generation=52.930599, synthesis=6.047178, recognition=3.888233, understanding=None, dialogue_management=None
+    duration seconds: audio=6.143, speech_pipeline_wall=9.935854, observed_turn=62.866528, accounted_processing=62.866453
+04. Agent B [5.000 seconds]: Take tram line T1 from Alpha to Delta. Tram T6 from Delta to Harbor. Tram T4 from Harbor to Ivy. 43 minutes, 2 changes. It is not near capacity.
+    processing seconds: generation=29.336437, synthesis=10.381731, recognition=6.399854, understanding=0.001262, dialogue_management=0.004377
+    duration seconds: audio=14.461, speech_pipeline_wall=16.781981, observed_turn=46.124129, accounted_processing=46.124058
+05. Agent A [5.000 seconds]: That meets the current requirement. Can you make it with lower Delta risk?
+    processing seconds: generation=58.808087, synthesis=5.537386, recognition=4.024325, understanding=None, dialogue_management=None
+    duration seconds: audio=6.597, speech_pipeline_wall=9.562297, observed_turn=68.370472, accounted_processing=68.370384
+06. Agent B [5.000 seconds]: Take tram line T5 from Alpha to Elm. Tram T1 from Elm to Dover. Metro M1 from Dover to Jasper. Walk 7 minutes from Jasper to Ivy. 45 minutes. 3 changes. Delta risk is high.
+    processing seconds: generation=31.607011, synthesis=12.412942, recognition=7.132627, understanding=0.051053, dialogue_management=0.004962
+    duration seconds: audio=17.355, speech_pipeline_wall=19.546105, observed_turn=51.209208, accounted_processing=51.209131
+07. Agent A [5.000 seconds]: I heard Delta, did you mean Delta?
+    processing seconds: generation=0.001919, synthesis=4.011066, recognition=3.520843, understanding=None, dialogue_management=None
+    duration seconds: audio=3.87, speech_pipeline_wall=7.532252, observed_turn=7.534235, accounted_processing=7.534171
+08. Agent B [5.000 seconds]: Yes, I meant Delta.
+    processing seconds: generation=0.22169, synthesis=2.512356, recognition=2.964465, understanding=7e-06, dialogue_management=8.4e-05
+    duration seconds: audio=2.276, speech_pipeline_wall=5.477173, observed_turn=5.699017, accounted_processing=5.698955
+09. Agent A [5.000 seconds]: That meets the current requirement. Can you make it with safer transfer timing?
+    processing seconds: generation=61.881589, synthesis=5.763008, recognition=3.887793, understanding=None, dialogue_management=None
+    duration seconds: audio=6.597, speech_pipeline_wall=9.651374, observed_turn=71.533043, accounted_processing=71.532963
+10. Agent B [5.000 seconds]: Take tram line T1 from Alpha to Bravo, bus B4 from Bravo to Hotel, Metro M1 from Hotel to Jasper, bus B1 from Jasper to Ivy. 46 minutes, 3 changes. Transfer miss risk is medium.
+    processing seconds: generation=34.3862, synthesis=13.318665, recognition=7.613406, understanding=0.002795, dialogue_management=0.008872
+    duration seconds: audio=17.355, speech_pipeline_wall=20.932482, observed_turn=55.330416, accounted_processing=55.330348
+11. Agent A [5.000 seconds]: The earlier route also fits. Thanks, I'll take that.
+    processing seconds: generation=68.427755, synthesis=5.24907, recognition=3.362346, understanding=None, dialogue_management=None
+    duration seconds: audio=5.361, speech_pipeline_wall=8.611853, observed_turn=77.039667, accounted_processing=77.039608
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Alpha at 09:12. I need to take transit lines to Ivy. Which lines should I take?
+    outgoing speech text: I'm starting at station Alpha at nine twelve. I need to take transit lines to Ivy. Which lines should I take?
+    raw recognition: I'm starting at station Alpha at 912. I need to take transit lines to Ivy. Which lines should I take?
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["nine", "twelve"], "target_tokens": ["912"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["starting"], "target_tokens": ["station"]}]
+    understood transcript: I'm station at station Alpha at 912. I need to take transit lines to Ivy. Which lines should I take?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0001-agent-a-926aa0da6d.wav
+02. Agent B
+    generated: Take tram line T5 from Alpha to Elm; tram T1 from Elm to Ivy. 34 minutes, 1 changes.
+    outgoing speech text: Take tram line T5 from Alpha to Elm; tram T1 from Elm to Ivy. 34 minutes, 1 changes.
+    raw recognition: Take tram line T5 from Alpha to Elm. Tram T1 from Elm to Ivy. 34 minutes, 1 changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T5 from Alpha to Elm. Tram T1 from Elm to Ivy. 34 minutes, 1 changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0002-agent-b-3d255b94d3.wav
+03. Agent A
+    generated: That route and timing work. Can you make it not near capacity?
+    outgoing speech text: That route and timing work. Can you make it not near capacity?
+    raw recognition: That route and timing work. Can you make it not near capacity?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That route and timing work. Can you make it not near capacity?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0003-agent-a-12eb6e6d71.wav
+04. Agent B
+    generated: Take tram line T1 from Alpha to Delta; tram T6 from Delta to Harbor; tram T4 from Harbor to Ivy. 43 minutes, 2 changes. It is not near capacity.
+    outgoing speech text: Take tram line T1 from Alpha to Delta; tram T6 from Delta to Harbor; tram T4 from Harbor to Ivy. 43 minutes, 2 changes. It is not near capacity.
+    raw recognition: Take tram line T1 from Alpha to Delta. Tram T6 from Delta to Harbor. Tram T4 from Harbor to Ivy. 43 minutes, 2 changes. It is not near capacity.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T1 from Alpha to Delta. Tram T6 from Delta to Harbor. Tram T4 from Harbor to Ivy. 43 minutes, 2 changes. It is not near capacity.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0004-agent-b-53cad56427.wav
+05. Agent A
+    generated: That meets the current requirement. Can you make it with lower delay risk?
+    outgoing speech text: That meets the current requirement. Can you make it with lower delay risk?
+    raw recognition: That meets the current requirement. Can you make it with lower delay risk?
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["delay"], "target_tokens": ["Delta"]}]
+    understood transcript: That meets the current requirement. Can you make it with lower Delta risk?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0005-agent-a-861de6d829.wav
+06. Agent B
+    generated: Take tram line T5 from Alpha to Elm; tram T1 from Elm to Dover; metro M1 from Dover to Jasper; walk 7 minutes from Jasper to Ivy. 45 minutes, 3 changes. Delay risk is high.
+    outgoing speech text: Take tram line T5 from Alpha to Elm; tram T1 from Elm to Dover; metro M1 from Dover to Jasper; walk 7 minutes from Jasper to Ivy. 45 minutes, 3 changes. Delay risk is high.
+    raw recognition: Take tram line T5 from Alpha to Elm. Tram T1 from Elm to Dover. Metro M1 from Dover to Jasper. Walk 7 minutes from Jasper to Ivy. 45 minutes. 3 changes. Delay risk is high.
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["Delay"], "target_tokens": ["Delta"]}]
+    understood transcript: Take tram line T5 from Alpha to Elm. Tram T1 from Elm to Dover. Metro M1 from Dover to Jasper. Walk 7 minutes from Jasper to Ivy. 45 minutes. 3 changes. Delta risk is high.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0006-agent-b-ee531ca2ca.wav
+07. Agent A
+    generated: I heard 'Delay'. Did you mean 'Delta'?
+    outgoing speech text: I heard 'Delay'. Did you mean 'Delta'?
+    raw recognition: I heard delay, did you mean Delta?
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'Delay'"], "target_tokens": ["delay"]}, {"operation": "replace", "source_tokens": ["'Delta'"], "target_tokens": ["Delta"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["delay"], "target_tokens": ["Delta"]}]
+    understood transcript: I heard Delta, did you mean Delta?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0007-agent-a-98155a538c.wav
+08. Agent B
+    generated: Yes, I meant Delta.
+    outgoing speech text: Yes, I meant Delta.
+    raw recognition: Yes, I meant Delta.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Yes, I meant Delta.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0008-agent-b-c1202ffa05.wav
+09. Agent A
+    generated: That meets the current requirement. Can you make it with safer transfer timing?
+    outgoing speech text: That meets the current requirement. Can you make it with safer transfer timing?
+    raw recognition: That meets the current requirement. Can you make it with safer transfer timing?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That meets the current requirement. Can you make it with safer transfer timing?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0009-agent-a-e27e2f2d16.wav
+10. Agent B
+    generated: Take tram line T1 from Alpha to Bravo; bus B4 from Bravo to Hotel; metro M1 from Hotel to Jasper; bus B1 from Jasper to Ivy. 46 minutes, 3 changes. Transfer miss risk is medium.
+    outgoing speech text: Take tram line T1 from Alpha to Bravo; bus B4 from Bravo to Hotel; metro M1 from Hotel to Jasper; bus B1 from Jasper to Ivy. 46 minutes, 3 changes. Transfer miss risk is medium.
+    raw recognition: Take tram line T1 from Alpha to Bravo, bus B4 from Bravo to Hotel, Metro M1 from Hotel to Jasper, bus B1 from Jasper to Ivy. 46 minutes, 3 changes. Transfer miss risk is medium.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T1 from Alpha to Bravo, bus B4 from Bravo to Hotel, Metro M1 from Hotel to Jasper, bus B1 from Jasper to Ivy. 46 minutes, 3 changes. Transfer miss risk is medium.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0010-agent-b-6bc2a66ea0.wav
+11. Agent A
+    generated: The earlier route also fits. Thanks, I'll take that.
+    outgoing speech text: The earlier route also fits. Thanks, I'll take that.
+    raw recognition: The earlier route also fits. Thanks, I'll take that.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: The earlier route also fits. Thanks, I'll take that.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_125409_b-n0001/.turn_audio/d46b9035cfbf/0011-agent-a-7aeaed9180.wav

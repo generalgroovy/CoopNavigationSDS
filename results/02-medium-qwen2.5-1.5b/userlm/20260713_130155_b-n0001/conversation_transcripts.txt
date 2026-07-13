@@ -1,0 +1,163 @@
+=== Conversation 1: C-MDE-DST-HESIT-PIP-FWH-QQ515-PAP-MED-I0-76c81b8025-T ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MDE-DST-HESIT-PIP-FWH-QQ515-PAP-MED-I0-76c81b8025-T
+Test case: multi_destination_errands:delay_sensitive_traveler
+Persona: delay_sensitive_traveler
+Scenario: multi_destination_errands
+Speech pattern: hesitant
+Agent A audio persona: degraded_caller
+Agent B audio persona: degraded_operator
+Model: Qwen/Qwen2.5-1.5B-Instruct
+Outcome: unsatisfied
+Route valid: True
+Route reaches goal: False
+Route correct: False
+Route duration minutes: 44
+Runtime seconds: 117.57523934077471
+
+Conversation
+01. Agent A [5.000 seconds]: um, I'm starting um, at station Delta at fourteen oh five. let me see, First to Quebec, then Yankee, then Grove. Which route should I take first?
+    processing seconds: generation=0.0, synthesis=0.694326, recognition=0.030226, understanding=None, dialogue_management=None
+    duration seconds: audio=12.786, speech_pipeline_wall=0.725323, observed_turn=12.786, accounted_processing=0.725323
+02. Agent B [5.000 seconds]: Take tram line T5 from Delta to Harbor; walk 8 minutes from Harbor to Grove. 28 minutes, 1 changes.
+    processing seconds: generation=27.897993, synthesis=0.751261, recognition=0.018452, understanding=0.004096, dialogue_management=0.004229
+    duration seconds: audio=7.257, speech_pipeline_wall=0.770074, observed_turn=35.163317, accounted_processing=28.676391
+03. Agent A [5.000 seconds]: okay, That does not reach Quebec yet. okay, What is the next connected segment?
+    processing seconds: generation=0.011913, synthesis=0.655175, recognition=0.020516, understanding=None, dialogue_management=None
+    duration seconds: audio=6.492, speech_pipeline_wall=0.675974, observed_turn=6.503913, accounted_processing=0.687887
+04. Agent B [5.000 seconds]: um, I have no new distinct viable route. The best earlier route still fits the current request.
+    processing seconds: generation=25.589362, synthesis=0.69386, recognition=0.022265, understanding=0.000492, dialogue_management=0.000113
+    duration seconds: audio=6.381, speech_pipeline_wall=0.716504, observed_turn=31.970968, accounted_processing=26.306472
+05. Agent A [2.734 seconds]: Did you mean Charlie by ' earlier '?
+    processing seconds: generation=0.031717, synthesis=0.287704, recognition=0.006711, understanding=None, dialogue_management=None
+    duration seconds: audio=2.702, speech_pipeline_wall=0.294606, observed_turn=2.733717, accounted_processing=0.326323
+06. Agent B [2.806 seconds]: Yes, I um, meant Charlie by.
+    processing seconds: generation=0.218023, synthesis=0.302862, recognition=0.004174, understanding=1.1e-05, dialogue_management=8.2e-05
+    duration seconds: audio=2.588, speech_pipeline_wall=0.307229, observed_turn=2.806115, accounted_processing=0.525344
+07. Agent A [5.000 seconds]: um, I missed the connection. um, Restate the boarding station and change points.
+    processing seconds: generation=0.006635, synthesis=0.669292, recognition=0.019467, understanding=None, dialogue_management=None
+    duration seconds: audio=6.055, speech_pipeline_wall=0.688979, observed_turn=6.061635, accounted_processing=0.695614
+08. Agent B [3.256 seconds]: let me see, Yes, I meant that wording.
+    processing seconds: generation=0.000518, synthesis=0.385111, recognition=0.008862, understanding=9e-06, dialogue_management=6.2e-05
+    duration seconds: audio=3.255, speech_pipeline_wall=0.394163, observed_turn=3.255589, accounted_processing=0.394752
+09. Agent A [5.000 seconds]: I need the actual route to Quebec. um, Give connected boarding station.
+    processing seconds: generation=0.015121, synthesis=0.546288, recognition=0.014868, understanding=None, dialogue_management=None
+    duration seconds: audio=5.487, speech_pipeline_wall=0.561362, observed_turn=5.502121, accounted_processing=0.576483
+10. Agent B [5.000 seconds]: I have no new distinct viable route. okay, The best earlier route still fits the current request.
+    processing seconds: generation=27.492367, synthesis=0.766777, recognition=0.045686, understanding=0.000701, dialogue_management=0.000144
+    duration seconds: audio=6.381, speech_pipeline_wall=0.812815, observed_turn=33.874211, accounted_processing=28.306026
+11. Agent A [5.000 seconds]: That still is not a usable route to Quebec. Give the connected lines and boarding station.
+    processing seconds: generation=0.037367, synthesis=0.660872, recognition=0.0192, understanding=None, dialogue_management=None
+    duration seconds: audio=6.854, speech_pipeline_wall=0.680287, observed_turn=6.891367, accounted_processing=0.717654
+12. Agent B [5.000 seconds]: I have no new distinct viable route. The best earlier route still fits the current request.
+    processing seconds: generation=28.062497, synthesis=0.571639, recognition=0.019648, understanding=0.000436, dialogue_management=9.8e-05
+    duration seconds: audio=5.893, speech_pipeline_wall=0.591611, observed_turn=33.956031, accounted_processing=28.654642
+13. Agent A [5.000 seconds]: okay, I will stop here; we are repeating the same information without improving the route.
+    processing seconds: generation=0.026417, synthesis=0.654988, recognition=0.020017, understanding=None, dialogue_management=None
+    duration seconds: audio=6.565, speech_pipeline_wall=0.675225, observed_turn=6.591417, accounted_processing=0.701642
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Delta at 14:05. First to Quebec, then Yankee, then Grove. Which route should I take first?
+    outgoing speech text: um, I'm starting um, at station Delta at fourteen oh five. let me see, First to Quebec, then Yankee, then Grove. Which route should I take first?
+    raw recognition: um, I'm starting um, at station Delta at fourteen oh five. let me see, First to Quebec, then Yankee, then Grove. Which route should I take first?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: um, I'm starting um, at station Delta at fourteen oh five. let me see, First to Quebec, then Yankee, then Grove. Which route should I take first?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0001-agent-a-3e106eef7c.wav
+02. Agent B
+    generated: Take tram line T5 from Delta to Harbor; walk 8 minutes from Harbor to Grove. 28 minutes, 1 changes.
+    outgoing speech text: Take tram line T5 from Delta to Harbor; walk 8 minutes from Harbor to Grove. 28 minutes, 1 changes.
+    raw recognition: Take tram line T5 from Delta to Harbor; walk 8 minutes from Harbor to Grove. 28 minutes, 1 changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T5 from Delta to Harbor; walk 8 minutes from Harbor to Grove. 28 minutes, 1 changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0002-agent-b-b01cecfd29.wav
+03. Agent A
+    generated: That does not reach Quebec yet. What is the next connected segment?
+    outgoing speech text: okay, That does not reach Quebec yet. okay, What is the next connected segment?
+    raw recognition: okay, That does not reach Quebec yet. okay, What is the next connected segment?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: okay, That does not reach Quebec yet. okay, What is the next connected segment?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0003-agent-a-decaa62912.wav
+04. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: um, I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: um, I have no new distinct viable route. The best earlier route still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: um, I have no new distinct viable route. The best earlier route still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0004-agent-b-097db7a30f.wav
+05. Agent A
+    generated: Did you mean Charlie by 'earlier'?
+    outgoing speech text: Did you mean Charlie by 'earlier'?
+    raw recognition: Did you mean Charlie by 'earlier'?
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["'earlier'"], "target_tokens": ["'", "earlier", "'"]}]
+    understood transcript: Did you mean Charlie by ' earlier '?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0005-agent-a-c64cf52428.wav
+06. Agent B
+    generated: Yes, I meant Charlie by.
+    outgoing speech text: Yes, I um, meant Charlie by.
+    raw recognition: Yes, I um, meant Charlie by.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Yes, I um, meant Charlie by.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0006-agent-b-5febb13a73.wav
+07. Agent A
+    generated: I missed the connection. Restate the boarding stations and change points.
+    outgoing speech text: um, I missed the connection. um, Restate the boarding stations and change points.
+    raw recognition: um, I missed the connection. um, Restate the boarding stations and change points.
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: um, I missed the connection. um, Restate the boarding station and change points.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0007-agent-a-f640e6a312.wav
+08. Agent B
+    generated: Yes, I meant that wording.
+    outgoing speech text: let me see, Yes, I meant that wording.
+    raw recognition: let me see, Yes, I meant that wording.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: let me see, Yes, I meant that wording.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0008-agent-b-128aa240df.wav
+09. Agent A
+    generated: I need the actual route to Quebec. Give connected boarding stations.
+    outgoing speech text: I need the actual route to Quebec. um, Give connected boarding stations.
+    raw recognition: I need the actual route to Quebec. um, Give connected boarding stations.
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: I need the actual route to Quebec. um, Give connected boarding station.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0009-agent-a-029614fd19.wav
+10. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. okay, The best earlier route still fits the current request.
+    raw recognition: I have no new distinct viable route. okay, The best earlier route still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I have no new distinct viable route. okay, The best earlier route still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0010-agent-b-69be663870.wav
+11. Agent A
+    generated: That still is not a usable route to Quebec. Give the connected lines and boarding stations.
+    outgoing speech text: That still is not a usable route to Quebec. Give the connected lines and boarding stations.
+    raw recognition: That still is not a usable route to Quebec. Give the connected lines and boarding stations.
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: That still is not a usable route to Quebec. Give the connected lines and boarding station.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0011-agent-a-9ebbedf7ea.wav
+12. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: I have no new distinct viable route. The best earlier route still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I have no new distinct viable route. The best earlier route still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0012-agent-b-cd457decfc.wav
+13. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: okay, I will stop here; we are repeating the same information without improving the route.
+    raw recognition: okay, I will stop here; we are repeating the same information without improving the route.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: okay, I will stop here; we are repeating the same information without improving the route.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b/userlm/20260713_130155_b-n0001/.turn_audio/2ee839924050/0013-agent-a-56caff0905.wav

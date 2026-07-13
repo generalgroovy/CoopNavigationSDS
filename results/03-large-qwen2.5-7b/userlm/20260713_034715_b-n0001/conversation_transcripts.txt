@@ -1,0 +1,163 @@
+=== Conversation 1: C-MT-FC-CLEAN-PIP-FWH-QQ57I-DEFAU-LRG-I0-69f6541d45-T ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MT-FC-CLEAN-PIP-FWH-QQ57I-DEFAU-LRG-I0-69f6541d45-T
+Test case: midday_transfer:focused_commuter
+Persona: focused_commuter
+Scenario: midday_transfer
+Speech pattern: clean
+Agent A audio persona: high_clarity_caller
+Agent B audio persona: high_clarity_operator
+Model: Qwen/Qwen2.5-7B-Instruct
+Outcome: unsatisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 28
+Runtime seconds: 1054.5245715349447
+
+Conversation
+01. Agent A [2.000 seconds]: I'm station at station Echo at twelve eighteen. I need to take transit lines to Zulu. Which lines should I take?
+    processing seconds: generation=0.0, synthesis=0.965496, recognition=0.052853, understanding=None, dialogue_management=None
+    duration seconds: audio=11.008, speech_pipeline_wall=1.019696, observed_turn=11.008, accounted_processing=1.019696
+02. Agent B [2.000 seconds]: Take tram line T1 from Echo to India; metro M3 from India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 changes.
+    processing seconds: generation=132.975833, synthesis=2.158453, recognition=0.034885, understanding=0.00405, dialogue_management=0.006742
+    duration seconds: audio=11.925, speech_pipeline_wall=2.193999, observed_turn=144.911625, accounted_processing=135.180624
+03. Agent A [2.000 seconds]: That route and timing work. Can you make it with safer transfer timing?
+    processing seconds: generation=51.094723, synthesis=1.16511, recognition=0.026967, understanding=None, dialogue_management=None
+    duration seconds: audio=6.597, speech_pipeline_wall=1.192664, observed_turn=57.691723, accounted_processing=52.287387
+04. Agent B [2.000 seconds]: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Transfer miss risk is medium.
+    processing seconds: generation=136.933228, synthesis=2.000157, recognition=0.037001, understanding=0.014002, dialogue_management=0.004994
+    duration seconds: audio=11.125, speech_pipeline_wall=2.03798, observed_turn=148.077224, accounted_processing=138.990204
+05. Agent A [2.000 seconds]: The earlier route fits. Can you make it using only my metro and tram tickets; I cannot take bus?
+    processing seconds: generation=51.494101, synthesis=1.467272, recognition=0.032484, understanding=None, dialogue_management=None
+    duration seconds: audio=9.564, speech_pipeline_wall=1.500457, observed_turn=61.058101, accounted_processing=52.994558
+06. Agent B [2.000 seconds]: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes.
+    processing seconds: generation=145.169699, synthesis=1.386988, recognition=0.024978, understanding=0.011409, dialogue_management=0.004
+    duration seconds: audio=8.589, speech_pipeline_wall=1.412653, observed_turn=153.774109, accounted_processing=146.597762
+07. Agent A [2.000 seconds]: That reaches the destination, but I need the total time before checking preferences.
+    processing seconds: generation=54.555439, synthesis=1.158563, recognition=0.029195, understanding=None, dialogue_management=None
+    duration seconds: audio=6.405, speech_pipeline_wall=1.188465, observed_turn=60.960439, accounted_processing=55.743904
+08. Agent B [2.000 seconds]: I have no new distinct viable route. The best earlier route still fits the current request.
+    processing seconds: generation=153.347683, synthesis=1.362901, recognition=0.031535, understanding=0.00066, dialogue_management=0.000134
+    duration seconds: audio=7.719, speech_pipeline_wall=1.39506, observed_turn=161.067477, accounted_processing=154.743537
+09. Agent A [2.000 seconds]: That fits. Can you make it with no more than 10 minutes of walking?
+    processing seconds: generation=0.064111, synthesis=1.232352, recognition=0.026549, understanding=None, dialogue_management=None
+    duration seconds: audio=7.052, speech_pipeline_wall=1.259405, observed_turn=7.116111, accounted_processing=1.323516
+10. Agent B [2.000 seconds]: I have no new distinct viable route. The best earlier route still fits the current request.
+    processing seconds: generation=160.656068, synthesis=1.365022, recognition=0.034414, understanding=0.000948, dialogue_management=0.000136
+    duration seconds: audio=7.719, speech_pipeline_wall=1.399972, observed_turn=168.376152, accounted_processing=162.057124
+11. Agent A [2.000 seconds]: That route still fits. Compare one distinct viable alternative before I choose.
+    processing seconds: generation=0.06602, synthesis=1.078233, recognition=0.036872, understanding=None, dialogue_management=None
+    duration seconds: audio=6.095, speech_pipeline_wall=1.115528, observed_turn=6.16102, accounted_processing=1.181548
+12. Agent B [2.000 seconds]: I have no new distinct viable route. The best earlier route still fits the current request.
+    processing seconds: generation=149.42218, synthesis=1.257529, recognition=0.032991, understanding=0.000542, dialogue_management=0.000106
+    duration seconds: audio=7.719, speech_pipeline_wall=1.290968, observed_turn=157.141828, accounted_processing=150.713796
+13. Agent A [2.000 seconds]: I will stop here; we are repeating the same information without improving the route.
+    processing seconds: generation=0.051206, synthesis=1.131401, recognition=0.026836, understanding=None, dialogue_management=None
+    duration seconds: audio=6.924, speech_pipeline_wall=1.158597, observed_turn=6.975206, accounted_processing=1.209803
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Echo at 12:18. I need to take transit lines to Zulu. Which lines should I take?
+    outgoing speech text: I'm starting at station Echo at twelve eighteen. I need to take transit lines to Zulu. Which lines should I take?
+    raw recognition: I'm starting at station Echo at twelve eighteen. I need to take transit lines to Zulu. Which lines should I take?
+    misinterpreted tokens: []
+    transcript corrections: [{"operation": "replace", "source_tokens": ["starting"], "target_tokens": ["station"]}]
+    understood transcript: I'm station at station Echo at twelve eighteen. I need to take transit lines to Zulu. Which lines should I take?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0001-agent-a-e3282170a6.wav
+02. Agent B
+    generated: Take tram line T1 from Echo to India; metro M3 from India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 changes.
+    outgoing speech text: Take tram line T1 from Echo to India; metro M3 from India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 changes.
+    raw recognition: Take tram line T1 from Echo to India; metro M3 from India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Take tram line T1 from Echo to India; metro M3 from India to Aster; metro M1 from Aster to Zulu. 28 minutes, 2 changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0002-agent-b-6acb964589.wav
+03. Agent A
+    generated: That route and timing work. Can you make it with safer transfer timing?
+    outgoing speech text: That route and timing work. Can you make it with safer transfer timing?
+    raw recognition: That route and timing work. Can you make it with safer transfer timing?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That route and timing work. Can you make it with safer transfer timing?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0003-agent-a-9b5cb0538e.wav
+04. Agent B
+    generated: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Transfer miss risk is medium.
+    outgoing speech text: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Transfer miss risk is medium.
+    raw recognition: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Transfer miss risk is medium.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes. Transfer miss risk is medium.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0004-agent-b-11ec561d22.wav
+05. Agent A
+    generated: The earlier route fits. Can you make it using only my metro and tram tickets; I cannot take bus?
+    outgoing speech text: The earlier route fits. Can you make it using only my metro and tram tickets; I cannot take bus?
+    raw recognition: The earlier route fits. Can you make it using only my metro and tram tickets; I cannot take bus?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: The earlier route fits. Can you make it using only my metro and tram tickets; I cannot take bus?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0005-agent-a-5de5b81aea.wav
+06. Agent B
+    generated: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes.
+    outgoing speech text: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes.
+    raw recognition: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: Walk 7 minutes from Echo to Foxtrot; metro M1 from Foxtrot to Zulu. 31 minutes, 1 changes.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0006-agent-b-fdfdd1e287.wav
+07. Agent A
+    generated: That reaches the destination, but I need the total time before checking preferences.
+    outgoing speech text: That reaches the destination, but I need the total time before checking preferences.
+    raw recognition: That reaches the destination, but I need the total time before checking preferences.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That reaches the destination, but I need the total time before checking preferences.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0007-agent-a-0a3e343883.wav
+08. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: I have no new distinct viable route. The best earlier route still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I have no new distinct viable route. The best earlier route still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0008-agent-b-d84eff0e52.wav
+09. Agent A
+    generated: That fits. Can you make it with no more than 10 minutes of walking?
+    outgoing speech text: That fits. Can you make it with no more than 10 minutes of walking?
+    raw recognition: That fits. Can you make it with no more than 10 minutes of walking?
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That fits. Can you make it with no more than 10 minutes of walking?
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0009-agent-a-6e62a70db3.wav
+10. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: I have no new distinct viable route. The best earlier route still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I have no new distinct viable route. The best earlier route still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0010-agent-b-c04a5d5e81.wav
+11. Agent A
+    generated: That route still fits. Compare one distinct viable alternative before I choose.
+    outgoing speech text: That route still fits. Compare one distinct viable alternative before I choose.
+    raw recognition: That route still fits. Compare one distinct viable alternative before I choose.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: That route still fits. Compare one distinct viable alternative before I choose.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0011-agent-a-fbd9151126.wav
+12. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: I have no new distinct viable route. The best earlier route still fits the current request.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I have no new distinct viable route. The best earlier route still fits the current request.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0012-agent-b-cd457decfc.wav
+13. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I will stop here; we are repeating the same information without improving the route.
+    raw recognition: I will stop here; we are repeating the same information without improving the route.
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: I will stop here; we are repeating the same information without improving the route.
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b/userlm/20260713_034715_b-n0001/.turn_audio/cc65851bb626/0013-agent-a-fa05bbdf7b.wav
