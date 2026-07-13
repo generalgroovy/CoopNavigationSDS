@@ -1,0 +1,115 @@
+=== batch-c-ha-mser-clean-pip-fwh-q05-pcp-sml-i0-fa86dd96ff-t-20260713-125006.log | sha256=50937f3a33bce3e81413d57219fc3c4717b80d46369f00f2c8ba69847d2ea4a7 ===
+[12:50:06] SESSION START batch-C-HA-MSER-CLEAN-PIP-FWH-Q05-PCP-SML-I0-fa86dd96ff-T
+[12:50:06] SEGMENT batch.condition.start status=ok duration=None seconds
+[12:50:06] SYSTEM timer.start
+[12:50:07] PHASE turn=1 speaker=Agent A phase=NLG duration_sec=0.0
+[12:50:07] PHASE turn=1 speaker=Agent A phase=TTS duration_sec=0.548866
+[12:50:07] PHASE turn=1 speaker=Agent A phase=ASR duration_sec=0.034364
+[12:50:07] SYSTEM telemetry.speech
+[12:50:07] MEMORY turn=1 reason=opening changed=Agent A,Agent B
+[12:50:07] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[12:50:07] SYSTEM telemetry.timing
+[12:50:07] TIMING turn=1 speaker=Agent A generation=0.0 synthesis=0.548866 audio=11.008 recognition=0.034364 understanding=None dialogue_management=None pipeline_wall=0.583987 turn_observed=11.008
+[12:50:28] PHASE turn=2 speaker=Agent B phase=NLG duration_sec=19.96006464958191
+[12:50:28] PHASE turn=2 speaker=Agent B phase=TTS duration_sec=1.000044
+[12:50:28] PHASE turn=2 speaker=Agent B phase=ASR duration_sec=0.026483
+[12:50:28] SYSTEM telemetry.speech
+[12:50:28] SYSTEM telemetry.timing
+[12:50:28] MEMORY turn=2 reason=agent_b_reply changed=Agent A,Agent B
+[12:50:28] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[12:50:28] PHASE turn=2 speaker=Agent B phase=NLU duration_sec=0.001495
+[12:50:28] SYSTEM telemetry.nlu
+[12:50:28] SYSTEM route
+[12:50:28] SYSTEM candidate
+[12:50:28] PHASE turn=2 speaker=Agent B phase=DM duration_sec=0.005844125524163246
+[12:50:28] TIMING turn=2 speaker=Agent B generation=19.960065 synthesis=1.000044 audio=9.03 recognition=0.026483 understanding=0.001495 dialogue_management=0.005844 pipeline_wall=1.026895 turn_observed=28.997403
+[12:52:49] PHASE turn=3 speaker=Agent A phase=NLG duration_sec=141.23975205421448
+[12:52:49] PHASE turn=3 speaker=Agent A phase=TTS duration_sec=0.5297
+[12:52:49] PHASE turn=3 speaker=Agent A phase=ASR duration_sec=0.016772
+[12:52:49] SYSTEM telemetry.speech
+[12:52:49] SYSTEM telemetry.timing
+[12:52:49] TIMING turn=3 speaker=Agent A generation=141.239752 synthesis=0.5297 audio=6.143 recognition=0.016772 understanding=None dialogue_management=None pipeline_wall=0.546998 turn_observed=147.382752
+[12:52:49] MEMORY turn=3 reason=agent_a_reply changed=Agent A,Agent B
+[12:52:49] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[12:53:06] PHASE turn=4 speaker=Agent B phase=NLG duration_sec=15.273029327392578
+[12:53:06] PHASE turn=4 speaker=Agent B phase=TTS duration_sec=1.715798
+[12:53:06] PHASE turn=4 speaker=Agent B phase=ASR duration_sec=0.029661
+[12:53:06] SYSTEM telemetry.speech
+[12:53:06] SYSTEM telemetry.timing
+[12:53:06] MEMORY turn=4 reason=agent_b_reply changed=Agent A,Agent B
+[12:53:06] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[12:53:06] PHASE turn=4 speaker=Agent B phase=NLU duration_sec=0.00152
+[12:53:06] SYSTEM telemetry.nlu
+[12:53:06] SYSTEM candidate
+[12:53:06] PHASE turn=4 speaker=Agent B phase=DM duration_sec=0.006019342690706253
+[12:53:06] TIMING turn=4 speaker=Agent B generation=15.273029 synthesis=1.715798 audio=14.461 recognition=0.029661 understanding=0.00152 dialogue_management=0.006019 pipeline_wall=1.745836 turn_observed=29.741569
+[12:55:36] PHASE turn=5 speaker=Agent A phase=NLG duration_sec=149.41345524787903
+[12:55:36] PHASE turn=5 speaker=Agent A phase=TTS duration_sec=0.650851
+[12:55:36] PHASE turn=5 speaker=Agent A phase=ASR duration_sec=0.022718
+[12:55:36] SYSTEM telemetry.speech
+[12:55:36] SYSTEM telemetry.timing
+[12:55:36] TIMING turn=5 speaker=Agent A generation=149.413455 synthesis=0.650851 audio=6.597 recognition=0.022718 understanding=None dialogue_management=None pipeline_wall=0.674292 turn_observed=156.010455
+[12:55:36] MEMORY turn=5 reason=agent_a_reply changed=Agent A,Agent B
+[12:55:36] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[12:55:54] PHASE turn=6 speaker=Agent B phase=NLG duration_sec=15.342167615890503
+[12:55:54] PHASE turn=6 speaker=Agent B phase=TTS duration_sec=2.041878
+[12:55:54] PHASE turn=6 speaker=Agent B phase=ASR duration_sec=0.035881
+[12:55:54] SYSTEM telemetry.speech
+[12:55:54] SYSTEM telemetry.timing
+[12:55:54] MEMORY turn=6 reason=agent_b_reply changed=Agent A,Agent B
+[12:55:54] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[12:55:54] PHASE turn=6 speaker=Agent B phase=NLU duration_sec=0.022941
+[12:55:54] SYSTEM telemetry.nlu
+[12:55:54] SYSTEM candidate
+[12:55:54] PHASE turn=6 speaker=Agent B phase=DM duration_sec=0.005001114681363106
+[12:55:54] TIMING turn=6 speaker=Agent B generation=15.342168 synthesis=2.041878 audio=17.355 recognition=0.035881 understanding=0.022941 dialogue_management=0.005001 pipeline_wall=2.078438 turn_observed=32.72511
+[12:55:54] PHASE turn=7 speaker=Agent A phase=NLG duration_sec=0.0023381710052490234
+[12:55:54] PHASE turn=7 speaker=Agent A phase=TTS duration_sec=0.37305
+[12:55:54] PHASE turn=7 speaker=Agent A phase=ASR duration_sec=0.007807
+[12:55:54] SYSTEM telemetry.speech
+[12:55:54] SYSTEM telemetry.timing
+[12:55:54] TIMING turn=7 speaker=Agent A generation=0.002338 synthesis=0.37305 audio=3.87 recognition=0.007807 understanding=None dialogue_management=None pipeline_wall=0.381117 turn_observed=3.872338
+[12:55:54] MEMORY turn=7 reason=agent_a_reply changed=Agent A,Agent B
+[12:55:54] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[12:55:55] PHASE turn=8 speaker=Agent B phase=NLG duration_sec=0.2027266025543213
+[12:55:55] PHASE turn=8 speaker=Agent B phase=TTS duration_sec=0.241475
+[12:55:55] PHASE turn=8 speaker=Agent B phase=ASR duration_sec=0.004019
+[12:55:55] SYSTEM telemetry.speech
+[12:55:55] SYSTEM telemetry.timing
+[12:55:55] MEMORY turn=8 reason=agent_b_reply changed=Agent A,Agent B
+[12:55:55] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[12:55:55] PHASE turn=8 speaker=Agent B phase=NLU duration_sec=9e-06
+[12:55:55] PHASE turn=8 speaker=Agent B phase=DM duration_sec=6.709899753332138e-05
+[12:55:55] TIMING turn=8 speaker=Agent B generation=0.202727 synthesis=0.241475 audio=2.276 recognition=0.004019 understanding=9e-06 dialogue_management=6.7e-05 pipeline_wall=0.245703 turn_observed=2.478803
+[12:58:12] PHASE turn=9 speaker=Agent A phase=NLG duration_sec=136.4690191745758
+[12:58:12] PHASE turn=9 speaker=Agent A phase=TTS duration_sec=0.730776
+[12:58:12] PHASE turn=9 speaker=Agent A phase=ASR duration_sec=0.029883
+[12:58:12] SYSTEM telemetry.speech
+[12:58:12] SYSTEM telemetry.timing
+[12:58:12] TIMING turn=9 speaker=Agent A generation=136.469019 synthesis=0.730776 audio=6.597 recognition=0.029883 understanding=None dialogue_management=None pipeline_wall=0.761214 turn_observed=143.066019
+[12:58:12] MEMORY turn=9 reason=agent_a_reply changed=Agent A,Agent B
+[12:58:12] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[12:58:30] PHASE turn=10 speaker=Agent B phase=NLG duration_sec=15.558902502059937
+[12:58:30] PHASE turn=10 speaker=Agent B phase=TTS duration_sec=1.942172
+[12:58:30] PHASE turn=10 speaker=Agent B phase=ASR duration_sec=0.033167
+[12:58:30] SYSTEM telemetry.speech
+[12:58:30] SYSTEM telemetry.timing
+[12:58:30] MEMORY turn=10 reason=agent_b_reply changed=Agent A,Agent B
+[12:58:30] STEP turn=None speaker=Agent B route_valid=- route_goal=- route=-
+[12:58:30] PHASE turn=10 speaker=Agent B phase=NLU duration_sec=0.003577
+[12:58:30] SYSTEM telemetry.nlu
+[12:58:30] SYSTEM candidate
+[12:58:30] PHASE turn=10 speaker=Agent B phase=DM duration_sec=0.00864744745194912
+[12:58:30] TIMING turn=10 speaker=Agent B generation=15.558903 synthesis=1.942172 audio=17.355 recognition=0.033167 understanding=0.003577 dialogue_management=0.008647 pipeline_wall=1.976084 turn_observed=32.926127
+[13:00:45] PHASE turn=11 speaker=Agent A phase=NLG duration_sec=134.53875851631165
+[13:00:45] PHASE turn=11 speaker=Agent A phase=TTS duration_sec=0.587033
+[13:00:45] PHASE turn=11 speaker=Agent A phase=ASR duration_sec=0.016663
+[13:00:45] SYSTEM telemetry.speech
+[13:00:45] SYSTEM telemetry.timing
+[13:00:45] TIMING turn=11 speaker=Agent A generation=134.538759 synthesis=0.587033 audio=5.361 recognition=0.016663 understanding=None dialogue_management=None pipeline_wall=0.604454 turn_observed=139.899759
+[13:00:45] MEMORY turn=11 reason=agent_a_reply changed=Agent A,Agent B
+[13:00:45] STEP turn=None speaker=Agent A route_valid=- route_goal=- route=-
+[13:00:45] SYSTEM metrics
+[13:00:45] SYSTEM done
+[13:00:45] SEGMENT batch.condition.end status=ok duration=638.979279 seconds
+[13:00:45] SESSION END batch-C-HA-MSER-CLEAN-PIP-FWH-Q05-PCP-SML-I0-fa86dd96ff-T
