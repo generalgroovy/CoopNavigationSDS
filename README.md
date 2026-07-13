@@ -913,6 +913,32 @@ larger coverage is desired. The configured factors intentionally span ceiling,
 nominal, challenging, and floor speech performance so successful and
 unsuccessful dialogues can be compared phase-wise.
 
+For the current cluster campaign, `large2` (`Mistral-7B-Instruct-v0.3`) is
+kept in the documented model matrix but excluded from active completion runs
+until its asset/runtime path is stable. Active coverage therefore uses the five
+selected non-large2 Transformer models and records the exclusion explicitly in
+the current-analysis files. This avoids treating unavailable infrastructure as
+Agent B dialogue failure.
+
+To finish only uncovered valid conditions for the active selected models, use
+the coverage-aware submitter. It reads
+`results/experiment_coverage_conditions.csv`, maps completed condition IDs
+back to each `.job` file, and submits only indexes with `completed_count=0`.
+The coverage CSV is treated as the validity source, so the submitted Slurm
+index is the full-grid index for a condition ID already present in the valid
+coverage plan.
+Run without `--submit` first to inspect the exact commands:
+
+```bash
+python3 scripts/submit_remaining_selected_no_large2.py --partition standard
+python3 scripts/submit_remaining_selected_no_large2.py --partition standard --submit
+```
+
+The submitter uses short chunks, CPU-only execution, `START_OLLAMA=0`, and
+single-thread numeric-library settings. It can be rerun safely after partial
+completion because it recalculates missing indexes from the latest coverage
+CSV before submitting.
+
 The submitter writes Slurm stdout and stderr under `slurm/logs/`, uses unique
 job-name suffixes, and passes `RESULTS_ROOT` to the batch runner so every
 condition writes to the single `results/` root. Ollama-backed jobs start a
@@ -944,7 +970,9 @@ and ASR. The Transformers loader repeats that guard before tokenizer/model
 loading, so CPU submissions do not fail when Slurm places them on a node that
 exposes an old or incompatible NVIDIA driver. GPU use is intentionally separate:
 request it only with a dedicated GPU wrapper and a compatible PyTorch/driver
-stack.
+stack. The CPU wrapper also fixes numeric-library thread counts and lowers
+ONNX Runtime logging so ASR/TTS worker noise does not obscure actual
+experiment failures in Slurm stderr.
 
 Single-condition Slurm array tasks do not rebuild the shared coverage registry
 while running. This prevents concurrent writes to root-level coverage CSV/HTML
@@ -970,21 +998,28 @@ python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output r
 python3 -m coop_navigation_sds.ResultsAndArtifacts.comparison results --output results/general --include-partial
 ```
 
-On the cluster, use the Slurm-safe post-run wrapper when results need to be
-prepared and pushed from a long-running session. It refreshes derived views,
-stages `results/` and `slurm/logs/`, excludes generated files above the GitHub
-file-size limit, commits the remaining evidence, rebases, and pushes. It does
-not delete or rewrite canonical run folders.
+On the cluster, use a Slurm-safe post-run wrapper when results need to be
+prepared and pushed from a long-running session. The compact path deduplicates
+Slurm logs, stages `results/` plus compact log summaries, excludes generated
+aggregate files above GitHub's file-size limit, commits the remaining
+evidence, rebases, and pushes. It does not delete or rewrite canonical run
+folders.
 
 ```bash
-mkdir -p slurm/logs
-sbatch --export=ALL,PROJECT_ROOT="$PWD",PYTHON_BIN="$PWD/.venv-linux/bin/python",RESULTS_ROOT="$PWD/results",GIT_KEY_PATH="$PWD/key2" \
-  slurm/prepare_push_results_safe.sbatch
+bash scripts/cluster_push_results_safe_minimal.sh
 ```
 
-The job fails fast if the repository is already in a rebase state or if
-`.git/index.lock` exists. Resolve that Git state first; do not remove locks
-while a Git process is still active.
+The script fails fast if another Git process is active, if the repository is
+already in a rebase state, or if `.git/index.lock` exists. Resolve that Git
+state first; do not remove locks while a Git process is still active. Raw
+Slurm logs can remain on the cluster; the pushed `results/general` summaries
+group them by logical job name and include representative samples.
+
+Result analysis now writes both full historical tables and current active
+tables. Full tables preserve all evidence, including old infrastructure
+failures. Files prefixed with `current_` exclude `large2` and obsolete
+pre-fix `NameError`/`ValueError` failures so active model comparisons are not
+distorted by known implementation bugs.
 
 For day-to-day cluster operation, `scripts/cluster_results_workflow.sh` wraps
 the most common post-run and next-run actions without changing the underlying

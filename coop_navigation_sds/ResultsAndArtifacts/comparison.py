@@ -64,6 +64,24 @@ MODEL_COMPARISON_DIMENSIONS = (
     "transfer_tolerance",
     "dialogue_stagnation_limit",
 )
+CANONICAL_AGENT_B_MODEL_NAMES = {
+    "tinyllama/tinyllama-1.1b-chat-v1.0": "TinyLlama-1.1B-Chat-v1.0",
+    "tinyllama-1.1b-chat-v1.0": "TinyLlama-1.1B-Chat-v1.0",
+    "qwen/qwen2.5-0.5b-instruct": "Qwen2.5-0.5B-Instruct",
+    "qwen2.5-0.5b-instruct": "Qwen2.5-0.5B-Instruct",
+    "qwen/qwen2.5-1.5b-instruct": "Qwen2.5-1.5B-Instruct",
+    "qwen2.5-1.5b-instruct": "Qwen2.5-1.5B-Instruct",
+    "small2-qwen2.5-1.5b": "Qwen2.5-1.5B-Instruct",
+    "microsoft/phi-3-mini-4k-instruct": "Phi-3-mini-4k-instruct",
+    "phi-3-mini-4k-instruct": "Phi-3-mini-4k-instruct",
+    "mid2-phi3-mini": "Phi-3-mini-4k-instruct",
+    "qwen/qwen2.5-7b-instruct": "Qwen2.5-7B-Instruct",
+    "qwen2.5-7b-instruct": "Qwen2.5-7B-Instruct",
+    "mistralai/mistral-7b-instruct-v0.3": "Mistral-7B-Instruct-v0.3",
+    "mistral-7b-instruct-v0.3": "Mistral-7B-Instruct-v0.3",
+}
+CURRENT_ANALYSIS_EXCLUDED_AGENT_B_MODELS = {"Mistral-7B-Instruct-v0.3"}
+OBSOLETE_PIPELINE_FAILURE_TYPES = {"NameError", "ValueError"}
 
 
 def discover_run_directories(paths):
@@ -227,7 +245,40 @@ def _text_boolean(value):
 
 def _normalized_model_name(value):
     text = str(value or "").replace("\\", "/").rstrip("/")
-    return text.rsplit("/", 1)[-1] if text else ""
+    if not text:
+        return ""
+    normalized = text.casefold()
+    basename = text.rsplit("/", 1)[-1]
+    return (
+        CANONICAL_AGENT_B_MODEL_NAMES.get(normalized)
+        or CANONICAL_AGENT_B_MODEL_NAMES.get(basename.casefold())
+        or basename
+    )
+
+
+def _current_analysis_condition_rows(rows):
+    """Return rows suitable for active thesis analysis without editing raw evidence."""
+    current = []
+    for row in rows:
+        model = _normalized_model_name(row.get("agent_b_model"))
+        failure_type = str(row.get("pipeline_failure_type") or "").strip()
+        if model in CURRENT_ANALYSIS_EXCLUDED_AGENT_B_MODELS:
+            continue
+        if failure_type in OBSOLETE_PIPELINE_FAILURE_TYPES:
+            continue
+        current.append(row)
+    return current
+
+
+def _current_analysis_related_rows(rows, current_conditions):
+    valid = {
+        (str(row.get("source_run", "")), str(row.get("condition_id", "")))
+        for row in current_conditions
+    }
+    return [
+        row for row in rows
+        if (str(row.get("source_run", "")), str(row.get("condition_id", ""))) in valid
+    ]
 
 
 def _compact_text(value, limit=38):
@@ -1198,22 +1249,46 @@ def write_evidence_comparison(inputs, output_directory):
     program_execution_rows = _program_execution_summary_rows(condition_rows, runs)
     phase_summary_rows = _phase_summary_rows(phase_rows)
     dialogue_summary_rows = _dialogue_summary_rows(dialogue_rows)
+    current_condition_rows = _current_analysis_condition_rows(condition_rows)
+    current_phase_rows = _current_analysis_related_rows(phase_rows, current_condition_rows)
+    current_dialogue_rows = _current_analysis_related_rows(dialogue_rows, current_condition_rows)
+    current_conversation_rows = _current_analysis_related_rows(conversation_rows, current_condition_rows)
+    current_program_execution_rows = _program_execution_summary_rows(current_condition_rows)
+    current_task_summary_rows = _task_success_summary_rows(current_condition_rows)
+    current_model_configuration_rows = _model_configuration_matrix_rows(current_condition_rows)
+    current_model_summary_rows = _agent_b_model_summary_rows(
+        current_condition_rows,
+        current_phase_rows,
+        current_dialogue_rows,
+    )
+    current_phase_summary_rows = _phase_summary_rows(current_phase_rows)
+    current_dialogue_summary_rows = _dialogue_summary_rows(current_dialogue_rows)
     paths = {
         "overview": output / "comparison_overview.html",
         "guide": output / "analysis_guide.md",
         "run_inventory": output / "run_inventory.csv",
         "program_execution": output / "program_execution_summary.csv",
+        "current_program_execution": output / "current_program_execution_summary.csv",
         "configurations": output / "configuration_groups.csv",
         "outcomes": output / "task_outcome_comparison.csv",
+        "current_outcomes": output / "current_task_outcome_comparison.csv",
         "task_summary": output / "task_success_by_configuration.csv",
+        "current_task_summary": output / "current_task_success_by_configuration.csv",
         "model_configuration_matrix": output / "model_configuration_matrix.csv",
+        "current_model_configuration_matrix": output / "current_model_configuration_matrix.csv",
         "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "model_summary": output / "agent_b_model_summary.csv",
+        "current_model_summary": output / "current_agent_b_model_summary.csv",
         "phases": output / "phase_metric_comparison.csv",
+        "current_phases": output / "current_phase_metric_comparison.csv",
         "phase_summary": output / "phase_summary_by_model.csv",
+        "current_phase_summary": output / "current_phase_summary_by_model.csv",
         "dialogue": output / "dialogue_state_comparison.csv",
+        "current_dialogue": output / "current_dialogue_state_comparison.csv",
         "dialogue_summary": output / "dialogue_state_summary.csv",
+        "current_dialogue_summary": output / "current_dialogue_state_summary.csv",
         "turns": output / "conversation_turns.csv",
+        "current_turns": output / "current_conversation_turns.csv",
         "manifest": output / "analysis_manifest.json",
     }
     for key, rows in (
@@ -1225,6 +1300,16 @@ def write_evidence_comparison(inputs, output_directory):
         ("phases", phase_rows), ("phase_summary", phase_summary_rows),
         ("dialogue", dialogue_rows), ("dialogue_summary", dialogue_summary_rows),
         ("turns", conversation_rows),
+        ("current_program_execution", current_program_execution_rows),
+        ("current_outcomes", current_condition_rows),
+        ("current_task_summary", current_task_summary_rows),
+        ("current_model_configuration_matrix", current_model_configuration_rows),
+        ("current_model_summary", current_model_summary_rows),
+        ("current_phases", current_phase_rows),
+        ("current_phase_summary", current_phase_summary_rows),
+        ("current_dialogue", current_dialogue_rows),
+        ("current_dialogue_summary", current_dialogue_summary_rows),
+        ("current_turns", current_conversation_rows),
     ):
         _write_csv(paths[key], rows)
     _write_model_configuration_matrix_html(
@@ -1256,6 +1341,11 @@ def write_evidence_comparison(inputs, output_directory):
         "observed_condition_count": sum(row["condition_state"] != "not_started" for row in condition_rows),
         "completed_condition_count": sum(row["condition_state"] == "completed" for row in condition_rows),
         "program_execution_summary_count": len(program_execution_rows),
+        "current_analysis_filter": {
+            "excluded_agent_b_models": sorted(CURRENT_ANALYSIS_EXCLUDED_AGENT_B_MODELS),
+            "excluded_pipeline_failure_types": sorted(OBSOLETE_PIPELINE_FAILURE_TYPES),
+            "current_condition_count": len(current_condition_rows),
+        },
         "generated_files": generated_file_names,
         "source_files": before,
     }
@@ -3049,6 +3139,8 @@ def compare_runs(inputs, output_directory):
     metric_correlations = summarize_metric_outcome_correlations(metrics, conditions)
     condition_analysis = build_condition_analysis_rows(conditions, metrics)
     program_execution_rows = _program_execution_summary_rows(condition_analysis, run_directories)
+    current_condition_analysis = _current_analysis_condition_rows(condition_analysis)
+    current_program_execution_rows = _program_execution_summary_rows(current_condition_analysis)
     model_configuration_rows = _model_configuration_matrix_rows(condition_analysis)
     performance_bands = build_performance_band_summary(condition_analysis)
     outcome_band_summary = build_outcome_band_summary(condition_analysis)
@@ -3070,7 +3162,9 @@ def compare_runs(inputs, output_directory):
         "run_metric_matrix": output / "run_phase_metric_matrix.csv",
         "run_metric_matrix_report": output / "run_phase_metric_matrix.html",
         "condition_analysis": output / "condition_analysis.csv",
+        "current_condition_analysis": output / "current_condition_analysis.csv",
         "program_execution_summary": output / "program_execution_summary.csv",
+        "current_program_execution_summary": output / "current_program_execution_summary.csv",
         "model_configuration_matrix": output / "model_configuration_matrix.csv",
         "model_configuration_matrix_report": output / "model_configuration_matrix.html",
         "performance_band_summary": output / "performance_band_summary.csv",
@@ -3095,7 +3189,9 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["metric_correlations"], metric_correlations)
     _write_csv(paths["run_metric_matrix"], run_metric_matrix)
     _write_csv(paths["condition_analysis"], condition_analysis)
+    _write_csv(paths["current_condition_analysis"], current_condition_analysis)
     _write_csv(paths["program_execution_summary"], program_execution_rows)
+    _write_csv(paths["current_program_execution_summary"], current_program_execution_rows)
     _write_csv(paths["model_configuration_matrix"], model_configuration_rows)
     _write_csv(paths["performance_band_summary"], performance_bands)
     _write_csv(paths["outcome_band_summary"], outcome_band_summary)
