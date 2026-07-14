@@ -23,8 +23,9 @@ task outcome.
 - Experimental setting: cooperative route finding in a controlled transport
   network.
 - Evaluated system role: Agent B, the route-information dialogue system.
-- User role: Agent A/UserLM/TinyLlama as simulated caller with private task
-  goal and progressively revealed constraints.
+- User role: Agent A/UserLM as the main simulated caller with private task
+  goal and progressively revealed constraints. TinyLlama-Agent-A remains a
+  software-control option, not the primary thesis denominator.
 - Main method: run many controlled dialogue conditions, capture raw phase
   evidence, calculate metrics retrospectively, and compare model backends.
 - Main outcome: determine which metrics and phases explain successful,
@@ -109,6 +110,84 @@ Immediate interpretation:
 - Failure analysis should inspect the earliest failing phase and provider
   failure messages before interpreting failed attempts as conversational
   inability.
+
+### Current result conclusions that are defensible
+
+These statements are safe if the result set remains close to the current
+snapshot:
+
+- The framework can distinguish at least three outcome layers:
+  - execution/provider completion,
+  - route-valid dialogue completion,
+  - task-satisfied dialogue completion under revealed constraints.
+- Completed dialogues often produce valid routes. Across the selected UserLM
+  subset, 294 of 317 completed unique conditions have valid routes, so many
+  observed losses occur before or around dialogue completion rather than after
+  route grounding alone.
+- Qwen2.5 1.5B currently has the best combined evidence profile in the active
+  subset: highest completed unique-condition count, highest task-success count,
+  and high route validity among completed conditions.
+- Larger model size alone is not supported as a simple predictor of better
+  experiment outcome. Qwen2.5 7B has high route validity once completed but
+  lower completion coverage in the current CPU cluster setting.
+- Small models are not merely failure baselines. TinyLlama 1.1B and Qwen2.5
+  0.5B achieve similar task-success rates among completed runs, which makes
+  them useful controls for separating dialogue competence from runtime cost.
+- Phase-wise metrics are necessary because task success alone hides whether a
+  run failed through provider/runtime interruption, ASR/NLU corruption, state
+  drift, route invalidity, constraint violation, or premature closure.
+
+### Claims that are not supported without more evidence
+
+Avoid these claims unless additional controlled evidence is added:
+
+- "Large models are worse" or "small models are better." Current evidence
+  confounds model size, model family, runtime cost, memory pressure, and
+  cluster completion.
+- "The earliest failing phase was always ASR/TTS." The framework can propose
+  failure-localization candidates, but causal phase attribution requires
+  inspection or additional validation.
+- "Automatic evaluation replaces human evaluation." The thesis can argue that
+  automatic evaluation is scalable and useful for diagnosis, while human
+  evaluation remains important for perceived satisfaction and naturalness.
+- "Speech-channel effects are fully explained." Speech metrics are diagnostic
+  only when matched text/audio pairs and available audio evidence are present.
+- "Task-derived metrics validate themselves." Metrics such as route validity,
+  constraint satisfaction, and faithfulness are construct-valid for task
+  outcome, but some are close to definitional and should not be presented as
+  independent predictors without correlation/ablation discussion.
+
+### Recommended final thesis claim after current results
+
+Use wording close to this:
+
+```text
+The experiment shows that a controlled cooperative route-finding task can
+produce analyzable phase-wise evidence for automatic SDS evaluation. In the
+current UserLM-Agent-A subset, completed dialogues usually reached valid
+routes, while many losses arose from incomplete executions, unresolved
+dialogue progress, or constraint/task satisfaction failures. Therefore, final
+task success is useful but insufficient: separating execution completion,
+speech/language evidence, dialogue state, route grounding, and constraint
+satisfaction provides a clearer basis for diagnosing successful and failed
+spoken dialogue runs.
+```
+
+### Chapter-level argument map
+
+Use this map while drafting to keep the thesis coherent.
+
+| Chapter | Main claim | Evidence type | Common mistake to avoid |
+| --- | --- | --- | --- |
+| 1 Introduction | SDS evaluation needs more than final outcome because failures are multi-phase. | Motivation, problem statement, research questions. | Explaining repository internals too early. |
+| 2 Background | Spoken task-oriented dialogue can be described through phases, state, grounding, and repair. | SDS/TOD concepts and pipeline definitions. | Treating the pipeline as the only possible architecture. |
+| 3 Evaluation | Automatic metrics are useful only when tied to constructs and logged evidence. | Metric theory, construct validity, human vs automatic evaluation. | Listing metrics without formula or interpretation. |
+| 4 Related work | Existing work covers important pieces but rarely combines speech-channel evidence, LLM backends, staged constraints, and route validation. | Grouped literature strands. | Claiming prior work does not exist. |
+| 5 Validity threats | The experiment is controlled and useful but not a full substitute for human evaluation or real transit interaction. | Construct/internal/external/statistical validity discussion. | Hiding limitations until after results. |
+| 6 Methodology | CoopNavigationSDS operationalizes phase-wise SDS evaluation in a controlled route task. | Configuration, network, agents, logging, metrics, batch design. | Mixing methodology with result interpretation. |
+| 7 Results | Outcomes must be interpreted through coverage, execution completion, phase evidence, and task metrics. | Tables, charts, condition rows, phase metrics. | Ranking models before reporting missing evidence. |
+| 8 Discussion | Phase-wise evidence explains why final task outcomes differ and which metrics are diagnostically useful. | RQ-by-RQ interpretation. | Turning associations into causal claims. |
+| 9 Conclusion | The framework is a valid bachelor-level research artifact for automatic SDS evaluation, with clear scope limits. | Summary of method, findings, limitations, future work. | Overclaiming generality beyond the controlled task. |
 
 ## 1. Introduction
 
@@ -625,12 +704,16 @@ Reason:
   state;
 - task success is only interpretable after both coverage values are reported.
 
-Current active denominator for the pulled result set:
+Current observed UserLM thesis subset for the pulled result set:
 
 ```text
-selected_thesis_conditions = 744
-completed_selected_conditions = 310
-coverage = 41.67%
+selected_userlm_condition_ids = 770
+completed_selected_userlm_conditions = 317
+task_successful_selected_userlm_conditions = 281
+route_valid_selected_userlm_conditions = 294
+completion_coverage = 317 / 770 = 41.17%
+task_success_among_completed = 281 / 317 = 88.64%
+route_validity_among_completed = 294 / 317 = 92.74%
 ```
 
 For the current thesis denominator, UserLM-Agent-A comparisons are analyzed
@@ -864,9 +947,15 @@ Interpretation:
 - zero means the metric was calculated and the result is zero.
 - null means the metric could not legitimately be calculated.
 
-### 7.6 Semi-success classification
+### 7.6 Completed-dialogue outcome classification
 
-Recommended classification:
+Classify navigation outcome only after the dialogue runtime completed and
+retrospective metrics were calculated. Provider failures, invalid test
+conditions, missing model assets, Slurm interruption, and preflight failures
+are execution outcomes. They belong in coverage and reliability tables, not in
+the successful/semi-successful/unsuccessful navigation table.
+
+Recommended completed-dialogue classification:
 
 - successful:
   - final route valid,
@@ -882,8 +971,40 @@ Recommended classification:
   - no valid final route,
   - critical trip facts unresolved,
   - repeated repair loop,
-  - provider failure prevents dialogue,
   - turn limit reached without usable route.
+- execution failed or invalid:
+  - provider failure prevents dialogue,
+  - model/backend setup fails,
+  - Slurm or process interruption prevents a terminal dialogue,
+  - scenario is invalid because required staged alternatives are missing.
+  - report separately from navigation outcome metrics.
+
+Formula:
+
+```text
+completed_dialogue =
+    execution_status == "completed"
+    and metrics_wide.csv is present
+
+successful =
+    completed_dialogue
+    and task_success == true
+
+semi_successful =
+    completed_dialogue
+    and task_success == false
+    and (route_valid == true or route_reaches_goal == true)
+
+unsuccessful_dialogue =
+    completed_dialogue
+    and task_success == false
+    and route_valid == false
+    and route_reaches_goal == false
+```
+
+This distinction is methodologically important. It prevents a missing model,
+bad cluster state, or invalid generated scenario from being misread as poor
+conversational performance by Agent B.
 
 ## 8. Results Chapter Guide
 
@@ -891,13 +1012,30 @@ Recommended classification:
 
 1. Run inventory and coverage.
 2. Exclusions and unavailable evidence.
-3. Overall task outcomes.
-4. Success/semi-success/unsuccess distribution.
-5. Phase metric distributions.
-6. Metric-outcome correlations.
-7. Model-backend comparison.
-8. Failure localization.
-9. Representative success and failure cases.
+3. Execution completion before task success.
+4. Overall task outcomes.
+5. Success/semi-success/unsuccess distribution.
+6. Phase metric distributions.
+7. Metric-outcome correlations.
+8. Model-backend comparison.
+9. Failure localization.
+10. Representative success and failure cases.
+
+Do not start the results chapter with model rankings. Start with evidence
+availability. A model cannot be fairly compared on task success until the
+reader knows how many conditions produced complete evidence.
+
+Minimum result table sequence:
+
+1. **Condition inventory:** observed/planned condition IDs, completed unique
+   conditions, failed attempts, unavailable evidence.
+2. **Execution evidence:** completed versus failed attempts by model, runtime
+   categories, provider/runtime errors.
+3. **Task outcome:** route validity, task success, constraint satisfaction,
+   turn count.
+4. **Phase evidence:** per-phase metric averages and missingness.
+5. **Diagnostic evidence:** earliest failing phase candidate, error
+   signatures, repair-loop or stagnation indicators.
 
 ### 8.2 Tables to include
 
@@ -948,7 +1086,7 @@ Use these as analysis prompts for the current result set:
   - Qwen2.5 7B has valid routes when completed, but weaker execution coverage
     and lower selected-slot success under current CPU batch conditions.
 - Finally discuss limitations:
-  - TinyLlama-Agent-A control coverage is still missing locally;
+  - TinyLlama-Agent-A control runs are outside the main thesis denominator;
   - archived model settings are excluded;
   - CPU cluster runtime, provider availability, and interruption patterns are
     part of the experimental condition and must not be hidden.
@@ -963,6 +1101,149 @@ in whether the dialogue completes, whether constraints remain satisfied, and
 whether upstream speech and state evidence stays coherent enough for Agent A
 to accept the final route.
 ```
+
+### 8.6 Current model-by-model reading
+
+Use this as a concise basis for Chapter 7. Recheck the latest result tables
+before final submission.
+
+| Model | Current reading |
+| --- | --- |
+| TinyLlama 1.1B | Small baseline with task-success rate close to Qwen2.5 0.5B among completed runs. Useful as a low-resource control. |
+| Qwen2.5 0.5B | Similar outcome profile to TinyLlama in the current subset; shows that very small models can complete many grounded route dialogues. |
+| Qwen2.5 1.5B | Strongest current evidence profile: most completed unique conditions and highest task-success count. Good candidate for "best practical backend in this batch." |
+| Phi-3 mini | Reasonable completed-run success, but lower completion coverage than Qwen2.5 1.5B. Interpret as mixed evidence rather than model failure. |
+| Qwen2.5 7B | High route validity among completed runs, but fewer completed conditions. Interpret as high-capacity but resource-sensitive under current execution conditions. |
+
+### 8.7 Recommended result claims by strength
+
+Strong claims:
+
+- The framework records enough evidence to separate runtime completion,
+  dialogue completion, route validity, and task success.
+- In completed UserLM-Agent-A conditions, route validity is generally high.
+- The current result set supports model-backend comparison only after
+  stratifying by Agent A and excluding archived settings.
+
+Moderate claims:
+
+- Qwen2.5 1.5B is currently the strongest practical Agent B backend in the
+  selected UserLM subset.
+- Phase-aware evidence is more useful than final task success alone for
+  explaining failures.
+- Small Agent B models can be viable in a constrained grounded navigation
+  task.
+
+Weak or exploratory claims:
+
+- Specific metric thresholds predict future failures.
+- Larger models are systematically better or worse.
+- Speech-channel effects generalize beyond the configured TTS/ASR conditions.
+
+### 8.8 Outcome-indicating metrics in the current result set
+
+Use this subsection when writing the result interpretation. It is based on
+fully completed, metric-available UserLM-Agent-A runs for the five active Agent
+B models. Execution-failed and invalid-condition rows are excluded from this
+metric comparison. They remain important execution evidence, but they are not
+dialogue-outcome evidence.
+
+This is not the same denominator as unique-condition coverage: coverage answers
+"which planned conditions are represented?", while this scan answers "which
+calculated metrics most often separate completed dialogue outcome classes?"
+
+Current completed-dialogue attempt classes:
+
+| Outcome class | Count | Meaning for interpretation |
+| --- | ---: | --- |
+| successful | 409 | completed dialogue, valid route, accepted task outcome, revealed constraints satisfied |
+| semi-successful | 19 | route evidence exists, but final task/constraint/optimality acceptance failed |
+| unsuccessful dialogue | 24 | completed runtime trace, but no usable route outcome |
+
+Excluded rows are provider/runtime failures or invalid test conditions. They
+should be reported in an execution-completion table, not in the dialogue metric
+comparison. This keeps the metric interpretation focused on completed
+conversations regardless of whether the navigation task succeeded.
+
+Completed-dialogue outcome by Agent B model:
+
+| Agent B model | Completed runs | Successful | Semi-successful | Unsuccessful dialogue | Success rate | Route-or-better rate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| TinyLlama 1.1B | 94 | 84 | 5 | 5 | 89.36% | 94.68% |
+| Qwen2.5 0.5B | 94 | 84 | 5 | 5 | 89.36% | 94.68% |
+| Qwen2.5 1.5B | 137 | 126 | 5 | 6 | 91.97% | 95.62% |
+| Phi-3 mini | 77 | 69 | 2 | 6 | 89.61% | 92.21% |
+| Qwen2.5 7B | 50 | 46 | 2 | 2 | 92.00% | 96.00% |
+
+Most useful indicators by outcome:
+
+| Outcome | Strongest indicating metrics | Current observed pattern | Interpretation |
+| --- | --- | --- | --- |
+| successful | `task_outcome_route_validity`, `task_outcome_constraint_satisfaction_rate`, `agent_b_active_constraint_compliance`, `dialogue_state_joint_goal_accuracy`, `agent_b_grounded_proposal_score`, `nlg_faithfulness`, `whole_dialogue_goal_progress_auc` | successful runs are near 1.0 on task, grounding, faithfulness, and goal-progress metrics | these metrics confirm that the final route is not only syntactically present but task-grounded and constraint-compatible |
+| semi-successful | `task_outcome_route_validity`, `duration_score`, `agent_b_actionability_score`, `whole_dialogue_goal_progress_auc`, `constraint_duration_gap_min`, `constraint_line_change_gap`, low `agent_b_active_constraint_compliance` | route validity remains high, but constraint satisfaction is 0.0; duration and line-change gaps rise | the dialogue found a route-like answer but failed later-stage preference or constraint negotiation |
+| unsuccessful dialogue | low `nlu_route_valid_rate`, low `nlu_goal_reached_rate`, low `station_mentions`, low `candidate_route_count`, high `whole_dialogue_abandonment_rate`, high `asr_word_error_rate` and `asr_sentence_error_rate` | no candidate route is established; station/entity evidence collapses; abandonment reaches 1.0 | failure occurs before stable route negotiation, often around ASR/NLU entity preservation or dialogue-state grounding |
+
+Useful numeric anchors from the completed-dialogue metric scan:
+
+| Metric | Successful mean | Semi-successful mean | Unsuccessful-dialogue mean | Reading |
+| --- | ---: | ---: | ---: | --- |
+| `automatic_eval_score` | 0.954 | 0.216 | 0.069 | good compact outcome proxy, but still derived from task evidence |
+| `quality_score` | 0.745 | 0.077 | 0.000 | separates accepted route dialogues from incomplete outcomes |
+| `duration_score` | 0.977 | 0.666 | 0.000 | useful for distinguishing semi-success from total failure |
+| `agent_b_grounded_proposal_score` | 0.994 | 0.443 | 0.000 | strong indicator that Agent B proposed a usable, network-grounded route |
+| `agent_b_actionability_score` | 1.000 | 0.776 | 0.000 | semi-success can remain actionable while still violating constraints |
+| `nlg_executable_utterance_rate` | 0.802 | 0.261 | 0.000 | indicates whether generated language can be converted into route actions |
+| `whole_dialogue_goal_progress_auc` | 0.964 | 0.783 | 0.000 | best phase-aware progression signal; semi-success still shows progress |
+| `whole_dialogue_abandonment_rate` | 0.000 | 0.895 | 1.000 | strong warning signal for incomplete or rejected dialogues |
+| `asr_word_error_rate` | 0.079 | 0.080 | 0.697 | high values indicate upstream speech recognition failure; low values do not guarantee success |
+| `asr_station_f1` | 0.977 | 0.978 | 0.223 | station preservation is a strong prerequisite for route grounding |
+| `nlu_route_valid_rate` | 0.920 | 0.330 | 0.000 | separates stable route understanding from non-route dialogue |
+| `nlu_goal_reached_rate` | 0.878 | 0.039 | 0.000 | strong indicator for whether the understood route reaches the target |
+| `tts_text_change_rate` | 0.050 | 0.121 | 0.286 | higher values indicate speech realization drift, but interpret with ASR metrics |
+| `candidate_route_count` | 3.702 | 1.579 | 0.000 | successful dialogues compare several candidates; failures rarely establish any |
+| `station_mentions` | 26.252 | 15.684 | 0.833 | strong low-level signal that the dialogue stays grounded in network entities |
+| `dialogue_management_repair_success_rate` | 0.937 | 0.921 | 0.368 | repairs can support success and semi-success; very low values indicate failed recovery |
+
+How to phrase the main metric finding:
+
+```text
+The most reliable indicators are not single final scores but a chain of
+consistent evidence: ASR preserves station entities, NLU extracts a valid
+route, Agent B produces a grounded and executable proposal, dialogue state
+retains the goal and constraints, and the task metrics confirm route validity
+and constraint satisfaction. Semi-successful runs are especially useful because
+they show that route validity alone is insufficient: they often preserve an
+actionable route while failing constraint satisfaction or duration/transfer
+optimality.
+```
+
+Metric families by thesis value:
+
+- Best outcome-confirming metrics:
+  - route validity,
+  - constraint satisfaction,
+  - active constraint compliance,
+  - grounded proposal score,
+  - NLG faithfulness.
+- Best explanatory metrics:
+  - whole-dialogue goal progress,
+  - candidate route count,
+  - station mentions,
+  - NLU route-valid and goal-reached rates,
+  - repair success rate.
+- Best early-warning metrics:
+  - ASR station F1,
+  - ASR word/sentence error,
+  - TTS text-change rate,
+  - abandonment rate,
+  - missing candidate routes.
+- Weak or redundant alone:
+  - direct task completion metrics when used as predictors of task completion;
+  - trace completeness, TTS success, and pipeline success inside completed
+    runs, because they are near-constant once the run reaches retrospective
+    metric calculation;
+  - shared-state agreement without route outcome context, because a dialogue
+    can agree on an incomplete or wrong state.
 
 ## 9. Discussion and Conclusion
 
