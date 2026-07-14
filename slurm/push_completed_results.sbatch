@@ -21,10 +21,12 @@ echo "start=$(date --iso-8601=seconds)"
 echo "project=${PROJECT_ROOT}"
 echo "python=${PYTHON_BIN}"
 echo "results=${RESULTS_ROOT}"
+echo "refresh_analysis=${REFRESH_ANALYSIS:-0}"
 
 PROJECT_ROOT="${PROJECT_ROOT}" \
 PYTHON_BIN="${PYTHON_BIN}" \
 RESULTS_ROOT="${RESULTS_ROOT}" \
+REFRESH_ANALYSIS="${REFRESH_ANALYSIS:-0}" \
 bash scripts/cluster_push_completed_results.sh
 
 echo "done=$(date --iso-8601=seconds)"

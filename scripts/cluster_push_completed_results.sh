@@ -2,9 +2,9 @@
 set -Eeuo pipefail
 
 # Prepare and push already completed run results without touching running Slurm
-# jobs. Raw Slurm logs are intentionally not staged. Derived analysis is
-# refreshed only when completed run evidence is newer than the compact analysis
-# files, unless FORCE_REFRESH=1 is set.
+# jobs. Raw Slurm logs are intentionally not staged. Derived analysis is off by
+# default because running experiment jobs can write new evidence while analysis
+# reads the result tree. Set REFRESH_ANALYSIS=1 only after the queue is quiet.
 
 ROOT="${PROJECT_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 PYTHON_BIN="${PYTHON_BIN:-${ROOT}/.venv-linux/bin/python}"
@@ -14,7 +14,7 @@ BRANCH="${BRANCH:-main}"
 GIT_KEY_PATH="${GIT_KEY_PATH:-${ROOT}/key2}"
 MAX_GITHUB_FILE_BYTES="${MAX_GITHUB_FILE_BYTES:-95000000}"
 FORCE_REFRESH="${FORCE_REFRESH:-0}"
-REFRESH_ANALYSIS="${REFRESH_ANALYSIS:-1}"
+REFRESH_ANALYSIS="${REFRESH_ANALYSIS:-0}"
 COMMIT_PREFIX="${COMMIT_PREFIX:-Push completed cluster results}"
 
 cd "${ROOT}"
@@ -111,6 +111,10 @@ PY
 
 refresh_if_needed() {
   step "3/8 Refresh compact analysis if stale"
+  if [[ "${REFRESH_ANALYSIS}" != "1" ]]; then
+    echo "analysis_refresh=skipped (REFRESH_ANALYSIS=0; safe while Slurm jobs are running)"
+    return 0
+  fi
   if analysis_is_stale; then
     echo "analysis_refresh=needed"
     run_python -u scripts/update_experiment_coverage.py --results-dir "${RESULTS_ROOT}"
