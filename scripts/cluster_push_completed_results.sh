@@ -30,9 +30,9 @@ fail() {
 }
 
 run_python() {
-  printf '+ %s' "${PYTHON_BIN}"
-  printf ' %q' "$@"
-  printf '\n'
+  printf '+ %s' "${PYTHON_BIN}" >&2
+  printf ' %q' "$@" >&2
+  printf '\n' >&2
   "${PYTHON_BIN}" "$@"
 }
 
@@ -165,7 +165,6 @@ for name in staged:
     reason = "excluded" if excluded else f"oversized:{path.stat().st_size}"
     print(f"unstage {reason}: {name}", flush=True)
     subprocess.run(["git", "restore", "--staged", "--", name], check=False)
-    subprocess.run(["git", "rm", "--cached", "--ignore-unmatch", "--", name], check=False)
 
 bad = []
 for name in subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines():
@@ -173,7 +172,6 @@ for name in subprocess.check_output(["git", "diff", "--cached", "--name-only"], 
     if path.exists() and path.is_file() and path.stat().st_size > limit:
         print(f"unstage oversized verification-pass: {name} ({path.stat().st_size})", flush=True)
         subprocess.run(["git", "restore", "--staged", "--", name], check=False)
-        subprocess.run(["git", "rm", "--cached", "--ignore-unmatch", "--", name], check=False)
 
 for name in subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines():
     path = Path(name)
@@ -187,11 +185,12 @@ PY
 }
 
 discover_model_paths() {
-  if [[ -f "${SNAPSHOT_FILE}" ]]; then
+  if [[ "${USE_EXISTING_SNAPSHOT:-0}" == "1" && -f "${SNAPSHOT_FILE}" ]]; then
     cat "${SNAPSHOT_FILE}"
     return 0
   fi
   mkdir -p "$(dirname "${SNAPSHOT_FILE}")"
+  rm -f "${SNAPSHOT_FILE}"
   run_python - "${RESULTS_ROOT}" <<'PY' | tee "${SNAPSHOT_FILE}"
 from pathlib import Path
 import sys
@@ -221,6 +220,10 @@ commit_model_results() {
   fi
   local index=0
   for path in "${model_paths[@]}"; do
+    if [[ ! -d "${path}" ]]; then
+      echo "skip non-directory snapshot entry: ${path}"
+      continue
+    fi
     index=$((index + 1))
     echo "model_path ${index}/${#model_paths[@]}: ${path}"
     stage_one_path "${path}"
