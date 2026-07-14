@@ -925,6 +925,35 @@ selected non-large2 Transformer models and records the exclusion explicitly in
 the current-analysis files. This avoids treating unavailable infrastructure as
 Agent B dialogue failure.
 
+Large2 is submitted through a separate guard script, not through the normal
+remaining-coverage helper. The guard script refuses to submit Mistral while
+any selected non-large2 condition is still missing. This keeps the final large2
+campaign from competing with the baseline jobs and prevents Mistral runtime
+failures from blocking the primary thesis matrix.
+
+Before large2 submission, prepare and verify the model once:
+
+```bash
+python3 scripts/setup_transformers_agent_b_models.py --profile mistral_7b_transformers --download --max-workers 1
+python3 scripts/setup_transformers_agent_b_models.py --profile mistral_7b_transformers
+```
+
+After all non-large2 jobs are complete and the coverage CSV has been refreshed,
+preview and submit large2:
+
+```bash
+python3 scripts/submit_large2_after_selected_complete.py
+python3 scripts/submit_large2_after_selected_complete.py --submit
+```
+
+Large2 uses CPU-only execution, one array task at a time, and conservative
+memory/time requests: UserLM/Mistral jobs default to 8 CPUs, 112G, and
+09:59:00 per condition; TinyLlama/Mistral control jobs default to 6 CPUs, 72G,
+and 07:59:00. The helper splits UserLM jobs into chunks of four condition
+indices and TinyLlama jobs into chunks of six. These chunks are intentionally
+small because large2 is the highest-risk treatment and should favor completed,
+diagnosable evidence over scheduler density.
+
 To finish only uncovered valid conditions for the active selected models, use
 the coverage-aware submitter. It reads
 `results/experiment_coverage_conditions.csv`, maps completed condition IDs
