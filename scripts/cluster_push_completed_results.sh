@@ -16,6 +16,7 @@ MAX_GITHUB_FILE_BYTES="${MAX_GITHUB_FILE_BYTES:-95000000}"
 FORCE_REFRESH="${FORCE_REFRESH:-0}"
 REFRESH_ANALYSIS="${REFRESH_ANALYSIS:-0}"
 COMMIT_PREFIX="${COMMIT_PREFIX:-Push completed cluster results}"
+SNAPSHOT_FILE="${SNAPSHOT_FILE:-${RESULTS_ROOT}/_transfer/completed_result_push_snapshot.txt}"
 
 cd "${ROOT}"
 
@@ -140,8 +141,6 @@ stage_one_path() {
     return 0
   fi
   git commit -m "${COMMIT_PREFIX}: ${path#${ROOT}/}"
-  git pull --rebase "${REMOTE}" "${BRANCH}"
-  git push --progress "${REMOTE}" "HEAD:${BRANCH}"
 }
 
 unstage_excluded() {
@@ -180,7 +179,12 @@ PY
 }
 
 discover_model_paths() {
-  run_python - "${RESULTS_ROOT}" <<'PY'
+  if [[ -f "${SNAPSHOT_FILE}" ]]; then
+    cat "${SNAPSHOT_FILE}"
+    return 0
+  fi
+  mkdir -p "$(dirname "${SNAPSHOT_FILE}")"
+  run_python - "${RESULTS_ROOT}" <<'PY' | tee "${SNAPSHOT_FILE}"
 from pathlib import Path
 import sys
 
@@ -236,20 +240,29 @@ commit_compact_analysis() {
     echo "No compact analysis changes staged."
   else
     git commit -m "${COMMIT_PREFIX}: compact analysis"
-    git pull --rebase "${REMOTE}" "${BRANCH}"
-    git push --progress "${REMOTE}" "HEAD:${BRANCH}"
   fi
 }
 
+push_commits_once() {
+  step "6/8 Rebase and push committed result changes"
+  git fetch "${REMOTE}" "${BRANCH}"
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Unstaged changes remain after snapshot commits; they will be left for a later push."
+    git status --short | head -80
+  fi
+  if ! git rebase --autostash "${REMOTE}/${BRANCH}"; then
+    fail "rebase failed; inspect git status. Autostash preserves local unstaged result files."
+  fi
+  git push --progress "${REMOTE}" "HEAD:${BRANCH}"
+}
+
 final_state() {
-  step "6/8 Final state"
+  step "7/8 Final state"
   git status --short --branch
   git log --oneline --decorate -5
 
-  step "7/8 Running Slurm jobs left untouched"
+  step "8/8 Running Slurm jobs left untouched"
   squeue -u "$USER" -o "%.18i %.12P %.32j %.8T %.10M %.10l %.6C %.8m %.24R" || true
-
-  step "8/8 Done"
 }
 
 preflight
@@ -258,4 +271,5 @@ git fetch "${REMOTE}" "${BRANCH}"
 refresh_if_needed
 commit_model_results
 commit_compact_analysis
+push_commits_once
 final_state
