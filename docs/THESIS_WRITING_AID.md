@@ -58,6 +58,59 @@ experimental outcome or unavailable evidence with reason.
   constraints.
 - Observation unit: one complete condition/run, not one turn.
 
+### Current empirical snapshot
+
+Use this only as the current result basis, not as final thesis wording unless
+the result set is frozen.
+
+- Snapshot source: pulled result tables generated on 2026-07-14.
+- Completed run folders: 1418.
+- Selected thesis coverage denominator: 744 planned conditions across six
+  Agent B slots.
+- Completed selected conditions: 310 / 744 = 41.67%.
+- Active non-large2 coverage: five Agent B slots have 154 / 216 selected
+  conditions each.
+- Remaining non-large2 gap: TinyLlama-as-Agent-A control conditions are still
+  missing in the pulled result set, 62 conditions per non-large2 slot.
+- Large2 / Mistral 7B is excluded from substantive comparison until its
+  runtime path produces analyzable runs.
+
+Current selected-slot coverage:
+
+| Agent B slot | Model | Size | Completed / planned | Successful / planned |
+| --- | --- | --- | ---: | ---: |
+| small1 | TinyLlama 1.1B | small | 154 / 216 | 54 / 216 |
+| small2 | Qwen2.5 0.5B | small | 154 / 216 | 54 / 216 |
+| medium1 | Qwen2.5 1.5B | medium | 154 / 216 | 88 / 216 |
+| medium2 | Phi-3 mini | medium | 154 / 216 | 52 / 216 |
+| large1 | Qwen2.5 7B | large | 154 / 216 | 33 / 216 |
+| large2 | Mistral 7B | large | 0 / 216 | 0 / 216 |
+
+Current UserLM-Agent-A completed-dialogue outcomes:
+
+| Agent B model | Completed dialogues | Task-satisfied | Unsatisfied | Route-valid rate | Mean duration gap | Mean turns |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| TinyLlama 1.1B | 94 | 60 | 34 | 89 / 94 | 1.43 min | 11.98 |
+| Qwen2.5 0.5B | 94 | 59 | 35 | 89 / 94 | 1.02 min | 12.31 |
+| Qwen2.5 1.5B | 154 | 105 | 49 | 148 / 154 | 1.34 min | 11.34 |
+| Phi-3 mini | 77 | 53 | 24 | 71 / 77 | 1.10 min | 12.17 |
+| Qwen2.5 7B | 50 | 34 | 16 | 48 / 50 | 1.85 min | 11.36 |
+
+Immediate interpretation:
+
+- Route validity is high once a dialogue completes, so many failures are
+  execution, interruption, repair, or constraint-satisfaction failures rather
+  than impossible route-planning failures.
+- Qwen2.5 1.5B currently has the strongest completed-dialogue task
+  satisfaction count in the pulled result set.
+- Qwen2.5 7B completes fewer dialogues and has lower selected-slot success in
+  the current CPU cluster setting; this should be interpreted as a backend and
+  runtime effect, not as a general claim about large models.
+- TinyLlama and Qwen2.5 0.5B behave similarly in the current UserLM subset,
+  making them useful small-model baselines.
+- The missing TinyLlama-Agent-A control grid must be reported as missing
+  evidence unless it is completed before final analysis.
+
 ## 1. Introduction
 
 ### Chapter function
@@ -555,6 +608,36 @@ planned_conditions = sum(valid planned conditions for those five slots)
 coverage = completed_planned_conditions / planned_conditions
 ```
 
+Report two coverage levels separately:
+
+```text
+execution_coverage =
+    observed_or_completed_conditions / planned_conditions
+
+task_completion_coverage =
+    completed_dialogues_with_terminal_outcome / planned_conditions
+```
+
+Reason:
+
+- execution coverage shows whether the cluster/batch pipeline produced
+  evidence;
+- task completion coverage shows whether the dialogue reached a valid terminal
+  state;
+- task success is only interpretable after both coverage values are reported.
+
+Current active denominator for the pulled result set:
+
+```text
+selected_thesis_conditions = 744
+completed_selected_conditions = 310
+coverage = 41.67%
+```
+
+For non-large2 UserLM-Agent-A comparisons, the model-comparison and pressure
+grids are complete in the current result set. The remaining planned non-large2
+conditions are TinyLlama-Agent-A controls.
+
 ### 6.8 Data captured per run
 
 Minimum reproducibility metadata:
@@ -718,7 +801,54 @@ For RQ4:
 - success per 100 output tokens,
 - route validity per model size.
 
-### 7.4 Missing-data rule
+### 7.4 Current metric evidence to emphasize
+
+From the current pulled result set, the most thesis-relevant metric families
+are the ones that are both calculable and directly linked to the task:
+
+- backend task execution:
+  - route validity,
+  - destination reached,
+  - active-constraint compliance,
+  - grounded proposal score,
+  - actionability score.
+- dialogue state tracking:
+  - joint goal accuracy,
+  - shared state agreement,
+  - route agreement,
+  - constraint retention.
+- dialogue management:
+  - stagnation rate,
+  - repair success or repair failure,
+  - premature answer rate.
+- NLG:
+  - constraint mention precision and recall,
+  - faithfulness,
+  - executable utterance rate.
+- ASR/TTS and audio:
+  - station/line/time preservation,
+  - misinterpreted tokens,
+  - transcript corrections,
+  - real-time factor,
+  - pronunciation/entity preservation,
+  - no-reference audio quality where available.
+
+Current correlation tables show near-perfect association between task success
+and several task-derived metrics such as constraint satisfaction, active
+constraint compliance, joint goal accuracy, grounded proposal score, and
+faithfulness. Treat this carefully: these metrics are construct-valid for task
+success, but some are partly definitional. They are excellent for explaining
+the task outcome, but they do not alone prove which upstream phase caused the
+outcome.
+
+Audio and speech metrics are useful mainly as diagnostic indicators. In the
+current result set, outliers in station pronunciation accuracy, no-reference
+speech quality, real-time interaction factor, ASR real-time factor, speech
+rate, and silence ratio align with success/failure patterns often enough to
+justify analysis, but they require cautious interpretation and should be
+validated against dialogue evidence.
+
+### 7.5 Missing-data rule
 
 Never encode missing evidence as zero.
 
@@ -735,7 +865,7 @@ Interpretation:
 - zero means the metric was calculated and the result is zero.
 - null means the metric could not legitimately be calculated.
 
-### 7.5 Semi-success classification
+### 7.6 Semi-success classification
 
 Recommended classification:
 
@@ -798,6 +928,42 @@ Write:
 Avoid:
 
 - "proves that phase X caused failure" unless manually validated.
+
+### 8.5 Current result interpretation notes
+
+Use these as analysis prompts for the current result set:
+
+- First separate batch execution from dialogue quality:
+  - not-started and interrupted conditions explain coverage loss;
+  - completed dialogues explain task success and constraint satisfaction.
+- Then report completed-dialogue quality:
+  - route validity is high for completed UserLM-Agent-A dialogues;
+  - task satisfaction differs more strongly by constraint handling and
+    dialogue completion than by route validity alone.
+- Then compare models:
+  - Qwen2.5 1.5B currently has the strongest completed-dialogue task
+    satisfaction in the pulled results;
+  - TinyLlama 1.1B and Qwen2.5 0.5B are close small-model baselines;
+  - Phi-3 mini has reasonable task satisfaction among completed dialogues but
+    lower completion coverage in the pulled result set;
+  - Qwen2.5 7B has valid routes when completed, but weaker execution coverage
+    and lower selected-slot success under current CPU batch conditions.
+- Finally discuss limitations:
+  - TinyLlama-Agent-A control coverage is still missing locally;
+  - large2 is excluded;
+  - CPU cluster runtime, provider availability, and interruption patterns are
+    part of the experimental condition and must not be hidden.
+
+Suggested wording:
+
+```text
+Among completed UserLM-agent dialogues, most final routes were valid, which
+suggests that route grounding itself is often successful once a terminal
+dialogue state is reached. The main experimental variation therefore appears
+in whether the dialogue completes, whether constraints remain satisfied, and
+whether upstream speech and state evidence stays coherent enough for Agent A
+to accept the final route.
+```
 
 ## 9. Discussion and Conclusion
 
