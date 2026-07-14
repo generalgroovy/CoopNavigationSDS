@@ -17,6 +17,7 @@ FORCE_REFRESH="${FORCE_REFRESH:-0}"
 REFRESH_ANALYSIS="${REFRESH_ANALYSIS:-0}"
 COMMIT_PREFIX="${COMMIT_PREFIX:-Push completed cluster results}"
 SNAPSHOT_FILE="${SNAPSHOT_FILE:-${RESULTS_ROOT}/_transfer/completed_result_push_snapshot.txt}"
+RESET_STAGED_ON_START="${RESET_STAGED_ON_START:-1}"
 
 cd "${ROOT}"
 
@@ -50,6 +51,10 @@ preflight() {
   if [[ -e .git/index.lock || -d .git/rebase-merge || -d .git/rebase-apply ]]; then
     find .git -maxdepth 2 \( -name '*.lock' -o -name 'rebase-merge' -o -name 'rebase-apply' \) -print -ls >&2
     fail "Git lock or rebase state exists"
+  fi
+  if [[ "${RESET_STAGED_ON_START}" == "1" ]]; then
+    echo "Resetting staged index before snapshot staging; working files are preserved."
+    git reset --quiet
   fi
   git config gc.auto 0
   git config core.autocrlf false
