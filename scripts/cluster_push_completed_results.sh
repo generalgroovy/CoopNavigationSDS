@@ -153,6 +153,7 @@ limit = int(sys.argv[1])
 always_exclude = {
     "results/comparison/combined_metrics_long.csv",
     "results/comparison/metric_deltas.csv",
+    "results/comparison/metric_summary.csv",
 }
 staged = subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines()
 for name in staged:
@@ -167,6 +168,13 @@ for name in staged:
     subprocess.run(["git", "rm", "--cached", "--ignore-unmatch", "--", name], check=False)
 
 bad = []
+for name in subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines():
+    path = Path(name)
+    if path.exists() and path.is_file() and path.stat().st_size > limit:
+        print(f"unstage oversized verification-pass: {name} ({path.stat().st_size})", flush=True)
+        subprocess.run(["git", "restore", "--staged", "--", name], check=False)
+        subprocess.run(["git", "rm", "--cached", "--ignore-unmatch", "--", name], check=False)
+
 for name in subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines():
     path = Path(name)
     if path.exists() and path.is_file() and path.stat().st_size > limit:
@@ -221,6 +229,10 @@ commit_model_results() {
 
 commit_compact_analysis() {
   step "5/8 Commit and push compact analysis tables"
+  if [[ "${REFRESH_ANALYSIS}" != "1" ]]; then
+    echo "compact_analysis_push=skipped (REFRESH_ANALYSIS=0; run folders only while jobs are active)"
+    return 0
+  fi
   git add -f -- \
     results/experiment_coverage_summary.json \
     results/experiment_coverage_conditions.csv \
