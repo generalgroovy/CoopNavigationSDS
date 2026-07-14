@@ -23,7 +23,6 @@ Additional documented replacement or follow-up candidates:
 | Medium | `gemma2:2b` | Gemma-family architecture contrast |
 | Medium | `qwen3:4b` | newer Qwen-family instruction contrast |
 | Medium | `microsoft/Phi-3-mini-4k-instruct` | reasoning-focused Phi-family Transformers condition |
-| Large | `mistral:7b` | non-Llama/Qwen large local baseline |
 | Large | `tiiuae/Falcon3-7B-Instruct` | Falcon-family assistant model replacing UserLM as Agent B proposal |
 | Large | `Qwen/Qwen2.5-7B-Instruct` | large multilingual non-Ollama condition |
 | Large | `meta-llama/Llama-3.1-8B-Instruct` | large Llama-family Transformers condition |
@@ -207,7 +206,6 @@ array wrappers:
 ```bash
 sbatch slurm/userlm_small1_cpu_array.sbatch
 sbatch slurm/userlm_small2_cpu_array.sbatch
-sbatch slurm/userlm_large2_cpu_array.sbatch
 ```
 
 Each wrapper runs one UserLM speech-grid job as 84 single-condition array tasks

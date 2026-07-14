@@ -426,14 +426,13 @@ the deterministic agent because that would invalidate the condition label.
 
 #### Agent B Model Proposal Catalog
 
-The proposal catalog contains four Transformers Agent B candidates per size
-tier. The active thesis denominator uses two selected models per size tier
-(`small1`, `small2`, `medium1`, `medium2`, `large1`, `large2`) so every size
-class has equal weight and can be completed on shared cluster resources. The
-remaining catalog entries stay available for follow-up runs, sensitivity
-checks, or replacement when a selected model is unavailable. Each proposal has
-a distinct experimental reason; models are not added merely because they are
-available.
+The proposal catalog contains candidate Transformer Agent B backends by size
+tier. The active thesis denominator uses five selected, currently runnable
+UserLM-Agent-A comparisons: `small1`, `small2`, `medium1`, `medium2`, and
+`large1`. Historical or exploratory models remain outside this denominator
+unless they are explicitly reintroduced in a new preregistered run plan. This
+keeps the main analysis focused on comparable evidence rather than on
+infrastructure failures from unstable model assets.
 
 | Tier | Slot | Model | Provider | Unique aspect | Best use |
 | --- | --- | --- | --- | --- | --- |
@@ -446,7 +445,6 @@ available.
 | Medium | medium3 | `google/gemma-2-2b-it` | Transformers | Gemma-family instruction model | architecture contrast at moderate cost |
 | Medium | medium4 | `Qwen/Qwen3-4B-Instruct-2507` | Transformers | newer Qwen generation | constraint handling and multilingual contrast |
 | Large | large1 | `Qwen/Qwen2.5-7B-Instruct` | Transformers | large multilingual Qwen comparison | high-capacity route grounding |
-| Large | large2 | `mistralai/Mistral-7B-Instruct-v0.3` | Transformers | Mistral-family instruction model | non-Llama/Qwen repair behavior |
 | Large | large3 | `meta-llama/Llama-3.1-8B-Instruct` | Transformers | large Llama-family instruction baseline | high-quality dialogue management contrast |
 | Large | large4 | `tiiuae/Falcon3-7B-Instruct` | Transformers | Falcon-family assistant model with multilingual support | replaces UserLM as large Agent B proposal |
 
@@ -896,10 +894,10 @@ python scripts/submit_agent_b_model_jobs.py --root jobs/agent_b_llm/userlm_trans
 The recommended cluster path uses only
 `jobs/agent_b_llm/userlm_transformers_speech_grid` and `--provider
 transformers`, which avoids Ollama service failures while preserving matched
-non-model condition coverage. The thesis denominator is the six selected
-Transformer slots `small1`, `small2`, `medium1`, `medium2`, `large1`, and
-`large2`: two Agent B models per size tier. The larger twelve-model catalog is
-an extension pool, not the default percentage denominator. Every selected
+non-model condition coverage. The thesis denominator is the five selected
+Transformer slots `small1`, `small2`, `medium1`, `medium2`, and `large1`.
+The larger proposal catalog is an extension pool, not the default percentage
+denominator. Every selected
 Agent B model changes only the assistant backend while scenarios, personas,
 speech settings, constraints, seeds, and repair settings stay matched. Each
 selected model currently generates 84 candidate conditions and submits the 72
@@ -913,46 +911,15 @@ With `--max-conditions-per-array 14`, each model becomes six smaller arrays:
 still executes one valid condition, and every chunk keeps the same CPU, memory,
 and 3:59:00 per-task time-limit request; only the number of condition indices
 per submitted Slurm job changes. Override
-`MODEL_PROFILES` when a site has additional authorized local models and the
-larger coverage is desired. The configured factors intentionally span ceiling,
+`MODEL_PROFILES` when a site has additional authorized local models and a
+separate extension study is desired. The configured factors intentionally span ceiling,
 nominal, challenging, and floor speech performance so successful and
 unsuccessful dialogues can be compared phase-wise.
 
-For the current cluster campaign, `large2` (`Mistral-7B-Instruct-v0.3`) is
-kept in the documented model matrix but excluded from active completion runs
-until its asset/runtime path is stable. Active coverage therefore uses the five
-selected non-large2 Transformer models and records the exclusion explicitly in
-the current-analysis files. This avoids treating unavailable infrastructure as
-Agent B dialogue failure.
-
-Large2 is submitted through a separate guard script, not through the normal
-remaining-coverage helper. The guard script refuses to submit Mistral while
-any selected non-large2 condition is still missing. This keeps the final large2
-campaign from competing with the baseline jobs and prevents Mistral runtime
-failures from blocking the primary thesis matrix.
-
-Before large2 submission, prepare and verify the model once:
-
-```bash
-python3 scripts/setup_transformers_agent_b_models.py --profile mistral_7b_transformers --download --max-workers 1
-python3 scripts/setup_transformers_agent_b_models.py --profile mistral_7b_transformers
-```
-
-After all non-large2 jobs are complete and the coverage CSV has been refreshed,
-preview and submit large2:
-
-```bash
-python3 scripts/submit_large2_after_selected_complete.py
-python3 scripts/submit_large2_after_selected_complete.py --submit
-```
-
-Large2 uses CPU-only execution, one array task at a time, and conservative
-memory/time requests: UserLM/Mistral jobs default to 8 CPUs, 112G, and
-09:59:00 per condition; TinyLlama/Mistral control jobs default to 6 CPUs, 72G,
-and 07:59:00. The helper splits UserLM jobs into chunks of four condition
-indices and TinyLlama jobs into chunks of six. These chunks are intentionally
-small because large2 is the highest-risk treatment and should favor completed,
-diagnosable evidence over scheduler density.
+The previous Mistral/large2 path is archived out of the active project
+configuration. Existing raw result evidence remains auditable if present, but
+large2 is not part of the current thesis denominator, setup defaults, or
+remaining-coverage submitters.
 
 To finish only uncovered valid conditions for the active selected models, use
 the coverage-aware submitter. It reads
@@ -1051,7 +1018,7 @@ group them by logical job name and include representative samples.
 
 Result analysis now writes both full historical tables and current active
 tables. Full tables preserve all evidence, including old infrastructure
-failures. Files prefixed with `current_` exclude `large2` and obsolete
+failures. Files prefixed with `current_` exclude archived and obsolete
 pre-fix `NameError`/`ValueError` failures so active model comparisons are not
 distorted by known implementation bugs.
 
@@ -1089,7 +1056,6 @@ Legacy single-model wrappers remain available for focused retries:
 ```bash
 sbatch slurm/userlm_small1_cpu_array.sbatch
 sbatch slurm/userlm_small2_cpu_array.sbatch
-sbatch slurm/userlm_large2_cpu_array.sbatch
 ```
 
 The non-Ollama Transformers Agent B matrix can also be submitted through the
@@ -1136,7 +1102,7 @@ grid actually uses additional speech providers. The default thesis
 | --- | --- |
 | Small | `tinyllama_1b_transformers`, `qwen2_5_0_5b_transformers` |
 | Medium | `qwen2_5_1_5b_transformers`, `phi3_mini_4k_transformers` |
-| Large | `qwen2_5_7b_transformers`, `mistral_7b_transformers` |
+| Large | `qwen2_5_7b_transformers` |
 
 Additional catalog profiles can be prepared and submitted explicitly:
 `smollm2_360m_transformers`, `smollm2_1_7b_transformers`,
@@ -1343,6 +1309,30 @@ Per-turn text and audio fragments are consolidated only after record counts,
 line ranges, source paths, and WAV assembly are verified. Audio from different
 conditions is never merged. Existing raw evidence is not rewritten during
 analysis regeneration.
+
+### Current UserLM Thesis Snapshot
+
+The current thesis denominator fixes Agent A to UserLM and compares five
+selected Agent B Transformer models. TinyLlama-Agent-A controls, archived
+large2/Mistral settings, and exploratory extension models are excluded from
+this denominator unless explicitly analyzed in a separate stratum. The compact
+derived files are:
+
+- `results/general/current_userlm_selected_model_results.csv`
+- `results/general/current_userlm_selected_model_results.md`
+- `results/general/current_userlm_selected_model_results.json`
+
+| Slot | Agent B model | Size | Unique conditions observed | Completed | Task-success | Route-valid | Task-success rate of completed | Route-valid rate of completed |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| small1 | TinyLlama 1.1B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% |
+| small2 | Qwen2.5 0.5B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% |
+| medium1 | Qwen2.5 1.5B | medium | 154 | 96 | 88 | 91 | 91.7% | 94.8% |
+| medium2 | Phi-3 mini | medium | 154 | 60 | 52 | 54 | 86.7% | 90.0% |
+| large1 | Qwen2.5 7B | large | 154 | 37 | 33 | 35 | 89.2% | 94.6% |
+
+Completion and task success are intentionally separate. Failed attempts remain
+runtime evidence; coverage uses unique condition IDs so repeated attempts do
+not inflate the denominator.
 
 ### Result Data Relationships
 

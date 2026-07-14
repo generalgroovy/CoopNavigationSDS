@@ -1,11 +1,12 @@
-"""Submit only uncovered selected thesis conditions, excluding large2.
+"""Submit only uncovered selected thesis conditions.
 
 The script reads ``results/experiment_coverage_conditions.csv`` and maps
-unfinished condition IDs back to each selected Agent B ``.job`` file. It then
+unfinished condition IDs back to each active Agent B ``.job`` file. It then
 prints or submits Slurm arrays for the exact missing condition IDs. The index
 passed to Slurm is the full-grid index because the coverage CSV is already the
 source of truth for which designs are valid thesis conditions. Raw results are
-never deleted or modified.
+never deleted or modified. The file name is kept for compatibility with older
+cluster notes; the active selection is defined by ``SELECTED_JOB_FILES``.
 """
 from __future__ import annotations
 
@@ -168,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
 
     submissions = find_missing(Path(args.coverage_file))
     total_missing = sum(len(item.indexes) for item in submissions)
-    print(f"selected_models_without_large2={len(submissions)}", flush=True)
+    print(f"selected_active_models={len(submissions)}", flush=True)
     print(f"missing_condition_tasks={total_missing}", flush=True)
     for item in submissions:
         print(

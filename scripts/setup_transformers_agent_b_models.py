@@ -34,7 +34,6 @@ TRANSFORMERS_AGENT_B_PROFILES = {
     ),
     "large": (
         "qwen2_5_7b_transformers",
-        "mistral_7b_transformers",
         "llama3_1_8b_transformers",
         "falcon3_7b_transformers",
     ),

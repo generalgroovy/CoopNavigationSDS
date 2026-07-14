@@ -47,11 +47,11 @@ experimental outcome or unavailable evidence with reason.
 
 ### Current active experiment scope
 
-- Agent A: UserLM for the main cluster campaign; TinyLlama remains a control
-  option.
-- Agent B: selected Transformer models by size class.
-- Active coverage target: all selected Agent B models except `large2` until
-  the Mistral 7B runtime path is stable.
+- Agent A: UserLM is the thesis caller. TinyLlama remains a software control
+  and debugging option, but it is not part of the main thesis denominator.
+- Agent B: five selected Transformer models by size class.
+- Active coverage target: `small1`, `small2`, `medium1`, `medium2`, and
+  `large1`.
 - Speech channel: configured TTS and ASR; text-only controls may be used where
   paired comparison is available.
 - Task objective: shortest valid route under progressively revealed
@@ -63,53 +63,52 @@ experimental outcome or unavailable evidence with reason.
 Use this only as the current result basis, not as final thesis wording unless
 the result set is frozen.
 
-- Snapshot source: pulled result tables generated on 2026-07-14.
-- Completed run folders: 1418.
-- Selected thesis coverage denominator: 744 planned conditions across six
-  Agent B slots.
-- Completed selected conditions: 310 / 744 = 41.67%.
-- Active non-large2 coverage: five Agent B slots have 154 / 216 selected
-  conditions each.
-- Remaining non-large2 gap: TinyLlama-as-Agent-A control conditions are still
-  missing in the pulled result set, 62 conditions per non-large2 slot.
-- Large2 / Mistral 7B is excluded from substantive comparison until its
-  runtime path produces analyzable runs.
+- Snapshot source: pulled result folders at commit `692b2756` on 2026-07-14.
+- Finalized run folders found locally: 1764.
+- Thesis denominator used here: UserLM as Agent A and five selected Agent B
+  models. TinyLlama-Agent-A runs and archived models are excluded from the
+  main denominator but remain useful for software control analysis.
+- Calculation source: `conditions.jsonl` inside each run folder. Duplicate
+  attempts are preserved as runtime evidence; coverage uses unique condition
+  IDs and counts a condition as completed when any retained attempt completed.
+- Archived large2/Mistral settings are removed from active setup and Slurm
+  submission. Existing raw result folders are not altered.
 
-Current selected-slot coverage:
+Current UserLM-Agent-A unique-condition outcomes:
 
-| Agent B slot | Model | Size | Completed / planned | Successful / planned |
-| --- | --- | --- | ---: | ---: |
-| small1 | TinyLlama 1.1B | small | 154 / 216 | 54 / 216 |
-| small2 | Qwen2.5 0.5B | small | 154 / 216 | 54 / 216 |
-| medium1 | Qwen2.5 1.5B | medium | 154 / 216 | 88 / 216 |
-| medium2 | Phi-3 mini | medium | 154 / 216 | 52 / 216 |
-| large1 | Qwen2.5 7B | large | 154 / 216 | 33 / 216 |
-| large2 | Mistral 7B | large | 0 / 216 | 0 / 216 |
+| Agent B slot | Model | Size | Unique conditions observed | Completed | Task-success | Route-valid | Task-success rate of completed | Route-valid rate of completed | Mean turns |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| small1 | TinyLlama 1.1B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% | 12.18 |
+| small2 | Qwen2.5 0.5B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% | 12.27 |
+| medium1 | Qwen2.5 1.5B | medium | 154 | 96 | 88 | 91 | 91.7% | 94.8% | 11.68 |
+| medium2 | Phi-3 mini | medium | 154 | 60 | 52 | 54 | 86.7% | 90.0% | 12.17 |
+| large1 | Qwen2.5 7B | large | 154 | 37 | 33 | 35 | 89.2% | 94.6% | 11.16 |
 
-Current UserLM-Agent-A completed-dialogue outcomes:
+Current UserLM-Agent-A execution-attempt evidence:
 
-| Agent B model | Completed dialogues | Task-satisfied | Unsatisfied | Route-valid rate | Mean duration gap | Mean turns |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| TinyLlama 1.1B | 94 | 60 | 34 | 89 / 94 | 1.43 min | 11.98 |
-| Qwen2.5 0.5B | 94 | 59 | 35 | 89 / 94 | 1.02 min | 12.31 |
-| Qwen2.5 1.5B | 154 | 105 | 49 | 148 / 154 | 1.34 min | 11.34 |
-| Phi-3 mini | 77 | 53 | 24 | 71 / 77 | 1.10 min | 12.17 |
-| Qwen2.5 7B | 50 | 34 | 16 | 48 / 50 | 1.85 min | 11.36 |
+| Agent B model | Attempts | Completed attempts | Failed attempts | Task-successful completed attempts | Approx. summed runtime |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| TinyLlama 1.1B | 244 | 94 | 110 | 84 | 748.3 min |
+| Qwen2.5 0.5B | 244 | 94 | 110 | 84 | 637.5 min |
+| Qwen2.5 1.5B | 359 | 137 | 168 | 126 | 891.6 min |
+| Phi-3 mini | 299 | 77 | 182 | 69 | 881.0 min |
+| Qwen2.5 7B | 272 | 50 | 168 | 46 | 731.5 min |
 
 Immediate interpretation:
 
-- Route validity is high once a dialogue completes, so many failures are
-  execution, interruption, repair, or constraint-satisfaction failures rather
-  than impossible route-planning failures.
-- Qwen2.5 1.5B currently has the strongest completed-dialogue task
-  satisfaction count in the pulled result set.
-- Qwen2.5 7B completes fewer dialogues and has lower selected-slot success in
-  the current CPU cluster setting; this should be interpreted as a backend and
-  runtime effect, not as a general claim about large models.
-- TinyLlama and Qwen2.5 0.5B behave similarly in the current UserLM subset,
-  making them useful small-model baselines.
-- The missing TinyLlama-Agent-A control grid must be reported as missing
-  evidence unless it is completed before final analysis.
+- Completion and task success must be separated. Some models show high
+  task-success rates among completed dialogues while also producing many
+  failed execution attempts.
+- Qwen2.5 1.5B currently provides the strongest combination of completion
+  count and task success in the UserLM subset.
+- Qwen2.5 7B has strong route validity among completed runs but substantially
+  fewer completed unique conditions, so its lower coverage is a backend/runtime
+  limitation before it is a dialogue-quality claim.
+- TinyLlama 1.1B and Qwen2.5 0.5B form a useful small-model pair because their
+  completed-run behavior is similar under the current grid.
+- Failure analysis should inspect the earliest failing phase and provider
+  failure messages before interpreting failed attempts as conversational
+  inability.
 
 ## 1. Introduction
 
@@ -598,12 +597,12 @@ Use balanced coverage where possible:
 - one or more models per size class,
 - exact condition IDs for joinable comparison,
 - no silent reruns counted as new conditions unless repetition is explicit,
-- large2 currently excluded from active denominator until runtime is stable.
+- archived/obsolete model settings are excluded from the active denominator.
 
 Suggested active denominator:
 
 ```text
-selected_models_without_large2 = small1 + small2 + medium1 + medium2 + large1
+selected_userlm_models = small1 + small2 + medium1 + medium2 + large1
 planned_conditions = sum(valid planned conditions for those five slots)
 coverage = completed_planned_conditions / planned_conditions
 ```
@@ -634,9 +633,9 @@ completed_selected_conditions = 310
 coverage = 41.67%
 ```
 
-For non-large2 UserLM-Agent-A comparisons, the model-comparison and pressure
-grids are complete in the current result set. The remaining planned non-large2
-conditions are TinyLlama-Agent-A controls.
+For the current thesis denominator, UserLM-Agent-A comparisons are analyzed
+separately from TinyLlama-Agent-A software controls. Do not mix both callers in
+one unstratified success rate.
 
 ### 6.8 Data captured per run
 
@@ -950,7 +949,7 @@ Use these as analysis prompts for the current result set:
     and lower selected-slot success under current CPU batch conditions.
 - Finally discuss limitations:
   - TinyLlama-Agent-A control coverage is still missing locally;
-  - large2 is excluded;
+  - archived model settings are excluded;
   - CPU cluster runtime, provider availability, and interruption patterns are
     part of the experimental condition and must not be hidden.
 

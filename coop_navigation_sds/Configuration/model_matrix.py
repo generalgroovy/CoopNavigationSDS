@@ -58,7 +58,6 @@ AGENT_B_MODEL_SIZE_TREATMENTS = {
     "large": ModelSizeTreatment(
         "large", 7.0, 8.0, (
             "Qwen/Qwen2.5-7B-Instruct",
-            "mistralai/Mistral-7B-Instruct-v0.3",
             "meta-llama/Llama-3.1-8B-Instruct",
             "tiiuae/Falcon3-7B-Instruct",
         )
@@ -118,11 +117,6 @@ AGENT_B_MODEL_PROPOSALS = {
             "large", "large1", "Qwen/Qwen2.5-7B-Instruct", "transformers",
             "large multilingual Qwen-family comparison model",
             "tests high-capacity route grounding and constraint handling",
-        ),
-        AgentBModelProposal(
-            "large", "large2", "mistralai/Mistral-7B-Instruct-v0.3", "transformers",
-            "Mistral-family 7B model with different instruction tuning",
-            "tests whether non-Llama/Qwen architecture shifts repair quality",
         ),
         AgentBModelProposal(
             "large", "large3", "meta-llama/Llama-3.1-8B-Instruct", "transformers",

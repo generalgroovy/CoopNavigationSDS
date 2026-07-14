@@ -15,7 +15,7 @@ MAX_CONDITIONS_PER_ARRAY="${MAX_CONDITIONS_PER_ARRAY:-14}"
 
 SMALL_PROFILES="${SMALL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers}"
 MEDIUM_PROFILES="${MEDIUM_PROFILES:-qwen2_5_1_5b_transformers phi3_mini_4k_transformers}"
-LARGE_PROFILES="${LARGE_PROFILES:-qwen2_5_7b_transformers mistral_7b_transformers}"
+LARGE_PROFILES="${LARGE_PROFILES:-qwen2_5_7b_transformers}"
 
 cd "${PROJECT_ROOT}"
 
@@ -157,7 +157,7 @@ Actions:
 Default model coverage:
   small:  tinyllama_1b_transformers qwen2_5_0_5b_transformers
   medium: qwen2_5_1_5b_transformers phi3_mini_4k_transformers
-  large:  qwen2_5_7b_transformers mistral_7b_transformers
+  large:  qwen2_5_7b_transformers
 
 Environment overrides:
   PROJECT_ROOT, PYTHON_BIN, RESULTS_ROOT, GIT_KEY_PATH, GIT_REMOTE, GIT_BRANCH

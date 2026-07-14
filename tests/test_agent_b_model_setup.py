@@ -91,7 +91,7 @@ class AgentBModelSetupTests(unittest.TestCase):
         )
         self.assertEqual(
             model_catalog_folder("tiiuae/Falcon3-7B-Instruct").as_posix(),
-            "03-large/04-tiiuae-falcon3-7b-instruct",
+            "03-large/03-tiiuae-falcon3-7b-instruct",
         )
 
     def test_platform_model_stores_are_isolated(self):
@@ -121,10 +121,10 @@ class AgentBModelSetupTests(unittest.TestCase):
     def test_transformers_agent_b_setup_profiles_cover_four_per_size_without_ollama(self):
         self.assertEqual(
             {tier: len(profiles) for tier, profiles in TRANSFORMERS_AGENT_B_PROFILES.items()},
-            {"small": 4, "medium": 4, "large": 4},
+            {"small": 4, "medium": 4, "large": 3},
         )
         selected = selected_transformers_profiles(("small", "large"), ())
-        self.assertEqual(len(selected), 8)
+        self.assertEqual(len(selected), 7)
         self.assertTrue(all("ollama" not in profile for profile in selected))
 
     def test_transformers_download_uses_configurable_serial_workers(self):

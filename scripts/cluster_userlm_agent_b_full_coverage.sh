@@ -16,7 +16,7 @@ INCLUDE_OLLAMA="${INCLUDE_OLLAMA:-0}"
 SELECTED_TIERS="${SELECTED_TIERS:-small medium large}"
 SPEECH_ASSETS="${SPEECH_ASSETS:-piper faster_whisper}"
 HF_MAX_WORKERS="${HF_MAX_WORKERS:-1}"
-MODEL_PROFILES="${MODEL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers mistral_7b_transformers}"
+MODEL_PROFILES="${MODEL_PROFILES:-tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers}"
 MODEL_DOWNLOAD_TIMEOUT_SECONDS="${MODEL_DOWNLOAD_TIMEOUT_SECONDS:-14400}"
 GIT_REMOTE="${GIT_REMOTE:-origin}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
@@ -182,7 +182,7 @@ Environment overrides:
   SELECTED_TIERS="small medium large"
   SPEECH_ASSETS="piper faster_whisper"
   HF_MAX_WORKERS=1
-  MODEL_PROFILES="tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers mistral_7b_transformers"
+  MODEL_PROFILES="tinyllama_1b_transformers qwen2_5_0_5b_transformers qwen2_5_1_5b_transformers phi3_mini_4k_transformers qwen2_5_7b_transformers"
   MODEL_DOWNLOAD_TIMEOUT_SECONDS=14400
   ARRAY_CONCURRENCY=1
   MAX_CONDITIONS_PER_ARRAY=14

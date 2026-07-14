@@ -28,11 +28,9 @@ from coop_navigation_sds.experiments import build_condition_grid
 ROOT = Path(__file__).resolve().parents[1]
 BATCH_ROOT = ROOT / "jobs" / "agent_b_llm" / "batches"
 TRANSFORMERS_GRID_ROOT = ROOT / "jobs" / "agent_b_llm" / "transformers_speech_grid"
-USERLM_LARGE2_JOB = ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid" / "large" / "02-qwen2.5-7b.job"
 USERLM_SLURM_ARRAYS = {
     "userlm_small1_cpu_array.sbatch": ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid" / "small" / "01-llama3.2-1b.job",
     "userlm_small2_cpu_array.sbatch": ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid" / "small" / "02-qwen2.5-1.5b.job",
-    "userlm_large2_cpu_array.sbatch": USERLM_LARGE2_JOB,
 }
 USERLM_SPEECH_ROOT = ROOT / "jobs" / "agent_b_llm" / "userlm_speech_grid"
 USERLM_TRANSFORMERS_ROOT = ROOT / "jobs" / "agent_b_llm" / "userlm_transformers_speech_grid"
@@ -120,7 +118,7 @@ def _condition_signatures(job_path):
 
 def test_userlm_agent_b_slurm_jobs_share_identical_non_model_condition_coverage():
     job_paths = sorted(USERLM_SPEECH_ROOT.glob("*/*.job")) + sorted(USERLM_TRANSFORMERS_ROOT.glob("*/*.job"))
-    assert len(job_paths) == 18
+    assert len(job_paths) == 17
     reference = _condition_signatures(job_paths[0])
     assert job_condition_count(job_paths[0]) == 84
     assert len(reference) >= 60
@@ -128,16 +126,17 @@ def test_userlm_agent_b_slurm_jobs_share_identical_non_model_condition_coverage(
         assert _condition_signatures(job_path) == reference
 
 
-def test_transformers_agent_b_manifest_has_four_models_per_size_and_eighty_four_conditions_each():
+def test_transformers_agent_b_manifest_excludes_archived_large2_and_keeps_eighty_four_conditions_each():
     manifest = load_batch_manifest(BATCH_ROOT / "07-transformers-agent-b-all.json")
     rows = [job_overview(path) for path in manifest["jobs"]]
 
-    assert len(rows) == 12
-    assert sum(row["conditions"] for row in rows) == 1008
+    assert len(rows) == 11
+    assert sum(row["conditions"] for row in rows) == 924
     assert {
         size: sum(row["agent_b_size"] == size for row in rows)
         for size in ("small", "medium", "large")
-    } == {"small": 4, "medium": 4, "large": 4}
+    } == {"small": 4, "medium": 4, "large": 3}
+    assert all("mistral" not in str(row["agent_b_model"]).lower() for row in rows)
     assert {row["agent_a"] for row in rows} == {"tinyllama"}
     assert all(row["conditions"] == 84 for row in rows)
 

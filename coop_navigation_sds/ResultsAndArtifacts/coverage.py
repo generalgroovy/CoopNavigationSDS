@@ -75,8 +75,8 @@ AGENT_MODEL_SLOTS = (
     ("medium1", "medium"),
     ("medium2", "medium"),
     ("large1", "large"),
-    ("large2", "large"),
 )
+THESIS_AGENT_A_TYPES = ("userlm",)
 AGENT_MODEL_MATRIX_FAMILY = "agent_b_llm_comparison_v1"
 AGENT_MODEL_MATRIX_FAMILIES = {
     AGENT_MODEL_MATRIX_FAMILY,
@@ -478,18 +478,15 @@ def _active_run_rows(results_root):
 
 
 def _agent_model_combination_rows(coverage_rows, active_runs):
-    """Build the two-caller by six-model-slot thesis coverage matrix."""
+    """Build the UserLM-by-selected-Agent-B thesis coverage matrix."""
     system_ram_gb = _total_physical_memory_gb()
-    agent_a_profiles = {
-        "tinyllama": MODEL_PROFILE_SPECS[AGENT_A_TINYLLAMA_PROFILE_KEY],
-        "userlm": MODEL_PROFILE_SPECS[AGENT_A_USERLM_PROFILE_KEY],
-    }
+    agent_a_profiles = {"userlm": MODEL_PROFILE_SPECS[AGENT_A_USERLM_PROFILE_KEY]}
     rows = []
     canonical = [
         row for row in coverage_rows
         if row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
     ]
-    for agent_a_type in ("tinyllama", "userlm"):
+    for agent_a_type in THESIS_AGENT_A_TYPES:
         for slot, size in AGENT_MODEL_SLOTS:
             selected = [
                 row for row in canonical
@@ -623,7 +620,7 @@ def _agent_model_html(rows, controls):
     )
     headers = "".join(f"<th>{slot}</th>" for slot, _size in display_slots)
     body = []
-    for agent in ("tinyllama", "userlm"):
+    for agent in THESIS_AGENT_A_TYPES:
         cells = []
         for slot, _size in display_slots:
             row = lookup[(agent, slot)]
@@ -674,7 +671,7 @@ def _agent_model_html(rows, controls):
 <style>body{{font:14px system-ui,sans-serif;background:#f3f5f7;color:#202a35;margin:0}}main{{max-width:1500px;margin:auto;padding:20px}}section{{background:#fff;border:1px solid #cbd3dc;padding:14px;margin:12px 0;overflow:auto}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #dce2e8;padding:8px;text-align:center;vertical-align:top}}th{{background:#eaf1ef}}.complete,.viable{{background:#dff1e7}}.active,.partial{{background:#fff0c9}}.missing,.not_viable{{background:#f7dada}}small{{color:#4b5966}}</style></head>
 <body><main><h1>Agent A × Agent B model coverage</h1><p>Green is finalized, amber is active or partial, and red is planned but missing. Counts are completed/planned configurations; active progress is not promoted to completed evidence.</p>
 <section><h2>General 2 × 6 comparison matrix</h2><table><thead><tr><th>Agent A</th>{headers}</tr></thead><tbody>{''.join(body)}</tbody></table></section>
-<section><h2>Agent model memory requirements</h2><p>All 12 canonical Agent A and Agent B combinations are ordered by combined RAM requirement from lowest to highest. Values are registered planning estimates for simultaneously resident models and exclude speech, evaluation, and operating-system overhead.{viability_note}</p><table><thead><tr><th>Agent A</th><th>Agent A model</th><th>Slot</th><th>Agent B model</th><th>Agent B size</th><th>Agent A RAM (GiB)</th><th>Agent B RAM (GiB)</th><th>Combined RAM (GiB)</th>{viability_header}</tr></thead><tbody>{''.join(viability_rows)}</tbody></table></section>
+<section><h2>Agent model memory requirements</h2><p>The selected UserLM and Agent B combinations are ordered by combined RAM requirement from lowest to highest. Values are registered planning estimates for simultaneously resident models and exclude speech, evaluation, and operating-system overhead.{viability_note}</p><table><thead><tr><th>Agent A</th><th>Agent A model</th><th>Slot</th><th>Agent B model</th><th>Agent B size</th><th>Agent A RAM (GiB)</th><th>Agent B RAM (GiB)</th><th>Combined RAM (GiB)</th>{viability_header}</tr></thead><tbody>{''.join(viability_rows)}</tbody></table></section>
 <section><h2>Control baseline progress</h2><table><thead><tr><th>Agent A</th><th>Agent B</th><th>Observed/planned</th><th>Task success</th><th>Runtime failures</th><th>Active run</th></tr></thead><tbody>{control_rows}</tbody></table></section>
 </main></body></html>"""
 
@@ -780,6 +777,7 @@ def update_experiment_coverage(results_root, job_roots=None):
         if row.get("planned")
         and row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
         and row.get("agent_b_model_slot") in selected_slots
+        and row.get("agent_a_type") in THESIS_AGENT_A_TYPES
     ]
     planned_count = len(thesis_scope_rows)
     completed_planned = sum(bool(row.get("completed_count")) for row in thesis_scope_rows)
