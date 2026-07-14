@@ -64,8 +64,9 @@ experimental outcome or unavailable evidence with reason.
 Use this only as the current result basis, not as final thesis wording unless
 the result set is frozen.
 
-- Snapshot source: pulled result folders at commit `692b2756` on 2026-07-14.
-- Finalized run folders found locally: 1764.
+- Snapshot source: pulled result folders through commit `96384c09` on
+  2026-07-15.
+- Finalized run folders found locally: 1789.
 - Thesis denominator used here: UserLM as Agent A and five selected Agent B
   models. TinyLlama-Agent-A runs and archived models are excluded from the
   main denominator but remain useful for software control analysis.
@@ -74,6 +75,10 @@ the result set is frozen.
   IDs and counts a condition as completed when any retained attempt completed.
 - Archived large2/Mistral settings are removed from active setup and Slurm
   submission. Existing raw result folders are not altered.
+- New result commits after the completed-dialogue metric workflow added
+  TinyLlama-Agent-A control runs for Phi-3 mini and Qwen2.5 7B. They do not
+  change the UserLM thesis denominator or the completed-dialogue metric
+  correlation tables below.
 
 Current UserLM-Agent-A unique-condition outcomes:
 
@@ -110,6 +115,22 @@ Immediate interpretation:
 - Failure analysis should inspect the earliest failing phase and provider
   failure messages before interpreting failed attempts as conversational
   inability.
+
+TinyLlama-Agent-A software-control evidence currently available for the same
+five selected Agent B models:
+
+| Agent B model | Completed control runs | Successful | Semi-successful | Unsuccessful dialogue | Invalid/skipped |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| TinyLlama 1.1B | 70 | 65 | 0 | 5 | 14 |
+| Qwen2.5 0.5B | 70 | 63 | 1 | 6 | 14 |
+| Qwen2.5 1.5B | 70 | 65 | 0 | 5 | 14 |
+| Phi-3 mini | 56 | 49 | 1 | 6 | 12 |
+| Qwen2.5 7B | 39 | 34 | 0 | 5 | 12 |
+| **Total** | **305** | **276** | **2** | **27** | **66** |
+
+Use these rows as a software-control comparison only. They are useful for
+checking whether observed behavior depends on Agent A implementation, but they
+should not be merged into the main UserLM-Agent-A thesis denominator.
 
 ### Current result conclusions that are defensible
 
