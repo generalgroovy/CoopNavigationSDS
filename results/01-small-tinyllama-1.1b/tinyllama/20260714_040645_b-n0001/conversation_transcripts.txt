@@ -1,0 +1,119 @@
+=== Conversation 1: C-MT-RAN-SC-PIP-VOS-TL1-DEFAU-SML-I0-31ffd1cf4f-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MT-RAN-SC-PIP-VOS-TL1-DEFAU-SML-I0-31ffd1cf4f-A
+Test case: midday_transfer:risk_averse_novice
+Persona: risk_averse_novice
+Scenario: midday_transfer
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 86.59718111436814
+
+Conversation
+01. Agent A [2.000 seconds]: i'm thinking that vote for they are you need to take transit line between the lines to take
+    processing seconds: generation=0.0, synthesis=12.714713, recognition=4.040106, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=19.364588, observed_turn=19.36472, accounted_processing=19.364588
+02. Agent B [2.000 seconds]: i on this police say only that
+    processing seconds: generation=0.000373, synthesis=5.908512, recognition=0.812272, understanding=0.000639, dialogue_management=9.1e-05
+    duration seconds: audio=4.723, speech_pipeline_wall=7.969661, observed_turn=7.970841, accounted_processing=7.970765
+03. Agent A [2.000 seconds]: i mean pdf to blow up to do if the that speaking
+    processing seconds: generation=0.011721, synthesis=5.772459, recognition=1.327886, understanding=None, dialogue_management=None
+    duration seconds: audio=5.381, speech_pipeline_wall=8.355213, observed_turn=8.366977, accounted_processing=8.366934
+04. Agent B [2.000 seconds]: okay i'm starting at think i'm sorry they only them
+    processing seconds: generation=0.000383, synthesis=4.476414, recognition=1.186136, understanding=0.000283, dialogue_management=9.5e-05
+    duration seconds: audio=5.214, speech_pipeline_wall=7.036072, observed_turn=7.036897, accounted_processing=7.036834
+05. Agent A [2.000 seconds]: this one seems first place forty
+    processing seconds: generation=0.006561, synthesis=3.273784, recognition=0.809048, understanding=None, dialogue_management=None
+    duration seconds: audio=2.984, speech_pipeline_wall=4.787309, observed_turn=4.793931, accounted_processing=4.79387
+06. Agent B [2.000 seconds]: is that the fifty only starting position destination fisher at the portrait
+    processing seconds: generation=0.000474, synthesis=7.112041, recognition=1.648716, understanding=0.000301, dialogue_management=9.3e-05
+    duration seconds: audio=5.799, speech_pipeline_wall=10.929632, observed_turn=10.930561, accounted_processing=10.9305
+07. Agent A [2.000 seconds]: okay that is not a beautiful ralph as if you're protected wind and fourteen sleep
+    processing seconds: generation=0.010378, synthesis=5.120421, recognition=1.822211, understanding=None, dialogue_management=None
+    duration seconds: audio=8.437, speech_pipeline_wall=9.049326, observed_turn=9.059761, accounted_processing=9.059704
+08. Agent B [2.000 seconds]: reset the thrifty over thirty as fiction taken off and to fertility time
+    processing seconds: generation=0.000614, synthesis=7.020766, recognition=1.984582, understanding=0.000324, dialogue_management=8.5e-05
+    duration seconds: audio=6.97, speech_pipeline_wall=11.272154, observed_turn=11.273242, accounted_processing=11.273177
+09. Agent A [2.000 seconds]: the government will start a few years even t the same information about improving the realm
+    processing seconds: generation=0.001184, synthesis=4.485507, recognition=1.410021, understanding=None, dialogue_management=None
+    duration seconds: audio=6.249, speech_pipeline_wall=7.671026, observed_turn=7.67227, accounted_processing=7.67221
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Echo at 12:18. I need to take transit lines to Zulu. Which lines should I take?
+    outgoing speech text: um, I'm s-starting um, at s-station Echo at twelve eighteen. I n-need to take transit lines to Zulu. Which lines should I take?
+    raw recognition: i'm thinking that vote for they are you need to take transit line between the lines to take
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["s-starting", "um", "at", "s-station", "Echo", "at", "twelve", "eighteen", "I", "n-need"], "target_tokens": ["thinking", "that", "vote", "for", "they", "are", "you", "need"]}, {"operation": "insert", "source_tokens": [], "target_tokens": ["line", "between", "the"]}, {"operation": "delete", "source_tokens": ["Zulu", "Which", "lines", "should", "I"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: i'm thinking that vote for they are you need to take transit line between the lines to take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0001-agent-a-439cb2ba7e-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I uh missed the starting station. Please say o-only that.
+    raw recognition: i on this police say only that
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["uh", "missed", "the", "starting", "station", "Please"], "target_tokens": ["on", "this", "police"]}, {"operation": "replace", "source_tokens": ["o-only"], "target_tokens": ["only"]}]
+    transcript corrections: []
+    understood transcript: i on this police say only that
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0002-agent-b-4faa6d8504-channel.wav
+03. Agent A
+    generated: I need the actual route to Zulu. Give connected boarding stations.
+    outgoing speech text: I need t-the a-actual r-route to Zulu. Give connected boarding stations.
+    raw recognition: i mean pdf to blow up to do if the that speaking
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["need", "t-the", "a-actual", "r-route"], "target_tokens": ["mean", "pdf"]}, {"operation": "replace", "source_tokens": ["Zulu", "Give", "connected", "boarding", "stations"], "target_tokens": ["blow", "up", "to", "do", "if", "the", "that", "speaking"]}]
+    transcript corrections: []
+    understood transcript: i mean pdf to blow up to do if the that speaking
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0003-agent-a-defcff4532-channel.wav
+04. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I missed the starting s-station. sorry, Please say uh only that.
+    raw recognition: okay i'm starting at think i'm sorry they only them
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["O-Okay", "I", "missed", "the"], "target_tokens": ["okay", "i'm"]}, {"operation": "replace", "source_tokens": ["s-station"], "target_tokens": ["at", "think", "i'm"]}, {"operation": "replace", "source_tokens": ["Please", "say", "uh"], "target_tokens": ["they"]}, {"operation": "replace", "source_tokens": ["that"], "target_tokens": ["them"]}]
+    transcript corrections: []
+    understood transcript: okay i'm starting at think i'm sorry they only them
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0004-agent-b-770cf02ae3-channel.wav
+05. Agent A
+    generated: Did you mean start by 'starting'?
+    outgoing speech text: Did you um, mean start by 'starting'?
+    raw recognition: this one seems first place forty
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Did", "you", "um", "mean", "start", "by", "'starting'"], "target_tokens": ["this", "one", "seems", "first", "place", "forty"]}]
+    transcript corrections: []
+    understood transcript: this one seems first place forty
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0005-agent-a-b3e10c0077-channel.wav
+06. Agent B
+    generated: Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    outgoing speech text: L-Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    raw recognition: is that the fifty only starting position destination fisher at the portrait
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["L-Let's", "reset"], "target_tokens": ["is", "that"]}, {"operation": "replace", "source_tokens": ["trip", "details", "Say"], "target_tokens": ["fifty"]}, {"operation": "replace", "source_tokens": ["station"], "target_tokens": ["position"]}, {"operation": "replace", "source_tokens": ["station", "and", "departure", "time"], "target_tokens": ["fisher", "at", "the", "portrait"]}]
+    transcript corrections: []
+    understood transcript: is that the fifty only starting position destination fisher at the portrait
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0006-agent-b-3f5a634853-channel.wav
+07. Agent A
+    generated: That still is not a usable route to Zulu. Give the connected lines and boarding stations.
+    outgoing speech text: Okay, That s-still is not uh a usable route to Z-Zulu. um, Give the connected lines a-and boarding stations.
+    raw recognition: okay that is not a beautiful ralph as if you're protected wind and fourteen sleep
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["s-still"], "target_tokens": []}, {"operation": "delete", "source_tokens": ["uh"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["usable", "route", "to", "Z-Zulu", "um", "Give", "the", "connected", "lines", "a-and", "boarding", "stations"], "target_tokens": ["beautiful", "ralph", "as", "if", "you're", "protected", "wind", "and", "fourteen", "sleep"]}]
+    transcript corrections: []
+    understood transcript: okay that is not a beautiful ralph as if you're protected wind and fourteen sleep
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0007-agent-a-59fe652d0d-channel.wav
+08. Agent B
+    generated: Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    outgoing speech text: uh Let's reset the trip details. Say o-only: starting s-station, destination station, uh and departure t-time.
+    raw recognition: let's reset the thrifty over thirty as fiction taken off and to fertility time
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["uh", "Let's"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["trip", "details", "Say", "o-only", "starting", "s-station", "destination", "station", "uh"], "target_tokens": ["thrifty", "over", "thirty", "as", "fiction", "taken", "off"]}, {"operation": "replace", "source_tokens": ["departure", "t-time"], "target_tokens": ["to", "fertility", "time"]}]
+    transcript corrections: []
+    understood transcript: reset the thrifty over thirty as fiction taken off and to fertility time
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0008-agent-b-a6747eedb4-channel.wav
+09. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I w-will stop h-here; we are repeating t-the same information without improving the route.
+    raw recognition: the government will start a few years even t the same information about improving the realm
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "w-will", "stop", "h-here", "we", "are", "repeating", "t-the"], "target_tokens": ["the", "government", "will", "start", "a", "few", "years", "even", "t", "the"]}, {"operation": "replace", "source_tokens": ["without"], "target_tokens": ["about"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["realm"]}]
+    transcript corrections: []
+    understood transcript: the government will start a few years even t the same information about improving the realm
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_040645_b-n0001/.turn_audio/b335fd5343fd/0009-agent-a-669951e5c9-channel.wav

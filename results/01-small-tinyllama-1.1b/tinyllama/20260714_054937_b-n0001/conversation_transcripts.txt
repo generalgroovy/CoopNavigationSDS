@@ -1,0 +1,75 @@
+=== Conversation 1: C-MPCC-CAR-SC-PIP-VOS-TL1-DEFAU-SML-I0-d8f2ac4607-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MPCC-CAR-SC-PIP-VOS-TL1-DEFAU-SML-I0-d8f2ac4607-A
+Test case: morning_peak_cross_city:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: morning_peak_cross_city
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 46.97505963104777
+
+Conversation
+01. Agent A [2.000 seconds]: sort of seven or yeah like the verbal should i take
+    processing seconds: generation=0.0, synthesis=12.117855, recognition=2.905984, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=17.15606, observed_turn=17.156184, accounted_processing=17.15606
+02. Agent B [2.000 seconds]: i on it they all began
+    processing seconds: generation=0.000298, synthesis=5.530876, recognition=0.997533, understanding=0.000856, dialogue_management=9.6e-05
+    duration seconds: audio=4.723, speech_pipeline_wall=7.616328, observed_turn=7.617654, accounted_processing=7.617577
+03. Agent A [2.000 seconds]: well marbled if the stations
+    processing seconds: generation=0.008287, synthesis=5.517905, recognition=1.157393, understanding=None, dialogue_management=None
+    duration seconds: audio=5.056, speech_pipeline_wall=8.037618, observed_turn=8.045964, accounted_processing=8.045905
+04. Agent B [2.000 seconds]: the starting as thinking story say only that
+    processing seconds: generation=0.000336, synthesis=5.195522, recognition=1.094543, understanding=0.000264, dialogue_management=8.9e-05
+    duration seconds: audio=5.214, speech_pipeline_wall=7.616943, observed_turn=7.617683, accounted_processing=7.617633
+05. Agent A [2.000 seconds]: those are the same information without or including the well
+    processing seconds: generation=0.000705, synthesis=3.716183, recognition=1.379497, understanding=None, dialogue_management=None
+    duration seconds: audio=5.924, speech_pipeline_wall=6.430057, observed_turn=6.430827, accounted_processing=6.430762
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 08:07. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: um, I'm s-starting at s-station Bravo at eight oh seven. I n-need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: sort of seven or yeah like the verbal should i take
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["um", "I'm", "s-starting", "at", "s-station", "Bravo", "at", "eight", "oh"], "target_tokens": ["sort", "of"]}, {"operation": "replace", "source_tokens": ["I", "n-need", "to", "take", "transit", "lines", "to", "Harbor", "Which", "lines"], "target_tokens": ["or", "yeah", "like", "the", "verbal"]}]
+    transcript corrections: []
+    understood transcript: sort of seven or yeah like the verbal should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_054937_b-n0001/.turn_audio/ddf492940d20/0001-agent-a-8b8b44ced6-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I uh missed the starting station. Please say o-only that.
+    raw recognition: i on it they all began
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["uh", "missed", "the", "starting", "station", "Please", "say", "o-only", "that"], "target_tokens": ["on", "it", "they", "all", "began"]}]
+    transcript corrections: []
+    understood transcript: i on it they all began
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_054937_b-n0001/.turn_audio/ddf492940d20/0002-agent-b-4faa6d8504-channel.wav
+03. Agent A
+    generated: I need the actual route to Harbor. Give connected boarding stations.
+    outgoing speech text: I need t-the a-actual route to Harbor. Give connected boarding stations.
+    raw recognition: well marbled if the voting stations
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "need", "t-the", "a-actual", "route", "to", "Harbor", "Give", "connected", "boarding"], "target_tokens": ["well", "marbled", "if", "the"]}]
+    transcript corrections: []
+    understood transcript: well marbled if the stations
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_054937_b-n0001/.turn_audio/ddf492940d20/0003-agent-a-d718c7f280-channel.wav
+04. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I missed the starting s-station. sorry, Please say uh only that.
+    raw recognition: the starting as thinking story say only that
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay", "I", "missed"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["s-station", "sorry", "Please"], "target_tokens": ["as", "thinking", "story"]}, {"operation": "delete", "source_tokens": ["uh"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: the starting as thinking story say only that
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_054937_b-n0001/.turn_audio/ddf492940d20/0004-agent-b-770cf02ae3-channel.wav
+05. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I will stop here; we are r-repeating the same information without i-improving the route.
+    raw recognition: those are the same information without or including the well
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "will", "stop", "here", "we"], "target_tokens": ["those"]}, {"operation": "delete", "source_tokens": ["r-repeating"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["i-improving"], "target_tokens": ["or", "including"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["well"]}]
+    transcript corrections: []
+    understood transcript: those are the same information without or including the well
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_054937_b-n0001/.turn_audio/ddf492940d20/0005-agent-a-51d09387f7-channel.wav

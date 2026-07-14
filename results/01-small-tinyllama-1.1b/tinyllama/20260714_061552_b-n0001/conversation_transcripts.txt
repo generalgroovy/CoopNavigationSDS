@@ -1,0 +1,141 @@
+=== Conversation 1: C-MPCC-DST-SC-PIP-VOS-TL1-DEFAU-SML-I0-bbfb6be995-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MPCC-DST-SC-PIP-VOS-TL1-DEFAU-SML-I0-bbfb6be995-A
+Test case: morning_peak_cross_city:delay_sensitive_traveler
+Persona: delay_sensitive_traveler
+Scenario: morning_peak_cross_city
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 455.36377101857215
+
+Conversation
+01. Agent A [2.000 seconds]: i'm forty six bravo and eight oh seven offensive line the harbor which like to the tree
+    processing seconds: generation=0.0, synthesis=11.034524, recognition=2.660073, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=15.834149, observed_turn=15.834239, accounted_processing=15.834149
+02. Agent B [2.000 seconds]: okay one keyboard comparable to the local company itself a job with a powerful thirty one minutes one thing
+    processing seconds: generation=61.458987, synthesis=7.816949, recognition=1.816405, understanding=0.000361, dialogue_management=9.8e-05
+    duration seconds: audio=7.532, speech_pipeline_wall=11.86097, observed_turn=73.320517, accounted_processing=73.320417
+03. Agent A [2.000 seconds]: carbon fourteen seconds
+    processing seconds: generation=0.037728, synthesis=6.517793, recognition=1.018619, understanding=None, dialogue_management=None
+    duration seconds: audio=5.056, speech_pipeline_wall=8.831417, observed_turn=8.869208, accounted_processing=8.869145
+04. Agent B [2.000 seconds]: first on monday for from Brava would help lift want them to junior prom pieces from for sorry oh
+    processing seconds: generation=62.862564, synthesis=7.908524, recognition=2.609328, understanding=0.000397, dialogue_management=0.000109
+    duration seconds: audio=10.0, speech_pipeline_wall=14.010432, observed_turn=76.873605, accounted_processing=76.873502
+05. Agent A [2.000 seconds]: for of of my brother
+    processing seconds: generation=0.016258, synthesis=3.100347, recognition=0.701577, understanding=None, dialogue_management=None
+    duration seconds: audio=2.429, speech_pipeline_wall=4.364026, observed_turn=4.380349, accounted_processing=4.380284
+06. Agent B [2.000 seconds]: one one from bravo bravo from people from l to flow trump one from ill horrible forty one minute changes
+    processing seconds: generation=67.306024, synthesis=8.449668, recognition=1.805387, understanding=0.000622, dialogue_management=0.000123
+    duration seconds: audio=8.775, speech_pipeline_wall=12.841706, observed_turn=80.148574, accounted_processing=80.148475
+07. Agent A [2.000 seconds]: why you have brought one important
+    processing seconds: generation=0.026335, synthesis=3.880431, recognition=0.874942, understanding=None, dialogue_management=None
+    duration seconds: audio=3.633, speech_pipeline_wall=5.650113, observed_turn=5.676506, accounted_processing=5.676448
+08. Agent B [2.000 seconds]: like you want them both of us from pieces from case you have to have a forty three minutes for nothing
+    processing seconds: generation=73.812731, synthesis=7.847819, recognition=2.36318, understanding=0.000395, dialogue_management=0.000101
+    duration seconds: audio=8.118, speech_pipeline_wall=12.48807, observed_turn=86.301413, accounted_processing=86.301298
+09. Agent A [2.000 seconds]: my my life
+    processing seconds: generation=0.003635, synthesis=3.097632, recognition=0.8207, understanding=None, dialogue_management=None
+    duration seconds: audio=3.078, speech_pipeline_wall=4.694198, observed_turn=4.697907, accounted_processing=4.697833
+10. Agent B [2.000 seconds]: on bravo little and want me one from some fruit of over forty five minutes to change
+    processing seconds: generation=75.37109, synthesis=8.938464, recognition=2.485287, understanding=0.000341, dialogue_management=0.000109
+    duration seconds: audio=9.068, speech_pipeline_wall=14.334452, observed_turn=89.706068, accounted_processing=89.705992
+11. Agent A [2.000 seconds]: the ralph suggestion so you're not significant from start to beat up for nation
+    processing seconds: generation=0.000254, synthesis=5.742625, recognition=1.529106, understanding=None, dialogue_management=None
+    duration seconds: audio=7.128, speech_pipeline_wall=9.395131, observed_turn=9.395453, accounted_processing=9.395385
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 08:07. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: um, I'm s-starting at s-station Bravo at eight oh seven. I n-need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: i'm forty six bravo and eight oh seven offensive line the harbor which like to the tree
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["s-starting", "at", "s-station"], "target_tokens": ["forty", "six"]}, {"operation": "replace", "source_tokens": ["at"], "target_tokens": ["and"]}, {"operation": "replace", "source_tokens": ["I", "n-need", "to", "take", "transit", "lines", "to"], "target_tokens": ["offensive", "line", "the"]}, {"operation": "replace", "source_tokens": ["lines", "should", "I", "take"], "target_tokens": ["like", "to", "the", "tree"]}]
+    transcript corrections: []
+    understood transcript: i'm forty six bravo and eight oh seven offensive line the harbor which like to the tree
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0001-agent-a-8b8b44ced6-channel.wav
+02. Agent B
+    generated: Take tram line T1 from Bravo to Delta; tram T6 from Delta to Harbor. 31 minutes, 1 changes.
+    outgoing speech text: Okay, Take tram line T1 from Bravo to D-Delta; tram T6 uh from Delta to Harbor. 31 minutes, 1 changes.
+    raw recognition: okay one keyboard comparable to the local company itself a job with a powerful thirty one minutes one thing
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Take", "tram", "line", "T1", "from", "Bravo"], "target_tokens": ["one", "keyboard", "comparable"]}, {"operation": "replace", "source_tokens": ["D-Delta", "tram", "T6", "uh", "from", "Delta", "to", "Harbor", "31"], "target_tokens": ["the", "local", "company", "itself", "a", "job", "with", "a", "powerful", "thirty", "one"]}, {"operation": "replace", "source_tokens": ["1", "changes"], "target_tokens": ["one", "thing"]}]
+    transcript corrections: []
+    understood transcript: okay one keyboard comparable to the local company itself a job with a powerful thirty one minutes one thing
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0002-agent-b-7752265aba-channel.wav
+03. Agent A
+    generated: I need the actual route to Harbor. Give connected boarding stations.
+    outgoing speech text: I need t-the a-actual route to Harbor. Give connected boarding stations.
+    raw recognition: carbon fourteen seconds
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "need", "t-the", "a-actual", "route", "to", "Harbor", "Give", "connected", "boarding", "stations"], "target_tokens": ["carbon", "fourteen", "seconds"]}]
+    transcript corrections: []
+    understood transcript: carbon fourteen seconds
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0003-agent-a-d718c7f280-channel.wav
+04. Agent B
+    generated: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Juliett; tram T6 from Juliett to Harbor. 37 minutes, 2 changes.
+    outgoing speech text: Take bus um, line B4 f-from Bravo to Hotel; metro M1 from Hotel to Juliett; t-tram T6 from Juliett to Harbor. s-sorry, 37 minutes, uh 2 changes.
+    raw recognition: the first on monday for from bravo would help lift want them to junior prom pieces from for sorry oh
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Take", "bus", "um", "line", "B4", "f-from", "Bravo"], "target_tokens": ["first", "on", "monday", "for", "from", "Brava", "would", "help", "lift", "want", "them"]}, {"operation": "replace", "source_tokens": ["Hotel", "metro", "M1"], "target_tokens": ["junior", "prom", "pieces"]}, {"operation": "replace", "source_tokens": ["Hotel", "to", "Juliett", "t-tram", "T6", "from", "Juliett", "to", "Harbor", "s-sorry", "37", "minutes", "uh", "2", "changes"], "target_tokens": ["for", "sorry", "oh"]}]
+    transcript corrections: []
+    understood transcript: first on monday for from Brava would help lift want them to junior prom pieces from for sorry oh
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0004-agent-b-ce8d3c2051-channel.wav
+05. Agent A
+    generated: Did you mean Bravo by 'Brava'?
+    outgoing speech text: Did you mean Bravo by 'Brava'?
+    raw recognition: for of of my brother
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Did", "you", "mean", "Bravo", "by", "'Brava'"], "target_tokens": ["for", "of", "of", "my", "brother"]}]
+    transcript corrections: []
+    understood transcript: for of of my brother
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0005-agent-a-d3ebe3b62b-channel.wav
+06. Agent B
+    generated: Take tram line T1 from Bravo to Alpha; tram T5 from Alpha to Elm; tram T1 from Elm to Harbor. 41 minutes, 2 changes.
+    outgoing speech text: T-Take tram line T1 from Bravo to Alpha; tram T5 from Alpha to Elm; tram T1 from Elm to Harbor. 41 minutes, 2 changes.
+    raw recognition: one one from bravo bravo from people from l to flow trump and one from ill horrible forty one minute changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["T-Take", "tram", "line", "T1"], "target_tokens": ["one", "one"]}, {"operation": "insert", "source_tokens": [], "target_tokens": ["bravo", "from", "people", "from", "l"]}, {"operation": "replace", "source_tokens": ["Alpha", "tram", "T5"], "target_tokens": ["flow", "trump", "one"]}, {"operation": "replace", "source_tokens": ["Alpha", "to", "Elm", "tram", "T1", "from", "Elm", "to", "Harbor", "41", "minutes", "2"], "target_tokens": ["ill", "horrible", "forty", "one", "minute"]}]
+    transcript corrections: []
+    understood transcript: one one from bravo bravo from people from l to flow trump one from ill horrible forty one minute changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0006-agent-b-5938083334-channel.wav
+07. Agent A
+    generated: Did you mean Foxtrot by 'forty'?
+    outgoing speech text: Did uh y-you um, mean Foxtrot by 'forty'?
+    raw recognition: why you have brought one important
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Did", "uh", "y-you", "um", "mean", "Foxtrot", "by", "'forty'"], "target_tokens": ["why", "you", "have", "brought", "one", "important"]}]
+    transcript corrections: []
+    understood transcript: why you have brought one important
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0007-agent-a-dbce76ba21-channel.wav
+08. Agent B
+    generated: Take tram line T1 from Bravo to Juliett; tram T6 from Juliett to Harbor. 43 minutes, 1 changes.
+    outgoing speech text: Take tram uh um, line T1 from Bravo to Juliett; t-tram T6 from J-Juliett to Harbor. 43 minutes, 1 uh changes.
+    raw recognition: like you want them both of us from pieces from case you have to have a forty three minutes for nothing
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Take", "tram", "uh", "um", "line", "T1"], "target_tokens": ["like", "you", "want", "them", "both", "of", "us"]}, {"operation": "replace", "source_tokens": ["Bravo"], "target_tokens": ["pieces", "from", "case", "you", "have"]}, {"operation": "replace", "source_tokens": ["Juliett", "t-tram", "T6", "from", "J-Juliett", "to", "Harbor", "43"], "target_tokens": ["have", "a", "forty", "three"]}, {"operation": "replace", "source_tokens": ["1", "uh", "changes"], "target_tokens": ["for", "nothing"]}]
+    transcript corrections: []
+    understood transcript: like you want them both of us from pieces from case you have to have a forty three minutes for nothing
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0008-agent-b-14880e1433-channel.wav
+09. Agent A
+    generated: Did you mean Mike by 'like'?
+    outgoing speech text: D-Did you m-mean Mike by 'like'?
+    raw recognition: my my life
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["D-Did", "you", "m-mean", "Mike", "by", "'like'"], "target_tokens": ["my", "my", "life"]}]
+    transcript corrections: []
+    understood transcript: my my life
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0009-agent-a-cd8d6baaff-channel.wav
+10. Agent B
+    generated: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Jasper; bus B1 from Jasper to Harbor. 45 minutes, 2 changes.
+    outgoing speech text: Take bus line B4 f-from Bravo to Hotel; metro M1 from Hotel to J-Jasper; bus B1 from Jasper to Harbor. 45 minutes, 2 changes.
+    raw recognition: on bravo little and want from me one from some fruit of over forty five minutes to change
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Take", "bus", "line", "B4", "f-from"], "target_tokens": ["on"]}, {"operation": "insert", "source_tokens": [], "target_tokens": ["little", "and", "want", "me", "one", "from", "some", "fruit", "of", "over", "forty", "five", "minutes"]}, {"operation": "replace", "source_tokens": ["Hotel", "metro", "M1", "from", "Hotel", "to", "J-Jasper", "bus", "B1", "from", "Jasper", "to", "Harbor", "45", "minutes", "2", "changes"], "target_tokens": ["change"]}]
+    transcript corrections: []
+    understood transcript: on bravo little and want me one from some fruit of over forty five minutes to change
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0010-agent-b-19793bfb87-channel.wav
+11. Agent A
+    generated: I will stop here; the route suggestions still are not connected from start to destination.
+    outgoing speech text: Okay, I will stop here; the route suggestions still a-are not c-connected from start to d-destination.
+    raw recognition: the ralph suggestion so you're not significant from start to beat up for nation
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["Okay", "I", "will", "stop", "here"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["route", "suggestions", "still", "a-are"], "target_tokens": ["ralph", "suggestion", "so", "you're"]}, {"operation": "replace", "source_tokens": ["c-connected"], "target_tokens": ["significant"]}, {"operation": "replace", "source_tokens": ["d-destination"], "target_tokens": ["beat", "up", "for", "nation"]}]
+    transcript corrections: []
+    understood transcript: the ralph suggestion so you're not significant from start to beat up for nation
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_061552_b-n0001/.turn_audio/19f54573e493/0011-agent-a-ca710c889d-channel.wav

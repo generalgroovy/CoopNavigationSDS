@@ -1,0 +1,163 @@
+=== Conversation 1: C-MT-CAR-MC-PIP-VOS-TL1-DEFAU-SML-I0-f8fb20660e-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MT-CAR-MC-PIP-VOS-TL1-DEFAU-SML-I0-f8fb20660e-A
+Test case: midday_transfer:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: midday_transfer
+Speech pattern: mostly_clean
+Agent A audio persona: neutral_caller
+Agent B audio persona: clear_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: satisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 37
+Runtime seconds: 496.8004428418353
+
+Conversation
+01. Agent A [2.000 seconds]: i'm starting at station echo a twelve eighteen i need to take transit lines to zulu which lines should i take
+    processing seconds: generation=0.0, synthesis=11.592358, recognition=1.807868, understanding=None, dialogue_management=None
+    duration seconds: audio=9.462, speech_pipeline_wall=15.528534, observed_turn=15.52862, accounted_processing=15.528534
+02. Agent B [2.000 seconds]: take tramline t one from echo to golf twenty four from golf to gang key walk seven minutes from yankee to zulu thirty seven minutes to changes
+    processing seconds: generation=66.613955, synthesis=8.105918, recognition=1.3394, understanding=0.002412, dialogue_management=0.0045
+    duration seconds: audio=9.779, speech_pipeline_wall=12.037286, observed_turn=78.658277, accounted_processing=78.658154
+03. Agent A [2.000 seconds]: that route and timing work can you make it with as few line changes as reasonable
+    processing seconds: generation=23.169003, synthesis=6.19481, recognition=0.905019, understanding=None, dialogue_management=None
+    duration seconds: audio=6.852, speech_pipeline_wall=8.621095, observed_turn=31.790186, accounted_processing=31.790098
+04. Agent B [2.000 seconds]: take tramline t one from echo to hotel must be for from hotel to zulu thirty eight minutes one changes
+    processing seconds: generation=67.219477, synthesis=7.285021, recognition=1.149298, understanding=0.001799, dialogue_management=0.002789
+    duration seconds: audio=7.106, speech_pipeline_wall=10.630906, observed_turn=77.85509, accounted_processing=77.854971
+05. Agent A [2.000 seconds]: that meets the current requirement can you make it not near capacity
+    processing seconds: generation=24.527519, synthesis=6.204453, recognition=0.803175, understanding=None, dialogue_management=None
+    duration seconds: audio=5.252, speech_pipeline_wall=8.4303, observed_turn=32.957887, accounted_processing=32.957819
+06. Agent B [2.000 seconds]: take metro line M1 from echo to bravo bus before from bravo to zulu thirty eight minutes one changes it is not near capacity
+    processing seconds: generation=69.688952, synthesis=8.729703, recognition=1.373508, understanding=0.005637, dialogue_management=0.004099
+    duration seconds: audio=9.095, speech_pipeline_wall=12.692396, observed_turn=82.391177, accounted_processing=82.391084
+07. Agent A [2.000 seconds]: i heard em one did you mean m one
+    processing seconds: generation=0.001954, synthesis=3.423787, recognition=0.541547, understanding=None, dialogue_management=None
+    duration seconds: audio=3.651, speech_pipeline_wall=4.760683, observed_turn=4.762689, accounted_processing=4.762637
+08. Agent B [2.000 seconds]: i meant him one
+    processing seconds: generation=0.198231, synthesis=1.60641, recognition=0.447311, understanding=7e-06, dialogue_management=8e-05
+    duration seconds: audio=1.261, speech_pipeline_wall=2.593341, observed_turn=2.791714, accounted_processing=2.791659
+09. Agent A [2.000 seconds]: that meets the current requirement can you make it with lower delay risk
+    processing seconds: generation=26.517566, synthesis=4.704873, recognition=0.809562, understanding=None, dialogue_management=None
+    duration seconds: audio=5.652, speech_pipeline_wall=6.506792, observed_turn=33.02444, accounted_processing=33.024358
+10. Agent B [2.000 seconds]: take metro line M1 from echo to uniform walk seven minutes from uniform to tango was before from tango to zulu forty six minutes to changes delay risk is high
+    processing seconds: generation=79.010031, synthesis=9.803513, recognition=1.445428, understanding=0.00865, dialogue_management=0.005313
+    duration seconds: audio=11.404, speech_pipeline_wall=14.277452, observed_turn=93.301538, accounted_processing=93.301447
+11. Agent A [2.000 seconds]: i heard and one did you mean am one
+    processing seconds: generation=0.001316, synthesis=4.38626, recognition=0.579376, understanding=None, dialogue_management=None
+    duration seconds: audio=3.651, speech_pipeline_wall=5.765984, observed_turn=5.767357, accounted_processing=5.7673
+12. Agent B [2.000 seconds]: yes i meant him one
+    processing seconds: generation=0.000964, synthesis=2.178779, recognition=0.457009, understanding=6e-06, dialogue_management=7.7e-05
+    duration seconds: audio=2.082, speech_pipeline_wall=3.318465, observed_turn=3.319565, accounted_processing=3.319512
+13. Agent A [2.000 seconds]: the earlier route also fits thanks i'll take that
+    processing seconds: generation=26.699338, synthesis=5.879604, recognition=0.703509, understanding=None, dialogue_management=None
+    duration seconds: audio=4.535, speech_pipeline_wall=7.676054, observed_turn=34.375475, accounted_processing=34.375392
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Echo at 12:18. I need to take transit lines to Zulu. Which lines should I take?
+    outgoing speech text: I'm starting at station Echo at twelve eighteen. I need to take transit lines to Zulu. Which lines should I take?
+    raw recognition: i'm starting at station echo a twelve eighteen i need to take transit lines to zulu which lines should i take
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["at"], "target_tokens": ["a"]}]
+    transcript corrections: []
+    understood transcript: i'm starting at station echo a twelve eighteen i need to take transit lines to zulu which lines should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0001-agent-a-426d134027-channel.wav
+02. Agent B
+    generated: Take tram line T1 from Echo to Golf; tram T4 from Golf to Yankee; walk 7 minutes from Yankee to Zulu. 37 minutes, 2 changes.
+    outgoing speech text: Take tram line T1 from Echo to Golf; tram T4 from Golf to Yankee; walk 7 minutes from Yankee to Zulu. 37 minutes, 2 changes.
+    raw recognition: take tramline t one from echo to golf twenty four from golf to gang key walk seven minutes from yankee to zulu thirty seven minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T1"], "target_tokens": ["tramline", "t", "one"]}, {"operation": "replace", "source_tokens": ["tram", "T4"], "target_tokens": ["twenty", "four"]}, {"operation": "replace", "source_tokens": ["Yankee"], "target_tokens": ["gang", "key"]}, {"operation": "replace", "source_tokens": ["7"], "target_tokens": ["seven"]}, {"operation": "replace", "source_tokens": ["37"], "target_tokens": ["thirty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: take tramline t one from echo to golf twenty four from golf to gang key walk seven minutes from yankee to zulu thirty seven minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0002-agent-b-4b8ca691b4-channel.wav
+03. Agent A
+    generated: That route and timing work. Can you make it with as few line changes as reasonable?
+    outgoing speech text: That route and timing work. Can you make it with as few line changes as reasonable?
+    raw recognition: that route and timing work can you make it with as few line changes as reasonable
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that route and timing work can you make it with as few line changes as reasonable
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0003-agent-a-47c08dc0d2-channel.wav
+04. Agent B
+    generated: Take tram line T1 from Echo to Hotel; bus B4 from Hotel to Zulu. 38 minutes, 1 changes.
+    outgoing speech text: Take tram line T1 from Echo to Hotel; bus B4 from Hotel to Zulu. 38 minutes, 1 changes.
+    raw recognition: take tramline t one from echo to hotel must be for from hotel to zulu thirty eight minutes one changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T1"], "target_tokens": ["tramline", "t", "one"]}, {"operation": "replace", "source_tokens": ["bus", "B4"], "target_tokens": ["must", "be", "for"]}, {"operation": "replace", "source_tokens": ["38"], "target_tokens": ["thirty", "eight"]}, {"operation": "replace", "source_tokens": ["1"], "target_tokens": ["one"]}]
+    transcript corrections: []
+    understood transcript: take tramline t one from echo to hotel must be for from hotel to zulu thirty eight minutes one changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0004-agent-b-1d11c93bcd-channel.wav
+05. Agent A
+    generated: That meets the current requirement. Can you make it not near capacity?
+    outgoing speech text: That meets the current requirement. Can you make it not near capacity?
+    raw recognition: that meets the current requirement can you make it not near capacity
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0005-agent-a-7546257f7f-channel.wav
+06. Agent B
+    generated: Take metro line M1 from Echo to Bravo; bus B4 from Bravo to Zulu. 38 minutes, 1 changes. It is not near capacity.
+    outgoing speech text: Take metro line M1 from Echo to Bravo; bus B4 from Bravo to Zulu. 38 minutes, 1 changes. It is not near capacity.
+    raw recognition: take metro line em one from echo to bravo bus before from bravo to zulu thirty eight minutes one changes it is not near capacity
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["em", "one"]}, {"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["38"], "target_tokens": ["thirty", "eight"]}, {"operation": "replace", "source_tokens": ["1"], "target_tokens": ["one"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["em", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take metro line M1 from echo to bravo bus before from bravo to zulu thirty eight minutes one changes it is not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0006-agent-b-ba775804c1-channel.wav
+07. Agent A
+    generated: I heard 'em one'. Did you mean 'M1'?
+    outgoing speech text: I heard 'em one'. Did you mean 'M1'?
+    raw recognition: i heard em one did you mean m one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'em", "one'"], "target_tokens": ["em", "one"]}, {"operation": "replace", "source_tokens": ["'M1'"], "target_tokens": ["m", "one"]}]
+    transcript corrections: []
+    understood transcript: i heard em one did you mean m one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0007-agent-a-8640366a5a-channel.wav
+08. Agent B
+    generated: I meant M1.
+    outgoing speech text: I meant M1.
+    raw recognition: i meant him one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["him", "one"]}]
+    transcript corrections: []
+    understood transcript: i meant him one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0008-agent-b-f08e9227db-channel.wav
+09. Agent A
+    generated: That meets the current requirement. Can you make it with lower delay risk?
+    outgoing speech text: That meets the current requirement. Can you make it with lower delay risk?
+    raw recognition: that meets the current requirement can you make it with lower delay risk
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it with lower delay risk
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0009-agent-a-3f28d2fd2f-channel.wav
+10. Agent B
+    generated: Take metro line M1 from Echo to Uniform; walk 7 minutes from Uniform to Tango; bus B4 from Tango to Zulu. 46 minutes, 2 changes. Delay risk is high.
+    outgoing speech text: Take metro line M1 from Echo to Uniform; walk 7 minutes from Uniform to Tango; bus B4 from Tango to Zulu. 46 minutes, 2 changes. Delay risk is high.
+    raw recognition: take metro line and one from echo to uniform walk seven minutes from uniform to tango was before from tango to zulu forty six minutes to changes delay risk is high
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["and", "one"]}, {"operation": "replace", "source_tokens": ["7"], "target_tokens": ["seven"]}, {"operation": "replace", "source_tokens": ["bus", "B4"], "target_tokens": ["was", "before"]}, {"operation": "replace", "source_tokens": ["46"], "target_tokens": ["forty", "six"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["and", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take metro line M1 from echo to uniform walk seven minutes from uniform to tango was before from tango to zulu forty six minutes to changes delay risk is high
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0010-agent-b-298dd15e23-channel.wav
+11. Agent A
+    generated: I heard 'and one'. Did you mean 'M1'?
+    outgoing speech text: I heard 'and one'. Did you mean 'M1'?
+    raw recognition: i heard and one did you mean am one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'and", "one'"], "target_tokens": ["and", "one"]}, {"operation": "replace", "source_tokens": ["'M1'"], "target_tokens": ["am", "one"]}]
+    transcript corrections: []
+    understood transcript: i heard and one did you mean am one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0011-agent-a-75c5d15354-channel.wav
+12. Agent B
+    generated: Yes, I meant am one.
+    outgoing speech text: Yes, I meant am one.
+    raw recognition: yes i meant him one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["am"], "target_tokens": ["him"]}]
+    transcript corrections: []
+    understood transcript: yes i meant him one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0012-agent-b-37cc666966-channel.wav
+13. Agent A
+    generated: The earlier route also fits. Thanks, I'll take that.
+    outgoing speech text: The earlier route also fits. Thanks, I'll take that.
+    raw recognition: the earlier route also fits thanks i'll take that
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: the earlier route also fits thanks i'll take that
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_034514_b-n0001/.turn_audio/29a4d72471cb/0013-agent-a-7ba86b641b-channel.wav

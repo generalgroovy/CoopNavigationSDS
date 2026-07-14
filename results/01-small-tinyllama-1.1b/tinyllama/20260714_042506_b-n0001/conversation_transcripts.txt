@@ -1,0 +1,240 @@
+=== Conversation 1: C-CEE-CAR-MC-PIP-VOS-TL1-DEFAU-SML-I0-fbf71c821c-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-CEE-CAR-MC-PIP-VOS-TL1-DEFAU-SML-I0-fbf71c821c-A
+Test case: crowded_event_exit:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: crowded_event_exit
+Speech pattern: mostly_clean
+Agent A audio persona: neutral_caller
+Agent B audio persona: clear_operator
+Model: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+Outcome: unsatisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 28
+Runtime seconds: 757.498773493804
+
+Conversation
+01. Agent A [2.000 seconds]: i'm starting at station sierra twenty two eighteen i need to take transit lines to charlie which lines should i take
+    processing seconds: generation=0.0, synthesis=12.379255, recognition=1.675528, understanding=None, dialogue_management=None
+    duration seconds: audio=9.861, speech_pipeline_wall=16.242698, observed_turn=16.242778, accounted_processing=16.242698
+02. Agent B [2.000 seconds]: take tramline t for from sierra to golf must be one from golf to charlie twenty eight minutes one changes
+    processing seconds: generation=64.924445, synthesis=7.715677, recognition=1.150108, understanding=0.001587, dialogue_management=0.004509
+    duration seconds: audio=7.106, speech_pipeline_wall=10.900782, observed_turn=75.831452, accounted_processing=75.831323
+03. Agent A [2.000 seconds]: that route and typing work can you make it with as few line changes as reasonable
+    processing seconds: generation=22.168501, synthesis=6.326243, recognition=0.940201, understanding=None, dialogue_management=None
+    duration seconds: audio=6.852, speech_pipeline_wall=8.584263, observed_turn=30.752881, accounted_processing=30.752764
+04. Agent B [2.000 seconds]: take tramline t three from sierra tango bus before from tango to bravo metro M1 from bravo to charlie thirty two minutes to changes
+    processing seconds: generation=65.017671, synthesis=8.921261, recognition=1.274452, understanding=0.004711, dialogue_management=0.003065
+    duration seconds: audio=9.416, speech_pipeline_wall=13.007693, observed_turn=78.033228, accounted_processing=78.03314
+05. Agent A [2.000 seconds]: i heard em one did you mean m one
+    processing seconds: generation=0.00159, synthesis=3.310555, recognition=0.587833, understanding=None, dialogue_management=None
+    duration seconds: audio=3.651, speech_pipeline_wall=4.669074, observed_turn=4.67073, accounted_processing=4.670664
+06. Agent B [2.000 seconds]: i meant am one
+    processing seconds: generation=0.2067, synthesis=1.618943, recognition=0.450657, understanding=6e-06, dialogue_management=8.5e-05
+    duration seconds: audio=1.261, speech_pipeline_wall=2.667066, observed_turn=2.87392, accounted_processing=2.873858
+07. Agent A [2.000 seconds]: that meets the current requirement can you make it not near capacity
+    processing seconds: generation=24.104284, synthesis=5.03659, recognition=0.848497, understanding=None, dialogue_management=None
+    duration seconds: audio=5.252, speech_pipeline_wall=7.015585, observed_turn=31.119966, accounted_processing=31.119869
+08. Agent B [2.000 seconds]: take tramline t three from sierra two x ray metro him one from x ray to oscar metro him for from oscar to charlie thirty seven minutes to changes it is not near capacity
+    processing seconds: generation=70.885149, synthesis=10.574188, recognition=1.45364, understanding=0.001752, dialogue_management=0.003916
+    duration seconds: audio=11.404, speech_pipeline_wall=15.141499, observed_turn=86.032405, accounted_processing=86.032316
+09. Agent A [2.000 seconds]: that has three changes i can handle to another route
+    processing seconds: generation=26.433605, synthesis=4.395455, recognition=0.791575, understanding=None, dialogue_management=None
+    duration seconds: audio=4.609, speech_pipeline_wall=6.216794, observed_turn=32.650487, accounted_processing=32.650399
+10. Agent B [2.000 seconds]: take tram line t for from sierra to yankee metro M1 from yankee to grow metro em for from grow to charlie thirty seven minutes to changes
+    processing seconds: generation=79.365295, synthesis=9.283254, recognition=1.214244, understanding=0.001255, dialogue_management=0.00418
+    duration seconds: audio=9.416, speech_pipeline_wall=13.493005, observed_turn=92.863833, accounted_processing=92.863735
+11. Agent A [2.000 seconds]: that does not reach charlie yet what is the next connected segment
+    processing seconds: generation=0.005608, synthesis=5.481725, recognition=0.794869, understanding=None, dialogue_management=None
+    duration seconds: audio=5.252, speech_pipeline_wall=7.376796, observed_turn=7.382464, accounted_processing=7.382404
+12. Agent B [2.000 seconds]: i have no new distinct viable route the best earlier wealth still fits the current request
+    processing seconds: generation=82.048203, synthesis=7.0035, recognition=0.908075, understanding=0.000499, dialogue_management=0.0001
+    duration seconds: audio=6.158, speech_pipeline_wall=9.468105, observed_turn=91.516993, accounted_processing=91.516908
+13. Agent A [2.000 seconds]: i heard route did you mean route
+    processing seconds: generation=0.001187, synthesis=3.274708, recognition=0.598149, understanding=None, dialogue_management=None
+    duration seconds: audio=3.251, speech_pipeline_wall=4.560052, observed_turn=4.561301, accounted_processing=4.561239
+14. Agent B [2.000 seconds]: yes i meant route
+    processing seconds: generation=0.000451, synthesis=2.160675, recognition=0.436262, understanding=7e-06, dialogue_management=8e-05
+    duration seconds: audio=1.718, speech_pipeline_wall=3.057941, observed_turn=3.05853, accounted_processing=3.058478
+15. Agent A [2.000 seconds]: did you mean charlie by earlier
+    processing seconds: generation=0.03556, synthesis=2.31223, recognition=0.566881, understanding=None, dialogue_management=None
+    duration seconds: audio=2.641, speech_pipeline_wall=3.449029, observed_turn=3.48464, accounted_processing=3.484589
+16. Agent B [2.000 seconds]: yes i meant charlie by earlier
+    processing seconds: generation=0.000539, synthesis=3.202483, recognition=0.601116, understanding=6e-06, dialogue_management=7.6e-05
+    duration seconds: audio=2.445, speech_pipeline_wall=4.80626, observed_turn=4.80693, accounted_processing=4.80688
+17. Agent A [2.000 seconds]: that's still is not a usable route to charlie give the connected lines and boarding station
+    processing seconds: generation=0.036723, synthesis=6.683803, recognition=1.016437, understanding=None, dialogue_management=None
+    duration seconds: audio=6.82, speech_pipeline_wall=9.278365, observed_turn=9.315161, accounted_processing=9.315088
+18. Agent B [2.000 seconds]: i have no new distinct viable route the best earlier route still fits the current request
+    processing seconds: generation=77.162735, synthesis=7.484228, recognition=0.910308, understanding=0.000328, dialogue_management=9e-05
+    duration seconds: audio=6.158, speech_pipeline_wall=10.08231, observed_turn=87.245564, accounted_processing=87.245463
+19. Agent A [2.000 seconds]: that's still is not a usable route to charlie give the connected lines and boarding station
+    processing seconds: generation=0.034355, synthesis=6.607207, recognition=1.057802, understanding=None, dialogue_management=None
+    duration seconds: audio=6.82, speech_pipeline_wall=9.208126, observed_turn=9.242546, accounted_processing=9.242481
+20. Agent B [2.000 seconds]: i have no new distinct viable route the best earlier wealth still fits the current request
+    processing seconds: generation=75.687783, synthesis=7.240807, recognition=0.965423, understanding=0.000353, dialogue_management=0.000111
+    duration seconds: audio=6.158, speech_pipeline_wall=9.775259, observed_turn=85.463611, accounted_processing=85.463507
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Sierra at 22:18. I need to take transit lines to Charlie. Which lines should I take?
+    outgoing speech text: I'm starting at station Sierra at twenty two eighteen. I need to take transit lines to Charlie. Which lines should I take?
+    raw recognition: i'm starting at station sierra twenty two eighteen i need to take transit lines to charlie which lines should i take
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["at"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: i'm starting at station sierra twenty two eighteen i need to take transit lines to charlie which lines should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0001-agent-a-2e830365bc-channel.wav
+02. Agent B
+    generated: Take tram line T4 from Sierra to Golf; bus B1 from Golf to Charlie. 28 minutes, 1 changes.
+    outgoing speech text: Take tram line T4 from Sierra to Golf; bus B1 from Golf to Charlie. 28 minutes, 1 changes.
+    raw recognition: take tramline t for from sierra to golf must be one from golf to charlie twenty eight minutes one changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T4"], "target_tokens": ["tramline", "t", "for"]}, {"operation": "replace", "source_tokens": ["bus", "B1"], "target_tokens": ["must", "be", "one"]}, {"operation": "replace", "source_tokens": ["28"], "target_tokens": ["twenty", "eight"]}, {"operation": "replace", "source_tokens": ["1"], "target_tokens": ["one"]}]
+    transcript corrections: []
+    understood transcript: take tramline t for from sierra to golf must be one from golf to charlie twenty eight minutes one changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0002-agent-b-a9f49b95e5-channel.wav
+03. Agent A
+    generated: That route and timing work. Can you make it with as few line changes as reasonable?
+    outgoing speech text: That route and timing work. Can you make it with as few line changes as reasonable?
+    raw recognition: that route and typing work can you make it with as few line changes as reasonable
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["timing"], "target_tokens": ["typing"]}]
+    transcript corrections: []
+    understood transcript: that route and typing work can you make it with as few line changes as reasonable
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0003-agent-a-47c08dc0d2-channel.wav
+04. Agent B
+    generated: Take tram line T3 from Sierra to Tango; bus B4 from Tango to Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    outgoing speech text: Take tram line T3 from Sierra to Tango; bus B4 from Tango to Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    raw recognition: take tramline t three from sierra tango bus before from tango to bravo metro m one from bravo to charlie thirty two minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T3"], "target_tokens": ["tramline", "t", "three"]}, {"operation": "delete", "source_tokens": ["to"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["32"], "target_tokens": ["thirty", "two"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take tramline t three from sierra tango bus before from tango to bravo metro M1 from bravo to charlie thirty two minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0004-agent-b-431441f538-channel.wav
+05. Agent A
+    generated: I heard 'm one'. Did you mean 'M1'?
+    outgoing speech text: I heard 'm one'. Did you mean 'M1'?
+    raw recognition: i heard em one did you mean m one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'m", "one'"], "target_tokens": ["em", "one"]}, {"operation": "replace", "source_tokens": ["'M1'"], "target_tokens": ["m", "one"]}]
+    transcript corrections: []
+    understood transcript: i heard em one did you mean m one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0005-agent-a-871e0a4fb8-channel.wav
+06. Agent B
+    generated: I meant M1.
+    outgoing speech text: I meant M1.
+    raw recognition: i meant am one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["am", "one"]}]
+    transcript corrections: []
+    understood transcript: i meant am one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0006-agent-b-086470ffe0-channel.wav
+07. Agent A
+    generated: That meets the current requirement. Can you make it not near capacity?
+    outgoing speech text: That meets the current requirement. Can you make it not near capacity?
+    raw recognition: that meets the current requirement can you make it not near capacity
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0007-agent-a-b13ae6cb1d-channel.wav
+08. Agent B
+    generated: Take tram line T3 from Sierra to Xray; metro M1 from Xray to Oscar; metro M4 from Oscar to Charlie. 37 minutes, 2 changes. It is not near capacity.
+    outgoing speech text: Take tram line T3 from Sierra to Xray; metro M1 from Xray to Oscar; metro M4 from Oscar to Charlie. 37 minutes, 2 changes. It is not near capacity.
+    raw recognition: take tramline t three from sierra two x ray metro him one from x ray to oscar metro him for from oscar to charlie thirty seven minutes to changes it is not near capacity
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T3"], "target_tokens": ["tramline", "t", "three"]}, {"operation": "replace", "source_tokens": ["to", "Xray"], "target_tokens": ["two", "x", "ray"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["him", "one"]}, {"operation": "replace", "source_tokens": ["Xray"], "target_tokens": ["x", "ray"]}, {"operation": "replace", "source_tokens": ["M4"], "target_tokens": ["him", "for"]}, {"operation": "replace", "source_tokens": ["37"], "target_tokens": ["thirty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: take tramline t three from sierra two x ray metro him one from x ray to oscar metro him for from oscar to charlie thirty seven minutes to changes it is not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0008-agent-b-ee06d557c7-channel.wav
+09. Agent A
+    generated: That has 3 changes; I can handle 2. Another route?
+    outgoing speech text: That has 3 changes; I can handle 2. Another route?
+    raw recognition: that has three changes i can handle to another route
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["3"], "target_tokens": ["three"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: that has three changes i can handle to another route
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0009-agent-a-3ccd52aa83-channel.wav
+10. Agent B
+    generated: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Grove; metro M4 from Grove to Charlie. 37 minutes, 2 changes.
+    outgoing speech text: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Grove; metro M4 from Grove to Charlie. 37 minutes, 2 changes.
+    raw recognition: take tram line t for from sierra to yankee metro m one from yankee to grow metro em for from grow to charlie thirty seven minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["T4"], "target_tokens": ["t", "for"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["Grove"], "target_tokens": ["grow"]}, {"operation": "replace", "source_tokens": ["M4"], "target_tokens": ["em", "for"]}, {"operation": "replace", "source_tokens": ["Grove"], "target_tokens": ["grow"]}, {"operation": "replace", "source_tokens": ["37"], "target_tokens": ["thirty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take tram line t for from sierra to yankee metro M1 from yankee to grow metro em for from grow to charlie thirty seven minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0010-agent-b-60dcd39b1f-channel.wav
+11. Agent A
+    generated: That does not reach Charlie yet. What is the next connected segment?
+    outgoing speech text: That does not reach Charlie yet. What is the next connected segment?
+    raw recognition: that does not reach charlie yet what is the next connected segment
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that does not reach charlie yet what is the next connected segment
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0011-agent-a-5bdee0bb5d-channel.wav
+12. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: i have no new distinct viable wrote the best earlier wealth still fits the current request
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["wrote"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["wealth"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["wrote"], "target_tokens": ["route"]}]
+    understood transcript: i have no new distinct viable route the best earlier wealth still fits the current request
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0012-agent-b-31a4e2ef6e-channel.wav
+13. Agent A
+    generated: I heard 'wrote'. Did you mean 'route'?
+    outgoing speech text: I heard 'wrote'. Did you mean 'route'?
+    raw recognition: i heard wrote did you mean route
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'wrote'"], "target_tokens": ["wrote"]}, {"operation": "replace", "source_tokens": ["'route'"], "target_tokens": ["route"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["wrote"], "target_tokens": ["route"]}]
+    understood transcript: i heard route did you mean route
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0013-agent-a-baa2248342-channel.wav
+14. Agent B
+    generated: Yes, I meant route.
+    outgoing speech text: Yes, I meant route.
+    raw recognition: yes i meant route
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: yes i meant route
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0014-agent-b-3a799d6b2a-channel.wav
+15. Agent A
+    generated: Did you mean Charlie by 'earlier'?
+    outgoing speech text: Did you mean Charlie by 'earlier'?
+    raw recognition: did you mean charlie by earlier
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'earlier'"], "target_tokens": ["earlier"]}]
+    transcript corrections: []
+    understood transcript: did you mean charlie by earlier
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0015-agent-a-d81c3817d1-channel.wav
+16. Agent B
+    generated: Yes, I meant charlie by earlier.
+    outgoing speech text: Yes, I meant charlie by earlier.
+    raw recognition: yes i meant charlie by earlier
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: yes i meant charlie by earlier
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0016-agent-b-965458c5d5-channel.wav
+17. Agent A
+    generated: That still is not a usable route to Charlie. Give the connected lines and boarding stations.
+    outgoing speech text: That still is not a usable route to Charlie. Give the connected lines and boarding stations.
+    raw recognition: that's still is not a usable route to charlie give the connected lines and boarding stations
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["That"], "target_tokens": ["that's"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: that's still is not a usable route to charlie give the connected lines and boarding station
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0017-agent-a-9ea5c9eded-channel.wav
+18. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: i have no new distinct viable route the best earlier wrote still fits the current request
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["wrote"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["wrote"], "target_tokens": ["route"]}]
+    understood transcript: i have no new distinct viable route the best earlier route still fits the current request
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0018-agent-b-a5ced65eda-channel.wav
+19. Agent A
+    generated: That still is not a usable route to Charlie. Give the connected lines and boarding stations.
+    outgoing speech text: That still is not a usable route to Charlie. Give the connected lines and boarding stations.
+    raw recognition: that's still is not a usable route to charlie give the connected lines and boarding stations
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["That"], "target_tokens": ["that's"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: that's still is not a usable route to charlie give the connected lines and boarding station
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0019-agent-a-0ff811dc3f-channel.wav
+20. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: i have no new distinct viable route the best earlier wealth still fits the current request
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["wealth"]}]
+    transcript corrections: []
+    understood transcript: i have no new distinct viable route the best earlier wealth still fits the current request
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b/tinyllama/20260714_042506_b-n0001/.turn_audio/0a80c09a0810/0020-agent-b-a054e8b079-channel.wav
