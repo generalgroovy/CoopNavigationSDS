@@ -1,0 +1,97 @@
+=== Conversation 1: C-MT-RAN-SC-PIP-VOS-MP3M4-DEFAU-MED-I0-b74feba52b-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MT-RAN-SC-PIP-VOS-MP3M4-DEFAU-MED-I0-b74feba52b-A
+Test case: midday_transfer:risk_averse_novice
+Persona: risk_averse_novice
+Scenario: midday_transfer
+Speech pattern: severe_channel
+Agent A audio persona: barely_understandable_caller
+Agent B audio persona: barely_understandable_operator
+Model: microsoft/Phi-3-mini-4k-instruct
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 71.23410650063306
+
+Conversation
+01. Agent A [2.000 seconds]: starting with for we are you need to take transit lines blue line too late
+    processing seconds: generation=0.0, synthesis=8.783402, recognition=2.572105, understanding=None, dialogue_management=None
+    duration seconds: audio=10.0, speech_pipeline_wall=18.604254, observed_turn=18.604501, accounted_processing=18.604254
+02. Agent B [2.000 seconds]: i on this please stay on them
+    processing seconds: generation=0.00133, synthesis=3.48681, recognition=0.967642, understanding=0.002508, dialogue_management=0.000375
+    duration seconds: audio=4.723, speech_pipeline_wall=8.384182, observed_turn=8.388541, accounted_processing=8.388394
+03. Agent A [2.000 seconds]: start by state
+    processing seconds: generation=0.04485, synthesis=1.07163, recognition=0.760275, understanding=None, dialogue_management=None
+    duration seconds: audio=3.633, speech_pipeline_wall=4.603615, observed_turn=4.648604, accounted_processing=4.648465
+04. Agent B [2.000 seconds]: i miss the thirty as different story say own that
+    processing seconds: generation=0.001979, synthesis=3.090728, recognition=1.082651, understanding=0.002552, dialogue_management=0.000385
+    duration seconds: audio=5.214, speech_pipeline_wall=8.746531, observed_turn=8.751592, accounted_processing=8.751446
+05. Agent A [2.000 seconds]: my name's way up to the normal tissue if elected forty a station
+    processing seconds: generation=0.127561, synthesis=3.87878, recognition=1.214257, understanding=None, dialogue_management=None
+    duration seconds: audio=5.381, speech_pipeline_wall=9.470452, observed_turn=9.598147, accounted_processing=9.598013
+06. Agent B [2.000 seconds]: human studies safe the financial system their departure time
+    processing seconds: generation=0.005286, synthesis=4.307177, recognition=1.425722, understanding=0.002444, dialogue_management=0.000358
+    duration seconds: audio=5.799, speech_pipeline_wall=11.946587, observed_turn=11.954807, accounted_processing=11.954675
+07. Agent A [2.000 seconds]: that stuff he the same it for me without i improve the well
+    processing seconds: generation=0.157272, synthesis=2.427272, recognition=1.248555, understanding=None, dialogue_management=None
+    duration seconds: audio=6.573, speech_pipeline_wall=8.618379, observed_turn=8.775817, accounted_processing=8.775651
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Echo at 12:18. I need to take transit lines to Zulu. Which lines should I take?
+    outgoing speech text: um, I'm s-starting um, at s-station Echo at twelve eighteen. I n-need to take transit lines to Zulu. Which lines should I take?
+    raw recognition: starting with for we are you need to take transit lines blue line too late
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["um", "I'm", "s-starting", "um", "at", "s-station", "Echo", "at", "twelve", "eighteen", "I", "n-need"], "target_tokens": ["starting", "with", "for", "we", "are", "you", "need"]}, {"operation": "replace", "source_tokens": ["to", "Zulu", "Which", "lines", "should", "I", "take"], "target_tokens": ["blue", "line", "too", "late"]}]
+    transcript corrections: []
+    understood transcript: starting with for we are you need to take transit lines blue line too late
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0001-agent-a-439cb2ba7e-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I uh missed the starting station. Please say o-only that.
+    raw recognition: i on this please stay on them
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["uh", "missed", "the", "starting", "station"], "target_tokens": ["on", "this"]}, {"operation": "replace", "source_tokens": ["say", "o-only", "that"], "target_tokens": ["stay", "on", "them"]}]
+    transcript corrections: []
+    understood transcript: i on this please stay on them
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0002-agent-b-4faa6d8504-channel.wav
+03. Agent A
+    generated: Did you mean start by 'stay'?
+    outgoing speech text: Okay, Did you m-mean s-start by 'stay'?
+    raw recognition: start by state
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Okay", "Did", "you", "m-mean", "s-start"], "target_tokens": ["start"]}, {"operation": "replace", "source_tokens": ["'stay'"], "target_tokens": ["state"]}]
+    transcript corrections: []
+    understood transcript: start by state
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0003-agent-a-cd8fd23cc8-channel.wav
+04. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: O-Okay, I missed the starting s-station. sorry, Please say uh only that.
+    raw recognition: i miss the thirty as different story say own that
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["O-Okay"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["missed"], "target_tokens": ["miss"]}, {"operation": "replace", "source_tokens": ["starting", "s-station", "sorry", "Please"], "target_tokens": ["thirty", "as", "different", "story"]}, {"operation": "replace", "source_tokens": ["uh", "only"], "target_tokens": ["own"]}]
+    transcript corrections: []
+    understood transcript: i miss the thirty as different story say own that
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0004-agent-b-770cf02ae3-channel.wav
+05. Agent A
+    generated: I need the actual route to Zulu. Give connected boarding stations.
+    outgoing speech text: I need the a-actual r-route to Zulu. Give connected boarding s-stations.
+    raw recognition: my name's way up to the normal tissue if elected forty a station
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["I", "need"], "target_tokens": ["my", "name's", "way", "up", "to"]}, {"operation": "replace", "source_tokens": ["a-actual", "r-route", "to", "Zulu", "Give", "connected", "boarding", "s-stations"], "target_tokens": ["normal", "tissue", "if", "elected", "forty", "a", "station"]}]
+    transcript corrections: []
+    understood transcript: my name's way up to the normal tissue if elected forty a station
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0005-agent-a-245c29f14f-channel.wav
+06. Agent B
+    generated: Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    outgoing speech text: L-Let's reset the trip details. Say only: starting station, destination station, and departure time.
+    raw recognition: human studies safe the financial system their departure time
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["L-Let's", "reset"], "target_tokens": ["human", "studies", "safe"]}, {"operation": "replace", "source_tokens": ["trip", "details", "Say", "only", "starting", "station", "destination", "station", "and"], "target_tokens": ["financial", "system", "their"]}]
+    transcript corrections: []
+    understood transcript: human studies safe the financial system their departure time
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0006-agent-b-3f5a634853-channel.wav
+07. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I uh will s-stop here; we are repeating t-the same information without i-improving the route.
+    raw recognition: that stuff he the same it for me without i improve the well
+    misinterpreted tokens: [{"operation": "insert", "source_tokens": [], "target_tokens": ["that", "stuff", "he", "the", "same", "it", "for", "me", "without"]}, {"operation": "replace", "source_tokens": ["uh", "will", "s-stop", "here", "we", "are", "repeating", "t-the", "same", "information", "without", "i-improving"], "target_tokens": ["improve"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["well"]}]
+    transcript corrections: []
+    understood transcript: that stuff he the same it for me without i improve the well
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_082556_b-n0001/.turn_audio/201934e3e21c/0007-agent-a-2e3d456e40-channel.wav

@@ -1,0 +1,185 @@
+=== Conversation 1: C-MPCC-CAR-HESIT-PIP-VOS-MP3M4-DEFAU-MED-I0-cbca06a0db-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-MPCC-CAR-HESIT-PIP-VOS-MP3M4-DEFAU-MED-I0-cbca06a0db-A
+Test case: morning_peak_cross_city:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: morning_peak_cross_city
+Speech pattern: hesitant
+Agent A audio persona: degraded_caller
+Agent B audio persona: degraded_operator
+Model: microsoft/Phi-3-mini-4k-instruct
+Outcome: unsatisfied
+Route valid: False
+Route reaches goal: False
+Route correct: False
+Route duration minutes: None
+Runtime seconds: 1035.9406993295997
+
+Conversation
+01. Agent A [2.000 seconds]: okay i'm starting at station brother would eight oh seven let me see i need to take transit lines to harbor which line should i take
+    processing seconds: generation=0.0, synthesis=6.88101, recognition=2.891973, understanding=None, dialogue_management=None
+    duration seconds: audio=12.423, speech_pipeline_wall=13.688534, observed_turn=13.688627, accounted_processing=13.688534
+02. Agent B [2.000 seconds]: i missed on that farting station lead say only them
+    processing seconds: generation=0.000743, synthesis=1.508463, recognition=1.378598, understanding=0.000471, dialogue_management=0.000126
+    duration seconds: audio=4.047, speech_pipeline_wall=4.452195, observed_turn=4.453584, accounted_processing=4.453535
+03. Agent A [2.000 seconds]: okay i need the actual real to harbor okay give connected boarding station
+    processing seconds: generation=0.025643, synthesis=1.676095, recognition=1.257647, understanding=None, dialogue_management=None
+    duration seconds: audio=6.055, speech_pipeline_wall=5.4669, observed_turn=6.080643, accounted_processing=5.492543
+04. Agent B [2.000 seconds]: one connected on option take a line from harbor to harbor transfer time applies only when changing lines
+    processing seconds: generation=218.982469, synthesis=1.749604, recognition=1.717372, understanding=0.000525, dialogue_management=0.000183
+    duration seconds: audio=6.921, speech_pipeline_wall=6.838903, observed_turn=225.904177, accounted_processing=225.82208
+05. Agent A [2.000 seconds]: did you mean change by changing
+    processing seconds: generation=0.036082, synthesis=0.695806, recognition=0.798439, understanding=None, dialogue_management=None
+    duration seconds: audio=2.702, speech_pipeline_wall=2.462375, observed_turn=2.738082, accounted_processing=2.498457
+06. Agent B [2.000 seconds]: yes i meant change by changing
+    processing seconds: generation=0.330216, synthesis=0.827267, recognition=0.81163, understanding=1.1e-05, dialogue_management=0.000121
+    duration seconds: audio=2.434, speech_pipeline_wall=2.738985, observed_turn=3.069411, accounted_processing=3.069334
+07. Agent A [2.000 seconds]: that's still is not a complete well to harbor i'm given different connected world with line codes
+    processing seconds: generation=0.037273, synthesis=1.599255, recognition=1.378192, understanding=None, dialogue_management=None
+    duration seconds: audio=8.378, speech_pipeline_wall=5.842044, observed_turn=8.415273, accounted_processing=5.879317
+08. Agent B [2.000 seconds]: let me see i have no new distinct viable route okay the best earlier ralph still fits the current request
+    processing seconds: generation=234.918424, synthesis=1.952837, recognition=1.619875, understanding=0.000527, dialogue_management=0.000129
+    duration seconds: audio=7.535, speech_pipeline_wall=6.868076, observed_turn=242.454081, accounted_processing=241.787157
+09. Agent A [2.000 seconds]: did you mean charlie by earlier
+    processing seconds: generation=0.049501, synthesis=0.739761, recognition=0.914251, understanding=None, dialogue_management=None
+    duration seconds: audio=2.702, speech_pipeline_wall=2.66763, observed_turn=2.751501, accounted_processing=2.717131
+10. Agent B [2.000 seconds]: yes i meant charlie by earlier
+    processing seconds: generation=0.000861, synthesis=1.07474, recognition=1.068967, understanding=1.1e-05, dialogue_management=0.000118
+    duration seconds: audio=2.434, speech_pipeline_wall=3.289183, observed_turn=3.29024, accounted_processing=3.290173
+11. Agent A [2.000 seconds]: that's still is not a usable route to harbor give the connected lines and fourteen station
+    processing seconds: generation=0.050031, synthesis=2.43412, recognition=1.574061, understanding=None, dialogue_management=None
+    duration seconds: audio=6.854, speech_pipeline_wall=6.531409, observed_turn=6.904031, accounted_processing=6.58144
+12. Agent B [2.000 seconds]: i have no new distinct viable route the best earlier wealth still fits the current request
+    processing seconds: generation=244.266923, synthesis=2.118171, recognition=1.478548, understanding=0.000491, dialogue_management=0.000131
+    duration seconds: audio=5.893, speech_pipeline_wall=6.257966, observed_turn=250.525625, accounted_processing=250.52551
+13. Agent A [2.000 seconds]: okay still is not a usable rail to harbor give the connected lines and fourteen station
+    processing seconds: generation=0.038274, synthesis=2.10427, recognition=1.622101, understanding=None, dialogue_management=None
+    duration seconds: audio=7.422, speech_pipeline_wall=6.488608, observed_turn=7.460274, accounted_processing=6.526882
+14. Agent B [2.000 seconds]: okay i have no new distinct viable route the best earlier ralph still fits the current request
+    processing seconds: generation=251.885556, synthesis=1.912453, recognition=1.456935, understanding=0.000519, dialogue_management=0.000135
+    duration seconds: audio=6.381, speech_pipeline_wall=6.176349, observed_turn=258.26721, accounted_processing=258.062559
+15. Agent A [2.000 seconds]: i won't stop here we are repeating the same information without improving the route
+    processing seconds: generation=0.045143, synthesis=1.557779, recognition=1.386303, understanding=None, dialogue_management=None
+    duration seconds: audio=5.997, speech_pipeline_wall=5.245659, observed_turn=6.042143, accounted_processing=5.290802
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 08:07. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: um, Okay, I'm starting at station Bravo at eight oh seven. let me see, I need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: okay i'm starting at station brother would eight oh seven let me see i need to take transit lines to harbor which line should i take
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["Bravo", "at"], "target_tokens": ["brother", "would"]}, {"operation": "replace", "source_tokens": ["lines"], "target_tokens": ["line"]}]
+    transcript corrections: []
+    understood transcript: okay i'm starting at station brother would eight oh seven let me see i need to take transit lines to harbor which line should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0001-agent-a-dd47144632-channel.wav
+02. Agent B
+    generated: I missed the starting station. Please say only that.
+    outgoing speech text: I missed um, the starting station. Please say only that.
+    raw recognition: i missed on that farting station lead say only them
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["um", "the", "starting"], "target_tokens": ["on", "that", "farting"]}, {"operation": "replace", "source_tokens": ["Please"], "target_tokens": ["lead"]}, {"operation": "replace", "source_tokens": ["that"], "target_tokens": ["them"]}]
+    transcript corrections: []
+    understood transcript: i missed on that farting station lead say only them
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0002-agent-b-aad08d1404-channel.wav
+03. Agent A
+    generated: I need the actual route to Harbor. Give connected boarding stations.
+    outgoing speech text: okay, I need the actual route to Harbor. okay, Give connected boarding stations.
+    raw recognition: okay i need the actual real to harbor okay give connected boarding stations
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["real"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: okay i need the actual real to harbor okay give connected boarding station
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0003-agent-a-2a5a08e55a-channel.wav
+04. Agent B
+    generated: One connected option: take a line from Harbor to Harbor Transfer time applies only when changing lines.
+    outgoing speech text: um, One connected um, option: take a line from Harbor to Harbor Transfer time applies only when changing lines.
+    raw recognition: one connected on option take a line from harbor to harbor transfer time applies only when changing lines
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["um"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["um"], "target_tokens": ["on"]}]
+    transcript corrections: []
+    understood transcript: one connected on option take a line from harbor to harbor transfer time applies only when changing lines
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0004-agent-b-061e6323a8-channel.wav
+05. Agent A
+    generated: Did you mean change by 'changing'?
+    outgoing speech text: Did you mean change by 'changing'?
+    raw recognition: did you mean change by changing
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'changing'"], "target_tokens": ["changing"]}]
+    transcript corrections: []
+    understood transcript: did you mean change by changing
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0005-agent-a-17688232b3-channel.wav
+06. Agent B
+    generated: Yes, I meant change by changing.
+    outgoing speech text: Yes, I meant change by changing.
+    raw recognition: yes i meant change by changing
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: yes i meant change by changing
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0006-agent-b-01a65cbe63-channel.wav
+07. Agent A
+    generated: That still is not a complete route to Harbor. Give a different connected route with line codes.
+    outgoing speech text: um, That still is not a complete route to Harbor. um, Give a different connected route with line codes.
+    raw recognition: that's still is not a complete well to harbor i'm given different connected world with line codes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["um", "That"], "target_tokens": ["that's"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["well"]}, {"operation": "replace", "source_tokens": ["um", "Give", "a"], "target_tokens": ["i'm", "given"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["world"]}]
+    transcript corrections: []
+    understood transcript: that's still is not a complete well to harbor i'm given different connected world with line codes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0007-agent-a-a144ca71b3-channel.wav
+08. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: let me see, I have no new distinct viable route. okay, The best earlier route still fits the current request.
+    raw recognition: let me see i have no new distinct viable route okay the best earlier ralph still fits the current request
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["ralph"]}]
+    transcript corrections: []
+    understood transcript: let me see i have no new distinct viable route okay the best earlier ralph still fits the current request
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0008-agent-b-56ebff3fa3-channel.wav
+09. Agent A
+    generated: Did you mean Charlie by 'earlier'?
+    outgoing speech text: Did you mean Charlie by 'earlier'?
+    raw recognition: did you mean charlie by earlier
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'earlier'"], "target_tokens": ["earlier"]}]
+    transcript corrections: []
+    understood transcript: did you mean charlie by earlier
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0009-agent-a-5708502d6b-channel.wav
+10. Agent B
+    generated: Yes, I meant charlie by earlier.
+    outgoing speech text: Yes, I meant charlie by earlier.
+    raw recognition: yes i meant charlie by earlier
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: yes i meant charlie by earlier
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0010-agent-b-8ff89de59e-channel.wav
+11. Agent A
+    generated: That still is not a usable route to Harbor. Give the connected lines and boarding stations.
+    outgoing speech text: That still is not a usable route to Harbor. Give the connected lines and boarding stations.
+    raw recognition: that's still is not a usable route to harbor give the connected lines and fourteen stations
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["That"], "target_tokens": ["that's"]}, {"operation": "replace", "source_tokens": ["boarding"], "target_tokens": ["fourteen"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: that's still is not a usable route to harbor give the connected lines and fourteen station
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0011-agent-a-6b6064b78d-channel.wav
+12. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: i have no new distinct viable route the best earlier wealth still fits the current request
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["wealth"]}]
+    transcript corrections: []
+    understood transcript: i have no new distinct viable route the best earlier wealth still fits the current request
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0012-agent-b-31a4e2ef6e-channel.wav
+13. Agent A
+    generated: That still is not a usable route to Harbor. Give the connected lines and boarding stations.
+    outgoing speech text: okay, That still is not a usable route to Harbor. Give the connected lines and boarding stations.
+    raw recognition: okay that still is not a usable rail to harbor give the connected lines and fourteen stations
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["That"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["rail"]}, {"operation": "replace", "source_tokens": ["boarding"], "target_tokens": ["fourteen"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["stations"], "target_tokens": ["station"]}]
+    understood transcript: okay still is not a usable rail to harbor give the connected lines and fourteen station
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0013-agent-a-ae649b0eb8-channel.wav
+14. Agent B
+    generated: I have no new distinct viable route. The best earlier route still fits the current request.
+    outgoing speech text: okay, I have no new distinct viable route. The best earlier route still fits the current request.
+    raw recognition: okay i have no new distinct viable route the best earlier ralph still fits the current request
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["route"], "target_tokens": ["ralph"]}]
+    transcript corrections: []
+    understood transcript: okay i have no new distinct viable route the best earlier ralph still fits the current request
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0014-agent-b-986f6d46cf-channel.wav
+15. Agent A
+    generated: I will stop here; we are repeating the same information without improving the route.
+    outgoing speech text: I will stop here; we are repeating the same information without improving the route.
+    raw recognition: i won't stop here we are repeating the same information without improving the route
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["will"], "target_tokens": ["won't"]}]
+    transcript corrections: []
+    understood transcript: i won't stop here we are repeating the same information without improving the route
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini/tinyllama/20260714_153446_b-n0001/.turn_audio/d586f916a2f8/0015-agent-a-58141bc0d5-channel.wav
