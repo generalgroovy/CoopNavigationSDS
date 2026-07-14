@@ -1,0 +1,207 @@
+=== Conversation 1: C-AC-CAR-MC-PIP-VOS-Q05-DEFAU-SML-I0-fa0fc84308-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-AC-CAR-MC-PIP-VOS-Q05-DEFAU-SML-I0-fa0fc84308-A
+Test case: airport_connection:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: airport_connection
+Speech pattern: mostly_clean
+Agent A audio persona: neutral_caller
+Agent B audio persona: clear_operator
+Model: Qwen/Qwen2.5-0.5B-Instruct
+Outcome: satisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 41
+Runtime seconds: 424.94397859694436
+
+Conversation
+01. Agent A [2.000 seconds]: i'm starting at station bravo with six thirty five i need to take transit lines to harbor which lines should i take
+    processing seconds: generation=0.0, synthesis=12.05498, recognition=1.770244, understanding=None, dialogue_management=None
+    duration seconds: audio=9.861, speech_pipeline_wall=15.928842, observed_turn=15.92894, accounted_processing=15.928842
+02. Agent B [2.000 seconds]: take tramline t to from bravo to alpha twenty five from alpha twelve twenty one from l to harbor thirty seven minutes to changes
+    processing seconds: generation=25.773631, synthesis=8.320786, recognition=1.287561, understanding=0.001638, dialogue_management=0.004164
+    duration seconds: audio=9.416, speech_pipeline_wall=12.30243, observed_turn=38.081974, accounted_processing=38.081863
+03. Agent A [2.000 seconds]: that does not reach harbor yet what is the next connected segment
+    processing seconds: generation=0.006294, synthesis=4.074641, recognition=0.864763, understanding=None, dialogue_management=None
+    duration seconds: audio=5.252, speech_pipeline_wall=6.125731, observed_turn=6.13209, accounted_processing=6.132025
+04. Agent B [2.000 seconds]: take bustling before from bravo to flint trump t for from flint to harbor forty one minutes one changes
+    processing seconds: generation=22.699793, synthesis=7.916438, recognition=1.230355, understanding=0.001924, dialogue_management=0.003024
+    duration seconds: audio=7.106, speech_pipeline_wall=11.536453, observed_turn=34.241305, accounted_processing=34.241194
+05. Agent A [2.000 seconds]: that route and timing work can you make it with as few line changes is reasonable
+    processing seconds: generation=24.982403, synthesis=6.846884, recognition=1.006946, understanding=None, dialogue_management=None
+    duration seconds: audio=6.852, speech_pipeline_wall=9.279843, observed_turn=34.26236, accounted_processing=34.262246
+06. Agent B [2.000 seconds]: take bus line before from bravo to hotel metro him one from hotel to Juliett twenty six from Juliett harbor forty five minutes to changes
+    processing seconds: generation=24.312404, synthesis=8.993879, recognition=1.321356, understanding=0.002488, dialogue_management=0.003489
+    duration seconds: audio=9.416, speech_pipeline_wall=13.059838, observed_turn=37.378292, accounted_processing=37.378219
+07. Agent A [2.000 seconds]: i heard Juliett did you mean Juliett
+    processing seconds: generation=0.002324, synthesis=4.070816, recognition=0.654218, understanding=None, dialogue_management=None
+    duration seconds: audio=3.251, speech_pipeline_wall=5.923006, observed_turn=5.925408, accounted_processing=5.92533
+08. Agent B [2.000 seconds]: yes i meant Juliett
+    processing seconds: generation=0.213287, synthesis=2.258541, recognition=0.524122, understanding=7e-06, dialogue_management=8.4e-05
+    duration seconds: audio=1.718, speech_pipeline_wall=3.332235, observed_turn=3.545672, accounted_processing=3.545613
+09. Agent A [2.000 seconds]: that meets the current requirement can you make it not near capacity
+    processing seconds: generation=26.566274, synthesis=5.574765, recognition=0.943907, understanding=None, dialogue_management=None
+    duration seconds: audio=5.252, speech_pipeline_wall=8.099474, observed_turn=34.665832, accounted_processing=34.665748
+10. Agent B [2.000 seconds]: take bus line before from bravo to hotel metro M1 from hotel to jasper must be one from jasper to harbor forty nine minutes to changes it is not near capacity
+    processing seconds: generation=25.963269, synthesis=10.555536, recognition=1.505374, understanding=0.009509, dialogue_management=0.005764
+    duration seconds: audio=11.404, speech_pipeline_wall=15.377933, observed_turn=41.356574, accounted_processing=41.356475
+11. Agent A [2.000 seconds]: i heard em one did you mean am one
+    processing seconds: generation=0.001286, synthesis=3.542415, recognition=0.581825, understanding=None, dialogue_management=None
+    duration seconds: audio=3.651, speech_pipeline_wall=5.251636, observed_turn=5.252986, accounted_processing=5.252922
+12. Agent B [2.000 seconds]: yes i meant him one
+    processing seconds: generation=0.001115, synthesis=2.395639, recognition=0.532687, understanding=7e-06, dialogue_management=9.4e-05
+    duration seconds: audio=2.082, speech_pipeline_wall=3.532996, observed_turn=3.534286, accounted_processing=3.534212
+13. Agent A [2.000 seconds]: that meets the current requirement can you make it with lower delay risk
+    processing seconds: generation=27.978879, synthesis=4.844592, recognition=0.8133, understanding=None, dialogue_management=None
+    duration seconds: audio=5.652, speech_pipeline_wall=6.814227, observed_turn=34.793203, accounted_processing=34.793106
+14. Agent B [2.000 seconds]: take bus line before from bravo to hotel metro M1 from hotel to dover twenty one from dover to harbor fifty five minutes to changes delay risk is high
+    processing seconds: generation=26.528751, synthesis=10.500088, recognition=1.429209, understanding=0.005998, dialogue_management=0.004672
+    duration seconds: audio=11.04, speech_pipeline_wall=15.35193, observed_turn=41.891455, accounted_processing=41.891351
+15. Agent A [2.000 seconds]: that does not reach harbor yet what okay is the next connected segment
+    processing seconds: generation=0.01303, synthesis=6.142867, recognition=0.894391, understanding=None, dialogue_management=None
+    duration seconds: audio=5.652, speech_pipeline_wall=8.525246, observed_turn=8.538334, accounted_processing=8.538276
+16. Agent B [2.000 seconds]: take bus line before from bravo to november twenty one from november to victor twenty six from victor to harbor fifty seven minutes to changes
+    processing seconds: generation=27.805994, synthesis=8.785551, recognition=1.415039, understanding=0.003415, dialogue_management=0.008566
+    duration seconds: audio=9.416, speech_pipeline_wall=13.169332, observed_turn=40.987381, accounted_processing=40.987307
+17. Agent A [2.000 seconds]: that earlier route fits thanks i'll take all for to bravo to charlie to delta two Juliett to victor to harbor
+    processing seconds: generation=28.266474, synthesis=6.457008, recognition=1.007938, understanding=None, dialogue_management=None
+    duration seconds: audio=8.936, speech_pipeline_wall=9.829945, observed_turn=38.096499, accounted_processing=38.096419
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Bravo at 06:35. I need to take transit lines to Harbor. Which lines should I take?
+    outgoing speech text: I'm starting at station Bravo at six thirty five. I need to take transit lines to Harbor. Which lines should I take?
+    raw recognition: i'm starting at station bravo with six thirty five i need to take transit lines to harbor which lines should i take
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["at"], "target_tokens": ["with"]}]
+    transcript corrections: []
+    understood transcript: i'm starting at station bravo with six thirty five i need to take transit lines to harbor which lines should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0001-agent-a-bf72e89a0c-channel.wav
+02. Agent B
+    generated: Take tram line T2 from Bravo to Alpha; tram T5 from Alpha to Elm; tram T1 from Elm to Harbor. 37 minutes, 2 changes.
+    outgoing speech text: Take tram line T2 from Bravo to Alpha; tram T5 from Alpha to Elm; tram T1 from Elm to Harbor. 37 minutes, 2 changes.
+    raw recognition: take tramline t to from bravo to alpha twenty five from alpha twelve twenty one from l to harbor thirty seven minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T2"], "target_tokens": ["tramline", "t", "to"]}, {"operation": "replace", "source_tokens": ["tram", "T5"], "target_tokens": ["twenty", "five"]}, {"operation": "replace", "source_tokens": ["to", "Elm", "tram", "T1"], "target_tokens": ["twelve", "twenty", "one"]}, {"operation": "replace", "source_tokens": ["Elm"], "target_tokens": ["l"]}, {"operation": "replace", "source_tokens": ["37"], "target_tokens": ["thirty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: take tramline t to from bravo to alpha twenty five from alpha twelve twenty one from l to harbor thirty seven minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0002-agent-b-d804171efe-channel.wav
+03. Agent A
+    generated: That does not reach Harbor yet. What is the next connected segment?
+    outgoing speech text: That does not reach Harbor yet. What is the next connected segment?
+    raw recognition: that does not reach harbor yet what is the next connected segment
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that does not reach harbor yet what is the next connected segment
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0003-agent-a-3745a870b6-channel.wav
+04. Agent B
+    generated: Take bus line B4 from Bravo to Flint; tram T4 from Flint to Harbor. 41 minutes, 1 changes.
+    outgoing speech text: Take bus line B4 from Bravo to Flint; tram T4 from Flint to Harbor. 41 minutes, 1 changes.
+    raw recognition: take bustling before from bravo to flint trump t for from flint to harbor forty one minutes one changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["bus", "line", "B4"], "target_tokens": ["bustling", "before"]}, {"operation": "replace", "source_tokens": ["tram", "T4"], "target_tokens": ["trump", "t", "for"]}, {"operation": "replace", "source_tokens": ["41"], "target_tokens": ["forty", "one"]}, {"operation": "replace", "source_tokens": ["1"], "target_tokens": ["one"]}]
+    transcript corrections: []
+    understood transcript: take bustling before from bravo to flint trump t for from flint to harbor forty one minutes one changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0004-agent-b-fdd56419e1-channel.wav
+05. Agent A
+    generated: That route and timing work. Can you make it with as few line changes as reasonable?
+    outgoing speech text: That route and timing work. Can you make it with as few line changes as reasonable?
+    raw recognition: that route and timing work can you make it with as few line changes is reasonable
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["as"], "target_tokens": ["is"]}]
+    transcript corrections: []
+    understood transcript: that route and timing work can you make it with as few line changes is reasonable
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0005-agent-a-b205a81048-channel.wav
+06. Agent B
+    generated: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Juliett; tram T6 from Juliett to Harbor. 45 minutes, 2 changes.
+    outgoing speech text: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Juliett; tram T6 from Juliett to Harbor. 45 minutes, 2 changes.
+    raw recognition: take bus line before from bravo to hotel metro him one from hotel to juliet twenty six from juliet harbor forty five minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["him", "one"]}, {"operation": "replace", "source_tokens": ["Juliett", "tram", "T6"], "target_tokens": ["juliet", "twenty", "six"]}, {"operation": "replace", "source_tokens": ["Juliett"], "target_tokens": ["juliet", "harbor", "forty", "five", "minutes"]}, {"operation": "delete", "source_tokens": ["Harbor", "45", "minutes", "2"], "target_tokens": []}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["juliet"], "target_tokens": ["Juliett"]}, {"operation": "replace", "source_tokens": ["juliet"], "target_tokens": ["Juliett"]}]
+    understood transcript: take bus line before from bravo to hotel metro him one from hotel to Juliett twenty six from Juliett harbor forty five minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0006-agent-b-b471acab31-channel.wav
+07. Agent A
+    generated: I heard 'juliet'. Did you mean 'Juliett'?
+    outgoing speech text: I heard 'juliet'. Did you mean 'Juliett'?
+    raw recognition: i heard juliet did you mean juliet
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'juliet'"], "target_tokens": ["juliet"]}, {"operation": "replace", "source_tokens": ["'Juliett'"], "target_tokens": ["juliet"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["juliet"], "target_tokens": ["Juliett"]}, {"operation": "replace", "source_tokens": ["juliet"], "target_tokens": ["Juliett"]}]
+    understood transcript: i heard Juliett did you mean Juliett
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0007-agent-a-d86cbd671a-channel.wav
+08. Agent B
+    generated: Yes, I meant Juliett.
+    outgoing speech text: Yes, I meant Juliett.
+    raw recognition: yes i meant juliet
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Juliett"], "target_tokens": ["juliet"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["juliet"], "target_tokens": ["Juliett"]}]
+    understood transcript: yes i meant Juliett
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0008-agent-b-34aed4236e-channel.wav
+09. Agent A
+    generated: That meets the current requirement. Can you make it not near capacity?
+    outgoing speech text: That meets the current requirement. Can you make it not near capacity?
+    raw recognition: that meets the current requirement can you make it not near capacity
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0009-agent-a-c4e5fa53a6-channel.wav
+10. Agent B
+    generated: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Jasper; bus B1 from Jasper to Harbor. 49 minutes, 2 changes. It is not near capacity.
+    outgoing speech text: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Jasper; bus B1 from Jasper to Harbor. 49 minutes, 2 changes. It is not near capacity.
+    raw recognition: take bus line before from bravo to hotel metro m one from hotel to jasper must be one from jasper to harbor forty nine minutes to changes it is not near capacity
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["bus", "B1"], "target_tokens": ["must", "be", "one"]}, {"operation": "replace", "source_tokens": ["49"], "target_tokens": ["forty", "nine"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take bus line before from bravo to hotel metro M1 from hotel to jasper must be one from jasper to harbor forty nine minutes to changes it is not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0010-agent-b-165a9c720c-channel.wav
+11. Agent A
+    generated: I heard 'm one'. Did you mean 'M1'?
+    outgoing speech text: I heard 'm one'. Did you mean 'M1'?
+    raw recognition: i heard em one did you mean am one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'m", "one'"], "target_tokens": ["em", "one"]}, {"operation": "replace", "source_tokens": ["'M1'"], "target_tokens": ["am", "one"]}]
+    transcript corrections: []
+    understood transcript: i heard em one did you mean am one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0011-agent-a-37c76e9b73-channel.wav
+12. Agent B
+    generated: Yes, I meant am one.
+    outgoing speech text: Yes, I meant am one.
+    raw recognition: yes i meant him one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["am"], "target_tokens": ["him"]}]
+    transcript corrections: []
+    understood transcript: yes i meant him one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0012-agent-b-37cc666966-channel.wav
+13. Agent A
+    generated: That meets the current requirement. Can you make it with lower delay risk?
+    outgoing speech text: That meets the current requirement. Can you make it with lower delay risk?
+    raw recognition: that meets the current requirement can you make it with lower delay risk
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it with lower delay risk
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0013-agent-a-ae057bae17-channel.wav
+14. Agent B
+    generated: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Dover; tram T1 from Dover to Harbor. 55 minutes, 2 changes. Delay risk is high.
+    outgoing speech text: Take bus line B4 from Bravo to Hotel; metro M1 from Hotel to Dover; tram T1 from Dover to Harbor. 55 minutes, 2 changes. Delay risk is high.
+    raw recognition: take bus line before from bravo to hotel metro m one from hotel to dover twenty one from dover to harbor fifty five minutes to changes delay risk is high
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["tram", "T1"], "target_tokens": ["twenty", "one"]}, {"operation": "replace", "source_tokens": ["55"], "target_tokens": ["fifty", "five"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take bus line before from bravo to hotel metro M1 from hotel to dover twenty one from dover to harbor fifty five minutes to changes delay risk is high
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0014-agent-b-feaf553f0d-channel.wav
+15. Agent A
+    generated: That does not reach Harbor yet. What is the next connected segment?
+    outgoing speech text: That does not reach Harbor yet. What okay is the next connected segment?
+    raw recognition: that does not reach harbor yet what okay is the next connected segment
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that does not reach harbor yet what okay is the next connected segment
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0015-agent-a-2e904faa6c-channel.wav
+16. Agent B
+    generated: Take bus line B4 from Bravo to November; tram T1 from November to Victor; tram T6 from Victor to Harbor. 57 minutes, 2 changes.
+    outgoing speech text: Take bus line B4 from Bravo to November; tram T1 from November to Victor; tram T6 from Victor to Harbor. 57 minutes, 2 changes.
+    raw recognition: take bus line before from bravo to november twenty one from november to victor twenty six from victor to harbor fifty seven minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["tram", "T1"], "target_tokens": ["twenty", "one"]}, {"operation": "replace", "source_tokens": ["tram", "T6"], "target_tokens": ["twenty", "six"]}, {"operation": "replace", "source_tokens": ["57"], "target_tokens": ["fifty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: take bus line before from bravo to november twenty one from november to victor twenty six from victor to harbor fifty seven minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0016-agent-b-bd64ffd378-channel.wav
+17. Agent A
+    generated: That earlier route fits. Thanks, I'll take Alpha to Bravo to Charlie to Delta to Juliett to Victor to Harbor.
+    outgoing speech text: That earlier route fits. Thanks, I'll take Alpha to Bravo to Charlie to Delta to Juliett to Victor to Harbor.
+    raw recognition: that earlier route fits thanks i'll take all for to bravo to charlie to delta two juliet to victor to harbor
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["Alpha"], "target_tokens": ["all", "for"]}, {"operation": "replace", "source_tokens": ["to", "Juliett"], "target_tokens": ["two", "juliet"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["juliet"], "target_tokens": ["Juliett"]}]
+    understood transcript: that earlier route fits thanks i'll take all for to bravo to charlie to delta two Juliett to victor to harbor
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_034645_b-n0001/.turn_audio/faa59983366c/0017-agent-a-a88679adf4-channel.wav

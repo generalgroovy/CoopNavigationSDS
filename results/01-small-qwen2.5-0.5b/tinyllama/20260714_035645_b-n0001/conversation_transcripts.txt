@@ -1,0 +1,163 @@
+=== Conversation 1: C-CEE-CAR-MC-PIP-VOS-Q05-DEFAU-SML-I0-5de326d3b6-A ===
+CoopNavigationSDS Conversation Transcript
+Condition: C-CEE-CAR-MC-PIP-VOS-Q05-DEFAU-SML-I0-5de326d3b6-A
+Test case: crowded_event_exit:crowd_averse_rider
+Persona: crowd_averse_rider
+Scenario: crowded_event_exit
+Speech pattern: mostly_clean
+Agent A audio persona: neutral_caller
+Agent B audio persona: clear_operator
+Model: Qwen/Qwen2.5-0.5B-Instruct
+Outcome: satisfied
+Route valid: True
+Route reaches goal: True
+Route correct: True
+Route duration minutes: 28
+Runtime seconds: 343.65499504702166
+
+Conversation
+01. Agent A [2.000 seconds]: i'm starting at station sierra twenty two eighteen i need to take transit lines to charlie which lines should i take
+    processing seconds: generation=0.0, synthesis=9.841244, recognition=1.497605, understanding=None, dialogue_management=None
+    duration seconds: audio=9.861, speech_pipeline_wall=13.174858, observed_turn=13.174927, accounted_processing=13.174858
+02. Agent B [2.000 seconds]: take tramline t for from sierra to golf must be one from golf to charlie twenty eight minutes one changes
+    processing seconds: generation=23.045669, synthesis=6.643068, recognition=0.967627, understanding=0.001335, dialogue_management=0.002781
+    duration seconds: audio=7.106, speech_pipeline_wall=9.478162, observed_turn=32.528028, accounted_processing=32.527947
+03. Agent A [2.000 seconds]: that route and timing work can you make it with as few line changes as reasonable
+    processing seconds: generation=19.530183, synthesis=4.970597, recognition=0.864378, understanding=None, dialogue_management=None
+    duration seconds: audio=6.852, speech_pipeline_wall=7.063443, observed_turn=26.593715, accounted_processing=26.593626
+04. Agent B [2.000 seconds]: take tramline t three from sierra tango bus before from tango to bravo metro M1 from bravo to charlie thirty two minutes to changes
+    processing seconds: generation=19.550075, synthesis=9.391588, recognition=1.318369, understanding=0.006482, dialogue_management=0.003339
+    duration seconds: audio=9.416, speech_pipeline_wall=13.995414, observed_turn=33.5554, accounted_processing=33.55531
+05. Agent A [2.000 seconds]: i heard him one did you mean am one
+    processing seconds: generation=0.00358, synthesis=5.114586, recognition=0.608947, understanding=None, dialogue_management=None
+    duration seconds: audio=3.651, speech_pipeline_wall=6.789577, observed_turn=6.793214, accounted_processing=6.793157
+06. Agent B [2.000 seconds]: yes i meant am one
+    processing seconds: generation=0.222949, synthesis=2.696145, recognition=0.504694, understanding=7e-06, dialogue_management=8.2e-05
+    duration seconds: audio=2.082, speech_pipeline_wall=3.72946, observed_turn=3.952547, accounted_processing=3.952498
+07. Agent A [2.000 seconds]: that meets the current requirement can you make it not near capacity
+    processing seconds: generation=25.412404, synthesis=6.611752, recognition=0.915525, understanding=None, dialogue_management=None
+    duration seconds: audio=5.252, speech_pipeline_wall=9.142852, observed_turn=34.55534, accounted_processing=34.555256
+08. Agent B [2.000 seconds]: take tramline t three from sierra two x ray metro him one from x ray to oscar metro him for from oscar to charlie thirty seven minutes to changes it is not near capacity
+    processing seconds: generation=24.111397, synthesis=9.134776, recognition=1.183545, understanding=0.001573, dialogue_management=0.005896
+    duration seconds: audio=11.404, speech_pipeline_wall=13.271554, observed_turn=37.390491, accounted_processing=37.39042
+09. Agent A [2.000 seconds]: that has three changes i can handle to another route
+    processing seconds: generation=26.14653, synthesis=5.925468, recognition=0.792832, understanding=None, dialogue_management=None
+    duration seconds: audio=4.609, speech_pipeline_wall=8.180851, observed_turn=34.327464, accounted_processing=34.327381
+10. Agent B [2.000 seconds]: take tramline t for from sierra to yankee metro M1 from yankee to grow metro him for from grove to charlie thirty seven minutes to changes
+    processing seconds: generation=27.794293, synthesis=10.040129, recognition=1.342514, understanding=0.006727, dialogue_management=0.004449
+    duration seconds: audio=9.416, speech_pipeline_wall=14.476708, observed_turn=42.282249, accounted_processing=42.282177
+11. Agent A [2.000 seconds]: that meets the current requirement can you make it with lower delay risk
+    processing seconds: generation=27.473282, synthesis=5.002008, recognition=0.718109, understanding=None, dialogue_management=None
+    duration seconds: audio=5.652, speech_pipeline_wall=6.905098, observed_turn=34.378448, accounted_processing=34.37838
+12. Agent B [2.000 seconds]: take tramline t for from sierra to yankee metro M1 from yankee to oscar metro him for from oscar to charlie forty one minutes to changes delay risk is high
+    processing seconds: generation=24.137502, synthesis=9.561658, recognition=1.191148, understanding=0.006829, dialogue_management=0.005067
+    duration seconds: audio=11.04, speech_pipeline_wall=13.828583, observed_turn=37.978026, accounted_processing=37.977981
+13. Agent A [2.000 seconds]: i will stop here semi satisfied i have a route but it's still misses one of my constraints
+    processing seconds: generation=0.00033, synthesis=3.412546, recognition=0.893501, understanding=None, dialogue_management=None
+    duration seconds: audio=7.683, speech_pipeline_wall=5.893451, observed_turn=7.68333, accounted_processing=5.893781
+
+Speech Pipeline
+01. Agent A
+    generated: I'm starting at station Sierra at 22:18. I need to take transit lines to Charlie. Which lines should I take?
+    outgoing speech text: I'm starting at station Sierra at twenty two eighteen. I need to take transit lines to Charlie. Which lines should I take?
+    raw recognition: i'm starting at station sierra twenty two eighteen i need to take transit lines to charlie which lines should i take
+    misinterpreted tokens: [{"operation": "delete", "source_tokens": ["at"], "target_tokens": []}]
+    transcript corrections: []
+    understood transcript: i'm starting at station sierra twenty two eighteen i need to take transit lines to charlie which lines should i take
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0001-agent-a-2e830365bc-channel.wav
+02. Agent B
+    generated: Take tram line T4 from Sierra to Golf; bus B1 from Golf to Charlie. 28 minutes, 1 changes.
+    outgoing speech text: Take tram line T4 from Sierra to Golf; bus B1 from Golf to Charlie. 28 minutes, 1 changes.
+    raw recognition: take tramline t for from sierra to golf must be one from golf to charlie twenty eight minutes one changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T4"], "target_tokens": ["tramline", "t", "for"]}, {"operation": "replace", "source_tokens": ["bus", "B1"], "target_tokens": ["must", "be", "one"]}, {"operation": "replace", "source_tokens": ["28"], "target_tokens": ["twenty", "eight"]}, {"operation": "replace", "source_tokens": ["1"], "target_tokens": ["one"]}]
+    transcript corrections: []
+    understood transcript: take tramline t for from sierra to golf must be one from golf to charlie twenty eight minutes one changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0002-agent-b-a9f49b95e5-channel.wav
+03. Agent A
+    generated: That route and timing work. Can you make it with as few line changes as reasonable?
+    outgoing speech text: That route and timing work. Can you make it with as few line changes as reasonable?
+    raw recognition: that route and timing work can you make it with as few line changes as reasonable
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that route and timing work can you make it with as few line changes as reasonable
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0003-agent-a-47c08dc0d2-channel.wav
+04. Agent B
+    generated: Take tram line T3 from Sierra to Tango; bus B4 from Tango to Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    outgoing speech text: Take tram line T3 from Sierra to Tango; bus B4 from Tango to Bravo; metro M1 from Bravo to Charlie. 32 minutes, 2 changes.
+    raw recognition: take tramline t three from sierra tango bus before from tango to bravo metro m one from bravo to charlie thirty two minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T3"], "target_tokens": ["tramline", "t", "three"]}, {"operation": "delete", "source_tokens": ["to"], "target_tokens": []}, {"operation": "replace", "source_tokens": ["B4"], "target_tokens": ["before"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["32"], "target_tokens": ["thirty", "two"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take tramline t three from sierra tango bus before from tango to bravo metro M1 from bravo to charlie thirty two minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0004-agent-b-431441f538-channel.wav
+05. Agent A
+    generated: I heard 'm one'. Did you mean 'M1'?
+    outgoing speech text: I heard 'm one'. Did you mean 'M1'?
+    raw recognition: i heard him one did you mean am one
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["'m", "one'"], "target_tokens": ["him", "one"]}, {"operation": "replace", "source_tokens": ["'M1'"], "target_tokens": ["am", "one"]}]
+    transcript corrections: []
+    understood transcript: i heard him one did you mean am one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0005-agent-a-871e0a4fb8-channel.wav
+06. Agent B
+    generated: Yes, I meant am one.
+    outgoing speech text: Yes, I meant am one.
+    raw recognition: yes i meant am one
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: yes i meant am one
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0006-agent-b-6c8c3e645b-channel.wav
+07. Agent A
+    generated: That meets the current requirement. Can you make it not near capacity?
+    outgoing speech text: That meets the current requirement. Can you make it not near capacity?
+    raw recognition: that meets the current requirement can you make it not near capacity
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0007-agent-a-b13ae6cb1d-channel.wav
+08. Agent B
+    generated: Take tram line T3 from Sierra to Xray; metro M1 from Xray to Oscar; metro M4 from Oscar to Charlie. 37 minutes, 2 changes. It is not near capacity.
+    outgoing speech text: Take tram line T3 from Sierra to Xray; metro M1 from Xray to Oscar; metro M4 from Oscar to Charlie. 37 minutes, 2 changes. It is not near capacity.
+    raw recognition: take tramline t three from sierra two x ray metro him one from x ray to oscar metro him for from oscar to charlie thirty seven minutes to changes it is not near capacity
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T3"], "target_tokens": ["tramline", "t", "three"]}, {"operation": "replace", "source_tokens": ["to", "Xray"], "target_tokens": ["two", "x", "ray"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["him", "one"]}, {"operation": "replace", "source_tokens": ["Xray"], "target_tokens": ["x", "ray"]}, {"operation": "replace", "source_tokens": ["M4"], "target_tokens": ["him", "for"]}, {"operation": "replace", "source_tokens": ["37"], "target_tokens": ["thirty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: take tramline t three from sierra two x ray metro him one from x ray to oscar metro him for from oscar to charlie thirty seven minutes to changes it is not near capacity
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0008-agent-b-ee06d557c7-channel.wav
+09. Agent A
+    generated: That has 3 changes; I can handle 2. Another route?
+    outgoing speech text: That has 3 changes; I can handle 2. Another route?
+    raw recognition: that has three changes i can handle to another route
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["3"], "target_tokens": ["three"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: []
+    understood transcript: that has three changes i can handle to another route
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0009-agent-a-3ccd52aa83-channel.wav
+10. Agent B
+    generated: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Grove; metro M4 from Grove to Charlie. 37 minutes, 2 changes.
+    outgoing speech text: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Grove; metro M4 from Grove to Charlie. 37 minutes, 2 changes.
+    raw recognition: take tramline t for from sierra to yankee metro m one from yankee to grow metro him for from grove to charlie thirty seven minutes to changes
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T4"], "target_tokens": ["tramline", "t", "for"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["Grove"], "target_tokens": ["grow"]}, {"operation": "replace", "source_tokens": ["M4"], "target_tokens": ["him", "for"]}, {"operation": "replace", "source_tokens": ["37"], "target_tokens": ["thirty", "seven"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take tramline t for from sierra to yankee metro M1 from yankee to grow metro him for from grove to charlie thirty seven minutes to changes
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0010-agent-b-60dcd39b1f-channel.wav
+11. Agent A
+    generated: That meets the current requirement. Can you make it with lower delay risk?
+    outgoing speech text: That meets the current requirement. Can you make it with lower delay risk?
+    raw recognition: that meets the current requirement can you make it with lower delay risk
+    misinterpreted tokens: []
+    transcript corrections: []
+    understood transcript: that meets the current requirement can you make it with lower delay risk
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0011-agent-a-d0e76adfdc-channel.wav
+12. Agent B
+    generated: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Oscar; metro M4 from Oscar to Charlie. 41 minutes, 2 changes. Delay risk is high.
+    outgoing speech text: Take tram line T4 from Sierra to Yankee; metro M1 from Yankee to Oscar; metro M4 from Oscar to Charlie. 41 minutes, 2 changes. Delay risk is high.
+    raw recognition: take tramline t for from sierra to yankee metro m one from yankee to oscar metro him for from oscar to charlie forty one minutes to changes delay risk is high
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["tram", "line", "T4"], "target_tokens": ["tramline", "t", "for"]}, {"operation": "replace", "source_tokens": ["M1"], "target_tokens": ["m", "one"]}, {"operation": "replace", "source_tokens": ["M4"], "target_tokens": ["him", "for"]}, {"operation": "replace", "source_tokens": ["41"], "target_tokens": ["forty", "one"]}, {"operation": "replace", "source_tokens": ["2"], "target_tokens": ["to"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["m", "one"], "target_tokens": ["M1"]}]
+    understood transcript: take tramline t for from sierra to yankee metro M1 from yankee to oscar metro him for from oscar to charlie forty one minutes to changes delay risk is high
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0012-agent-b-b55f334d04-channel.wav
+13. Agent A
+    generated: I will stop here semi-satisfied; I have a route, but it still misses one of my constraints.
+    outgoing speech text: I will stop here semi-satisfied; I have a route, but it still misses one of my constraints.
+    raw recognition: i will stop here semi satisfied i have a wrote but it's still misses one of my constraints
+    misinterpreted tokens: [{"operation": "replace", "source_tokens": ["semi-satisfied"], "target_tokens": ["semi", "satisfied"]}, {"operation": "replace", "source_tokens": ["route"], "target_tokens": ["wrote"]}, {"operation": "replace", "source_tokens": ["it"], "target_tokens": ["it's"]}]
+    transcript corrections: [{"operation": "replace", "source_tokens": ["wrote"], "target_tokens": ["route"]}]
+    understood transcript: i will stop here semi satisfied i have a route but it's still misses one of my constraints
+    audio file: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama/20260714_035645_b-n0001/.turn_audio/65160ee262a1/0013-agent-a-ca5e066582-channel.wav
