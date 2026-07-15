@@ -8,6 +8,10 @@ sheet, and chapter scaffold.
 
 ## 0. Thesis Core
 
+Use this chapter as the control sheet for the whole thesis. If a paragraph in
+the thesis does not support one of these points, it probably belongs in an
+appendix or should be removed.
+
 ### One-sentence thesis claim
 
 This thesis studies whether a controlled cooperative navigation task can be
@@ -20,24 +24,48 @@ task outcome.
 
 - Scientific object: automatic evaluation of spoken task-oriented dialogue
   systems.
+  - Keep the wording centered on evaluation, not on building a chatbot.
+  - The software is the research instrument; the object of study is how SDS
+    performance can be measured automatically.
 - Experimental setting: cooperative route finding in a controlled transport
   network.
+  - Use route finding because it has externally checkable correctness.
+  - Emphasize that route validity, duration, constraints, and destination
+    reachability can be computed without subjective judgment.
 - Evaluated system role: Agent B, the route-information dialogue system.
+  - Agent B is the model/backend being compared.
+  - Agent B performance is evaluated through both task outcome and phase
+    evidence.
 - User role: Agent A/UserLM as the main simulated caller with private task
   goal and progressively revealed constraints. TinyLlama-Agent-A remains a
   software-control option, not the primary thesis denominator.
+  - Explain that Agent A is controlled to make repeated experiments possible.
+  - Do not claim Agent A fully represents human behavior.
 - Main method: run many controlled dialogue conditions, capture raw phase
   evidence, calculate metrics retrospectively, and compare model backends.
+  - Retrospective calculation matters because the raw logs remain available
+    for recalculation and audit.
+  - Avoid calculating only final scores during runtime.
 - Main outcome: determine which metrics and phases explain successful,
   semi-successful, and unsuccessful navigation dialogues.
+  - The thesis should explain why a run succeeds or fails, not only whether it
+    succeeds.
 
 ### What the thesis is not about
 
 - Not a general route-planning application.
+  - Route planning is the controlled task environment, not the product goal.
 - Not a claim that simulated users fully replace human users.
+  - Simulated callers support reproducibility; human validation remains future
+    work.
 - Not a pure benchmark of model size alone.
+  - Model family, prompt behavior, runtime feasibility, and coverage also
+    matter.
 - Not a universal evaluation of all spoken dialogue systems.
+  - Claims are bounded to the implemented route-dialogue framework and tested
+    configurations.
 - Not a human-subject usability study.
+  - No subjective satisfaction claims should be made without human ratings.
 
 ### Central validity principle
 
@@ -218,21 +246,58 @@ Introduce the problem, motivate the research, define the scope, state research
 questions, and summarize contributions. Keep implementation detail out of this
 chapter.
 
+Suggested chapter flow:
+
+- Paragraph 1: why spoken dialogue systems matter.
+  - Mention accessibility, hands-free interaction, and practical deployment.
+  - Keep it general; do not start with CoopNavigationSDS.
+- Paragraph 2: why evaluation is difficult.
+  - Explain multi-phase failure: audio, ASR, NLU, state, policy, NLG, TTS,
+    task validation.
+  - State that final success alone hides where errors arise.
+- Paragraph 3: why a controlled navigation task is useful.
+  - Route tasks have objective correctness.
+  - Constraints make partial success visible.
+  - The controlled network makes repeated experiments possible.
+- Paragraph 4: what the thesis investigates.
+  - State Agent A/UserLM and Agent B roles.
+  - State phase-wise logging and retrospective metrics.
+- Paragraph 5: contributions.
+  - Keep contributions at research level:
+    - framework,
+    - task design,
+    - metric pipeline,
+    - matched model comparison,
+    - result analysis.
+
 ### 1.1 Motivation and background
 
 - Spoken dialogue systems support interaction through speech.
+  - Use examples only briefly:
+    - hotline systems,
+    - navigation assistants,
+    - customer support,
+    - accessibility tools.
+  - Then return to the evaluation problem.
 - Speech adds practical value:
   - hands-free interaction,
   - accessibility,
   - natural interaction in mobile or assistive contexts,
   - prosodic information such as pauses, hesitation, emphasis, and rhythm.
+  - These benefits also introduce evaluation challenges because speech output
+    and speech input are variable over time.
 - Spoken systems are harder to evaluate than text systems because:
   - the acoustic channel can distort information,
   - turns unfold over time,
   - errors can propagate across phases,
   - final success may hide earlier degradation.
+  - Use one short example:
+    - station name misheard,
+    - wrong destination stored,
+    - valid-looking but wrong route proposed.
 - Task-oriented spoken dialogue is suitable for automatic evaluation because
   goals and constraints can be checked against an external task environment.
+  - This justifies using navigation instead of open-ended conversation.
 
 ### 1.2 Evaluation difficulty
 
@@ -246,11 +311,19 @@ chapter.
   - incomplete natural-language answer,
   - unintelligible synthesized speech,
   - latency or turn-taking problems.
+  - The same final failure can therefore have different causes.
+  - The thesis should argue that automatic evaluation must retain enough phase
+    evidence to distinguish these causes.
 - Human evaluation is important but costly, slow, and subjective.
+  - It captures perceived quality and satisfaction.
+  - It is difficult to scale across hundreds of configurations.
 - Automatic evaluation is scalable and repeatable but only useful when each
   metric has a clear construct and evidence source.
+  - Metrics must be tied to logged data.
+  - Missing data must not be treated as zero.
 - Final task success alone answers "what happened"; phase evidence helps
   answer "where did it go wrong".
+  - This sentence can be reused in the introduction and discussion.
 
 ### 1.3 Problem statement
 
@@ -258,12 +331,22 @@ Use this wording as the thesis backbone:
 
 - Existing dialogue evaluation often focuses on final task success, human
   ratings, response similarity, or isolated component metrics.
+  - Each view is useful but incomplete:
+    - final success is too coarse,
+    - human ratings are costly,
+    - response similarity can ignore task correctness,
+    - component metrics can miss downstream impact.
 - These views are useful but insufficient for diagnosing spoken
   task-oriented failures.
+  - Diagnosis requires chronological evidence from multiple phases.
 - In a route dialogue, failure may be caused by recognition, understanding,
   memory, policy, grounding, generation, or speech output.
+  - This motivates the phase-based evaluation framework.
 - This thesis investigates whether phase-wise automatic evidence can explain
   success and failure in controlled spoken navigation dialogues.
+  - Use "explain" carefully:
+    - the framework provides diagnostic evidence,
+    - it does not prove absolute causality without additional validation.
 
 ### 1.4 Research questions
 
@@ -271,14 +354,24 @@ Recommended final set:
 
 1. Can success and failure in a controlled spoken navigation dialogue be
    explained using automatically logged phase-wise evidence and metrics?
+   - This is the main feasibility question.
+   - It is answered by showing the pipeline, logs, metric tables, and outcome
+     bands.
 2. Which automatic metrics best correlate with task-level outcomes such as
    task completion, route validity, and constraint satisfaction?
+   - This is answered by metric means, correlations, and indicator patterns.
+   - Separate outcome-confirming metrics from diagnostic metrics.
 3. Can phase-wise evidence identify the earliest likely failing phase in
    unsuccessful or degraded dialogues?
+   - Use "likely" because failure localization is diagnostic, not causal proof.
 4. Which phase-level metrics remain useful across different Agent B language
    model backends and size classes?
+   - This connects model comparison to metric robustness.
+   - Use matched cases when discussing direct backend differences.
 5. If paired text/audio runs are available: how does the speech channel affect
    task success and phase-level errors compared with matched text controls?
+   - Only answer this where paired evidence exists.
+   - Otherwise frame it as future work or exploratory.
 
 ### 1.5 Expected tendencies
 
@@ -298,12 +391,18 @@ Recommended final set:
 ### 1.6 Contributions
 
 - Phase-aware evaluation framing for spoken task-oriented dialogue.
+  - The contribution is conceptual and methodological.
 - Controlled cooperative navigation task with externally checkable route
   validity.
+  - The task makes route validity, duration, transfers, and constraints
+    computable.
 - Implemented CoopNavigationSDS framework with configurable agents, speech,
   scenarios, model backends, logging, and retrospective metrics.
+  - Mention implementation only at this level in the introduction.
 - Metric-outcome analysis across Agent B backends.
+  - Include completed-only and matched-condition analysis.
 - Failure-localization method based on chronological phase evidence.
+  - Present as a diagnostic method, not as definitive causal attribution.
 
 ## 2. Theoretical Background
 
@@ -312,22 +411,37 @@ Recommended final set:
 Explain spoken dialogue systems and their phases. Do not describe the concrete
 experiment yet except as brief motivation.
 
+Suggested chapter flow:
+
+- Define dialogue systems and SDS.
+- Define task-oriented dialogue.
+- Explain why spoken dialogue differs from text dialogue.
+- Introduce the pipeline as an analysis model.
+- Explain LLM-based systems and why phase evidence is still needed.
+- Explain error propagation.
+- End by linking theory to the need for phase-wise automatic evaluation.
+
 ### 2.1 Dialogue systems and spoken dialogue systems
 
 - Dialogue system: interactive language system that receives input, maintains
   context, selects an action, and responds.
+  - Keep the definition broad enough to include both modular systems and LLM
+    agents.
 - Spoken dialogue system: dialogue system with speech input and/or speech
   output.
+  - In this thesis the complete pipeline includes both input and output speech.
 - Spoken SDS adds:
   - acoustic uncertainty,
   - timing and turn-taking,
   - speech recognition,
   - speech synthesis,
   - intelligibility requirements.
+  - These additions create extra measurable phases and extra failure points.
 
 ### 2.2 Task-oriented dialogue
 
 - Task-oriented systems help users complete defined goals.
+  - The goal must be externally checkable for automatic evaluation.
 - They contain:
   - user goal,
   - required slots,
@@ -336,6 +450,10 @@ experiment yet except as brief motivation.
   - system actions,
   - backend/task environment,
   - success criterion.
+  - These concepts map directly onto the navigation task:
+    - slots become start, destination, time, and constraints;
+    - system actions become route proposals, clarifications, and repairs;
+    - backend state becomes the transport network and route validator.
 - In this thesis, task state includes:
   - start station,
   - destination station,
@@ -344,11 +462,18 @@ experiment yet except as brief motivation.
   - candidate routes,
   - rejected routes,
   - accepted route.
+  - Explain that state is dynamic:
+    - Agent A reveals constraints progressively,
+    - Agent B updates proposals,
+    - the route validator checks current-stage validity.
 
 ### 2.3 Spoken versus text dialogue
 
 - Text dialogue assumes symbolic input is already available.
+  - Text-only runs can isolate dialogue/model behavior from speech-channel
+    effects.
 - Spoken dialogue must recover text/meaning from audio.
+  - Speech errors can change entities while leaving the sentence fluent.
 - Spoken-specific errors:
   - station-name substitution,
   - line-name substitution,
@@ -358,6 +483,8 @@ experiment yet except as brief motivation.
   - silence,
   - ASR hallucination,
   - TTS mispronunciation.
+  - In navigation, entity errors are especially dangerous because one station
+    or line substitution can invalidate the whole route.
 
 ### 2.4 Pipeline as analysis model
 
@@ -384,10 +511,14 @@ For each phase, define:
 - typical failure,
 - logged evidence,
 - relevant metrics.
+  - This creates the bridge from theory to the experiment design in Chapter 6.
+  - Use the same phase names consistently in methods, results, and discussion.
 
 ### 2.5 LLM-based dialogue systems
 
 - LLMs can absorb NLU, state tracking, policy, and NLG inside one model call.
+  - This makes internal phase boundaries less visible.
+  - External logs and validators become more important.
 - Advantages:
   - flexible language handling,
   - natural repair dialogue,
@@ -400,8 +531,11 @@ For each phase, define:
   - constraint omission,
   - resource cost,
   - latency.
+  - These risks are relevant to both task quality and runtime feasibility.
 - Therefore, phase-aware external evidence is still needed even when internal
   module boundaries are blurred.
+  - The thesis can evaluate the observable behavior of an LLM backend even if
+    its internal reasoning is opaque.
 
 ### 2.6 Error propagation
 
@@ -418,6 +552,9 @@ TTS makes "Juliett" unclear
 ```
 
 The thesis should emphasize propagation, not isolated component blame.
+  - A phase metric is most useful when connected to downstream consequences.
+  - Example: ASR WER is less meaningful than whether ASR errors destroy route
+    entities or constraints.
 
 ## 3. Evaluation Concepts
 
@@ -425,17 +562,34 @@ The thesis should emphasize propagation, not isolated component blame.
 
 Introduce evaluation concepts before the concrete metric catalog.
 
+Suggested chapter flow:
+
+- Distinguish human and automatic evaluation.
+- Explain construct validity.
+- Explain why generic text overlap is insufficient.
+- Introduce speech-aware and semantic metrics.
+- Classify metrics by role:
+  - outcome-confirming,
+  - diagnostic,
+  - efficiency/cost,
+  - matched comparison.
+
 ### 3.1 Human versus automatic evaluation
 
 - Human evaluation captures perceived satisfaction, naturalness, usefulness,
   and trust.
+  - It is necessary for claims about user experience.
+  - It is not available in the current experiment.
 - Automatic evaluation provides:
   - scalability,
   - repeatability,
   - parallelization,
   - precise traceability.
+  - It allows systematic comparison across many configurations.
+  - It makes retrospective analysis possible.
 - Automatic metrics are not automatically valid; each metric must be tied to a
   construct.
+  - This is the key theoretical caution for the whole thesis.
 
 ### 3.2 Construct validity
 
@@ -519,28 +673,92 @@ Matched-comparison metrics:
 Organize papers by research strand. Do not list papers without explaining how
 they relate to the thesis.
 
+Suggested chapter flow:
+
+1. Classical SDS evaluation.
+   - Establish that SDS quality combines task outcome, interaction cost, and
+     user-facing quality.
+   - Use this strand to justify why the thesis does not rely on final route
+     success alone.
+2. Task-oriented dialogue benchmarks.
+   - Introduce goals, slots, dialogue state, and constraint tracking.
+   - Explain why these concepts are necessary for route dialogue evaluation.
+3. Spoken dialogue and spoken language understanding.
+   - Motivate transcript errors, entity preservation, and speech-aware metrics.
+   - Connect ASR/TTS evidence to downstream dialogue behavior.
+4. User simulation and agent-based evaluation.
+   - Explain repeatability and controllability.
+   - State the external-validity cost of replacing human callers with Agent A.
+5. Grounded navigation dialogue.
+   - Show why route tasks are objectively checkable.
+   - Explain why station, line, and constraint grounding are central.
+6. LLM-agent evaluation.
+   - Position Agent B as a dialogue-system backend, not merely a text
+     generator.
+   - Motivate matched-condition comparison across model backends.
+
 ### 4.1 Classical SDS evaluation
 
 - PARADISE connects task success, dialogue cost, and user satisfaction.
 - Use it to justify combining outcome and cost metrics.
+- What to write:
+  - task success alone can hide excessive repair, repetition, latency, or poor
+    interaction quality;
+  - fluent responses can still fail the task if they are ungrounded;
+  - a useful SDS evaluation therefore needs both outcome and process evidence.
+- How it maps to this project:
+  - task success is represented by valid route, destination reach, constraint
+    satisfaction, and Agent A acceptance;
+  - dialogue cost is represented by turn count, repair count, latency,
+    repetition, and duration;
+  - satisfaction is not measured with human ratings, so Agent A acceptance is
+    only a task-internal proxy.
 - Difference to this thesis:
   - this thesis focuses more on phase-wise retrospective evidence and model
     backend comparison.
+- Boundary:
+  - do not claim that this thesis reproduces a full PARADISE regression model.
 
 ### 4.2 Task-oriented dialogue benchmarks
 
 - MultiWOZ and SGD motivate task-oriented dialogue, slot/state tracking, and
   multi-domain evaluation.
+- What to cite these for:
+  - structured user goals;
+  - slot and dialogue-state tracking;
+  - automatic evaluation of task-oriented systems.
+- How this thesis differs:
+  - the task domain is deliberately narrow;
+  - routes can be validated against a known transport network;
+  - the spoken channel is preserved rather than reduced to clean text.
 - Difference to this thesis:
   - many benchmarks are text-based and do not capture the full speech channel.
+- Bridge sentence:
+  - "Text-based TOD benchmarks motivate state and constraint evaluation, but
+    they do not identify whether a failure originated in TTS, ASR, NLU,
+    dialogue management, or grounding."
 
 ### 4.3 Spoken TOD and SLU
 
 - SpokenWOZ and SLUE motivate spoken input, speech-text mismatch, and
   speech-aware evaluation.
+- What to emphasize:
+  - speech introduces substitutions, insertions, deletions, pauses, and entity
+    distortions;
+  - station, line, and time errors can be more harmful than function-word
+    errors;
+  - the same intended utterance can lead to different outcomes under different
+    TTS/ASR conditions.
+- How this project uses the idea:
+  - every turn stores intended text, TTS text, ASR raw transcript, normalized
+    understanding, corrections, and phase timings;
+  - these fields allow retrospective phase-wise metric calculation.
 - Difference to this thesis:
   - CoopNavigationSDS uses a controlled route task with route validation and
     staged constraints.
+- Boundary:
+  - the experiment does not claim to cover all real microphone, accent, or
+    noise conditions.
 
 ### 4.4 User simulation
 
@@ -549,6 +767,16 @@ they relate to the thesis.
   - simulated behavior is not real human behavior.
 - In this thesis:
   - Agent A is controlled and has private knowledge boundaries.
+- What to explain:
+  - Agent A is a simulated caller, not a generic chatbot;
+  - it knows start, destination, departure time, station names, line names,
+    persona priorities, and private constraints;
+  - it reveals constraints only after earlier dialogue goals are satisfied.
+- Why this matters:
+  - repeatable simulated callers make batch experiments possible;
+  - private constraints allow staged evaluation of route refinement;
+  - controlled behavior improves internal validity while limiting ecological
+    validity.
 
 ### 4.5 Navigation and grounded dialogue
 
@@ -556,11 +784,33 @@ they relate to the thesis.
   route communication, and shared task progress.
 - CoopNavigationSDS uses transport-network grounding rather than open-ended
   map navigation.
+- Why the task is suitable:
+  - station and line names are discrete, checkable entities;
+  - route validity can be evaluated automatically;
+  - constraints such as duration, transfers, fullness, delay, or walking
+    distance produce meaningful trade-offs;
+  - misunderstandings have visible task consequences.
+- How to frame the synthetic network:
+  - it is an experimental instrument, not a complete public-transport model;
+  - it is designed to create valid, suboptimal, and constraint-changing
+    alternatives.
 
 ### 4.6 LLM-agent evaluation
 
 - Modern agent benchmarks emphasize tool use and final-state verification.
 - This thesis adds spoken pipeline evidence and phase-wise metrics.
+- What to write:
+  - Agent B backends can differ in fluency, grounding, repair behavior,
+    memory, latency, and constraint following;
+  - final answer correctness alone does not reveal where a dialogue failed;
+  - matched-condition comparison is required because scenario, persona, audio
+    persona, TTS, ASR, and seed all affect difficulty.
+- Model-size caution:
+  - model size is not isolated from model family, tuning, tokenizer, provider,
+    quantization, or runtime environment.
+- Strong thesis positioning:
+  - the thesis evaluates Agent B as part of a complete SDS pipeline, not as an
+    isolated LLM answering clean text prompts.
 
 ## 5. Limitations and Validity Threats
 
@@ -568,6 +818,11 @@ they relate to the thesis.
 
 Prepare careful interpretation. Do not wait until the discussion to define
 validity limits.
+
+Use this chapter to pre-register how strong the later claims may be. The
+reader should know before the results chapter that the thesis is strongest as a
+controlled automatic-evaluation study and weaker as a claim about real public
+transport users.
 
 ### Main limitations to state
 
@@ -582,9 +837,88 @@ validity limits.
 - Missing metric evidence must be reported as missing, not zero.
 - Provider failure is an experimental/runtime outcome, not task failure.
 
+### Construct validity
+
+- Question:
+  - do the metrics measure the constructs they claim to measure?
+- Threats:
+  - route validity and constraint satisfaction partly overlap with the task
+    success definition;
+  - transcript similarity does not guarantee semantic understanding;
+  - audio quality metrics may not predict navigation success directly.
+- Mitigation:
+  - separate outcome metrics from diagnostic phase metrics;
+  - explain which metrics are partly definitional;
+  - use ASR/TTS metrics to localize possible failure points, not as standalone
+    proof of task quality.
+
+### Internal validity
+
+- Question:
+  - can differences be attributed to the manipulated configuration?
+- Threats:
+  - model comparisons confound size, family, backend, prompt behavior, and
+    runtime environment;
+  - execution failures can originate in assets, Slurm, provider setup, or
+    timeouts rather than dialogue ability;
+  - duplicate attempts can bias counts if treated as separate conditions.
+- Mitigation:
+  - compare models on matched non-model conditions;
+  - separate execution failure from completed-dialogue outcome;
+  - deduplicate by model and comparable condition before success analysis.
+
+### External validity
+
+- Question:
+  - how far do findings generalize?
+- Threats:
+  - the network is synthetic;
+  - Agent A is simulated;
+  - speech conditions are generated rather than recorded from real users.
+- Mitigation:
+  - frame claims as evidence for controlled SDS evaluation;
+  - avoid deployment claims;
+  - propose real-user and real-audio validation as future work.
+
+### Statistical conclusion validity
+
+- Question:
+  - are quantitative comparisons supported by enough comparable evidence?
+- Threats:
+  - uneven coverage by model;
+  - missing phase evidence;
+  - nested turn-level data;
+  - repeated attempts for the same condition.
+- Mitigation:
+  - report denominators before rates;
+  - use condition-level summaries for main claims;
+  - use turn-level and phase-level observations as diagnostic evidence;
+  - report matched-case counts separately from raw completed counts.
+
+### Reliability and reproducibility
+
+- Question:
+  - can another researcher reproduce the run and metric calculation?
+- Threats:
+  - local model assets and optional providers differ by platform;
+  - cluster nodes can interrupt or time out jobs;
+  - large generated aggregates may not be tracked in Git.
+- Mitigation:
+  - store git commit, seed, job file, backend metadata, and condition
+    configuration;
+  - retain raw run evidence before derived metrics;
+  - document excluded generated aggregates and regenerate them when needed.
+
 ## 6. Methodology and Research Design
 
 Starting here, focus on the actual experiment and metric selection.
+
+Chapter writing rule:
+
+- explain the experiment before reporting any result;
+- define each object once and reuse the same term consistently;
+- show which logged values are needed for later metrics;
+- make clear which variables are manipulated and which are held constant.
 
 ### 6.1 Experimental unit
 
@@ -602,6 +936,15 @@ Starting here, focus on the actual experiment and metric selection.
   - run type.
 - Turns and phases are nested evidence inside a condition.
 - Do not treat turns as independent samples.
+- Suggested thesis wording:
+  - "A run is the smallest independent experimental unit."
+  - "Turns and phases are observations inside a run."
+  - "Model comparisons therefore use condition-level aggregation, while
+    phase-wise metrics explain the run outcome."
+- Why this matters:
+  - prevents inflated sample sizes;
+  - keeps repeated turns from being counted like independent participants;
+  - makes seeds, repetitions, and reruns interpretable.
 
 ### 6.2 Agent roles and knowledge boundaries
 
@@ -628,6 +971,20 @@ Integrity rule:
 
 - Agents do not share hidden memory.
 - Listener consumes ASR/NLU output, not hidden intended text.
+- Agent A memory contains:
+  - own start, destination, departure time;
+  - revealed and unrevealed constraints;
+  - what Agent B appeared to propose;
+  - whether the current proposal satisfies the current stage.
+- Agent B memory contains:
+  - what Agent B heard through ASR/NLU;
+  - current understood trip facts;
+  - route proposals already offered;
+  - clarification and repair history.
+- Thesis emphasis:
+  - Agent B is evaluated on what it receives, not on hidden ground truth;
+  - corrections are allowed only when logged transparently;
+  - misunderstandings remain part of the evidence.
 
 ### 6.3 Dialogue stages
 
@@ -648,6 +1005,20 @@ Stage status:
   criterion remains unsatisfied.
 - unsuccessful: no valid route, repeated unresolved misunderstanding, provider
   failure, or turn limit without usable route.
+- Why stages are used:
+  - they model a caller who first asks for a route and later adds preferences;
+  - they prevent judging Agent B against constraints Agent A has not revealed;
+  - they make dialogue-management progress measurable.
+- What to report per stage:
+  - current objective;
+  - first turn in which the stage was satisfied;
+  - route candidate active at that point;
+  - current optimal route layer;
+  - clarification or repair events before success/failure.
+- Suggested wording:
+  - "The dialogue progresses only when the current stage objective is
+    satisfied. This makes stage failure observable rather than inferred only
+    from the final outcome."
 
 ### 6.4 Route task and network
 
@@ -682,6 +1053,23 @@ Validation checks:
 - route duration is within configured threshold,
 - active constraints are satisfied,
 - route is compared against the current constraint-layer optimum.
+- Network design rationale:
+  - station and line identifiers make speech entity preservation measurable;
+  - multiple feasible routes make optimization and constraint negotiation
+    meaningful;
+  - constraint-changing alternatives force Agent B to revise rather than repeat
+    a previously valid route;
+  - a controlled network avoids relying on changing external timetable data.
+- Methodology content:
+  - include a compact network overview;
+  - define the route grammar;
+  - explain transfers, duration, delay/fullness classes, and walking
+    constraints;
+  - state how invalid or unreachable generated scenarios are excluded.
+- Appendix content:
+  - full network data;
+  - route-validation schema;
+  - example valid and invalid proposals.
 
 ### 6.5 Constraint layers and optimal route calculation
 
@@ -701,6 +1089,18 @@ Purpose:
 - prevents judging early dialogue against unrevealed constraints,
 - lets the thesis show how added constraints change the optimal route,
 - supports semi-success classification.
+- Methodological rule:
+  - evaluate each stage only against constraints known at that stage;
+  - after a new constraint is revealed, use the corresponding optimum layer;
+  - do not penalize an early route for failing a later private constraint.
+- Why this strengthens validity:
+  - separates basic route validity from preference satisfaction;
+  - makes semi-success meaningful;
+  - reveals whether Agent B can improve a route after new user information.
+- Reporting rule:
+  - show the optimal route for each layer;
+  - report duration regret relative to the active layer;
+  - mark when an added constraint changes the optimal route.
 
 ### 6.6 Speech channel
 
@@ -732,6 +1132,24 @@ Key integrity rule:
 
 - Corrected/normalized transcript must be transparent. If normalization repairs
   "juliet" to "Juliett", both raw and normalized forms must be visible.
+- TTS contribution:
+  - transforms intended text into a speech signal;
+  - can affect pronunciation, pacing, pauses, clipping, and intelligibility;
+  - is evaluated through synthesis success, latency, audio-quality proxies, and
+    entity preservation when available.
+- ASR contribution:
+  - transforms speech back into text;
+  - can distort stations, lines, departure times, constraints, and repair
+    turns;
+  - is evaluated through WER, entity error rate, critical slot preservation,
+    and semantic ASR error.
+- Normalization contribution:
+  - maps recognized variants to known station/line names when justified;
+  - must not silently inject ground truth;
+  - every correction should be visible in transcript and metric evidence.
+- Why this is central:
+  - the experiment is a speech dialogue system evaluation, so downstream
+    behavior must be based on what was heard and understood.
 
 ### 6.7 Batch design
 
@@ -818,6 +1236,19 @@ route_validity_among_completed = 294 / 317 = 92.74%
 For the current thesis denominator, UserLM-Agent-A comparisons are analyzed
 separately from TinyLlama-Agent-A software controls. Do not mix both callers in
 one unstratified success rate.
+- Batch-design paragraph to include:
+  - "Batch execution generates controlled conditions by varying Agent B,
+    scenario, persona, audio persona, speech condition, and seed while keeping
+    structured run metadata."
+- What to emphasize:
+  - equal planned coverage is the goal;
+  - completed coverage can differ due to runtime failures or provider
+    availability;
+  - execution coverage must be reported before model performance.
+- What to avoid:
+  - ranking models by raw run counts;
+  - treating failed setup as dialogue failure;
+  - mixing UserLM-Agent-A thesis runs with TinyLlama-Agent-A control runs.
 
 ### 6.8 Data captured per run
 
@@ -840,6 +1271,29 @@ Minimum reproducibility metadata:
 - metric input rows,
 - metric outputs,
 - errors/warnings.
+- Evidence hierarchy:
+  - raw evidence:
+    - transcript events,
+    - ASR raw text,
+    - TTS metadata,
+    - route proposals,
+    - validation decisions,
+    - timings,
+    - errors.
+  - derived evidence:
+    - metric rows,
+    - phase summaries,
+    - success labels,
+    - comparison tables.
+  - presentation evidence:
+    - HTML scorecards,
+    - coverage tables,
+    - thesis figures.
+- Integrity rule:
+  - raw run folders should not be edited to improve results;
+  - derived analysis may be regenerated from raw evidence;
+  - if derived analysis changes, the generating script and commit should be
+    traceable.
 
 ## 7. Metric Selection
 
@@ -860,6 +1314,14 @@ Avoid metrics that:
 - duplicate another metric without new information,
 - measure surface text overlap when task validity is available,
 - cannot be computed consistently across conditions.
+
+Chapter writing rule:
+
+- introduce metrics by phase, not alphabetically;
+- give each metric a construct, formula, input fields, range, and limitation;
+- separate outcome metrics from diagnostic metrics;
+- explicitly state when a metric is unavailable instead of converting missing
+  values to zero.
 
 ### 7.1 Core formulas
 
@@ -885,6 +1347,15 @@ F1        = 2 * precision * recall / (precision + recall)
 
 Use for slots, constraints, stations, lines, and route entities.
 
+In this thesis:
+
+- slot F1 is appropriate for start station, destination, departure time,
+  station names, line names, and constraints;
+- critical slot accuracy is stricter and should focus on variables required
+  for route solving;
+- entity-level scores are often more interpretable than full transcript
+  overlap for this task.
+
 Task success:
 
 ```text
@@ -894,12 +1365,24 @@ task_success = route_valid
                and accepted_by_agent_a
 ```
 
+Interpretation:
+
+- main final outcome for completed dialogues;
+- report only after coverage and completed-dialogue counts;
+- do not mix with setup, provider, or Slurm failures.
+
 Constraint satisfaction rate:
 
 ```text
 constraint_satisfaction_rate =
     satisfied_active_constraints / active_constraints
 ```
+
+Interpretation:
+
+- distinguishes successful from semi-successful route dialogues;
+- uses active/revealed constraints only;
+- should be interpreted together with route validity.
 
 Route optimality ratio:
 
@@ -910,11 +1393,22 @@ optimality_ratio = optimal_duration / selected_route_duration
 - 1.0 means equal to optimum.
 - Below 1.0 means slower than the optimum.
 
+Interpretation:
+
+- near 1.0 means close to the active optimum;
+- use duration regret alongside it because ratios can hide small absolute
+  differences.
+
 Duration regret:
 
 ```text
 duration_regret = selected_route_duration - optimal_duration
 ```
+
+Interpretation:
+
+- 0 minutes means the selected route matches the active optimum;
+- positive values quantify lost travel time.
 
 Repair success rate:
 
@@ -923,6 +1417,11 @@ repair_success_rate =
     successful_repairs / repair_attempts
 ```
 
+Interpretation:
+
+- high values indicate productive clarification;
+- low values indicate loops, unresolved ambiguity, or poorly targeted repair.
+
 Failure-localization candidate:
 
 ```text
@@ -930,6 +1429,11 @@ earliest_failing_phase =
     first chronological phase where critical evidence is missing,
     corrupted, contradicted, or invalid before downstream failure.
 ```
+
+Interpretation:
+
+- diagnostic candidate, not causal proof;
+- useful for grouping failures by likely origin.
 
 ### 7.2 Phase metrics
 
@@ -946,6 +1450,23 @@ Use this table to decide which metrics belong in Chapter 6/7 and why.
 | NLG | route mention completeness, faithfulness, executable utterance rate, conciseness | explains whether the route was communicated clearly |
 | TTS | synthesis success, TTS latency, NISQA, DNSMOS, pronunciation/entity preservation | explains whether correct text remained intelligible |
 | Whole dialogue | task success, constraint satisfaction, turn count, dialogue cost, failure-localization score | summarizes outcome and efficiency |
+
+For each phase, write the same pattern:
+
+- what enters the phase;
+- what the phase produces;
+- which logged fields prove that the phase ran;
+- which metric values indicate degradation;
+- how degradation can propagate to the next phase.
+
+Example:
+
+```text
+ASR receives a TTS waveform and produces a raw transcript. Its main
+task-relevant risk is entity corruption. Therefore, WER is reported as a
+general transcript metric, while station, line, and time preservation are
+reported as critical entity metrics.
+```
 
 ### 7.3 Metrics most likely to answer the research questions
 
@@ -981,6 +1502,12 @@ For RQ4:
 - mean latency by model,
 - success per 100 output tokens,
 - route validity per model size.
+
+Suggested presentation:
+
+- one compact table mapping each research question to primary metrics;
+- one paragraph explaining which metrics are diagnostic rather than central;
+- avoid long undifferentiated metric lists in the main text.
 
 ### 7.4 Current metric evidence to emphasize
 
@@ -1029,6 +1556,20 @@ rate, and silence ratio align with success/failure patterns often enough to
 justify analysis, but they require cautious interpretation and should be
 validated against dialogue evidence.
 
+Safe current-evidence wording:
+
+- "Task-derived metrics show the clearest relationship with outcome."
+- "Speech metrics are most useful for explaining why a completed dialogue
+  failed or required repair."
+- "Metrics that directly reuse the success definition are decomposition tools,
+  not independent predictors."
+
+Avoid:
+
+- claiming that high audio quality guarantees task success;
+- ranking models without matched-condition coverage;
+- inferring human satisfaction from Agent A acceptance alone.
+
 ### 7.5 Missing-data rule
 
 Never encode missing evidence as zero.
@@ -1045,6 +1586,17 @@ Interpretation:
 
 - zero means the metric was calculated and the result is zero.
 - null means the metric could not legitimately be calculated.
+
+In tables:
+
+- show availability counts next to means;
+- do not average null values as zero;
+- distinguish not applicable, provider failed, and missing evidence.
+
+In prose:
+
+- state when a metric is excluded from comparison because required fields are
+  unavailable.
 
 ### 7.6 Completed-dialogue outcome classification
 
@@ -1105,6 +1657,19 @@ This distinction is methodologically important. It prevents a missing model,
 bad cluster state, or invalid generated scenario from being misread as poor
 conversational performance by Agent B.
 
+Recommended result labels:
+
+- execution-complete successful;
+- execution-complete semi-successful;
+- execution-complete unsuccessful;
+- execution-incomplete/provider failed;
+- invalid or excluded condition.
+
+Thesis rule:
+
+- only the first three labels belong in navigation-success analysis;
+- all five labels belong in execution reliability and coverage analysis.
+
 ## 8. Results Chapter Guide
 
 ### 8.1 Report order
@@ -1136,6 +1701,19 @@ Minimum result table sequence:
 5. **Diagnostic evidence:** earliest failing phase candidate, error
    signatures, repair-loop or stagnation indicators.
 
+Writing structure for each result subsection:
+
+- state the denominator;
+- state the main number;
+- explain what the number means;
+- state the most important limitation;
+- connect the result to one research question.
+
+Example:
+
+- "Among completed UserLM-Agent-A runs, 88.64% were successful. This rate
+  describes completed dialogue behavior, not total planned-condition coverage."
+
 ### 8.2 Tables to include
 
 - Condition coverage by Agent B model.
@@ -1146,6 +1724,20 @@ Minimum result table sequence:
 - ASR/TTS degradation versus outcome.
 - Model runtime and memory summary.
 
+For each table:
+
+- include N;
+- include missing count where applicable;
+- sort models consistently by size then model key;
+- mark whether rows are all completed runs or matched conditions.
+
+Avoid:
+
+- mixing execution failures, completed failures, and task success without
+  labels;
+- model rankings without comparable-condition counts;
+- tables whose denominator changes without being stated.
+
 ### 8.3 Figures to include
 
 - Pipeline diagram with evidence boundaries.
@@ -1155,15 +1747,36 @@ Minimum result table sequence:
 - Failure-localization bar chart.
 - Paired text/audio delta plot, if available.
 
+Figure guidance:
+
+- use coverage figures before success figures;
+- keep color semantics stable:
+  - green for better or successful values;
+  - red for worse or failed values;
+  - neutral/light colors for mid-range or non-outlier values;
+- label whether values are normalized within a metric or absolute.
+
+Useful figure captions:
+
+- state the unit of analysis;
+- state whether only completed dialogues are included;
+- state whether duplicate attempts were deduplicated.
+
 ### 8.4 Interpretation caution
 
 Write:
 
 - "associated with", "indicates", "diagnostic evidence suggests".
+- "in the completed-run subset".
+- "under the tested speech and batch conditions".
+- "for matched conditions where available".
 
 Avoid:
 
 - "proves that phase X caused failure" unless manually validated.
+- "model size caused the improvement" unless family/backend are controlled.
+- "the system works in real use" unless real-user evidence is added.
+- "ASR failed" when only downstream task failure is observed.
 
 ### 8.5 Current result interpretation notes
 
@@ -1203,7 +1816,7 @@ to accept the final route.
 
 ### 8.6 Current model-by-model reading
 
-Use this as a concise basis for Chapter 7. Recheck the latest result tables
+Use this as a concise basis for Chapter 8. Recheck the latest result tables
 before final submission.
 
 | Model | Current reading |
@@ -1769,6 +2382,30 @@ validity analysis.
 
 Use citations only when they support a specific claim.
 
+Citation use rules:
+
+- cite a paper where the claim first becomes methodologically important;
+- do not place a citation after a generic sentence that the paper does not
+  specifically support;
+- separate background citations from method justification citations;
+- cite the same foundational paper consistently instead of scattering many
+  weak references.
+
+Recommended citation pattern:
+
+```text
+[Claim about evaluation problem]. [Citation]. In this thesis, that problem is
+handled by [specific design decision].
+```
+
+Example:
+
+```text
+Prior SDS evaluation connects task success with dialogue cost and user-facing
+quality. In this thesis, that idea motivates reporting route success together
+with turn count, repair behavior, latency, and phase-wise evidence.
+```
+
 | Claim | Recommended source |
 | --- | --- |
 | SDS evaluation can combine task success, dialogue cost, and satisfaction | Walker et al. 1997, PARADISE |
@@ -1780,6 +2417,32 @@ Use citations only when they support a specific claim.
 | LLM/backend comparisons require caution and transparency | HELM; model cards; reproducibility papers |
 | Simulated users enable repeatable experiments but limit external validity | user simulation and agenda-based simulation work |
 | Navigation dialogue is suitable for grounding and cooperation | Map Task Corpus; grounded navigation dialogue work |
+
+How to use the citation strands:
+
+- PARADISE:
+  - use for the broad idea that task outcome and dialogue cost both matter;
+  - do not imply that the thesis estimates a full satisfaction model.
+- "How NOT To Evaluate Your Dialogue System":
+  - use to motivate caution with surface-level text metrics;
+  - connect it to why route validation and task grounding matter.
+- MultiWOZ and SGD:
+  - use for task-oriented dialogue concepts such as goal, slot, state, and
+    constraint;
+  - contrast with this thesis's spoken and grounded route task.
+- SpokenWOZ/SLUE:
+  - use for the need to evaluate spoken inputs and ASR-induced differences;
+  - connect to the preserved raw transcript and normalized understanding.
+- NISQA/DNSMOS:
+  - use for no-reference speech-quality metric background;
+  - avoid claiming these metrics alone measure task success.
+- HELM/model-card/reproducibility work:
+  - use for transparent backend comparison, configuration reporting, and
+    cautious model claims.
+- Navigation/Map Task literature:
+  - use to motivate cooperative route dialogue and grounding;
+  - clarify that this project uses a synthetic transit network, not an
+    open-ended map.
 
 ### Verified starting references
 
@@ -1816,6 +2479,27 @@ Use citations only when they support a specific claim.
 - condition-level analysis,
 - cautious causal language.
 
+Good paragraph shape:
+
+- claim:
+  - one sentence saying what the subsection shows;
+- evidence:
+  - one or two numbers, table references, or metric definitions;
+- interpretation:
+  - what the evidence means for the research question;
+- limitation:
+  - what cannot be concluded from this evidence.
+
+Example:
+
+```text
+Completed UserLM-Agent-A dialogues show high task success in the current
+result set. This indicates that the framework can produce successful
+cooperative route dialogues under controlled speech conditions. However, this
+rate applies only to execution-complete runs and does not include unavailable
+or interrupted conditions.
+```
+
 ### Remove
 
 - repeated lists of every possible metric,
@@ -1824,6 +2508,15 @@ Use citations only when they support a specific claim.
 - claims about model size when model family/provider also differs,
 - unexplained acronyms,
 - metric names without formulas or evidence sources.
+
+Also remove or rewrite:
+
+- phrases like "the model understands" unless supported by NLU/state evidence;
+- phrases like "ASR caused the failure" unless the transcript and downstream
+  state show the link;
+- generic praise such as "robust" without specifying the tested conditions;
+- implementation detail that does not affect experiment validity or metric
+  calculation.
 
 ### Suggested wording pattern
 
@@ -1835,6 +2528,30 @@ It is calculated as [formula].
 High/low values indicate [interpretation].
 It is unavailable when [missing-data rule].
 Its limitation is [scope boundary].
+```
+
+Outcome wording pattern:
+
+```text
+This result is calculated over [denominator]. It shows [finding]. It supports
+[research question] because [reason]. It should be interpreted cautiously
+because [validity boundary].
+```
+
+Model comparison wording pattern:
+
+```text
+For matched conditions, [model/backend] differed from [comparison] in
+[metric/outcome]. This comparison controls [listed non-model factors] but does
+not isolate [confounded model properties].
+```
+
+Failure wording pattern:
+
+```text
+The earliest observable failure signal occurred in [phase]. The logged evidence
+was [evidence]. This suggests [diagnostic interpretation], but downstream
+effects require manual case inspection for causal confirmation.
 ```
 
 ## 12. Final Thesis Checklist
@@ -1849,3 +2566,41 @@ Its limitation is [scope boundary].
 - Failure localization is diagnostic, not absolute causality.
 - Appendix contains schemas, prompts, metric catalog, and reproducibility notes.
 - References are checked and cited only where used.
+
+How to use the checklist:
+
+- before writing Chapter 6:
+  - verify that the experiment unit, stage logic, model set, and result
+    denominator are final;
+  - remove obsolete models, invalid conditions, and outdated settings from the
+    main narrative.
+- before writing Chapter 7:
+  - ensure every metric has required logged fields;
+  - mark unavailable metrics explicitly;
+  - separate task, phase, and execution metrics.
+- before writing Chapter 8:
+  - regenerate analysis tables from raw results;
+  - confirm deduplication rules;
+  - report coverage before success.
+- before writing Chapter 9:
+  - collect the strongest and weakest claims;
+  - map each claim to evidence and limitation;
+  - separate conclusions from future work.
+- before submission:
+  - verify all cited papers are in the bibliography;
+  - check every figure caption for denominator and unit of analysis;
+  - ensure no paragraph claims more than the experiment can support.
+
+Minimum appendix package:
+
+- configuration schema;
+- active model/backend table;
+- TTS/ASR provider table;
+- scenario and persona overview;
+- transport-network data or generation rules;
+- route-validation rules;
+- metric catalog with formulas and input fields;
+- result-folder schema;
+- reproducibility commands;
+- selected transcript examples for success, semi-success, and unsuccessful
+  completed dialogues.
