@@ -417,7 +417,92 @@ Recommended final set:
 - Earliest-failure labels should be treated as diagnostic candidates, not
   proven causal facts.
 
-### 1.6 Contributions
+### 1.6 Short answer proposals for the research questions
+
+Use these as direct discussion/conclusion scaffolds. Keep final thesis wording
+tied to the frozen result tables.
+
+RQ1: Can success and failure in a controlled spoken navigation dialogue be
+explained using automatically logged phase-wise evidence and metrics?
+
+- Answer proposal:
+  - Yes, within the controlled task.
+  - The framework records enough evidence to distinguish execution completion,
+    dialogue completion, route validity, constraint satisfaction, repair
+    behavior, speech-recognition quality, dialogue state, and final outcome.
+  - This makes success and failure explainable beyond a single final score.
+- Strongest supporting evidence:
+  - completed/semi-successful/unsuccessful outcome bands;
+  - route-validity and constraint-satisfaction metrics;
+  - ASR station F1, NLU route-valid rate, grounded proposal score, repair
+    success, and goal progress.
+- Limitation:
+  - phase-wise evidence localizes likely failure origins, but causal claims
+    still require manual case inspection or further validation.
+
+RQ2: Which automatic metrics best correlate with task-level outcomes such as
+task completion, route validity, and constraint satisfaction?
+
+- Answer proposal:
+  - Task-grounded metrics show the clearest relationship with task outcome.
+  - The strongest outcome-confirming metrics are route validity, constraint
+    satisfaction, active constraint compliance, grounded proposal score, NLG
+    faithfulness, and goal progress.
+  - Stronger diagnostic metrics include ASR station F1, NLU route-valid rate,
+    candidate-route count, repair success rate, route revision behavior, task
+    focus, and abandonment rate.
+- Limitation:
+  - some strong metrics are close to the task-success definition and should be
+    treated as decomposition metrics, not independent predictors.
+
+RQ3: Can phase-wise evidence identify the earliest likely failing phase in
+unsuccessful or degraded dialogues?
+
+- Answer proposal:
+  - Yes, as a diagnostic candidate rather than absolute causality.
+  - Chronological logs can indicate whether the first visible deviation occurs
+    in TTS/audio, ASR, NLU, dialogue state, dialogue management, Agent B
+    grounding, NLG, or task outcome.
+- Example reasoning:
+  - high ASR entity error followed by wrong route state suggests an upstream
+    recognition or normalization issue;
+  - clean transcript evidence followed by invalid route proposals suggests
+    dialogue-management or grounding failure.
+- Limitation:
+  - downstream errors can mask earlier causes, so failure-localization labels
+    should be validated with representative transcript cases.
+
+RQ4: Which phase-level metrics remain useful across different Agent B language
+model backends and size classes?
+
+- Answer proposal:
+  - Task-grounded and phase-chain metrics are most reusable across backends.
+  - Useful metrics include route validity, constraint satisfaction, grounded
+    proposal score, NLG faithfulness, goal progress, NLU route-valid rate,
+    candidate-route count, and repair success.
+- Model interpretation:
+  - model-size claims are weaker because size is confounded with family,
+    runtime feasibility, completion coverage, and decoding behavior.
+  - matched-condition coverage is required for direct Agent B comparison.
+- Limitation:
+  - current matched cases often show all-model success or all-model failure,
+    so model discrimination is weaker than metric/pipeline diagnosis.
+
+RQ5: How does the speech channel affect task success and phase-level errors
+compared with matched text controls?
+
+- Answer proposal:
+  - Speech-channel effects should be analyzed only in paired `text_only` and
+    `audio_variant` conditions with the same `pair_id`.
+  - Relevant deltas are task success, route validity, constraint satisfaction,
+    turn count, repair turns, ASR WER, ASR station F1, and NLU slot accuracy.
+  - Speech can increase repair burden or reduce efficiency even when final
+    task success remains unchanged.
+- Limitation:
+  - unmatched text/audio aggregates are descriptive only and should not be used
+    as causal speech-channel evidence.
+
+### 1.7 Contributions
 
 - Phase-aware evaluation framing for spoken task-oriented dialogue.
   - The contribution is conceptual and methodological.
@@ -2169,6 +2254,130 @@ indicate a more efficient and stable successful dialogue.
 
 Use this section as a conclusion scaffold. Keep claims tied to the evidence
 level that supports them.
+
+#### Four comparison-axis conclusion blocks
+
+Use these blocks to structure Chapter 8 result interpretation and Chapter 9
+discussion. Each block should be supported by the matching table or figure.
+
+1. UserLM versus TinyLlama as Agent A.
+
+   Core conclusion:
+
+   - UserLM and TinyLlama must be treated as different caller conditions, not
+     pooled into one success estimate.
+   - They can produce different interaction profiles even when Agent B and the
+     task condition are the same.
+
+   Viable arguments:
+
+   - Agent A implementation affects repair burden, turn count, task focus, and
+     dialogue efficiency.
+   - TinyLlama-Agent-A matched successful runs currently show higher mean turn
+     counts and repair turns than UserLM-Agent-A matched successful runs.
+   - UserLM is the cleaner primary thesis caller because it represents the
+     intended simulated-user condition.
+   - TinyLlama remains valuable as a software-control caller because it tests
+     whether patterns persist under a different caller implementation.
+
+   Suggested wording:
+
+   ```text
+   Caller implementation changes the interaction process, not only the final
+   outcome. Therefore, Agent A is treated as an experimental factor. UserLM is
+   the main caller condition, while TinyLlama provides a control stratum for
+   checking whether observed Agent B behavior persists under a different caller
+   model.
+   ```
+
+2. Comparison between five Agent B LLMs.
+
+   Core conclusion:
+
+   - The five active Agent B models differ most clearly in completion coverage,
+     repair burden, efficiency, and runtime feasibility.
+   - In strict matched successful cases, final task outcome is often similar,
+     so ranking by success alone would overstate model differences.
+
+   Viable arguments:
+
+   - Qwen2.5 1.5B currently has the strongest practical profile because it
+     combines high completion count with high task success.
+   - TinyLlama 1.1B and Qwen2.5 0.5B show that very small models can solve many
+     grounded route dialogues.
+   - Qwen2.5 7B performs well when completed but remains more resource- and
+     coverage-sensitive while Large1 jobs are still completing.
+   - Matched all-model cases are methodologically strongest but less
+     discriminating when many cases are solved or failed by all models.
+
+   Suggested wording:
+
+   ```text
+   The results do not support a simple larger-is-better interpretation. Agent B
+   backend quality must be analyzed jointly with completion coverage,
+   matched-condition success, repair burden, route quality, and runtime
+   feasibility.
+   ```
+
+3. Text versus speech run results.
+
+   Core conclusion:
+
+   - Text/speech effects are validly analyzed only through paired runs with
+     the same `pair_id` and identical non-audio factors.
+   - Speech-channel degradation can affect both final success and process
+     quality.
+
+   Viable arguments:
+
+   - If text succeeds and speech fails, inspect ASR entity errors, transcript
+     corrections, NLU slot extraction, and state drift first.
+   - If both succeed, speech can still increase turn count, repair burden,
+     latency, or reduce task focus.
+   - If both fail, task/scenario difficulty may dominate over speech effects.
+   - If speech succeeds and text fails, treat the result cautiously as
+     stochastic/model variation unless logs show a clear repair or
+     normalization advantage.
+
+   Suggested wording:
+
+   ```text
+   Paired text/audio runs isolate the observed speech-channel effect because
+   all non-audio factors are shared. Speech should not be evaluated only by
+   final task success; it can also increase repair cost, latency, and dialogue
+   instability even when the final route remains correct.
+   ```
+
+4. Comparison by success status.
+
+   Core conclusion:
+
+   - Success status should be analyzed first, then equal-status runs should be
+     compared by efficiency and quality.
+   - Binary success/failure is too coarse for this experiment.
+
+   Viable arguments:
+
+   - Successful runs are characterized by high route validity, constraint
+     satisfaction, grounded proposal score, NLG faithfulness, and goal
+     progress.
+   - Semi-successful runs are scientifically valuable because they often have
+     valid route evidence but fail constraints, optimality, or final
+     acceptance.
+   - Unsuccessful completed runs often show earlier collapse in candidate
+     routes, NLU route validity, station/entity evidence, or abandonment.
+   - When two runs have equal success status, compare turn count, repair turns,
+     clarification count, route revisions, duration regret, task focus,
+     latency, ASR WER, and ASR station F1.
+
+   Suggested wording:
+
+   ```text
+   Success status identifies the outcome band, while phase metrics explain the
+   path to that outcome. Among equally successful runs, lower repair burden,
+   fewer turns, lower duration regret, stronger task focus, and fewer route
+   revisions indicate a more efficient and stable dialogue.
+   ```
 
 Strongly supported inferences:
 
