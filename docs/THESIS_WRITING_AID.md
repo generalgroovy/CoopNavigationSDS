@@ -1520,29 +1520,250 @@ inspectable after the run.
 
 ### Discussion structure
 
+Use the discussion to interpret the results, not to introduce new methods.
+Every paragraph should connect a finding to a research question, a validity
+condition, or a limitation.
+
 - Answer each research question directly.
+  - Start each answer with one clear sentence.
+  - Then give the strongest supporting evidence:
+    - completed-run counts,
+    - matched-case counts,
+    - metric patterns,
+    - representative failure modes.
+  - End with one implication for automatic SDS evaluation.
+  - Avoid making the reader infer the answer from tables alone.
+
 - Explain which metrics were useful and why.
-- Explain which metrics were weak or redundant.
+  - Outcome-confirming metrics:
+    - route validity,
+    - constraint satisfaction,
+    - active constraint compliance,
+    - task success.
+    - Use these to show whether the task was solved.
+    - Explain that they are close to the success definition and therefore not
+      independent predictors.
+  - Diagnostic metrics:
+    - ASR station F1,
+    - ASR WER,
+    - NLU route-valid rate,
+    - NLU goal-reached rate,
+    - grounded proposal score,
+    - NLG faithfulness,
+    - candidate-route count,
+    - station mentions,
+    - abandonment rate.
+    - Use these to explain where successful and unsuccessful completed
+      dialogues diverge.
+  - Matched-comparison metrics:
+    - use them for direct model comparison only when all non-model conditions
+      match.
+    - Emphasize that matched evidence is smaller but more internally valid.
+  - Efficiency metrics:
+    - turn count,
+    - latency,
+    - runtime,
+    - dialogue cost.
+    - Use them when two configurations both solve the task but differ in cost.
+
+- Explain which metrics were weak, redundant, or only confirmatory.
+  - Direct task metrics are necessary but can be tautological if treated as
+    predictors.
+  - Pipeline success and TTS success are often near-constant inside completed
+    runs, so they are more useful for execution coverage than dialogue-quality
+    comparison.
+  - Shared-state agreement can be misleading if agents agree on an incomplete
+    or wrong route.
+  - Generic text similarity is weak for this task because a fluent answer can
+    still violate network constraints.
+
 - Discuss model-backend differences cautiously.
+  - Separate three claims:
+    - coverage/completion: did the backend finish enough runs?
+    - task quality: did completed dialogues solve the route task?
+    - matched comparison: did the backend differ when all non-model settings
+      were equal?
+  - Current strongest model-related observation:
+    - Qwen2.5 1.5B has the strongest practical UserLM evidence profile because
+      it completed the most UserLM conditions and retained high success among
+      completed cases.
+  - Current matched-case observation:
+    - most all-model matched cases are solved by all models or fail for all
+      models.
+    - This limits broad model-ranking conclusions.
+  - Avoid saying:
+    - "large models are worse",
+    - "small models are better",
+    - "model size determines success".
+  - Prefer saying:
+    - "under these local/cluster conditions, completion coverage and matched
+      task outcomes do not support a simple model-size ranking."
+
 - Discuss speech-channel effects.
+  - Explain how the speech pipeline can affect the route task:
+    - TTS pronunciation affects station and line recognizability;
+    - ASR errors alter station names, times, and constraints;
+    - normalization can repair some errors but must remain transparent;
+    - NLU converts transcripts into route/task state.
+  - Interpret speech metrics as diagnostic:
+    - high WER does not always imply task failure;
+    - a single station substitution can matter more than many harmless words;
+    - station F1 and goal-reached rate are more task-relevant than WER alone.
+  - Discuss audio personas as controlled stressors:
+    - clear speech tests the upper-performance range;
+    - hesitant/degraded speech tests repair and robustness;
+    - severe-channel conditions help produce failure cases for metric analysis.
+
+- Discuss semi-successful cases explicitly.
+  - Semi-success is not noise; it is an important outcome band.
+  - It identifies cases where the dialogue produced route evidence but failed
+    final acceptance, constraints, duration, or route optimality.
+  - Use semi-success to argue that binary success/failure is too coarse for
+    SDS evaluation.
+  - Connect it to phase evidence:
+    - route validity can be present while constraint satisfaction is absent;
+    - grounded proposal score can be moderate while active constraint
+      compliance is zero;
+    - goal progress can be nonzero while final task success fails.
+
+- Discuss condition difficulty.
+  - In the matched all-model subset, many cases are uniformly solved or
+    uniformly unsolved.
+  - This suggests that some conditions primarily test task/audio difficulty
+    rather than model differences.
+  - Use this to justify future boundary-case design:
+    - cases where a valid route exists but later constraints change the
+      optimum;
+    - cases with moderate ASR noise rather than extreme corruption;
+    - cases requiring one repair step but not repeated repair loops.
+
 - Discuss limitations and threats to validity.
-- Explain what a supervisor/examiner can learn from the framework.
+  - Construct validity:
+    - automatic metrics approximate task quality but do not measure human
+      satisfaction directly.
+    - Some metrics overlap with the success definition.
+  - Internal validity:
+    - model comparisons are strongest only for matched conditions.
+    - execution failures and invalid conditions must not be mixed with
+      dialogue failures.
+  - External validity:
+    - simulated callers are not real callers;
+    - the network and scenarios are controlled abstractions;
+    - TTS/ASR engines do not cover all speech conditions, accents, or devices.
+  - Statistical validity:
+    - matched all-model subsets are currently small;
+    - descriptive correlations are not predictive models;
+    - no human-rating ground truth is available for calibration.
+
+- Explain what a supervisor or examiner can learn from the framework.
+  - The project is not only a route-dialogue demo; it is an evaluation
+    instrument.
+  - Its main scientific value is traceability:
+    - configuration,
+    - speech pipeline,
+    - dialogue state,
+    - route validation,
+    - metric input,
+    - metric output.
+  - It demonstrates how automatic SDS evaluation can move beyond final task
+    success toward phase-wise diagnosis.
 
 ### Conclusion structure
 
-- Restate problem.
-- Summarize method.
+The conclusion should be shorter than the discussion and should not introduce
+new evidence. It should leave the examiner with a precise understanding of what
+was built, what was shown, and what remains limited.
+
+- Restate the problem.
+  - Spoken dialogue systems can fail in many phases before final task outcome
+    is known.
+  - Final success/failure alone does not explain whether the error came from
+    speech recognition, semantic interpretation, dialogue state, route
+    grounding, response generation, or task constraints.
+  - Automatic evaluation therefore needs phase-aware evidence.
+
+- Summarize the method.
+  - CoopNavigationSDS creates controlled route-finding dialogues between:
+    - Agent A/UserLM as caller,
+    - Agent B as the evaluated dialogue backend.
+  - The task uses:
+    - a controlled transport network,
+    - staged route constraints,
+    - TTS/ASR speech pipeline evidence,
+    - route validation,
+    - retrospective metric calculation.
+  - Results are analyzed through:
+    - completed-dialogue outcome bands,
+    - phase metrics,
+    - matched Agent B comparisons,
+    - coverage and missing-evidence reports.
+
 - Summarize main findings.
+  - Completed UserLM dialogues usually succeed once terminal route evidence is
+    available.
+  - Semi-successful cases show that route validity is not enough; constraint
+    and optimality evidence are necessary.
+  - Matched all-model cases show limited model discrimination in the current
+    subset because most cases are either solved by all selected models or fail
+    for all selected models.
+  - Diagnostic metrics such as ASR station F1, NLU route-valid rate, grounded
+    proposal score, NLG faithfulness, candidate-route count, and abandonment
+    rate help explain outcome differences.
+
 - State contributions.
+  - A reproducible experiment framework for automatic SDS evaluation.
+  - A controlled cooperative navigation task with staged constraints.
+  - A phase-aware logging and retrospective metric pipeline.
+  - A matched-comparison method for Agent B backends.
+  - A distinction between execution failure, unsuccessful dialogue,
+    semi-success, and task success.
+  - A thesis-ready result interpretation structure.
+
 - State limitations.
-- Future work:
-  - human validation,
-  - real transit network,
-  - real microphone input,
-  - more languages/accents,
-  - more speech-native models,
-  - larger balanced condition grid,
-  - additional task domains.
+  - The data supports controlled-task conclusions, not universal SDS rankings.
+  - Human satisfaction and perceived naturalness are not directly measured.
+  - Model comparisons are strongest only in matched subsets.
+  - Some result differences reflect execution feasibility and cluster/runtime
+    behavior rather than dialogue quality alone.
+  - The current matched subset is useful but still small.
+
+- Future work.
+  - Human validation:
+    - collect ratings for naturalness, helpfulness, and perceived task success;
+    - compare human judgments with automatic metric scores.
+  - Real transit network:
+    - use real schedules, transfer constraints, delays, and station names;
+    - test whether route-grounding metrics still behave similarly.
+  - Real microphone input:
+    - replace synthetic speech-only runs with live or recorded human speech;
+    - evaluate microphone noise, accent, and channel variability.
+  - More languages and accents:
+    - test multilingual station names and non-native pronunciation;
+    - analyze whether entity-preservation metrics remain reliable.
+  - More speech-native models:
+    - compare cascaded TTS/ASR pipelines with end-to-end speech-capable
+      dialogue models.
+  - Larger balanced condition grid:
+    - increase matched all-model cases;
+    - add boundary cases that are neither trivially easy nor impossible.
+  - Additional task domains:
+    - emergency hotline triage,
+    - appointment scheduling,
+    - customer-service troubleshooting,
+    - indoor navigation.
+
+### Final paragraph template
+
+```text
+This thesis showed that a controlled spoken route-dialogue task can produce
+research-grade evidence for automatic SDS evaluation. The main value of the
+framework is not a single model ranking, but the ability to trace how speech,
+language understanding, dialogue state, route grounding, and constraint
+satisfaction contribute to task outcome. The results support phase-wise
+automatic evaluation as a useful complement to human evaluation, while also
+showing that model comparisons require careful coverage, matched-condition, and
+validity analysis.
+```
 
 ## 10. Citation Map
 
