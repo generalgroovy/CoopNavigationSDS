@@ -1,10 +1,11 @@
 # Thesis Writing Aid: Automatic Evaluation of Spoken Dialogue Systems
 
 Purpose: one compact reference for structuring a research-grade bachelor
-thesis around CoopNavigationSDS. It combines the current draft, revised thesis
-structure, implemented experiment design, technical/theoretical content,
-reasoning, and validity boundaries. It is not a prose-style guide and not a
-replacement for the thesis text.
+thesis around CoopNavigationSDS. It combines the current MS draft, the XW
+report-style thesis template, the adaptation proposal, the implemented
+experiment design, technical/theoretical content, reasoning, and validity
+boundaries. It is not a prose-style guide and not a replacement for the thesis
+text.
 
 Companion documents:
 
@@ -261,19 +262,91 @@ satisfaction provides a clearer basis for diagnosing successful and failed
 spoken dialogue runs.
 ```
 
+### Target thesis structure and style
+
+The final thesis should follow the compact XW-style report structure, not the
+older article-style MS draft. The writing aid can remain detailed, but the
+thesis itself should be modular, restrained, and chapter-driven.
+
+Recommended LaTeX structure:
+
+```text
+bachelor_thesis_ms.tex
+bibliography.bib
+bachelor_thesis_ms/
+  0first_page.tex
+  0abstract.tex
+  0deutsche_zusammenfassung.tex
+  01introduction.tex
+  02background.tex
+  03methodology.tex
+  04evaluation.tex
+  05conclusion.tex
+  06future_work.tex
+  07appendix.tex
+```
+
+Recommended final chapter sequence:
+
+```text
+Front matter
+1 Introduction
+2 Background and Related Work
+3 Methodology
+4 Evaluation and Results
+5 Conclusion
+6 Future Work
+Bibliography
+Appendix
+```
+
+Writing style transferred from the XW template and adaptation proposal:
+
+- use `report`-style chapter discipline rather than article-style sections;
+- keep each chapter responsible for one task;
+- use formal front matter, abstract, German summary, table of contents, and
+  BibLaTeX bibliography;
+- write in restrained academic prose, not planning-document language;
+- avoid implementation detail before Chapter 3;
+- avoid model rankings before coverage and validity are stated;
+- use tables and figures sparingly, with clear denominators and captions;
+- put long schemas, prompts, metric catalogs, and exhaustive configuration
+  tables in the appendix.
+
+Level of detail per final thesis chapter:
+
+| Final thesis part | Detail level | Main content | Move to appendix if |
+| --- | --- | --- | --- |
+| Front matter | Very concise | title page, abstract, German summary, table of contents | not applicable |
+| 1 Introduction | Concise, problem-first | motivation, evaluation difficulty, problem statement, research questions, contributions, thesis structure | implementation details, metric formulas, result tables |
+| 2 Background and Related Work | Conceptual and citation-driven | SDS definitions, task-oriented dialogue, speech versus text, SDS pipeline, LLM-based dialogue, error propagation, evaluation foundations, related work | code architecture, exact job files, raw result inventories |
+| 3 Methodology | Detailed enough to reproduce | CoopNavigationSDS task, agents, knowledge boundaries, route network, constraints, text/speech conditions, batch design, logging, validity controls | full prompt text, full schemas, exhaustive condition tables |
+| 4 Evaluation and Results | Most detailed empirical chapter | metric selection, formulas needed for reported metrics, coverage, completed runs, success/semi/failure, model comparison, speech/text deltas, failure localization | complete metric catalog, all per-run rows, large generated aggregates |
+| 5 Conclusion | Short and direct | RQ answers, contribution, limitations, final assessment | new results, new methods, long future-work list |
+| 6 Future Work | Short and concrete | human validation, real audio, real transit data, more languages/backends, speech-native models | generic "more research" statements |
+| Appendix | Reference detail | metric catalog, prompts, schemas, configuration grids, reproducibility checklist | core argument needed to answer RQs |
+
+Mapping from this writing aid to the final thesis:
+
+- Aid Sections 1 and 2 become final Chapters 1 and 2.
+- Aid Section 3 is conceptual background material for final Chapter 2.
+- Aid Section 4 becomes final Chapter 3.
+- Aid Sections 5 and 6 become final Chapter 4.
+- Aid Section 7 becomes final Chapters 5 and 6.
+- Aid Sections 8 and 9 are writing support, not thesis chapters.
+
 ### Chapter-level argument map
 
 Use this map while drafting to keep the thesis coherent.
 
-| Chapter | Main claim | Evidence type | Common mistake to avoid |
+| Final chapter | Main claim | Evidence type | Common mistake to avoid |
 | --- | --- | --- | --- |
 | 1 Introduction | SDS evaluation needs more than final outcome because failures are multi-phase. | Motivation, problem statement, research questions. | Explaining repository internals too early. |
 | 2 Background and related work | Spoken task-oriented dialogue can be described through phases, state, grounding, repair, and prior SDS/TOD research strands. | SDS/TOD concepts, pipeline definitions, and citable research context. | Separating concepts from citations so strongly that the argument repeats itself. |
-| 3 Evaluation and validity | Automatic metrics are useful only when tied to constructs, logged evidence, and explicit validity limits. | Metric theory, construct validity, human vs automatic evaluation, validity threats. | Listing metrics without formula, interpretation, or threat boundary. |
-| 4 Methodology | CoopNavigationSDS operationalizes phase-wise SDS evaluation in a controlled route task. | Configuration, network, agents, logging, metrics, batch design. | Mixing methodology with result interpretation. |
-| 5 Metric selection | Metrics are selected because they are calculable, interpretable, phase-aware, and useful for outcome diagnosis. | Formulae, required evidence, ranges, interpretation limits. | Treating all metric values as equally valid or equally independent. |
-| 6 Results | Outcomes must be interpreted through coverage, execution completion, phase evidence, and task metrics. | Tables, charts, condition rows, phase metrics. | Ranking models before reporting missing evidence. |
-| 7 Discussion and conclusion | Phase-wise evidence explains why final task outcomes differ and what the framework contributes. | RQ-by-RQ interpretation, limitations, contributions, future work. | Turning associations into causal claims or overclaiming generality. |
+| 3 Methodology | CoopNavigationSDS operationalizes phase-wise SDS evaluation in a controlled route task. | Configuration, network, agents, logging, metric evidence capture, batch design. | Mixing methodology with result interpretation. |
+| 4 Evaluation and results | Metrics are selected because they are calculable, interpretable, phase-aware, and useful for outcome diagnosis; outcomes must be interpreted through coverage, execution completion, phase evidence, and task metrics. | Formulae, required evidence, ranges, tables, charts, condition rows, phase metrics. | Ranking models before reporting missing evidence or treating all metrics as independent predictors. |
+| 5 Conclusion | The research questions can be answered only within the tested controlled scope. | RQ-by-RQ answers, strongest evidence, limitations, contribution. | Turning associations into causal claims or overclaiming generality. |
+| 6 Future work | The framework should be extended where current validity boundaries are strongest. | Human validation, real audio, real transit data, additional backends, broader domains. | Generic future-work statements not tied to limitations. |
 
 ## 1. Introduction
 
@@ -767,6 +840,10 @@ create a separate literature-review chapter that repeats the same points.
 
 ### Chapter function
 
+Final thesis placement: fold this material into `02background.tex`. It should
+not become a separate final chapter unless the thesis is deliberately expanded
+beyond the XW-style structure.
+
 Introduce evaluation concepts and define the validity boundaries before the
 concrete metric catalog.
 
@@ -1089,6 +1166,11 @@ Reliability and reproducibility:
 ## 4. Methodology and Research Design
 
 Starting here, focus on the actual experiment and metric selection.
+
+Final thesis placement: this section is the basis for `03methodology.tex`.
+Write it as a reproducibility chapter: what was built, which variables were
+controlled or manipulated, what evidence was captured, and why the design is
+valid for the research questions. Do not report result patterns here.
 
 Chapter writing rule:
 
@@ -1476,6 +1558,11 @@ Minimum reproducibility metadata:
 
 ### Metric selection principle
 
+Final thesis placement: use this as the first part of `04evaluation.tex`.
+Include only metrics that are actually reported in the results chapter body.
+Move the full metric catalog, rarely used formulas, and implementation fields
+to the appendix.
+
 Prefer metrics that are:
 
 - automatically calculable from logged evidence,
@@ -1850,6 +1937,11 @@ Thesis rule:
 ## 6. Results Chapter Guide
 
 ### 6.1 Report order
+
+Final thesis placement: use this as the empirical part of `04evaluation.tex`.
+The chapter should read as one evaluation chapter, not as disconnected metric,
+coverage, and model-ranking sections. Start with coverage, then outcome, then
+phase-wise diagnosis, then model and text/audio comparisons.
 
 1. Run inventory and coverage.
 2. Exclusions and unavailable evidence.
@@ -2659,6 +2751,11 @@ inspectable after the run.
 ## 7. Discussion and Conclusion
 
 ### Discussion structure
+
+Final thesis placement: split this material across `05conclusion.tex` and
+`06future_work.tex`. The conclusion should answer the research questions and
+state the contribution. Future work should be short, concrete, and directly
+linked to the stated limitations.
 
 Use the discussion to interpret the results, not to introduce new methods.
 Every paragraph should connect a finding to a research question, a validity
