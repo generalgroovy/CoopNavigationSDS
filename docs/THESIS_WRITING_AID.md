@@ -14,6 +14,10 @@ Companion documents:
   - `01_outline.md` for the chapter argument and subchapter writing plan,
   - `02_terminology.md` for chapter-local definitions,
   - `03_references.md` for citable papers and claim boundaries.
+- `docs/THESIS_FINAL_STRUCTURE_PROPOSAL.md`:
+  - adapted outline from the passed LaTeX proposal project,
+  - recommended chapter combinations,
+  - final writing sequence and appendix boundaries.
 - `docs/THESIS_REFERENCES_AND_TERMS.md`:
   - referenceable papers,
   - citable claims,
@@ -290,19 +294,30 @@ bachelor_thesis_ms/
   07appendix.tex
 ```
 
-Recommended final chapter sequence:
+Recommended final chapter sequence after analyzing the passed LaTeX proposal
+project:
 
 ```text
 Front matter
 1 Introduction
-2 Background and Related Work
-3 Methodology
-4 Evaluation and Results
-5 Conclusion
-6 Future Work
+2 Background, Related Work, and Evaluation Foundations
+3 Methodology and Experiment Design
+4 Evaluation, Results, and Metric Analysis
+5 Discussion, Conclusion, and Future Work
 Bibliography
 Appendix
 ```
+
+This combines chapters where they would otherwise repeat each other:
+
+- theoretical background, related work, and general evaluation theory become
+  one conceptual chapter;
+- metric selection, results, model comparison, speech/text comparison, and
+  failure localization become one empirical chapter;
+- discussion, conclusion, limitations, and future work become one final
+  synthesis chapter;
+- exhaustive metric catalogs, prompt templates, schemas, and long condition
+  tables move to the appendix.
 
 Writing style transferred from the XW template and adaptation proposal:
 
