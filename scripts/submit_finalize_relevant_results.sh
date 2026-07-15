@@ -8,7 +8,7 @@ WRAPPER="${WRAPPER:-${ROOT}/slurm/finalize_relevant_results.sbatch}"
 PARTITION="${PARTITION:-standard}"
 CPUS="${CPUS:-2}"
 MEMORY="${MEMORY:-8G}"
-TIME_LIMIT="${TIME_LIMIT:-03:00:00}"
+TIME_LIMIT="${TIME_LIMIT:-04:00:00}"
 STABILITY_SECONDS="${STABILITY_SECONDS:-120}"
 
 cd "${ROOT}"
@@ -34,6 +34,3 @@ echo "submitted_job_id=${job_id}"
 echo
 echo "Monitor with low overhead:"
 echo "  JOB_ID=${job_id} COUNT_RUNS=0 INTERVAL_SECONDS=120 bash scripts/monitor_finalize_relevant_results.sh"
-echo
-echo "Status:"
-echo "  squeue -j ${job_id} -o \"%.18i %.12P %.32j %.8T %.10M %.10l %.6C %.8m %.24R\""

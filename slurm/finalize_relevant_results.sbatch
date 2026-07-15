@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
-#SBATCH --time=03:00:00
+#SBATCH --time=04:00:00
 #SBATCH --output=slurm/logs/finalize-relevant-results-%j.out
 #SBATCH --error=slurm/logs/finalize-relevant-results-%j.err
 
