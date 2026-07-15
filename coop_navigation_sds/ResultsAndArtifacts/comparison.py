@@ -36,9 +36,18 @@ CONDITION_ANALYSIS_METRICS = (
     ("constraint_satisfaction", "task_outcome_constraint_satisfaction_rate"),
     ("word_error_rate", "asr_wer"),
     ("entity_error_rate", "asr_entity_error_rate"),
+    ("asr_station_f1", "asr_station_f1"),
     ("repair_success_rate", "dialogue_management_repair_success_rate"),
+    ("repair_count", "whole_dialogue_repair_count"),
+    ("clarification_count", "whole_dialogue_clarification_count"),
+    ("correction_turn_rate", "whole_dialogue_correction_turn_rate"),
+    ("route_revision_count", "whole_dialogue_route_revision_count"),
+    ("candidate_route_count", "whole_dialogue_candidate_count"),
+    ("turns_to_success", "task_outcome_turns_to_success"),
+    ("duration_regret", "task_outcome_duration_regret"),
     ("grounded_proposal_score", "agent_b_grounded_proposal_score"),
     ("task_focus_score", "whole_dialogue_task_focus_score"),
+    ("goal_progress_auc", "whole_dialogue_goal_progress_auc"),
     ("dialogue_cost", "whole_dialogue_dialogue_cost"),
     ("failure_localization_score", "whole_dialogue_failure_localization_score"),
 )
@@ -82,6 +91,37 @@ CANONICAL_AGENT_B_MODEL_NAMES = {
 }
 CURRENT_ANALYSIS_EXCLUDED_AGENT_B_MODELS = {"Mistral-7B-Instruct-v0.3"}
 OBSOLETE_PIPELINE_FAILURE_TYPES = {"NameError", "ValueError"}
+ACTIVE_AGENT_B_MODEL_SLOTS = {
+    "TinyLlama-1.1B-Chat-v1.0": "small1",
+    "Qwen2.5-0.5B-Instruct": "small2",
+    "Qwen2.5-1.5B-Instruct": "medium1",
+    "Phi-3-mini-4k-instruct": "medium2",
+    "Qwen2.5-7B-Instruct": "large1",
+}
+ACTIVE_AGENT_B_SLOT_ORDER = ("small1", "small2", "medium1", "medium2", "large1")
+MATCHED_AGENT_B_CONDITION_DIMENSIONS = (
+    "agent_a_type",
+    "test_case_key",
+    "scenario_key",
+    "persona_key",
+    "speech_pattern_key",
+    "run_type",
+    "configured_tts_engine",
+    "configured_asr_engine",
+    "asr_beam_size",
+    "network_seed",
+    "agent_a_audio_persona",
+    "agent_b_audio_persona",
+    "speech_performance_band",
+    "speech_performance_rank",
+    "model_param_key",
+    "objective_mode",
+    "iteration",
+    "transfer_tolerance",
+    "dialogue_stagnation_limit",
+    "matrix_family",
+    "experiment_platform",
+)
 
 
 def discover_run_directories(paths):
@@ -254,6 +294,11 @@ def _normalized_model_name(value):
         or CANONICAL_AGENT_B_MODEL_NAMES.get(basename.casefold())
         or basename
     )
+
+
+def _active_agent_b_model_slot(row):
+    """Return the active thesis slot for selected Agent B models, excluding archived models."""
+    return ACTIVE_AGENT_B_MODEL_SLOTS.get(_normalized_model_name(row.get("agent_b_model", "")), "")
 
 
 def _current_analysis_condition_rows(rows):
@@ -1390,6 +1435,7 @@ def build_condition_analysis_rows(conditions, metrics):
             "execution_status": condition.get("execution_status", condition_state),
             "failure_phase": text_lookup.get((run_id, condition_id, "whole_dialogue_failure_phase"), ""),
             "pipeline_failure_type": condition.get("pipeline_failure_type", ""),
+            "test_case_key": condition.get("test_case_key", ""),
             "scenario_key": condition.get("scenario_key", ""),
             "persona_key": condition.get("persona_key", ""),
             "run_type": condition.get("run_type", ""),
@@ -1402,6 +1448,7 @@ def build_condition_analysis_rows(conditions, metrics):
             "agent_b_model": _normalized_model_name(condition.get("agent_b_model", "")),
             "agent_b_llm_size": condition.get("agent_b_llm_size", ""),
             "agent_b_model_role": condition.get("agent_b_model_role", ""),
+            "agent_b_model_slot": _active_agent_b_model_slot(condition),
             "model_param_key": condition.get("model_param_key", ""),
             "objective_mode": condition.get("objective_mode", ""),
             "configured_tts_engine": condition.get("configured_tts_engine", condition.get("tts_engine", "")),
@@ -1413,6 +1460,8 @@ def build_condition_analysis_rows(conditions, metrics):
             "network_seed": condition.get("network_seed", condition.get("experiment_seed", "")),
             "transfer_tolerance": condition.get("transfer_tolerance", ""),
             "dialogue_stagnation_limit": condition.get("dialogue_stagnation_limit", ""),
+            "matrix_family": condition.get("matrix_family", ""),
+            "experiment_platform": condition.get("experiment_platform", ""),
             "experiment_seed": condition.get("experiment_seed", ""),
             "iteration": condition.get("iteration", ""),
             "route_valid": _truthy(condition.get("route_valid")),
@@ -2354,6 +2403,107 @@ def build_outcome_band_summary(condition_analysis):
     ))
 
 
+def _matched_agent_b_condition_key(row):
+    """Return a model-independent key for exact Agent B comparison."""
+    payload = {
+        key: str(row.get(key, "") or "")
+        for key in MATCHED_AGENT_B_CONDITION_DIMENSIONS
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def _deduplicated_matched_rows(condition_analysis):
+    """Keep one retained row per Agent A, active Agent B slot, and condition."""
+    rows = {}
+    for row in condition_analysis:
+        slot = row.get("agent_b_model_slot") or _active_agent_b_model_slot(row)
+        if slot not in ACTIVE_AGENT_B_SLOT_ORDER:
+            continue
+        key = (str(row.get("agent_a_type") or ""), slot, _matched_agent_b_condition_key(row))
+        priority = (
+            bool(row.get("task_success")),
+            str(row.get("condition_state") or "") == "completed",
+            bool(row.get("route_valid")),
+            str(row.get("source_run") or ""),
+        )
+        previous = rows.get(key)
+        if previous is None:
+            rows[key] = row
+            continue
+        previous_priority = (
+            bool(previous.get("task_success")),
+            str(previous.get("condition_state") or "") == "completed",
+            bool(previous.get("route_valid")),
+            str(previous.get("source_run") or ""),
+        )
+        if priority > previous_priority:
+            rows[key] = row
+    return rows
+
+
+def build_matched_success_diagnostics(condition_analysis):
+    """Summarize successful cases only where all active Agent B models cover a condition."""
+    deduplicated = _deduplicated_matched_rows(condition_analysis)
+    slots_by_condition = defaultdict(set)
+    for agent_a, slot, comparable_key in deduplicated:
+        slots_by_condition[(agent_a, comparable_key)].add(slot)
+    matched_keys = {
+        key for key, slots in slots_by_condition.items()
+        if all(slot in slots for slot in ACTIVE_AGENT_B_SLOT_ORDER)
+    }
+    rows = []
+    for agent_a in sorted({agent for agent, _ in matched_keys}):
+        comparable_keys = sorted(key for key in matched_keys if key[0] == agent_a)
+        for slot in ACTIVE_AGENT_B_SLOT_ORDER:
+            matched_rows = []
+            successful_rows = []
+            for _, comparable_key in comparable_keys:
+                row = deduplicated.get((agent_a, slot, comparable_key))
+                if not row:
+                    continue
+                matched_rows.append(row)
+                if bool(row.get("task_success")):
+                    successful_rows.append(row)
+            if not matched_rows:
+                continue
+            repair_counts = _numeric_values(successful_rows, "repair_count")
+            rows.append({
+                "agent_a_type": agent_a,
+                "agent_b_model_slot": slot,
+                "agent_b_model": _joined_values(matched_rows, "agent_b_model"),
+                "agent_b_llm_size": _joined_values(matched_rows, "agent_b_llm_size"),
+                "matched_case_count": len(matched_rows),
+                "successful_matched_case_count": len(successful_rows),
+                "matched_success_rate": len(successful_rows) / len(matched_rows) if matched_rows else None,
+                "mean_turns_successful": _mean(_numeric_values(successful_rows, "turn_count")),
+                "mean_turns_to_success": _mean(_numeric_values(successful_rows, "turns_to_success")),
+                "mean_repair_turns_successful": _mean(repair_counts),
+                "successful_runs_with_repair_rate": (
+                    sum(value > 0 for value in repair_counts) / len(repair_counts)
+                    if repair_counts else None
+                ),
+                "mean_repair_success_rate": _mean(_numeric_values(successful_rows, "repair_success_rate")),
+                "mean_clarification_count": _mean(_numeric_values(successful_rows, "clarification_count")),
+                "mean_correction_turn_rate": _mean(_numeric_values(successful_rows, "correction_turn_rate")),
+                "mean_route_revision_count": _mean(_numeric_values(successful_rows, "route_revision_count")),
+                "mean_candidate_route_count": _mean(_numeric_values(successful_rows, "candidate_route_count")),
+                "mean_duration_regret_min": _mean(_numeric_values(successful_rows, "duration_regret")),
+                "mean_constraint_satisfaction": _mean(_numeric_values(successful_rows, "constraint_satisfaction")),
+                "mean_task_focus_score": _mean(_numeric_values(successful_rows, "task_focus_score")),
+                "mean_asr_word_error_rate": _mean(_numeric_values(successful_rows, "word_error_rate")),
+                "mean_asr_station_f1": _mean(_numeric_values(successful_rows, "asr_station_f1")),
+                "mean_goal_progress_auc": _mean(_numeric_values(successful_rows, "goal_progress_auc")),
+                "interpretation": (
+                    "deduplicated matched Agent B comparison; metrics are means over successful "
+                    "matched cases only, while matched_case_count is the all-model denominator"
+                ),
+            })
+    return sorted(rows, key=lambda row: (
+        str(row.get("agent_a_type") or "").casefold(),
+        ACTIVE_AGENT_B_SLOT_ORDER.index(row["agent_b_model_slot"]),
+    ))
+
+
 def build_metric_value_heatmap_summary(condition_analysis, metrics):
     """Create compact phase/metric/outcome summaries for visual comparison."""
     conditions = {
@@ -3145,6 +3295,7 @@ def compare_runs(inputs, output_directory):
     performance_bands = build_performance_band_summary(condition_analysis)
     outcome_band_summary = build_outcome_band_summary(condition_analysis)
     metric_value_heatmap = build_metric_value_heatmap_summary(condition_analysis, metrics)
+    matched_success_diagnostics = build_matched_success_diagnostics(current_condition_analysis)
     run_metric_matrix, run_metric_specifications, run_metric_outliers = build_run_phase_metric_matrix(
         conditions,
         metrics,
@@ -3172,6 +3323,7 @@ def compare_runs(inputs, output_directory):
         "outcome_band_summary_report": output / "run_outcome_band_summary.html",
         "metric_value_heatmap": output / "metric_value_heatmap.csv",
         "metric_value_heatmap_report": output / "metric_value_heatmap.html",
+        "matched_success_diagnostics": output / "matched_success_diagnostics.csv",
         "phase_metric_files": output / "phase_metric_files.csv",
     }
     for obsolete in (
@@ -3196,6 +3348,7 @@ def compare_runs(inputs, output_directory):
     _write_csv(paths["performance_band_summary"], performance_bands)
     _write_csv(paths["outcome_band_summary"], outcome_band_summary)
     _write_csv(paths["metric_value_heatmap"], metric_value_heatmap)
+    _write_csv(paths["matched_success_diagnostics"], matched_success_diagnostics)
     write_phase_condition_metric_files(conditions, metrics, output)
     _write_model_configuration_matrix_html(
         paths["model_configuration_matrix_report"],

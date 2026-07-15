@@ -76,16 +76,45 @@ experimental outcome or unavailable evidence with reason.
 
 ### Current active experiment scope
 
-- Agent A: UserLM is the thesis caller. TinyLlama remains a software control
-  and debugging option, but it is not part of the main thesis denominator.
+- Agent A: UserLM is the primary thesis caller. TinyLlama is retained as a
+  caller-control stratum for direct comparison, not as a row to merge into the
+  UserLM headline denominator.
 - Agent B: five selected Transformer models by size class.
 - Active coverage target: `small1`, `small2`, `medium1`, `medium2`, and
-  `large1`.
+  `large1`; Large1 jobs may still change the final coverage until all cluster
+  results are pushed.
 - Speech channel: configured TTS and ASR; text-only controls may be used where
   paired comparison is available.
 - Task objective: shortest valid route under progressively revealed
   constraints.
 - Observation unit: one complete condition/run, not one turn.
+
+Current comparison axes:
+
+- Agent A comparison:
+  - UserLM versus TinyLlama as caller implementations;
+  - compare only inside matched Agent B/scenario/speech-condition subsets;
+  - report separately from the main UserLM headline denominator.
+- Agent B comparison:
+  - five active Agent B backends:
+    - `small1` TinyLlama 1.1B,
+    - `small2` Qwen2.5 0.5B,
+    - `medium1` Qwen2.5 1.5B,
+    - `medium2` Phi-3 mini,
+    - `large1` Qwen2.5 7B;
+  - compare direct backend effects only on conditions covered by all active
+    models.
+- Text versus speech comparison:
+  - use `pair_id` to join `text_only` and `audio_variant`;
+  - keep all non-audio factors identical;
+  - interpret deltas as speech-channel effects only within paired evidence.
+- Success-status comparison:
+  - first separate successful, semi-successful, unsuccessful, and execution
+    incomplete outcomes;
+  - identify strongest phase metrics for distinguishing status;
+  - when status is equal, compare efficiency and quality factors such as turns,
+    repair turns, duration regret, task focus, route revisions, candidate
+    routes, ASR WER, ASR station F1, and latency.
 
 ### Current empirical snapshot
 
@@ -1964,51 +1993,46 @@ all non-model configuration fields are equivalent. This controls for scenario,
 persona, speech condition, TTS/ASR setup, seeds, objective, and decoding
 profile.
 
-Current five-model matched completed cases:
+Current strict matched coverage:
 
-| Agent A | Cases completed by all five Agent B models | All five successful | All five unsuccessful | Mixed model outcomes |
-| --- | ---: | ---: | ---: | ---: |
-| UserLM | 37 | 32 | 4 | 1 |
-| TinyLlama control | 44 | 37 | 5 | 2 |
+- UserLM-Agent-A:
+  - 173 comparable conditions are covered by all five active Agent B models.
+  - Successful matched cases per Agent B model range from 32 to 33.
+- TinyLlama-Agent-A:
+  - 56 comparable conditions are covered by all five active Agent B models.
+  - Successful matched cases per Agent B model range from 37 to 39.
 
-Current UserLM matched outcome table:
+Current matched successful-run diagnostic table:
 
-| Agent B model | Matched completed cases | Successful | Semi-successful | Unsuccessful completed | Success rate |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| TinyLlama 1.1B | 37 | 33 | 2 | 2 | 89.19% |
-| Qwen2.5 0.5B | 37 | 32 | 3 | 2 | 86.49% |
-| Qwen2.5 1.5B | 37 | 33 | 2 | 2 | 89.19% |
-| Phi-3 mini | 37 | 32 | 2 | 3 | 86.49% |
-| Qwen2.5 7B | 37 | 33 | 2 | 2 | 89.19% |
-
-Current TinyLlama-control matched outcome table:
-
-| Agent B model | Matched completed cases | Successful | Semi-successful | Unsuccessful completed | Success rate |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| TinyLlama 1.1B | 44 | 39 | 0 | 5 | 88.64% |
-| Qwen2.5 0.5B | 44 | 37 | 1 | 6 | 84.09% |
-| Qwen2.5 1.5B | 44 | 39 | 0 | 5 | 88.64% |
-| Phi-3 mini | 44 | 37 | 1 | 6 | 84.09% |
-| Qwen2.5 7B | 44 | 39 | 0 | 5 | 88.64% |
+| Agent A | Agent B model | Matched cases | Successful matched cases | Mean turns | Repair turns | Runs with repair | Candidate routes | Duration regret | ASR WER | ASR station F1 | Goal progress |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| UserLM | TinyLlama 1.1B | 173 | 33 | 11.27 | 0.79 | 54.5% | 3.70 | 1.24 | 0.063 | 0.975 | 0.947 |
+| UserLM | Qwen2.5 0.5B | 173 | 32 | 11.12 | 0.78 | 56.2% | 3.66 | 1.00 | 0.057 | 0.979 | 0.955 |
+| UserLM | Qwen2.5 1.5B | 173 | 33 | 11.73 | 0.79 | 54.5% | 3.79 | 1.67 | 0.061 | 0.975 | 0.956 |
+| UserLM | Phi-3 mini | 173 | 32 | 11.09 | 0.66 | 53.1% | 3.84 | 1.38 | 0.058 | 0.978 | 0.945 |
+| UserLM | Qwen2.5 7B | 173 | 33 | 11.15 | 0.70 | 51.5% | 3.76 | 1.67 | 0.064 | 0.978 | 0.952 |
+| TinyLlama | TinyLlama 1.1B | 56 | 39 | 12.92 | 1.10 | 59.0% | 3.82 | 0.69 | 0.099 | 0.974 | 0.953 |
+| TinyLlama | Qwen2.5 0.5B | 56 | 37 | 12.73 | 1.03 | 56.8% | 3.81 | 0.73 | 0.087 | 0.979 | 0.953 |
+| TinyLlama | Qwen2.5 1.5B | 56 | 39 | 12.90 | 1.13 | 56.4% | 3.74 | 0.72 | 0.099 | 0.974 | 0.950 |
+| TinyLlama | Phi-3 mini | 56 | 37 | 12.57 | 0.97 | 54.1% | 3.76 | 0.73 | 0.093 | 0.979 | 0.953 |
+| TinyLlama | Qwen2.5 7B | 56 | 39 | 12.77 | 1.08 | 56.4% | 3.82 | 0.69 | 0.098 | 0.977 | 0.950 |
 
 Interpretation:
 
-- The matched UserLM set is small but methodologically strong.
-- Most matched cases are not model-discriminating:
-  - 32 of 37 UserLM cases are solved by all five Agent B models;
-  - 4 of 37 UserLM cases fail for all five models;
-  - only 1 of 37 UserLM cases produces mixed model outcomes.
-- The TinyLlama-control set shows a similar pattern:
-  - 37 of 44 cases solved by all five models;
-  - 5 of 44 fail for all five models;
-  - 2 of 44 produce mixed outcomes.
-- Therefore, current matched evidence suggests that condition difficulty and
-  speech/dialogue setup often dominate model-specific differences in the
-  completed all-model intersection.
-- Model differences are still visible in coverage and in unmatched completed
+- The matched table is the strongest direct Agent B comparison because each
+  row uses conditions covered by all active models and removes duplicate
+  attempts.
+- UserLM successful matched runs use fewer repair turns than TinyLlama
+  successful matched runs, suggesting caller implementation affects repair
+  burden and dialogue efficiency.
+- Agent B differences inside the successful matched subset are modest. The
+  stronger distinction is not only whether the task succeeds, but how much
+  repair, route revision, duration regret, and ASR degradation remain in runs
+  with equal success status.
+- Model differences are still visible in coverage and unmatched completed
   cases, especially because Qwen2.5 1.5B has more completed UserLM cases than
-  the other selected models. However, those unmatched cases must be discussed
-  as coverage/completion evidence, not as fully controlled direct comparison.
+  the other selected models. Those unmatched cases must be discussed as
+  coverage/completion evidence, not as fully controlled direct comparison.
 
 Useful matched UserLM metric means:
 
@@ -2037,7 +2061,111 @@ differences should therefore be reported together with coverage and completion
 evidence, not only with matched-case success rates.
 ```
 
-### 8.10 Current defensible inferences
+### 8.10 Text versus speech comparison
+
+Use this comparison only where `pair_id` links a `text_only` run and an
+`audio_variant` run with the same non-audio factors.
+
+Report:
+
+- number of matched text/audio pairs;
+- task-success delta;
+- route-validity delta;
+- constraint-satisfaction delta;
+- turn-count delta;
+- repair-turn delta;
+- ASR and speech-channel error indicators.
+
+Interpretation rules:
+
+- If text succeeds and speech fails:
+  - inspect ASR WER, ASR station F1, transcript corrections, and NLU slot
+    accuracy first.
+- If both succeed:
+  - compare turns, repair burden, latency, duration regret, and task focus.
+- If both fail:
+  - inspect task difficulty and route/constraint feasibility before blaming
+    the speech channel.
+- If speech succeeds and text fails:
+  - treat as possible stochastic/model variation unless the logs show a clear
+    repair or normalization advantage.
+
+Safe wording:
+
+```text
+Paired text/audio comparisons isolate observed speech-channel effects because
+the non-audio condition factors are shared. The comparison remains descriptive:
+audio degradation can explain a failure only when the transcript, NLU state,
+and dialogue trace show propagation from speech error into task state or route
+selection.
+```
+
+### 8.11 Success-status and equal-status analysis
+
+Analyze outcome bands in this order:
+
+1. successful,
+2. semi-successful,
+3. unsuccessful completed,
+4. execution incomplete.
+
+For distinguishing success status, prioritize:
+
+- task outcome:
+  - route validity,
+  - constraint satisfaction,
+  - duration regret,
+  - correct route selection;
+- grounding and NLG:
+  - grounded proposal score,
+  - executable utterance rate,
+  - NLG faithfulness,
+  - route mention completeness;
+- ASR/NLU:
+  - ASR station F1,
+  - ASR WER,
+  - critical slot accuracy,
+  - NLU route-valid rate;
+- dialogue management:
+  - repair success rate,
+  - repeated repair rate,
+  - stagnation rate,
+  - premature answer/closure rate.
+
+If success status is equal, do not repeat the success label. Compare
+secondary success factors:
+
+- efficiency:
+  - turn count,
+  - turns to success,
+  - runtime,
+  - latency;
+- cooperation quality:
+  - task focus,
+  - candidate-route count,
+  - route revisions,
+  - route repetition;
+- repair burden:
+  - repair turns,
+  - clarification count,
+  - correction-turn rate,
+  - successful runs with repair;
+- route quality:
+  - duration regret,
+  - optimality ratio,
+  - constraint gap,
+  - active constraint compliance.
+
+Suggested wording:
+
+```text
+When two configurations reach the same success status, the analysis shifts from
+whether the task was solved to how it was solved. Lower repair burden, fewer
+turns, lower duration regret, stronger task focus, and fewer route revisions
+indicate a more efficient and stable successful dialogue.
+```
+
+### 8.12 Current defensible inferences
 
 Use this section as a conclusion scaffold. Keep claims tied to the evidence
 level that supports them.
