@@ -1,0 +1,4857 @@
+{
+  "schema_version": 2,
+  "naming_scheme": {
+    "schema_version": "2026-06-23.3",
+    "description": "Keys are compact abbreviations used in result folder and condition names; values describe the configuration setting.",
+    "codes": {
+      "CGM": "ChatGPT mini API language model",
+      "CTT": "ChatTTS text-to-speech",
+      "DIV": "Agent B diverse deterministic planner",
+      "ESP": "eSpeak NG text-to-speech",
+      "FWH": "Faster-Whisper automatic speech recognition",
+      "G22": "Gemma 2 2B via Ollama language model",
+      "L31": "Llama 3.2 1B via Ollama language model",
+      "L33": "Llama 3.2 3B via Ollama language model",
+      "L38": "Llama 3.1 8B via Ollama language model",
+      "LLM": "Agent B configurable language-model backend",
+      "LRG": "Large Agent B language-model size tier (7.0B-8.0B parameters)",
+      "M17": "Mistral 7B via Ollama language model",
+      "MED": "Medium Agent B language-model size tier (3.0B-3.8B parameters)",
+      "PAR": "Agent B Pareto deterministic planner",
+      "PH3": "Phi-3 Mini 3.8B via Ollama language model",
+      "PIP": "Piper text-to-speech",
+      "Q05": "Qwen2.5 0.5B Instruct language model",
+      "Q15": "Qwen2.5 1.5B via Ollama language model",
+      "Q27": "Qwen2.5 7B via Ollama language model",
+      "Q34": "Qwen3 4B via Ollama language model",
+      "QCP": "Qwen2.5 0.5B via llama.cpp language model",
+      "ROB": "Agent B robust deterministic planner",
+      "S17": "SmolLM2 1.7B Instruct language model",
+      "S36": "SmolLM2 360M Instruct language model",
+      "SAP": "Windows SAPI speech engine",
+      "SHO": "sherpa-onnx automatic speech recognition",
+      "SIM": "Agent B simple deterministic planner",
+      "SML": "Small Agent B language-model size tier (1.0B-1.5B parameters)",
+      "STG": "Agent A deterministic staged caller",
+      "TL1": "TinyLlama 1.1B Chat language model",
+      "TLA": "Agent A TinyLlama caller",
+      "ULM": "Agent A UserLM caller using the selected language model",
+      "VOS": "Vosk automatic speech recognition",
+      "WCP": "whisper.cpp automatic speech recognition"
+    },
+    "source": "coop_navigation_sds.Configuration.run_identity"
+  },
+  "research_objective": "Measure whether two cooperative route-planning agents converge on valid, constraint-fitting routes through natural speech dialog.",
+  "hypotheses": [
+    "Valid route proposals should appear before secondary optimization.",
+    "Persona constraints should change route comparisons across time, fullness, transfers, and delay risk.",
+    "Speech-enabled runs should preserve route semantics while adding measurable automatic speech recognition, text-to-speech, and runtime phases."
+  ],
+  "independent_variables": [
+    "test_case_key",
+    "scenario_key",
+    "persona_key",
+    "speech_pattern_key",
+    "agent_a_audio_persona",
+    "agent_b_audio_persona",
+    "tts_engine",
+    "asr_engine",
+    "model_param_key",
+    "objective_mode",
+    "agent_b_plugin",
+    "agent_b_model",
+    "parameter_values.profile_key",
+    "parameter_values.agent_b_llm_size"
+  ],
+  "dependent_metrics": [
+    "route_valid",
+    "route_reaches_goal",
+    "route_duration_min",
+    "candidate_route_count",
+    "route_revision_count",
+    "automatic_eval_score",
+    "asr_word_error_rate",
+    "runtime_response_latency_sec"
+  ],
+  "controls": {
+    "num_turns": 20,
+    "speech_engine": "full_speech",
+    "tts_engine": "piper",
+    "asr_engine": "vosk",
+    "speech_scope": "both",
+    "agent_b_plugin": "llm",
+    "configuration": {
+      "agent_a_type": "tinyllama",
+      "agent_b_plugin": "llm",
+      "model_profile": "qwen2_5_0_5b_transformers",
+      "model_provider": "transformers",
+      "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+      "model_max_new_tokens": 48,
+      "num_turns": 20,
+      "maximum_progressive_constraints": 3,
+      "minimum_compared_routes": 2,
+      "paired_audio_text_runs": true,
+      "speech_playback_enabled": false,
+      "speech_realtime_enabled": false,
+      "tts_engine": "piper",
+      "tts_model": "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.speech-providers/models/piper/en_US-lessac-medium.onnx",
+      "asr_engine": "vosk",
+      "asr_model": "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.speech-providers/models/vosk/vosk-model-small-en-us-0.15",
+      "log_profile": "full",
+      "result_group": "agent_b/transformers/01-small-qwen2.5-0.5b/tinyllama",
+      "model_base_url": "",
+      "allow_model_download": false,
+      "model_timeout_sec": 300.0,
+      "settings_file": "run_settings.json",
+      "job_file": "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/jobs/agent_b_llm/transformers_speech_grid/small/02-qwen2.5-0.5b.job",
+      "preset": null,
+      "model_api_key": "",
+      "model_store_dir": "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.model-providers/agent_b/linux/ollama",
+      "model_device": "cpu",
+      "model_max_input_tokens": 4096,
+      "agent_a_model_provider": "ollama",
+      "agent_a_model_name": "microsoft/UserLM-8b",
+      "agent_a_model_base_url": "",
+      "agent_a_model_device": "cpu",
+      "test_cases": "morning_peak_cross_city,midday_transfer,airport_connection,crowded_event_exit",
+      "personas": "focused_commuter,crowd_averse_rider,delay_sensitive_traveler,risk_averse_novice",
+      "agent_a_audio_personas": "high_clarity_caller,neutral_caller,hesitant_caller,soft_spoken_caller",
+      "agent_b_audio_personas": "high_clarity_operator,clear_operator,brisk_operator,reassuring_operator",
+      "speech_patterns": "clean,mostly_clean,hesitant,severe_channel",
+      "tts_engines": "piper",
+      "asr_engines": "vosk,faster_whisper",
+      "agent_b_models": "Qwen/Qwen2.5-0.5B-Instruct",
+      "paired_audio_text": true,
+      "speech_playback": false,
+      "speech_real_time": false,
+      "tts_device": "cpu",
+      "tts_executable": "",
+      "tts_python_executable": "",
+      "tts_timeout_sec": 60.0,
+      "asr_language": "en-US",
+      "asr_device": "cpu",
+      "asr_compute_type": "default",
+      "asr_executable": "",
+      "asr_python_executable": "",
+      "asr_vad_model": "",
+      "asr_timeout_sec": 60.0,
+      "asr_beam_size": 8,
+      "asr_initial_silence_sec": 4.0,
+      "asr_babble_timeout_sec": 6.0,
+      "asr_end_silence_ms": 2500,
+      "asr_ambiguous_end_silence_ms": 4500,
+      "asr_domain_normalization": true,
+      "asr_domain_similarity_threshold": 0.86,
+      "provider_environment_dir": ".speech-providers",
+      "agent_a_temperature": 0.3,
+      "agent_a_top_p": 0.7,
+      "agent_a_seed": 11,
+      "agent_b_temperature": 0.3,
+      "agent_b_top_p": 0.7,
+      "agent_b_seed": 29,
+      "model_params": "greedy,temp0.7,nucleus0.9",
+      "objective_modes": "shortest_valid_route_with_constraints",
+      "llm_agent_a": null,
+      "iterations": 1,
+      "coverage_strategy": "pairwise",
+      "invalid_route_limit": 2,
+      "constraint_miss_limit": 2,
+      "clarification_max_attempts": 2,
+      "dialogue_stagnation_limit": 2,
+      "agent_a_transfer_tolerance": 1,
+      "agent_a_ticket_modes": "metro,tram",
+      "agent_a_max_walking_min": 10,
+      "agent_a_max_delay_risk": "high",
+      "agent_a_max_transfer_risk": "medium",
+      "network_seed": 42,
+      "require_constraint_retention": true,
+      "acceptable_duration_ratio": 1.5,
+      "minimum_stage_suboptimal_options": 1,
+      "require_stage_suboptimal_options": true,
+      "max_turn_elapsed_sec": 2.0,
+      "calculation_max_time_sec": 5.0,
+      "output": "automatic_eval_metrics.xlsx",
+      "results_dir": "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b/tinyllama",
+      "progress": true,
+      "condition_start": 73,
+      "condition_count": 1,
+      "valid_conditions_only": false,
+      "fail_fast": false,
+      "require_complete_speech_performance_coverage": false,
+      "update_coverage_registry": false,
+      "loaded_job": {
+        "schema_version": 1,
+        "name": "transformers_small_qwen2_5_0_5b",
+        "description": "Small Transformers Agent B multilingual Qwen floor condition.",
+        "config": {
+          "agent_a_type": "tinyllama",
+          "agent_b_plugin": "llm",
+          "model_profile": "qwen2_5_0_5b_transformers",
+          "model_provider": "transformers",
+          "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+          "model_max_new_tokens": 48,
+          "num_turns": 20,
+          "maximum_progressive_constraints": 3,
+          "minimum_compared_routes": 2,
+          "paired_audio_text_runs": true,
+          "speech_playback_enabled": false,
+          "speech_realtime_enabled": false,
+          "tts_engine": "piper",
+          "tts_model": ".speech-providers/models/piper/en_US-lessac-medium.onnx",
+          "asr_engine": "vosk",
+          "asr_model": ".speech-providers/models/vosk/vosk-model-small-en-us-0.15",
+          "log_profile": "full",
+          "result_group": "agent_b/transformers/01-small-qwen2.5-0.5b/tinyllama",
+          "model_base_url": "",
+          "allow_model_download": false,
+          "model_timeout_sec": 300
+        },
+        "grid": {
+          "test_cases": [
+            "morning_peak_cross_city",
+            "midday_transfer",
+            "airport_connection",
+            "crowded_event_exit"
+          ],
+          "personas": [
+            "focused_commuter",
+            "crowd_averse_rider",
+            "delay_sensitive_traveler",
+            "risk_averse_novice"
+          ],
+          "agent_a_audio_personas": [
+            "high_clarity_caller",
+            "neutral_caller",
+            "hesitant_caller",
+            "soft_spoken_caller"
+          ],
+          "agent_b_audio_personas": [
+            "high_clarity_operator",
+            "clear_operator",
+            "brisk_operator",
+            "reassuring_operator"
+          ],
+          "speech_patterns": [
+            "clean",
+            "mostly_clean",
+            "hesitant",
+            "severe_channel"
+          ],
+          "model_params": [
+            "greedy",
+            "temp0.7",
+            "nucleus0.9"
+          ],
+          "objective_modes": [
+            "shortest_valid_route_with_constraints"
+          ],
+          "agent_b_models": [
+            "Qwen/Qwen2.5-0.5B-Instruct"
+          ],
+          "tts_engines": [
+            "piper"
+          ],
+          "asr_engines": [
+            "vosk",
+            "faster_whisper"
+          ]
+        },
+        "parameter_values": {
+          "matrix_family": [
+            "transformers_agent_b_speech_grid_v1"
+          ],
+          "agent_b_llm_size": [
+            "small"
+          ],
+          "agent_b_model_role": [
+            "multilingual_small"
+          ],
+          "network_seed": [
+            42,
+            77
+          ],
+          "asr_beam_size": [
+            1,
+            6,
+            11,
+            16
+          ],
+          "dialogue_stagnation_limit": [
+            2,
+            3
+          ],
+          "transfer_tolerance": [
+            1,
+            2
+          ],
+          "experiment_platform": [
+            "linux"
+          ],
+          "agent_b_model_slot": [
+            "small2"
+          ]
+        },
+        "parameter_ranges": {},
+        "parameter_profiles": [],
+        "linked_profiles": {
+          "speech_performance": [
+            {
+              "speech_performance_profile_key": "ceiling",
+              "speech_performance_band": "ceiling",
+              "speech_performance_rank": 3,
+              "agent_a_audio_persona": "high_clarity_caller",
+              "agent_b_audio_persona": "high_clarity_operator",
+              "speech_pattern_key": "clean",
+              "agent_a_custom_audio": false,
+              "agent_b_custom_audio": false,
+              "asr_beam_size": 16,
+              "asr_domain_normalization_enabled": true,
+              "asr_domain_similarity_threshold": 0.8,
+              "channel_noise_snr_db": null,
+              "channel_gain_db": 0.0,
+              "channel_clip_threshold": 1.0,
+              "channel_dropout_rate": 0.0,
+              "max_utterance_sec": 30.0
+            },
+            {
+              "speech_performance_profile_key": "nominal",
+              "speech_performance_band": "nominal",
+              "speech_performance_rank": 2,
+              "agent_a_audio_persona": "neutral_caller",
+              "agent_b_audio_persona": "clear_operator",
+              "speech_pattern_key": "mostly_clean",
+              "agent_a_custom_audio": false,
+              "agent_b_custom_audio": false,
+              "asr_beam_size": 11,
+              "asr_domain_normalization_enabled": true,
+              "asr_domain_similarity_threshold": 0.86,
+              "channel_noise_snr_db": 30.0,
+              "channel_gain_db": -2.0,
+              "channel_clip_threshold": 0.95,
+              "channel_dropout_rate": 0.005,
+              "max_utterance_sec": 22.0
+            },
+            {
+              "speech_performance_profile_key": "challenging",
+              "speech_performance_band": "challenging",
+              "speech_performance_rank": 1,
+              "agent_a_audio_persona": "degraded_caller",
+              "agent_b_audio_persona": "degraded_operator",
+              "speech_pattern_key": "hesitant",
+              "agent_a_custom_audio": false,
+              "agent_b_custom_audio": false,
+              "asr_beam_size": 6,
+              "asr_domain_normalization_enabled": true,
+              "asr_domain_similarity_threshold": 0.92,
+              "channel_noise_snr_db": 15.0,
+              "channel_gain_db": -6.0,
+              "channel_clip_threshold": 0.7,
+              "channel_dropout_rate": 0.04,
+              "max_utterance_sec": 16.0
+            },
+            {
+              "speech_performance_profile_key": "floor",
+              "speech_performance_band": "floor",
+              "speech_performance_rank": 0,
+              "agent_a_audio_persona": "barely_understandable_caller",
+              "agent_b_audio_persona": "barely_understandable_operator",
+              "speech_pattern_key": "severe_channel",
+              "agent_a_custom_audio": false,
+              "agent_b_custom_audio": false,
+              "asr_beam_size": 1,
+              "asr_domain_normalization_enabled": false,
+              "asr_domain_similarity_threshold": 0.98,
+              "channel_noise_snr_db": 5.0,
+              "channel_gain_db": -12.0,
+              "channel_clip_threshold": 0.35,
+              "channel_dropout_rate": 0.15,
+              "max_utterance_sec": 10.0
+            }
+          ]
+        },
+        "speech_performance_bands": [
+          "ceiling",
+          "nominal",
+          "challenging",
+          "floor"
+        ],
+        "coverage_strategy": "pairwise",
+        "iterations": 1,
+        "source": "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/jobs/agent_b_llm/transformers_speech_grid/small/02-qwen2.5-0.5b.job"
+      },
+      "metric_data_dependencies": {
+        "collected_fields": [
+          "agent_a_utterances",
+          "agent_b_utterances",
+          "analysis_workbook",
+          "asr_raw_transcript",
+          "asr_reference_text",
+          "asr_timing",
+          "asr_transcript",
+          "asr_transcript_edits",
+          "audio_files",
+          "audio_signal_features",
+          "caller_decisions",
+          "configuration",
+          "constraint_states",
+          "conversation_transcript",
+          "cross_run_records",
+          "dialogue_states",
+          "final_outcome",
+          "metric_inputs",
+          "network_graph",
+          "optimal_route",
+          "pair_comparison",
+          "pair_metadata",
+          "phase_timings",
+          "route_candidates",
+          "runtime_events",
+          "scenario",
+          "stage_viability",
+          "tts_trace"
+        ],
+        "metrics": {
+          "agent_a_verifier_catch_rate": {
+            "label": "Invalid-Route Catch Rate",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_constraint_violation_catch_rate": {
+            "label": "Constraint-Violation Catch Rate",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_time_limit_violation_catch_rate": {
+            "label": "Time-Limit Violation Catch Rate",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_false_acceptance_rate": {
+            "label": "False Acceptance Rate",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_false_rejection_rate": {
+            "label": "False Rejection Rate",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_correct_acceptance_rate": {
+            "label": "Correct Acceptance Rate",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_constraint_revelation_order": {
+            "label": "Constraint Revelation Order",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_preference_consistency": {
+            "label": "Preference Consistency",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_best_candidate_retention": {
+            "label": "Best-Candidate Retention",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_selection_regret": {
+            "label": "Selection Regret",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_satisfaction_calibration": {
+            "label": "Satisfaction Calibration",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_closure_correctness": {
+            "label": "Closure Correctness",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_user_effort": {
+            "label": "User Effort",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_a_caller_latency": {
+            "label": "Caller Latency",
+            "phase": "user_simulation",
+            "required_fields": [
+              "agent_a_utterances",
+              "constraint_states",
+              "caller_decisions",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_capture_success_rate": {
+            "label": "Audio Capture Success Rate",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_missing_rate": {
+            "label": "Missing Audio Rate",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_turn_latency": {
+            "label": "Turn Latency",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_raw_turn_latency": {
+            "label": "Raw Turn Latency",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_response_latency": {
+            "label": "Response Latency",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_utterance_duration": {
+            "label": "Utterance Duration",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_speech_rate_wpm": {
+            "label": "Speech Rate",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_silence_ratio": {
+            "label": "Silence Ratio",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_clipping_rate": {
+            "label": "Clipping Rate",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_loudness_stability": {
+            "label": "Loudness Stability",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_turn_budget_violation_rate": {
+            "label": "Turn Budget Violation Rate",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "audio_real_time_interaction_factor": {
+            "label": "Real-Time Interaction Factor",
+            "phase": "audio_input",
+            "required_fields": [
+              "audio_files",
+              "tts_trace",
+              "audio_signal_features",
+              "phase_timings"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_success_rate": {
+            "label": "Recognition Success Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_failure_rate": {
+            "label": "Recognition Failure Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_wer": {
+            "label": "WER",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_character_error_rate": {
+            "label": "Character Error Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_sentence_error_rate": {
+            "label": "Sentence Error Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_semantic_asr_error_rate": {
+            "label": "Semantic ASR Error Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_entity_error_rate": {
+            "label": "Entity Error Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_station_precision": {
+            "label": "Station Precision",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_station_recall": {
+            "label": "Station Recall",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_station_f1": {
+            "label": "Station F1",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_critical_slot_accuracy": {
+            "label": "Critical-Slot Accuracy",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_route_sequence_edit_distance": {
+            "label": "Route Sequence Edit Distance",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_constraint_preservation_rate": {
+            "label": "Constraint Preservation Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_negation_preservation_rate": {
+            "label": "Negation Preservation Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_numeric_preservation_rate": {
+            "label": "Numeric Preservation Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_empty_transcript_rate": {
+            "label": "Empty Transcript Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_hallucinated_token_rate": {
+            "label": "Hallucinated Token Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_transcript_correction_count": {
+            "label": "Transcript Correction Count",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_domain_correction_yield": {
+            "label": "Domain Correction Yield",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_uncorrected_misinterpretation_count": {
+            "label": "Uncorrected Misinterpretation Count",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_recognition_latency": {
+            "label": "Recognition Latency",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_real_time_factor": {
+            "label": "ASR Real-Time Factor",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "asr_repair_trigger_rate": {
+            "label": "ASR Repair-Trigger Rate",
+            "phase": "asr",
+            "required_fields": [
+              "asr_reference_text",
+              "asr_raw_transcript",
+              "asr_transcript_edits",
+              "asr_transcript",
+              "asr_timing"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_intent_accuracy": {
+            "label": "Intent Accuracy",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_slot_precision": {
+            "label": "Slot Precision",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_slot_recall": {
+            "label": "Slot Recall",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_slot_f1": {
+            "label": "Slot F1",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_joint_frame_accuracy": {
+            "label": "Joint Frame Accuracy",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_constraint_extraction_f1": {
+            "label": "Constraint Extraction F1",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_semantic_frame_accuracy": {
+            "label": "Semantic Frame Accuracy",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_critical_slot_accuracy": {
+            "label": "Critical Slot Accuracy",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_route_valid_rate": {
+            "label": "Route Parse Success Rate",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_goal_reached_rate": {
+            "label": "Goal-Reaching Parse Rate",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_station_sequence_exact_match": {
+            "label": "Station Sequence Exact Match",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_station_sequence_edit_distance": {
+            "label": "Station Sequence Edit Distance",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_origin_destination_accuracy": {
+            "label": "Origin/Destination Accuracy",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_false_parse_rate": {
+            "label": "False Parse Rate",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_unknown_entity_detection_rate": {
+            "label": "Unknown-Entity Detection Rate",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_latency": {
+            "label": "NLU Latency",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlu_pipeline_input_match_rate": {
+            "label": "Pipeline Input Agreement",
+            "phase": "nlu",
+            "required_fields": [
+              "asr_transcript",
+              "route_candidates",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_joint_goal_accuracy": {
+            "label": "Joint Goal Accuracy",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_slot_accuracy": {
+            "label": "Slot Accuracy",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_trip_fact_completeness": {
+            "label": "Trip-Fact Completeness",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_missing_trip_slot_rate": {
+            "label": "Missing Trip-Slot Rate",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_memory_trace_coverage": {
+            "label": "Memory Trace Coverage",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_memory_update_rate": {
+            "label": "Memory Update Rate",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_route_memory_retention_rate": {
+            "label": "Route-Memory Retention Rate",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_stage_accuracy": {
+            "label": "Stage Accuracy",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_state_drift_rate": {
+            "label": "State Drift Rate",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_constraint_retention_rate": {
+            "label": "Constraint Retention Rate",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_constraint_omission_rate": {
+            "label": "Constraint Omission Rate",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_premature_constraint_activation_rate": {
+            "label": "Premature Constraint Activation",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_shared_state_agreement": {
+            "label": "Shared State Agreement",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_candidate_memory_precision": {
+            "label": "Candidate-Memory Precision",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_candidate_memory_recall": {
+            "label": "Candidate-Memory Recall",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_candidate_deduplication_accuracy": {
+            "label": "Candidate Deduplication Accuracy",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_selected_route_consistency": {
+            "label": "Selected-Route Consistency",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_state_route_state_consistency": {
+            "label": "Route-State Consistency",
+            "phase": "dialogue_state_tracking",
+            "required_fields": [
+              "dialogue_states",
+              "constraint_states",
+              "route_candidates"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_correct_next_action_rate": {
+            "label": "Correct Next-Action Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_constraint_order_adherence": {
+            "label": "Constraint-Order Adherence",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_premature_answer_rate": {
+            "label": "Premature Answer Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_premature_closure_rate": {
+            "label": "Premature Closure Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_clarification_precision": {
+            "label": "Clarification Precision",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_clarification_recall": {
+            "label": "Clarification Recall",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_unnecessary_clarification_rate": {
+            "label": "Unnecessary Clarification Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_clarification_calibration": {
+            "label": "Clarification Calibration",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_repair_attempt_rate": {
+            "label": "Repair Attempt Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_repair_success_rate": {
+            "label": "Repair Success Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_repeated_repair_rate": {
+            "label": "Repeated Repair Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_invalid_proposal_handling_accuracy": {
+            "label": "Invalid-Proposal Handling Accuracy",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_constraint_violation_handling_accuracy": {
+            "label": "Constraint-Violation Handling Accuracy",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_distinct_proposal_rate": {
+            "label": "Distinct Proposal Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_route_repetition_rate": {
+            "label": "Route Repetition Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_route_revision_rate": {
+            "label": "Route Revision Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_policy_progress_rate": {
+            "label": "Policy Progress Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_stagnation_rate": {
+            "label": "Stagnation Rate",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_turn_efficiency": {
+            "label": "Turn Efficiency",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_stop_decision_accuracy": {
+            "label": "Stop-Decision Accuracy",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "dialogue_management_turn_limit_utilization": {
+            "label": "Turn-Limit Utilization",
+            "phase": "dialogue_management",
+            "required_fields": [
+              "dialogue_states",
+              "route_candidates",
+              "caller_decisions"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_proposal_parse_rate": {
+            "label": "Proposal Parse Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_route_validity_rate": {
+            "label": "Route Validity Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_destination_reach_rate": {
+            "label": "Destination Reach Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_complete_route_rate": {
+            "label": "Complete Route Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_grounded_proposal_score": {
+            "label": "Grounded Proposal Score",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_hallucinated_content_rate": {
+            "label": "Hallucinated Content Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_hallucinated_station_rate": {
+            "label": "Hallucinated Station Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_mode_permission_compliance": {
+            "label": "Line-Use Compliance",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_active_constraint_compliance": {
+            "label": "Active-Constraint Compliance",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_actionability_score": {
+            "label": "Actionability Score",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_route_novelty": {
+            "label": "Route Novelty",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_pareto_improvement_rate": {
+            "label": "Pareto Improvement Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_dominated_proposal_rate": {
+            "label": "Dominated Proposal Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_optimality_ratio": {
+            "label": "Optimality Ratio",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_duration_regret": {
+            "label": "Duration Regret",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_best_route_discovery_rate": {
+            "label": "Best-Route Discovery Rate",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_best_route_discovery_turn": {
+            "label": "Best-Route Discovery Turn",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_plugin_execution_success": {
+            "label": "Plugin Execution Success",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_model_generation_latency": {
+            "label": "Model Generation Latency",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "agent_b_valid_proposals_per_100_output_tokens": {
+            "label": "Valid Proposals per 100 Output Tokens",
+            "phase": "backend_task_execution",
+            "required_fields": [
+              "route_candidates",
+              "network_graph",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_semantic_adequacy": {
+            "label": "Semantic Adequacy",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_faithfulness": {
+            "label": "Faithfulness",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_slot_error_rate": {
+            "label": "Slot Error Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_executable_utterance_rate": {
+            "label": "Executable Utterance Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_route_mention_completeness": {
+            "label": "Route Mention Completeness",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_constraint_mention_precision": {
+            "label": "Constraint Mention Precision",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_constraint_mention_recall": {
+            "label": "Constraint Mention Recall",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_information_order_accuracy": {
+            "label": "Information-Order Accuracy",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_conciseness": {
+            "label": "Conciseness",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_excess_verbosity_rate": {
+            "label": "Excess Verbosity Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_underspecification_rate": {
+            "label": "Underspecification Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_repetition_rate": {
+            "label": "Repetition Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_distinct_1": {
+            "label": "Distinct-1",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_distinct_2": {
+            "label": "Distinct-2",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_lexical_diversity": {
+            "label": "Lexical Diversity",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_bleu": {
+            "label": "BLEU",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_rouge_l": {
+            "label": "ROUGE-L",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_meteor": {
+            "label": "METEOR",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_semantic_similarity": {
+            "label": "Semantic Similarity",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_constraint_satisfaction_rate": {
+            "label": "Constraint Satisfaction Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_formatting_violation_rate": {
+            "label": "Formatting Violation Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_hidden_reasoning_leakage_rate": {
+            "label": "Hidden-Reasoning Leakage Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_estimated_spoken_duration": {
+            "label": "Estimated Spoken Duration",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_generation_acceptance_rate": {
+            "label": "Generation Acceptance Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_prompt_repair_rate": {
+            "label": "Prompt Repair Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_model_delivery_rate": {
+            "label": "Model Delivery Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_guard_intervention_rate": {
+            "label": "Guard Intervention Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_agent_a_guard_intervention_rate": {
+            "label": "Agent A Guard Intervention Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "nlg_agent_b_guard_intervention_rate": {
+            "label": "Agent B Guard Intervention Rate",
+            "phase": "nlg",
+            "required_fields": [
+              "agent_b_utterances",
+              "route_candidates",
+              "optimal_route"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_success_rate": {
+            "label": "Synthesis Success Rate",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_failure_rate": {
+            "label": "Synthesis Failure Rate",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_audio_validity_rate": {
+            "label": "Audio Validity Rate",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_synthesis_latency": {
+            "label": "Synthesis Latency",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_real_time_factor": {
+            "label": "TTS Real-Time Factor",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_audio_duration_error": {
+            "label": "Audio Duration Error",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_speaking_rate_accuracy": {
+            "label": "Speaking-Rate Accuracy",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_pronunciation_accuracy": {
+            "label": "Pronunciation Accuracy",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_station_pronunciation_accuracy": {
+            "label": "Station Pronunciation Accuracy",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_round_trip_semantic_intelligibility": {
+            "label": "Round-Trip Semantic Intelligibility",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_round_trip_route_accuracy": {
+            "label": "Round-Trip Route Accuracy",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_loudness_compliance": {
+            "label": "Loudness Compliance",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_clipping_rate": {
+            "label": "Clipping Rate",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_leading_trailing_silence": {
+            "label": "Leading/Trailing Silence",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_nisqa": {
+            "label": "NISQA",
+            "phase": "tts",
+            "required_fields": [
+              "audio_files",
+              "nisqa_model"
+            ],
+            "missing_fields": [
+              "nisqa_model"
+            ],
+            "available": false,
+            "obligatory": true,
+            "enabled": false
+          },
+          "tts_dnsmos": {
+            "label": "DNSMOS",
+            "phase": "tts",
+            "required_fields": [
+              "audio_files",
+              "dnsmos_model"
+            ],
+            "missing_fields": [
+              "dnsmos_model"
+            ],
+            "available": false,
+            "obligatory": true,
+            "enabled": false
+          },
+          "tts_pesq": {
+            "label": "PESQ",
+            "phase": "tts",
+            "required_fields": [
+              "audio_files",
+              "audio_reference_pairs"
+            ],
+            "missing_fields": [
+              "audio_reference_pairs"
+            ],
+            "available": false,
+            "obligatory": true,
+            "enabled": false
+          },
+          "tts_polqa": {
+            "label": "POLQA",
+            "phase": "tts",
+            "required_fields": [
+              "audio_files",
+              "audio_reference_pairs",
+              "licensed_polqa_scores"
+            ],
+            "missing_fields": [
+              "audio_reference_pairs",
+              "licensed_polqa_scores"
+            ],
+            "available": false,
+            "obligatory": true,
+            "enabled": false
+          },
+          "tts_stoi": {
+            "label": "STOI",
+            "phase": "tts",
+            "required_fields": [
+              "audio_files",
+              "audio_reference_pairs"
+            ],
+            "missing_fields": [
+              "audio_reference_pairs"
+            ],
+            "available": false,
+            "obligatory": true,
+            "enabled": false
+          },
+          "tts_si_sdr": {
+            "label": "SI-SDR",
+            "phase": "tts",
+            "required_fields": [
+              "audio_files",
+              "audio_reference_pairs"
+            ],
+            "missing_fields": [
+              "audio_reference_pairs"
+            ],
+            "available": false,
+            "obligatory": true,
+            "enabled": false
+          },
+          "tts_playback_success_rate": {
+            "label": "Playback Success Rate",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "tts_text_change_rate": {
+            "label": "Text Change Rate",
+            "phase": "tts",
+            "required_fields": [
+              "tts_trace",
+              "audio_files",
+              "asr_transcript"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_completion": {
+            "label": "Task Completion",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_route_validity": {
+            "label": "Valid-Route Completion",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_acceptable_duration_completion": {
+            "label": "Acceptable-Duration Completion",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_constraint_satisfaction": {
+            "label": "All-Constraint Satisfaction",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_constraint_satisfaction_rate": {
+            "label": "Constraint Satisfaction Rate",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_stated_constraint_count": {
+            "label": "Stated Constraint Count",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_satisfied_constraint_count": {
+            "label": "Satisfied Constraint Count",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_stage_completion_rate": {
+            "label": "Stage Completion Rate",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_duration_quality": {
+            "label": "Duration Quality",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_duration_ratio": {
+            "label": "Duration Ratio",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_duration_regret": {
+            "label": "Duration Regret",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_correct_route_selection": {
+            "label": "Correct Route Selection",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_candidate_count": {
+            "label": "Candidate Route Count",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_turns_used": {
+            "label": "Turns Used",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_turns_to_success": {
+            "label": "Turns to Success",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_first_valid_route_turn": {
+            "label": "First Valid Route Turn",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_first_compliant_route_turn": {
+            "label": "First Compliant Route Turn",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_successful_natural_closure": {
+            "label": "Successful Natural Closure",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "task_outcome_constraint_route_change_rate": {
+            "label": "Constraint-Induced Route Change Rate",
+            "phase": "task_outcome",
+            "required_fields": [
+              "final_outcome",
+              "route_candidates",
+              "optimal_route",
+              "constraint_states"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_dialogue_success_score": {
+            "label": "Dialogue Success Score",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_interaction_quality_trajectory": {
+            "label": "Interaction Quality Trajectory",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_goal_progress_auc": {
+            "label": "Goal-Progress Area Under Curve",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_dialogue_cost": {
+            "label": "Dialogue Cost",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_turn_count": {
+            "label": "Turn Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_word_count": {
+            "label": "Word Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_mean_words_per_turn": {
+            "label": "Mean Words per Turn",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_total_runtime": {
+            "label": "Total Runtime",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_candidate_count": {
+            "label": "Candidate Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_route_revision_count": {
+            "label": "Route Revision Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_clarification_count": {
+            "label": "Clarification Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_repair_count": {
+            "label": "Repair Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_warning_count": {
+            "label": "Warning Count",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_abandonment_rate": {
+            "label": "Abandonment Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_failure_localization_score": {
+            "label": "Failure Localization Score",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_failure_phase": {
+            "label": "Earliest Failing Phase",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_pipeline_dependency_integrity": {
+            "label": "Pipeline Dependency Integrity",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_trace_completeness_rate": {
+            "label": "Trace Completeness Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_cooperative_progress_rate": {
+            "label": "Cooperative Progress Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_task_focus_score": {
+            "label": "Task-Focus Score",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_agent_a_task_focus_score": {
+            "label": "Agent A Task-Focus Score",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_agent_b_task_focus_score": {
+            "label": "Agent B Task-Focus Score",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_distraction_rate": {
+            "label": "Distraction Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_correction_turn_rate": {
+            "label": "Correction-Turn Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_corrected_token_rate": {
+            "label": "Corrected-Token Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_first_deviation_turn": {
+            "label": "First Deviation Turn",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_first_deviation_phase": {
+            "label": "First Deviation Phase",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_first_deviation_elapsed_sec": {
+            "label": "First Deviation Elapsed Time",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_conversation_repetition_rate": {
+            "label": "Conversation Repetition Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_natural_closure_rate": {
+            "label": "Natural Closure Rate",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "whole_dialogue_resource_cost": {
+            "label": "Resource Cost",
+            "phase": "whole_dialogue",
+            "required_fields": [
+              "conversation_transcript",
+              "phase_timings",
+              "runtime_events",
+              "final_outcome"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_success_confidence_interval_low": {
+            "label": "Success CI Low",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_success_confidence_interval_high": {
+            "label": "Success CI High",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_metric_outcome_correlation": {
+            "label": "Metric-Outcome Correlation",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_seed_variance": {
+            "label": "Seed Variance",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_test_retest_agreement": {
+            "label": "Test-Retest Agreement",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_missingness_rate": {
+            "label": "Missingness Rate",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_ceiling_rate": {
+            "label": "Ceiling Rate",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_floor_rate": {
+            "label": "Floor Rate",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_metric_redundancy": {
+            "label": "Metric Redundancy",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_perturbation_sensitivity": {
+            "label": "Perturbation Sensitivity",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_persona_robustness": {
+            "label": "Persona Robustness",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_scenario_robustness": {
+            "label": "Scenario Robustness",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_speech_pattern_robustness": {
+            "label": "Speech-Pattern Robustness",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_provider_robustness": {
+            "label": "Provider Robustness",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          },
+          "metric_validity_subgroup_performance_gap": {
+            "label": "Subgroup Performance Gap",
+            "phase": "metric_validity",
+            "required_fields": [
+              "cross_run_records"
+            ],
+            "missing_fields": [],
+            "available": true,
+            "obligatory": true,
+            "enabled": true
+          }
+        }
+      },
+      "pipeline_contract": {
+        "selected_components": {
+          "agent_a": "tinyllama",
+          "agent_b": "llm",
+          "language_model": "Qwen/Qwen2.5-0.5B-Instruct",
+          "text_to_speech": "piper",
+          "automatic_speech_recognition": "vosk"
+        },
+        "phases": [
+          {
+            "index": 1,
+            "key": "preflight",
+            "label": "Scenario and backend preflight",
+            "input": "resolved configuration",
+            "output": "validated scenario, staged optima, provider readiness"
+          },
+          {
+            "index": 2,
+            "key": "agent_policy",
+            "label": "Agent policy and language generation",
+            "input": "private memory and heard state",
+            "output": "intended utterance and prompt audit"
+          },
+          {
+            "index": 3,
+            "key": "tts",
+            "label": "Text-to-speech",
+            "input": "intended utterance and audio persona",
+            "output": "waveform and synthesis diagnostics"
+          },
+          {
+            "index": 4,
+            "key": "asr",
+            "label": "Automatic speech recognition",
+            "input": "generated waveform",
+            "output": "raw transcript and recognition diagnostics"
+          },
+          {
+            "index": 5,
+            "key": "nlu",
+            "label": "Normalization and language understanding",
+            "input": "raw transcript",
+            "output": "listener input, semantic frame, transcript edits"
+          },
+          {
+            "index": 6,
+            "key": "dialogue_management",
+            "label": "Dialogue state and management",
+            "input": "semantic frame and private memory",
+            "output": "state transition, candidate evaluation, next speaker"
+          },
+          {
+            "index": 7,
+            "key": "capture",
+            "label": "Immutable evidence capture",
+            "input": "phase outputs and timings",
+            "output": "protocol and metric inputs"
+          },
+          {
+            "index": 8,
+            "key": "evaluation",
+            "label": "Retrospective evaluation and export",
+            "input": "completed immutable evidence",
+            "output": "metrics, calculations, tables, and manifest"
+          }
+        ],
+        "captured_fields": [
+          "asr_transcript",
+          "stage_viability",
+          "runtime_events",
+          "tts_trace",
+          "asr_raw_transcript",
+          "conversation_transcript",
+          "metric_inputs",
+          "asr_reference_text",
+          "optimal_route",
+          "final_outcome",
+          "cross_run_records",
+          "analysis_workbook",
+          "agent_b_utterances",
+          "scenario",
+          "network_graph",
+          "audio_files",
+          "constraint_states",
+          "pair_comparison",
+          "dialogue_states",
+          "asr_transcript_edits",
+          "caller_decisions",
+          "pair_metadata",
+          "route_candidates",
+          "phase_timings",
+          "configuration",
+          "asr_timing",
+          "audio_signal_features",
+          "agent_a_utterances"
+        ],
+        "metric_readiness_by_phase": {
+          "user_simulation": {
+            "total": 14,
+            "calculable": 14
+          },
+          "audio_input": {
+            "total": 12,
+            "calculable": 12
+          },
+          "asr": {
+            "total": 23,
+            "calculable": 23
+          },
+          "nlu": {
+            "total": 17,
+            "calculable": 17
+          },
+          "dialogue_state_tracking": {
+            "total": 18,
+            "calculable": 18
+          },
+          "dialogue_management": {
+            "total": 21,
+            "calculable": 21
+          },
+          "backend_task_execution": {
+            "total": 20,
+            "calculable": 20
+          },
+          "nlg": {
+            "total": 29,
+            "calculable": 29
+          },
+          "tts": {
+            "total": 22,
+            "calculable": 16
+          },
+          "task_outcome": {
+            "total": 19,
+            "calculable": 19
+          },
+          "whole_dialogue": {
+            "total": 31,
+            "calculable": 31
+          },
+          "metric_validity": {
+            "total": 15,
+            "calculable": 15
+          }
+        }
+      },
+      "agent_b_model_preflight": {},
+      "configuration_provenance": {
+        "immutable": true,
+        "configuration_schema_version": 5,
+        "fingerprint_sha256": "65673545fabed577898e24986bfbe4f1567cdeea4672a76d3741ffc79ba5b981",
+        "source": "batch_run",
+        "resolved_at_utc": "2026-07-14T05:09:53.111220+00:00"
+      },
+      "coverage_plan": {
+        "audio_condition_count": 42,
+        "factor_count": 11,
+        "levels": {
+          "agent_a_audio_persona": [
+            "barely_understandable_caller",
+            "degraded_caller",
+            "high_clarity_caller",
+            "neutral_caller"
+          ],
+          "agent_b_audio_persona": [
+            "barely_understandable_operator",
+            "clear_operator",
+            "degraded_operator",
+            "high_clarity_operator"
+          ],
+          "agent_b_model": [
+            "Qwen/Qwen2.5-0.5B-Instruct"
+          ],
+          "automatic_speech_recognition": [
+            "faster_whisper",
+            "vosk"
+          ],
+          "model_parameters": [
+            "greedy",
+            "nucleus0.9",
+            "temp0.7"
+          ],
+          "objective": [
+            "shortest_valid_route_with_constraints"
+          ],
+          "persona": [
+            "crowd_averse_rider",
+            "delay_sensitive_traveler",
+            "focused_commuter",
+            "risk_averse_novice"
+          ],
+          "speech_pattern": [
+            "clean",
+            "hesitant",
+            "mostly_clean",
+            "severe_channel"
+          ],
+          "speech_performance_profile": [
+            "ceiling",
+            "challenging",
+            "floor",
+            "nominal"
+          ],
+          "test_case": [
+            "airport_connection",
+            "crowded_event_exit",
+            "midday_transfer",
+            "morning_peak_cross_city"
+          ],
+          "text_to_speech": [
+            "piper"
+          ]
+        },
+        "expected_pair_count": 456,
+        "covered_pair_count": 384,
+        "pair_coverage_ratio": 0.842105,
+        "missing_pairs": [
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "clear_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "degraded_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "high_clarity_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "clean"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "hesitant"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "mostly_clean"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "barely_understandable_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "barely_understandable_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "clear_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "high_clarity_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "clean"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "mostly_clean"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "severe_channel"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "degraded_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "barely_understandable_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "clear_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "degraded_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "hesitant"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "mostly_clean"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "severe_channel"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "high_clarity_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "barely_understandable_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "degraded_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "agent_b_audio_persona",
+            "right_value": "high_clarity_operator"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "clean"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "hesitant"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "speech_pattern",
+            "right_value": "severe_channel"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "agent_a_audio_persona",
+            "left_value": "neutral_caller",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "barely_understandable_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "clean"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "barely_understandable_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "hesitant"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "barely_understandable_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "mostly_clean"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "barely_understandable_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "barely_understandable_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "barely_understandable_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "clear_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "clean"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "clear_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "hesitant"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "clear_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "severe_channel"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "clear_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "clear_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "clear_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "degraded_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "clean"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "degraded_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "mostly_clean"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "degraded_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "severe_channel"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "degraded_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "degraded_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "degraded_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "high_clarity_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "hesitant"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "high_clarity_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "mostly_clean"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "high_clarity_operator",
+            "right_factor": "speech_pattern",
+            "right_value": "severe_channel"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "high_clarity_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "high_clarity_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "agent_b_audio_persona",
+            "left_value": "high_clarity_operator",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "clean",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "clean",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "clean",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "hesitant",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "hesitant",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "hesitant",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "mostly_clean",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "mostly_clean",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "mostly_clean",
+            "right_factor": "speech_performance_profile",
+            "right_value": "floor"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "severe_channel",
+            "right_factor": "speech_performance_profile",
+            "right_value": "ceiling"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "severe_channel",
+            "right_factor": "speech_performance_profile",
+            "right_value": "challenging"
+          },
+          {
+            "left_factor": "speech_pattern",
+            "left_value": "severe_channel",
+            "right_factor": "speech_performance_profile",
+            "right_value": "nominal"
+          }
+        ],
+        "speech_performance_coverage": {
+          "applicable": true,
+          "required_bands": [
+            "ceiling",
+            "nominal",
+            "challenging",
+            "floor"
+          ],
+          "group_count": 21,
+          "complete_group_count": 1,
+          "complete": false,
+          "groups": [
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "airport_connection",
+              "persona_key": "delay_sensitive_traveler",
+              "observed_bands": [
+                "challenging"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "airport_connection",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "ceiling"
+              ],
+              "missing_bands": [
+                "nominal",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "crowded_event_exit",
+              "persona_key": "delay_sensitive_traveler",
+              "observed_bands": [
+                "challenging"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "crowded_event_exit",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "ceiling"
+              ],
+              "missing_bands": [
+                "nominal",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "midday_transfer",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "ceiling"
+              ],
+              "missing_bands": [
+                "nominal",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "crowd_averse_rider",
+              "observed_bands": [
+                "nominal"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "nominal"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "faster_whisper",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "risk_averse_novice",
+              "observed_bands": [
+                "floor"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "challenging"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "airport_connection",
+              "persona_key": "crowd_averse_rider",
+              "observed_bands": [
+                "nominal"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "airport_connection",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "ceiling"
+              ],
+              "missing_bands": [
+                "nominal",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "airport_connection",
+              "persona_key": "risk_averse_novice",
+              "observed_bands": [
+                "floor"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "challenging"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "crowded_event_exit",
+              "persona_key": "crowd_averse_rider",
+              "observed_bands": [
+                "nominal"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "crowded_event_exit",
+              "persona_key": "risk_averse_novice",
+              "observed_bands": [
+                "floor"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "challenging"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "midday_transfer",
+              "persona_key": "crowd_averse_rider",
+              "observed_bands": [
+                "nominal"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "midday_transfer",
+              "persona_key": "delay_sensitive_traveler",
+              "observed_bands": [
+                "challenging"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "midday_transfer",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "ceiling"
+              ],
+              "missing_bands": [
+                "nominal",
+                "challenging",
+                "floor"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "midday_transfer",
+              "persona_key": "risk_averse_novice",
+              "observed_bands": [
+                "floor"
+              ],
+              "missing_bands": [
+                "ceiling",
+                "nominal",
+                "challenging"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "crowd_averse_rider",
+              "observed_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "missing_bands": [
+                "nominal"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "delay_sensitive_traveler",
+              "observed_bands": [
+                "ceiling",
+                "nominal",
+                "challenging",
+                "floor"
+              ],
+              "missing_bands": [],
+              "complete": true
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "focused_commuter",
+              "observed_bands": [
+                "ceiling",
+                "challenging",
+                "floor"
+              ],
+              "missing_bands": [
+                "nominal"
+              ],
+              "complete": false
+            },
+            {
+              "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+              "tts_engine": "piper",
+              "asr_engine": "vosk",
+              "test_case_key": "morning_peak_cross_city",
+              "persona_key": "risk_averse_novice",
+              "observed_bands": [
+                "ceiling",
+                "nominal",
+                "challenging"
+              ],
+              "missing_bands": [
+                "floor"
+              ],
+              "complete": false
+            }
+          ]
+        }
+      },
+      "full_condition_count": 84
+    }
+  },
+  "configuration_provenance": {
+    "immutable": true,
+    "configuration_schema_version": 5,
+    "fingerprint_sha256": "65673545fabed577898e24986bfbe4f1567cdeea4672a76d3741ffc79ba5b981",
+    "source": "batch_run",
+    "resolved_at_utc": "2026-07-14T05:09:53.111220+00:00"
+  },
+  "pipeline_contract": {
+    "selected_components": {
+      "agent_a": "tinyllama",
+      "agent_b": "llm",
+      "language_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "text_to_speech": "piper",
+      "automatic_speech_recognition": "vosk"
+    },
+    "phases": [
+      {
+        "index": 1,
+        "key": "preflight",
+        "label": "Scenario and backend preflight",
+        "input": "resolved configuration",
+        "output": "validated scenario, staged optima, provider readiness"
+      },
+      {
+        "index": 2,
+        "key": "agent_policy",
+        "label": "Agent policy and language generation",
+        "input": "private memory and heard state",
+        "output": "intended utterance and prompt audit"
+      },
+      {
+        "index": 3,
+        "key": "tts",
+        "label": "Text-to-speech",
+        "input": "intended utterance and audio persona",
+        "output": "waveform and synthesis diagnostics"
+      },
+      {
+        "index": 4,
+        "key": "asr",
+        "label": "Automatic speech recognition",
+        "input": "generated waveform",
+        "output": "raw transcript and recognition diagnostics"
+      },
+      {
+        "index": 5,
+        "key": "nlu",
+        "label": "Normalization and language understanding",
+        "input": "raw transcript",
+        "output": "listener input, semantic frame, transcript edits"
+      },
+      {
+        "index": 6,
+        "key": "dialogue_management",
+        "label": "Dialogue state and management",
+        "input": "semantic frame and private memory",
+        "output": "state transition, candidate evaluation, next speaker"
+      },
+      {
+        "index": 7,
+        "key": "capture",
+        "label": "Immutable evidence capture",
+        "input": "phase outputs and timings",
+        "output": "protocol and metric inputs"
+      },
+      {
+        "index": 8,
+        "key": "evaluation",
+        "label": "Retrospective evaluation and export",
+        "input": "completed immutable evidence",
+        "output": "metrics, calculations, tables, and manifest"
+      }
+    ],
+    "captured_fields": [
+      "asr_transcript",
+      "stage_viability",
+      "runtime_events",
+      "tts_trace",
+      "asr_raw_transcript",
+      "conversation_transcript",
+      "metric_inputs",
+      "asr_reference_text",
+      "optimal_route",
+      "final_outcome",
+      "cross_run_records",
+      "analysis_workbook",
+      "agent_b_utterances",
+      "scenario",
+      "network_graph",
+      "audio_files",
+      "constraint_states",
+      "pair_comparison",
+      "dialogue_states",
+      "asr_transcript_edits",
+      "caller_decisions",
+      "pair_metadata",
+      "route_candidates",
+      "phase_timings",
+      "configuration",
+      "asr_timing",
+      "audio_signal_features",
+      "agent_a_utterances"
+    ],
+    "metric_readiness_by_phase": {
+      "user_simulation": {
+        "total": 14,
+        "calculable": 14
+      },
+      "audio_input": {
+        "total": 12,
+        "calculable": 12
+      },
+      "asr": {
+        "total": 23,
+        "calculable": 23
+      },
+      "nlu": {
+        "total": 17,
+        "calculable": 17
+      },
+      "dialogue_state_tracking": {
+        "total": 18,
+        "calculable": 18
+      },
+      "dialogue_management": {
+        "total": 21,
+        "calculable": 21
+      },
+      "backend_task_execution": {
+        "total": 20,
+        "calculable": 20
+      },
+      "nlg": {
+        "total": 29,
+        "calculable": 29
+      },
+      "tts": {
+        "total": 22,
+        "calculable": 16
+      },
+      "task_outcome": {
+        "total": 19,
+        "calculable": 19
+      },
+      "whole_dialogue": {
+        "total": 31,
+        "calculable": 31
+      },
+      "metric_validity": {
+        "total": 15,
+        "calculable": 15
+      }
+    }
+  },
+  "analysis_artifacts": {
+    "wide_workbook": "automatic_eval_metrics.xlsx",
+    "long_csv": "metrics_long.csv",
+    "wide_csv": "metrics_wide.csv",
+    "raw_metric_inputs": "metric_inputs.json",
+    "failure_indicators": "failure_indicators.json"
+  },
+  "conditions": [
+    {
+      "condition_id": "C-MPCC-FC-CLEAN-PIP-VOS-Q05-DEFAU-SML-I0-f23f563228-A",
+      "test_case_key": "morning_peak_cross_city",
+      "persona_key": "focused_commuter",
+      "scenario_key": "morning_peak_cross_city",
+      "speech_pattern_key": "clean",
+      "agent_a_audio_persona": "high_clarity_caller",
+      "agent_b_audio_persona": "high_clarity_operator",
+      "tts_engine": "piper",
+      "asr_engine": "vosk",
+      "agent_b_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "pair_id": "P-f23f563228",
+      "run_type": "audio_variant",
+      "model_param_key": "greedy",
+      "objective_mode": "shortest_valid_route_with_constraints",
+      "iteration": 0,
+      "parameter_values": {
+        "asr_beam_size": 16,
+        "dialogue_stagnation_limit": 2,
+        "network_seed": 42,
+        "transfer_tolerance": 1,
+        "agent_b_llm_size": "small",
+        "agent_b_model_role": "multilingual_small",
+        "agent_b_model_slot": "small2",
+        "experiment_platform": "linux",
+        "matrix_family": "transformers_agent_b_speech_grid_v1",
+        "profile_key": "default",
+        "speech_performance_profile_key": "ceiling",
+        "speech_performance_band": "ceiling",
+        "speech_performance_rank": 3,
+        "agent_a_custom_audio": false,
+        "agent_b_custom_audio": false,
+        "asr_domain_normalization_enabled": true,
+        "asr_domain_similarity_threshold": 0.8,
+        "channel_noise_snr_db": null,
+        "channel_gain_db": 0.0,
+        "channel_clip_threshold": 1.0,
+        "channel_dropout_rate": 0.0,
+        "max_utterance_sec": 30.0
+      }
+    }
+  ]
+}

@@ -40,8 +40,6 @@ samples.
 
 The design supports questions such as:
 
-- How does the caller implementation affect the same dialogue-system backend
-  comparison, specifically UserLM versus TinyLlama as Agent A?
 - Which pre-outcome metrics are associated with task completion and constraint
   satisfaction across Agent B model sizes?
 - At which pipeline phase does an unsuccessful dialogue first deviate?
@@ -78,31 +76,6 @@ Model-size claims require at least two models per declared size band and enough
 repetitions to separate model effects from seed variance. Speech effects should
 use paired controls. Persona or scenario effects require balanced coverage;
 otherwise they are reported as subgroup descriptions, not causal estimates.
-
-### Active Comparison Axes
-
-The current thesis analysis is organized around four explicitly separated
-comparison axes:
-
-1. **Agent A caller comparison:** UserLM and TinyLlama are compared as separate
-   caller strata. They are never merged into one headline success rate because
-   caller behavior changes repair, constraint revelation, and task focus.
-2. **Agent B backend comparison:** the active direct-comparison set contains
-   five Transformer backends: `small1` TinyLlama 1.1B, `small2` Qwen2.5 0.5B,
-   `medium1` Qwen2.5 1.5B, `medium2` Phi-3 mini, and `large1` Qwen2.5 7B.
-   Archived Large2/Mistral settings are excluded from active denominators.
-3. **Text versus speech comparison:** paired `text_only` and `audio_variant`
-   rows share `pair_id` and all non-audio factors. They are used to isolate
-   observed speech-channel effects from task, persona, and model effects.
-4. **Success-status comparison:** completed runs are grouped into successful,
-   semi-successful, and unsuccessful bands. Metrics are first analyzed as
-   indicators of outcome band; when outcome status is equal, secondary factors
-   such as turns, repair burden, duration regret, task focus, candidate-route
-   count, and latency explain efficiency and interaction quality.
-
-Large1 remains part of the active model set while cluster jobs finish. Tables
-derived from partial coverage must state their denominator and should be
-regenerated after the final Large1 jobs are pushed.
 
 ### Comparison Logic
 
@@ -1049,22 +1022,6 @@ failures. Files prefixed with `current_` exclude archived and obsolete
 pre-fix `NameError`/`ValueError` failures so active model comparisons are not
 distorted by known implementation bugs.
 
-The active thesis result scope is intentionally narrow: Agent A is `userlm` or
-`tinyllama`, Agent B is one of the five selected Transformer backends, and every
-active row must belong to a paired text/audio condition. Duplicate or
-noncanonical folders are archived, not deleted, below
-`results/_archive_irrelevant_20260715_deduplicated_paired_scope/`. Active
-discovery skips directories whose names begin with `_archive` and also skips
-`_safety` and `_transfer`. The archive manifest records each moved folder and
-the reason for exclusion.
-
-After the 2026-07-15 cleanup, the local active set contains 1074 paired run
-folders and 745 archived duplicate/noncanonical folders. Active legacy runs
-formerly below `results/agent_b/` were migrated into the flat model folders and
-recorded in `results/general/legacy_agent_b_migration_manifest.csv`. Current
-large1 counts remain provisional while the Qwen2.5 7B Slurm job is still
-finishing.
-
 For day-to-day cluster operation, `scripts/cluster_results_workflow.sh` wraps
 the most common post-run and next-run actions without changing the underlying
 experiment commands:
@@ -1353,37 +1310,29 @@ line ranges, source paths, and WAV assembly are verified. Audio from different
 conditions is never merged. Existing raw evidence is not rewritten during
 analysis regeneration.
 
-### Current Active Thesis Snapshot
+### Current UserLM Thesis Snapshot
 
-The current active thesis denominator compares UserLM and TinyLlama as Agent A
-strata against five selected Agent B Transformer models. Archived large2/Mistral
-settings, exploratory extension models, duplicate attempts, and unpaired runs
-are excluded from the active denominator unless explicitly analyzed in a
-separate stratum. The compact derived files are:
+The current thesis denominator fixes Agent A to UserLM and compares five
+selected Agent B Transformer models. TinyLlama-Agent-A controls, archived
+large2/Mistral settings, and exploratory extension models are excluded from
+this denominator unless explicitly analyzed in a separate stratum. The compact
+derived files are:
 
 - `results/general/current_userlm_selected_model_results.csv`
 - `results/general/current_userlm_selected_model_results.md`
 - `results/general/current_userlm_selected_model_results.json`
-- `results/general/current_active_paired_scope_summary.csv`
-- `results/general/current_active_paired_scope_summary.md`
-- `results/general/current_active_paired_scope_summary.json`
 
-| Agent A | Slot | Agent B model | Size | Active rows | Text rows | Audio rows | Task-success rows | Route-valid rows |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| UserLM | small1 | TinyLlama 1.1B | small | 154 | 77 | 77 | 54 | 57 |
-| UserLM | small2 | Qwen2.5 0.5B | small | 154 | 77 | 77 | 54 | 57 |
-| UserLM | medium1 | Qwen2.5 1.5B | medium | 154 | 77 | 77 | 88 | 91 |
-| UserLM | medium2 | Phi-3 mini | medium | 154 | 77 | 77 | 52 | 54 |
-| UserLM | large1 | Qwen2.5 7B | large | 154 | 77 | 77 | 33 | 35 |
-| TinyLlama | small1 | TinyLlama 1.1B | small | 62 | 31 | 31 | 43 | 43 |
-| TinyLlama | small2 | Qwen2.5 0.5B | small | 62 | 31 | 31 | 41 | 42 |
-| TinyLlama | medium1 | Qwen2.5 1.5B | medium | 62 | 31 | 31 | 43 | 43 |
-| TinyLlama | medium2 | Phi-3 mini | medium | 62 | 31 | 31 | 41 | 42 |
-| TinyLlama | large1 | Qwen2.5 7B | large | 56 | 28 | 28 | 39 | 39 |
+| Slot | Agent B model | Size | Unique conditions observed | Completed | Task-success | Route-valid | Task-success rate of completed | Route-valid rate of completed |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| small1 | TinyLlama 1.1B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% |
+| small2 | Qwen2.5 0.5B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% |
+| medium1 | Qwen2.5 1.5B | medium | 154 | 96 | 88 | 91 | 91.7% | 94.8% |
+| medium2 | Phi-3 mini | medium | 154 | 60 | 52 | 54 | 86.7% | 90.0% |
+| large1 | Qwen2.5 7B | large | 154 | 37 | 33 | 35 | 89.2% | 94.6% |
 
-Completion, route validity, and task success are intentionally separate.
-Archived attempts remain runtime evidence; active coverage uses canonical
-paired rows so repeated attempts do not inflate the denominator.
+Completion and task success are intentionally separate. Failed attempts remain
+runtime evidence; coverage uses unique condition IDs so repeated attempts do
+not inflate the denominator.
 
 ### Result Data Relationships
 
@@ -1494,7 +1443,6 @@ The most important comparison files are:
 | `metric_outcome_correlations.csv/.html` | Pearson correlations between pre-outcome metrics and task outcomes |
 | `metric_indicator_summary.csv` | Robust outlier alignment with success/failure |
 | `model_configuration_matrix.csv/.html` | Same non-model condition rows compared across Agent B models |
-| `matched_success_diagnostics.csv` | Deduplicated all-active-model conditions; successful-run repair, turn, focus, route, and ASR distinctions by Agent A and Agent B |
 | `phase_metrics/*.csv` | One file per numbered pipeline phase |
 
 Interrupted and preflight-only runs use a separate evidence-preserving general
@@ -1525,16 +1473,6 @@ success, route validity, constraint satisfaction, word error rate, turn count,
 failure phase, and source run. Green/red coloring is visual only; the CSV is
 the graphable source.
 
-`matched_success_diagnostics.csv` is the strictest model-comparison summary.
-It first deduplicates repeated attempts by Agent A, Agent B slot, and
-model-independent condition key, then keeps only conditions covered by all five
-active Agent B models. Its counts show the matched denominator, while repair
-turns, clarification count, correction-turn rate, route revisions, candidate
-routes, duration regret, task focus, ASR WER, ASR station F1, and goal progress
-are averaged over successful matched cases. Use this table when the question is
-"given the same non-model condition, how do successful dialogues differ by
-caller and Agent B backend?"
-
 The exact planned configuration space is exported separately from observed run
 results:
 
@@ -1553,10 +1491,10 @@ stage-valid only when the scenario can support the progressive route stages
 for validity, time, and constraints. Invalid staged designs are kept in the
 table so coverage gaps are explicit instead of hidden.
 
-Current planned-condition coverage is reported against the selected active
-Agent B model slots. The full generated-condition table still lists every
-configured job and extension profile, but `experiment_coverage_summary.json`
-uses the selected thesis slots for `planned_configuration_count`,
+Current planned-condition coverage is reported against the selected six Agent B
+model slots. The full generated-condition table still lists every configured
+job and extension profile, but `experiment_coverage_summary.json` uses the
+selected thesis slots for `planned_configuration_count`,
 `completed_planned_configuration_count`, and `coverage_percentage`; audit-wide
 counts are retained as `global_*` fields.
 
@@ -1564,7 +1502,7 @@ counts are retained as `global_*` fields.
 | --- | --- |
 | Agent A | `tinyllama`, `userlm` |
 | Agent B size | `small`, `medium`, `large` |
-| Selected active Agent B models | 5 total: two small, two medium, one large currently active |
+| Selected Agent B models | 6 total: two per size tier |
 | Extension Agent B models | 6 additional catalog profiles, excluded from headline percentage unless explicitly selected |
 | Executable rows per Agent A x Agent B model | 84 generated; 72 staged-valid Slurm rows; 12 invalid staged designs retained for audit |
 | Comparable coverage cells per Agent A x Agent B model | 62 unique condition keys after pairwise-grid duplicates are collapsed |
