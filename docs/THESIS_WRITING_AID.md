@@ -9,6 +9,11 @@ text.
 
 Companion documents:
 
+- `docs/thesis_chapter_workbench/`:
+  - one folder per thesis chapter,
+  - `01_outline.md` for the chapter argument and subchapter writing plan,
+  - `02_terminology.md` for chapter-local definitions,
+  - `03_references.md` for citable papers and claim boundaries.
 - `docs/THESIS_REFERENCES_AND_TERMS.md`:
   - referenceable papers,
   - citable claims,
@@ -94,8 +99,8 @@ experimental outcome or unavailable evidence with reason.
   UserLM headline denominator.
 - Agent B: five selected Transformer models by size class.
 - Active coverage target: `small1`, `small2`, `medium1`, `medium2`, and
-  `large1`; Large1 jobs may still change the final coverage until all cluster
-  results are pushed.
+  `large1`; `large2` is excluded from the current thesis denominator because
+  it was not stable enough for the finalized comparison scope.
 - Speech channel: configured TTS and ASR; text-only controls may be used where
   paired comparison is available.
 - Task objective: shortest valid route under progressively revealed
@@ -129,13 +134,43 @@ Current comparison axes:
     repair turns, duration regret, task focus, route revisions, candidate
     routes, ASR WER, ASR station F1, and latency.
 
+<!-- AUTO_RESULT_SYNTHESIS_START -->
+### Current Result Synthesis For Thesis Writing
+
+Generated from the finalized active result snapshot. Use as thesis guidance, not as a replacement for the canonical run evidence.
+
+- Thesis-relevant deduplicated rows: `1319`.
+- Completed rows: `557`.
+- Fully crossed matched condition groups: `11`.
+- Fully crossed matched runs: `220`.
+- Fully crossed means: both Agent A implementations, all five selected Agent B models, and both text/audio counterparts are present for the same non-model condition.
+
+Safe thesis claims:
+
+- The strongest method claim is that CoopNavigationSDS preserves enough phase evidence for retrospective automatic SDS evaluation.
+- The strongest empirical claim is that the speech channel reduces task success compared with paired text controls in the fully crossed subset.
+- Model-backend conclusions must be phrased as matched-condition observations and coverage/runtime trade-offs, not universal model rankings.
+- Metrics are valid when tied to their construct and required evidence; outcome metrics confirm task result, while diagnostic phase metrics explain likely failure origin.
+
+Generated companion documents:
+
+- `docs/THESIS_RESULT_CONFIGURATION_EFFECTS.md`
+- `docs/THESIS_METRIC_VALIDITY_ASSESSMENT.md`
+- `docs/THESIS_METRIC_VALIDITY_TABLE.csv`
+- `docs/THESIS_RESULT_INFERENCE_GUIDE.md`
+
+<!-- AUTO_RESULT_SYNTHESIS_END -->
+
 ### Current empirical snapshot
 
 Use this only as the current result basis, not as final thesis wording unless
 the result set is frozen.
 
-- Snapshot source: local result cleanup and analysis refresh on 2026-07-15.
-- Active result scope: 1074 paired run folders.
+- Snapshot source: finalized cluster result pull and local thesis-analysis
+  generation on 2026-07-15.
+- Active thesis-relevant deduplicated rows: 1319.
+- Completed thesis-relevant rows: 557.
+- Fully crossed completed comparison subset: 11 condition groups and 220 runs.
 - Archived noncanonical evidence: 745 duplicate or noncanonical run folders
   moved to `results/_archive_irrelevant_20260715_deduplicated_paired_scope/`.
 - Archive policy: preserve raw evidence, exclude archived folders from active
@@ -144,56 +179,25 @@ the result set is frozen.
 - Thesis denominator used here: UserLM or TinyLlama as Agent A, exactly five
   selected Agent B Transformer models, and only runs that belong to a paired
   text/audio condition.
-- Legacy active runs formerly below `results/agent_b/` were migrated into the
-  flat model folders; the migration manifest is
-  `results/general/legacy_agent_b_migration_manifest.csv`.
-- Large1 cluster jobs may still add Qwen2.5 7B evidence. Treat large1 counts
-  as current, not frozen.
-- Compact active-scope artifacts:
-  - `results/general/current_active_paired_scope_summary.csv`
-  - `results/general/current_active_paired_scope_summary.md`
-  - `results/general/current_active_paired_scope_summary.json`
-
-Current active paired run folders:
-
-| Agent A | Agent B slot | Model | Size | Active rows | Text rows | Audio rows | Task-success rows | Route-valid rows |
-| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| UserLM | small1 | TinyLlama 1.1B | small | 154 | 77 | 77 | 54 | 57 |
-| UserLM | small2 | Qwen2.5 0.5B | small | 154 | 77 | 77 | 54 | 57 |
-| UserLM | medium1 | Qwen2.5 1.5B | medium | 154 | 77 | 77 | 88 | 91 |
-| UserLM | medium2 | Phi-3 mini | medium | 154 | 77 | 77 | 52 | 54 |
-| UserLM | large1 | Qwen2.5 7B | large | 154 | 77 | 77 | 33 | 35 |
-| TinyLlama | small1 | TinyLlama 1.1B | small | 62 | 31 | 31 | 43 | 43 |
-| TinyLlama | small2 | Qwen2.5 0.5B | small | 62 | 31 | 31 | 41 | 42 |
-| TinyLlama | medium1 | Qwen2.5 1.5B | medium | 62 | 31 | 31 | 43 | 43 |
-| TinyLlama | medium2 | Phi-3 mini | medium | 62 | 31 | 31 | 41 | 42 |
-| TinyLlama | large1 | Qwen2.5 7B | large | 56 | 28 | 28 | 39 | 39 |
-
-Active folder distribution by Agent B:
-
-| Agent B slot | Active folders |
-| --- | ---: |
-| small1 TinyLlama 1.1B | 216 |
-| small2 Qwen2.5 0.5B | 216 |
-| medium1 Qwen2.5 1.5B | 216 |
-| medium2 Phi-3 mini | 216 |
-| large1 Qwen2.5 7B | 210 |
+- Detailed generated analysis documents:
+  - `docs/THESIS_RESULT_CONFIGURATION_EFFECTS.md`
+  - `docs/THESIS_METRIC_VALIDITY_ASSESSMENT.md`
+  - `docs/THESIS_RESULT_INFERENCE_GUIDE.md`
+  - `docs/THESIS_CONFIGURATION_EFFECTS_TABLE.csv`
+  - `docs/THESIS_METRIC_VALIDITY_TABLE.csv`
 
 Immediate interpretation:
 
-- Completion and task success must be separated. Some models show high
-  task-success rates among completed dialogues while also producing many
-  failed execution attempts.
-- Qwen2.5 1.5B currently provides the strongest UserLM active-row task-success
-  count in the cleaned paired subset.
-- Qwen2.5 7B has strong route validity among completed runs but substantially
-  fewer completed unique conditions, so its lower coverage is a backend/runtime
-  limitation before it is a dialogue-quality claim.
-- TinyLlama 1.1B and Qwen2.5 0.5B form a useful small-model pair because their
-  completed-run behavior is similar under the current grid.
-- Failure analysis should inspect the earliest failing phase and provider
-  failure messages before interpreting failed attempts as conversational
-  inability.
+- Completion, route validity, and task success must be separated.
+- The fully crossed subset gives the cleanest direct comparison because all
+  Agent A, Agent B, and text/audio cells are present for the same conditions.
+- Text controls are at ceiling in the fully crossed subset; audio variants lose
+  task success, supporting a speech-channel degradation claim.
+- Qwen2.5 1.5B has the strongest broad completed-row profile, but direct model
+  ranking must remain cautious and matched-subset based.
+- Scenario, persona, audio persona, ASR, and decoding effects should be
+  described as pressure-condition associations unless a matched causal subset
+  is explicitly selected.
 
 TinyLlama-Agent-A rows are software-control evidence. They are useful for
 checking whether observed behavior depends on Agent A implementation, but they
@@ -210,10 +214,10 @@ snapshot:
   - route-valid dialogue completion,
   - task-satisfied dialogue completion under revealed constraints.
 - Completed dialogues often produce valid routes. Across the selected UserLM
-  subset, 294 of 317 completed unique conditions have valid routes, so many
+  subset, 293 of 317 completed unique conditions have valid routes, so many
   observed losses occur before or around dialogue completion rather than after
   route grounding alone.
-- Qwen2.5 1.5B currently has the best combined evidence profile in the active
+- Qwen2.5 1.5B has the best combined evidence profile in the current active
   subset: highest completed unique-condition count, highest task-success count,
   and high route validity among completed conditions.
 - Larger model size alone is not supported as a simple predictor of better
@@ -2059,7 +2063,7 @@ Use these as analysis prompts for the current result set:
   - task satisfaction differs more strongly by constraint handling and
     dialogue completion than by route validity alone.
 - Then compare models:
-  - Qwen2.5 1.5B currently has the strongest completed-dialogue task
+  - Qwen2.5 1.5B has the strongest completed-dialogue task
     satisfaction in the pulled results;
   - TinyLlama 1.1B and Qwen2.5 0.5B are close small-model baselines;
   - Phi-3 mini has reasonable task satisfaction among completed dialogues but
@@ -2459,12 +2463,13 @@ figure.
 
    Viable arguments:
 
-   - Qwen2.5 1.5B currently has the strongest practical profile because it
+   - Qwen2.5 1.5B has the strongest practical profile in the current completed
+     active rows because it
      combines high completion count with high task success.
    - TinyLlama 1.1B and Qwen2.5 0.5B show that very small models can solve many
      grounded route dialogues.
    - Qwen2.5 7B performs well when completed but remains more resource- and
-     coverage-sensitive while Large1 jobs are still completing.
+     runtime-sensitive than the smaller selected backends.
    - Matched all-model cases are methodologically strongest but less
      discriminating when many cases are solved or failed by all models.
 
@@ -2537,117 +2542,70 @@ figure.
    revisions indicate a more efficient and stable dialogue.
    ```
 
-#### Current cleaned active result distinctions
+#### Current result distinctions for thesis argumentation
 
-Use these distinctions to move from "which model won?" toward "which metric
-evidence explains how the SDS behaved?"
+Use these distinctions to move from "which model won?" toward "which evidence
+explains how the SDS behaved?"
 
-- UserLM-Agent-A active paired rows show that final success alone is too
-  coarse.
-  - Qwen2.5 1.5B has the highest UserLM success count in the cleaned active
-    paired scope:
-    - 88 successful rows out of 154 active paired rows,
-    - 57.1% active-scope success rate.
-  - TinyLlama 1.1B and Qwen2.5 0.5B are nearly indistinguishable on this
-    coarse outcome:
-    - both have 54 successful rows out of 154,
-    - both have 35.1% active-scope success rate.
-  - Phi-3 mini and Qwen2.5 7B should not be interpreted only by linguistic or
-    model-size expectations:
-    - Phi-3 mini has 52 successful rows out of 154,
-    - Qwen2.5 7B has 33 successful rows out of 154 in the current active set,
-      while large1 evidence is still provisional.
+- The current active result denominator is split into:
+  - 1319 deduplicated active thesis rows,
+  - 557 completed active thesis rows,
+  - 11 fully crossed condition groups and 220 matched text/audio/model runs.
   - Evaluation consequence:
-    - a larger Agent B model is not automatically a better SDS backend under
-      the local execution and speech-pipeline conditions;
-    - completion coverage, runtime feasibility, route validity, repair burden,
-      and matched-condition evidence must be reported together.
+    - broad completed rows are useful for descriptive configuration effects;
+    - direct Agent A, Agent B, and text/audio claims should prioritize the
+      fully crossed matched subset.
 
-- TinyLlama-Agent-A active paired rows show why Agent A must be a stratified
-  factor.
-  - TinyLlama-Agent-A success rates are higher in the current cleaned active
-    rows:
-    - 66.1% to 69.6% depending on Agent B,
-    - compared with 21.4% to 57.1% for UserLM-Agent-A.
-  - This does not mean TinyLlama is the better user simulator.
-    - It means the caller implementation changes the interaction process.
-    - TinyLlama may ask, repair, accept, or terminate differently from UserLM.
+- Agent A must remain a stratified factor.
+  - UserLM is the primary thesis caller.
+  - TinyLlama-Agent-A rows are control evidence for caller implementation
+    effects.
   - Evaluation consequence:
-    - Agent A is part of the experimental condition;
-    - UserLM and TinyLlama rows must not be pooled into one headline success
-      rate;
-    - comparisons across Agent B models are strongest inside the same Agent A
-      stratum.
+    - UserLM and TinyLlama should not be pooled into one headline success rate;
+    - Agent B comparisons are strongest inside one Agent A stratum or inside
+      the fully crossed subset.
 
-- Text/audio success splits show why speech-channel evaluation cannot be
-  replaced by final task success.
-  - For UserLM with Qwen2.5 1.5B:
-    - 47 successful text rows,
-    - 41 successful audio rows.
-  - For UserLM with TinyLlama 1.1B and Qwen2.5 0.5B:
-    - 30 successful text rows,
-    - 24 successful audio rows.
-  - For TinyLlama-Agent-A rows, text success is also consistently above audio
-    success.
+- Text/audio comparisons currently provide the strongest channel-level result.
+  - In the fully crossed subset, every text-only Agent A/Agent B row reaches
+    100% task success.
+  - Audio variants reduce success by about 18.2 to 27.3 percentage points.
   - Evaluation consequence:
-    - paired text/audio runs isolate speech-channel degradation;
-    - a successful audio run should still be inspected for extra repair,
-      latency, or clarification cost;
-    - an audio failure after text success is a candidate speech-pipeline
-      failure, not automatically an Agent B reasoning failure.
+    - paired text/audio runs isolate speech-channel degradation more cleanly
+      than unpaired aggregate comparisons;
+    - successful audio runs should still be inspected for repair burden,
+      latency, and clarification cost.
 
-- Runtime ranges show that task success and runtime feasibility are separate
-  constructs.
-  - Successful UserLM runs range from roughly:
-    - 181.0 to 933.8 seconds for Qwen2.5 1.5B,
-    - 473.8 to 2321.7 seconds for Phi-3 mini,
-    - 360.1 to 3016.2 seconds for Qwen2.5 7B.
-  - Successful TinyLlama-Agent-A Qwen2.5 7B runs reach:
-    - 1406.9 to 4418.7 seconds.
+- Agent B model size is not a sufficient explanation.
+  - Qwen2.5 1.5B has the strongest broad completed-row profile:
+    - 144 completed rows,
+    - 130 successful rows,
+    - 90.3% success among completed rows.
+  - Qwen2.5 7B performs well when completed:
+    - 85 completed rows,
+    - 76 successful rows,
+    - 89.4% success among completed rows,
+    - much higher mean runtime than smaller backends.
   - Evaluation consequence:
-    - a model can solve the dialogue but be impractical for large-scale SDS
-      evaluation or real-time use;
-    - runtime should be reported as an efficiency and feasibility metric, not
-      hidden behind task success.
+    - the thesis should analyze backend quality together with completion
+      coverage, route validity, repair burden, and runtime feasibility.
 
-- Repair and clarification ranges show how successful dialogues can still be
-  interactionally expensive.
-  - Successful UserLM runs require up to:
-    - 4 repair turns for small models and Qwen2.5 1.5B,
-    - 3 repair turns for Phi-3 mini and Qwen2.5 7B.
-  - Successful TinyLlama-Agent-A runs require up to:
-    - 5 repair turns for TinyLlama 1.1B and Qwen2.5 7B,
-    - 6 repair turns for Qwen2.5 1.5B.
-  - Clarification ranges mirror repair ranges because many repairs are
-    realized as short clarification exchanges.
-  - Evaluation consequence:
-    - success should be graded by interaction quality;
-    - repeated repair before success indicates robustness but also higher
-      dialogue cost;
-    - repair metrics help distinguish smooth success from fragile success.
+- Scenario, persona, and audio-persona conditions explain useful pressure
+  ranges.
+  - Ceiling-like clean/nominal conditions validate that the pipeline can solve
+    the task.
+  - Severe-channel/floor conditions create many failures and are useful for
+    testing metric sensitivity.
+  - Multi-destination errands create semi-success evidence because route
+    validity can be preserved while full task completion fails.
 
-- Duration regret distinguishes valid route completion from optimal route
-  quality.
-  - Successful UserLM Qwen2.5 1.5B runs include duration regret up to 10
-    minutes.
-  - Other successful configurations include regret up to 4 or 8 minutes.
+- ASR and NLU metrics are more task-relevant than generic WER alone.
+  - WER is useful speech-channel context.
+  - Station, line, time, and constraint preservation better explain route
+    success and failure.
   - Evaluation consequence:
-    - a valid accepted route can still be suboptimal;
-    - duration regret should be interpreted as route-quality evidence inside
-      successful and semi-successful cases;
-    - this supports the thesis distinction between route validity,
-      constraint-aware success, and optimality.
-
-- ASR WER means in successful cases remain relatively low but still vary by
-  condition.
-  - UserLM successful rows show mean ASR WER around 0.064 to 0.081.
-  - TinyLlama-Agent-A successful rows show mean ASR WER around 0.087 to 0.098.
-  - Evaluation consequence:
-    - WER is useful as speech-channel evidence;
-    - WER must be interpreted with entity and route-state metrics because a
-      low WER can still hide one critical station or line error;
-    - ASR station F1, correction logs, and NLU route validity are stronger
-      indicators of task-relevant speech understanding than WER alone.
+    - ASR station F1, correction logs, NLU route validity, grounded proposal
+      score, and goal progress should be emphasized before generic lexical
+      similarity.
 
 Suggested thesis wording:
 
