@@ -468,6 +468,50 @@ For every metric, ask:
   - constraint preservation,
   - negation preservation.
 
+### 3.5 Metric roles used in this thesis
+
+Separate metrics by what they are allowed to claim.
+
+Outcome-confirming metrics:
+
+- confirm whether the navigation task succeeded;
+- include route validity, destination reached, constraint satisfaction,
+  accepted route, and duration within threshold;
+- are construct-valid for task success but partly overlap with the success
+  definition;
+- should not be presented as independent predictors of success.
+
+Diagnostic phase metrics:
+
+- indicate where successful, semi-successful, and unsuccessful completed
+  dialogues diverge;
+- include ASR station F1, ASR WER, NLU route-valid rate, NLU goal-reached
+  rate, grounded proposal score, executable utterance rate, candidate-route
+  count, station mentions, repair success, and abandonment rate;
+- support failure localization, but correlations remain descriptive.
+
+Efficiency and cost metrics:
+
+- describe how expensive the dialogue was;
+- include turn count, mean turn time, latency, word count, route-revision
+  count, and runtime;
+- are useful when two models both solve the task but differ in interaction
+  cost.
+
+Matched-comparison metrics:
+
+- compare Agent B models only on cases where every non-model condition is
+  equivalent;
+- use a model-independent key over Agent A, scenario, persona, audio persona,
+  speech pattern, TTS/ASR settings, ASR search width, seeds, objective mode,
+  transfer tolerance, stagnation limit, run type, platform, and decoding
+  profile;
+- exclude Agent B model name, model size, model slot, and model-specific
+  condition ID;
+- answer a different question from coverage metrics: matched comparison asks
+  "given the same condition, how did models differ?", while coverage asks
+  "which conditions produced evidence at all?"
+
 ## 4. Related Work
 
 ### Chapter function
@@ -724,6 +768,40 @@ Reason:
 - task completion coverage shows whether the dialogue reached a valid terminal
   state;
 - task success is only interpretable after both coverage values are reported.
+
+Matched Agent B comparison:
+
+- Do not use raw `condition_id` alone for cross-model comparison because the
+  condition ID contains model-specific fragments.
+- Build a model-independent comparable-condition key from:
+  - Agent A type,
+  - scenario and test case,
+  - persona,
+  - Agent A and Agent B audio personas,
+  - speech pattern and speech performance band,
+  - run mode and run type,
+  - TTS and ASR implementation,
+  - ASR search width,
+  - network and experiment seed,
+  - objective mode,
+  - transfer tolerance,
+  - dialogue stagnation limit,
+  - decoding/profile key,
+  - repetition/iteration,
+  - matrix family and execution platform.
+- Exclude from the key:
+  - Agent B model name,
+  - Agent B model size,
+  - Agent B slot label,
+  - model-specific condition ID.
+- A completed case is directly comparable across Agent B models when this key
+  matches and the run completed for the models being compared.
+- Report two matched counts:
+  - completed in all selected models,
+  - completed in at least one other selected model.
+- If duplicate completed attempts exist for the same model and comparable key,
+  count the case once. For outcome summary, use the best retained completed
+  outcome in the order successful > semi-successful > unsuccessful completed.
 
 Current observed UserLM thesis subset for the pulled result set:
 
@@ -1265,6 +1343,178 @@ Metric families by thesis value:
     metric calculation;
   - shared-state agreement without route outcome context, because a dialogue
     can agree on an incomplete or wrong state.
+
+### 8.9 Matched Agent B comparison in the current result set
+
+Matched cases are the strongest basis for comparing Agent B models, because
+all non-model configuration fields are equivalent. This controls for scenario,
+persona, speech condition, TTS/ASR setup, seeds, objective, and decoding
+profile.
+
+Current five-model matched completed cases:
+
+| Agent A | Cases completed by all five Agent B models | All five successful | All five unsuccessful | Mixed model outcomes |
+| --- | ---: | ---: | ---: | ---: |
+| UserLM | 37 | 32 | 4 | 1 |
+| TinyLlama control | 44 | 37 | 5 | 2 |
+
+Current UserLM matched outcome table:
+
+| Agent B model | Matched completed cases | Successful | Semi-successful | Unsuccessful completed | Success rate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| TinyLlama 1.1B | 37 | 33 | 2 | 2 | 89.19% |
+| Qwen2.5 0.5B | 37 | 32 | 3 | 2 | 86.49% |
+| Qwen2.5 1.5B | 37 | 33 | 2 | 2 | 89.19% |
+| Phi-3 mini | 37 | 32 | 2 | 3 | 86.49% |
+| Qwen2.5 7B | 37 | 33 | 2 | 2 | 89.19% |
+
+Current TinyLlama-control matched outcome table:
+
+| Agent B model | Matched completed cases | Successful | Semi-successful | Unsuccessful completed | Success rate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| TinyLlama 1.1B | 44 | 39 | 0 | 5 | 88.64% |
+| Qwen2.5 0.5B | 44 | 37 | 1 | 6 | 84.09% |
+| Qwen2.5 1.5B | 44 | 39 | 0 | 5 | 88.64% |
+| Phi-3 mini | 44 | 37 | 1 | 6 | 84.09% |
+| Qwen2.5 7B | 44 | 39 | 0 | 5 | 88.64% |
+
+Interpretation:
+
+- The matched UserLM set is small but methodologically strong.
+- Most matched cases are not model-discriminating:
+  - 32 of 37 UserLM cases are solved by all five Agent B models;
+  - 4 of 37 UserLM cases fail for all five models;
+  - only 1 of 37 UserLM cases produces mixed model outcomes.
+- The TinyLlama-control set shows a similar pattern:
+  - 37 of 44 cases solved by all five models;
+  - 5 of 44 fail for all five models;
+  - 2 of 44 produce mixed outcomes.
+- Therefore, current matched evidence suggests that condition difficulty and
+  speech/dialogue setup often dominate model-specific differences in the
+  completed all-model intersection.
+- Model differences are still visible in coverage and in unmatched completed
+  cases, especially because Qwen2.5 1.5B has more completed UserLM cases than
+  the other selected models. However, those unmatched cases must be discussed
+  as coverage/completion evidence, not as fully controlled direct comparison.
+
+Useful matched UserLM metric means:
+
+| Metric | TinyLlama 1.1B | Qwen2.5 0.5B | Qwen2.5 1.5B | Phi-3 mini | Qwen2.5 7B |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `automatic_eval_score` | 0.862 | 0.844 | 0.857 | 0.840 | 0.860 |
+| `agent_b_grounded_proposal_score` | 0.906 | 0.894 | 0.903 | 0.878 | 0.903 |
+| `nlg_faithfulness` | 0.906 | 0.894 | 0.903 | 0.878 | 0.903 |
+| `whole_dialogue_goal_progress_auc` | 0.885 | 0.892 | 0.892 | 0.858 | 0.889 |
+| `asr_station_f1` | 0.924 | 0.923 | 0.932 | 0.915 | 0.935 |
+| `nlu_route_valid_rate` | 0.836 | 0.834 | 0.822 | 0.825 | 0.840 |
+| `candidate_route_count` | 3.324 | 3.243 | 3.432 | 3.378 | 3.405 |
+| `station_mentions` | 23.378 | 22.784 | 24.189 | 23.811 | 24.243 |
+| `repair_success_rate` | 0.901 | 0.899 | 0.910 | 0.905 | 0.946 |
+
+Suggested thesis wording:
+
+```text
+Matched completed cases provide the cleanest model comparison because only the
+Agent B backend differs. In the current UserLM matched subset, most cases were
+either solved by all models or failed by all models, and only one case showed
+mixed model outcomes. This suggests that the present result set is stronger for
+evaluating phase-wise metrics and condition difficulty than for claiming large
+performance differences between the selected Agent B models. Model-backend
+differences should therefore be reported together with coverage and completion
+evidence, not only with matched-case success rates.
+```
+
+### 8.10 Current defensible inferences
+
+Use this section as a conclusion scaffold. Keep claims tied to the evidence
+level that supports them.
+
+Strongly supported inferences:
+
+- The framework can separate four concepts that are often blurred:
+  - result availability,
+  - completed dialogue,
+  - valid route production,
+  - full task and constraint satisfaction.
+- Completed UserLM dialogues usually succeed once a usable terminal dialogue
+  exists: 281 of 317 unique completed UserLM conditions are task-successful.
+- The strongest metric evidence is phase-chain evidence, not a single final
+  number:
+  - station/entity preservation,
+  - route-valid NLU,
+  - grounded Agent B proposal,
+  - executable and faithful NLG,
+  - goal progress,
+  - constraint satisfaction.
+- Semi-successful cases are methodologically valuable because they show that
+  route validity alone is insufficient. A route can be actionable yet still
+  fail duration, transfer, or constraint expectations.
+- In the fully matched all-model subset, most cases are solved by all models
+  or fail for all models. This suggests that condition difficulty and pipeline
+  conditions are currently stronger explanatory factors than small differences
+  between the selected Agent B backends.
+
+Moderately supported inferences:
+
+- Qwen2.5 1.5B is the strongest practical UserLM-Agent-A backend in the current
+  evidence set because it has the largest number of completed UserLM cases and
+  high task success among completed cases.
+- Very small Agent B models are viable for the controlled task. TinyLlama 1.1B
+  and Qwen2.5 0.5B both solve many completed UserLM conditions and perform
+  similarly in the matched subset.
+- Larger model size alone is not a reliable explanation of success in this
+  experiment. Qwen2.5 7B performs well on matched completed cases, but its
+  completion coverage is lower, so runtime/resource feasibility must be part
+  of the interpretation.
+- ASR and NLU metrics are useful early-warning indicators: high ASR word error,
+  low ASR station F1, low NLU route-valid rate, and low goal-reached rate align
+  with unsuccessful completed dialogues.
+
+Weak or exploratory inferences:
+
+- Specific thresholds for predicting future failure are not yet validated.
+  Current thresholds should be presented as descriptive observations, not as a
+  trained predictor.
+- The experiment does not prove that one model family is generally better than
+  another. It supports claims about this controlled route-dialogue task under
+  the tested speech and batch conditions.
+- Human user satisfaction cannot be inferred directly. Automatic task success,
+  dialogue cost, and phase evidence are proxies that need human validation for
+  naturalness and perceived usefulness.
+
+Potential explanation for the observed pattern:
+
+```text
+The task may currently contain many conditions that are either easy enough for
+all selected backends or hard enough that every backend fails under the same
+speech/dialogue constraints. This compresses model differences in the fully
+matched subset. More model-discriminating evidence would require additional
+conditions near the decision boundary: understandable but noisy speech,
+constraints that require route revision, and scenarios where an initial valid
+route exists but a later constraint changes the optimum.
+```
+
+Recommended final answer to the main research question:
+
+```text
+Automatic phase-wise evaluation is feasible and informative for this controlled
+spoken route-dialogue task. Final task success alone is too coarse: the most
+useful evaluation comes from combining task outcome metrics with diagnostic
+phase metrics and matched-condition comparisons. The current evidence supports
+reliable analysis of completed dialogues and failure modes, while model-ranking
+claims must remain cautious because many matched cases are not
+model-discriminating.
+```
+
+Recommended caveat:
+
+```text
+The results should be interpreted as evidence for the framework and for the
+tested controlled conditions, not as a universal ranking of LLMs or speech
+dialogue systems. The strongest contribution is the reproducible data pipeline
+that makes success, semi-success, failure, and likely failure origins
+inspectable after the run.
+```
 
 ## 9. Discussion and Conclusion
 
