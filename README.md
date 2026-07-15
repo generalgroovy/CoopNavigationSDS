@@ -1049,6 +1049,22 @@ failures. Files prefixed with `current_` exclude archived and obsolete
 pre-fix `NameError`/`ValueError` failures so active model comparisons are not
 distorted by known implementation bugs.
 
+The active thesis result scope is intentionally narrow: Agent A is `userlm` or
+`tinyllama`, Agent B is one of the five selected Transformer backends, and every
+active row must belong to a paired text/audio condition. Duplicate or
+noncanonical folders are archived, not deleted, below
+`results/_archive_irrelevant_20260715_deduplicated_paired_scope/`. Active
+discovery skips directories whose names begin with `_archive` and also skips
+`_safety` and `_transfer`. The archive manifest records each moved folder and
+the reason for exclusion.
+
+After the 2026-07-15 cleanup, the local active set contains 1074 paired run
+folders and 745 archived duplicate/noncanonical folders. Active legacy runs
+formerly below `results/agent_b/` were migrated into the flat model folders and
+recorded in `results/general/legacy_agent_b_migration_manifest.csv`. Current
+large1 counts remain provisional while the Qwen2.5 7B Slurm job is still
+finishing.
+
 For day-to-day cluster operation, `scripts/cluster_results_workflow.sh` wraps
 the most common post-run and next-run actions without changing the underlying
 experiment commands:
@@ -1337,29 +1353,37 @@ line ranges, source paths, and WAV assembly are verified. Audio from different
 conditions is never merged. Existing raw evidence is not rewritten during
 analysis regeneration.
 
-### Current UserLM Thesis Snapshot
+### Current Active Thesis Snapshot
 
-The current thesis denominator fixes Agent A to UserLM and compares five
-selected Agent B Transformer models. TinyLlama-Agent-A controls, archived
-large2/Mistral settings, and exploratory extension models are excluded from
-this denominator unless explicitly analyzed in a separate stratum. The compact
-derived files are:
+The current active thesis denominator compares UserLM and TinyLlama as Agent A
+strata against five selected Agent B Transformer models. Archived large2/Mistral
+settings, exploratory extension models, duplicate attempts, and unpaired runs
+are excluded from the active denominator unless explicitly analyzed in a
+separate stratum. The compact derived files are:
 
 - `results/general/current_userlm_selected_model_results.csv`
 - `results/general/current_userlm_selected_model_results.md`
 - `results/general/current_userlm_selected_model_results.json`
+- `results/general/current_active_paired_scope_summary.csv`
+- `results/general/current_active_paired_scope_summary.md`
+- `results/general/current_active_paired_scope_summary.json`
 
-| Slot | Agent B model | Size | Unique conditions observed | Completed | Task-success | Route-valid | Task-success rate of completed | Route-valid rate of completed |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| small1 | TinyLlama 1.1B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% |
-| small2 | Qwen2.5 0.5B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% |
-| medium1 | Qwen2.5 1.5B | medium | 154 | 96 | 88 | 91 | 91.7% | 94.8% |
-| medium2 | Phi-3 mini | medium | 154 | 60 | 52 | 54 | 86.7% | 90.0% |
-| large1 | Qwen2.5 7B | large | 154 | 37 | 33 | 35 | 89.2% | 94.6% |
+| Agent A | Slot | Agent B model | Size | Active rows | Text rows | Audio rows | Task-success rows | Route-valid rows |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| UserLM | small1 | TinyLlama 1.1B | small | 154 | 77 | 77 | 54 | 57 |
+| UserLM | small2 | Qwen2.5 0.5B | small | 154 | 77 | 77 | 54 | 57 |
+| UserLM | medium1 | Qwen2.5 1.5B | medium | 154 | 77 | 77 | 88 | 91 |
+| UserLM | medium2 | Phi-3 mini | medium | 154 | 77 | 77 | 52 | 54 |
+| UserLM | large1 | Qwen2.5 7B | large | 154 | 77 | 77 | 33 | 35 |
+| TinyLlama | small1 | TinyLlama 1.1B | small | 62 | 31 | 31 | 43 | 43 |
+| TinyLlama | small2 | Qwen2.5 0.5B | small | 62 | 31 | 31 | 41 | 42 |
+| TinyLlama | medium1 | Qwen2.5 1.5B | medium | 62 | 31 | 31 | 43 | 43 |
+| TinyLlama | medium2 | Phi-3 mini | medium | 62 | 31 | 31 | 41 | 42 |
+| TinyLlama | large1 | Qwen2.5 7B | large | 56 | 28 | 28 | 39 | 39 |
 
-Completion and task success are intentionally separate. Failed attempts remain
-runtime evidence; coverage uses unique condition IDs so repeated attempts do
-not inflate the denominator.
+Completion, route validity, and task success are intentionally separate.
+Archived attempts remain runtime evidence; active coverage uses canonical
+paired rows so repeated attempts do not inflate the denominator.
 
 ### Result Data Relationships
 

@@ -121,49 +121,58 @@ Current comparison axes:
 Use this only as the current result basis, not as final thesis wording unless
 the result set is frozen.
 
-- Snapshot source: pulled result folders through commit `ed5f8cdb` on
-  2026-07-15.
-- Finalized run folders found locally: 1819.
-- Thesis denominator used here: UserLM as Agent A and five selected Agent B
-  models. TinyLlama-Agent-A runs and archived models are excluded from the
-  main denominator but remain useful for software control analysis.
-- Calculation source: `conditions.jsonl` inside each run folder. Duplicate
-  attempts are preserved as runtime evidence; coverage uses unique condition
-  IDs and counts a condition as completed when any retained attempt completed.
-- Archived large2/Mistral settings are removed from active setup and Slurm
-  submission. Existing raw result folders are not altered.
-- New result commits after the completed-dialogue metric workflow added
-  TinyLlama-Agent-A control runs for Phi-3 mini and Qwen2.5 7B. They do not
-  change the UserLM thesis denominator or the completed-dialogue metric
-  correlation tables below.
+- Snapshot source: local result cleanup and analysis refresh on 2026-07-15.
+- Active result scope: 1074 paired run folders.
+- Archived noncanonical evidence: 745 duplicate or noncanonical run folders
+  moved to `results/_archive_irrelevant_20260715_deduplicated_paired_scope/`.
+- Archive policy: preserve raw evidence, exclude archived folders from active
+  discovery, and keep one canonical run per Agent A, Agent B, pair ID, and run
+  type.
+- Thesis denominator used here: UserLM or TinyLlama as Agent A, exactly five
+  selected Agent B Transformer models, and only runs that belong to a paired
+  text/audio condition.
+- Legacy active runs formerly below `results/agent_b/` were migrated into the
+  flat model folders; the migration manifest is
+  `results/general/legacy_agent_b_migration_manifest.csv`.
+- Large1 cluster jobs may still add Qwen2.5 7B evidence. Treat large1 counts
+  as current, not frozen.
+- Compact active-scope artifacts:
+  - `results/general/current_active_paired_scope_summary.csv`
+  - `results/general/current_active_paired_scope_summary.md`
+  - `results/general/current_active_paired_scope_summary.json`
 
-Current UserLM-Agent-A unique-condition outcomes:
+Current active paired run folders:
 
-| Agent B slot | Model | Size | Unique conditions observed | Completed | Task-success | Route-valid | Task-success rate of completed | Route-valid rate of completed | Mean turns |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| small1 | TinyLlama 1.1B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% | 12.18 |
-| small2 | Qwen2.5 0.5B | small | 154 | 62 | 54 | 57 | 87.1% | 91.9% | 12.27 |
-| medium1 | Qwen2.5 1.5B | medium | 154 | 96 | 88 | 91 | 91.7% | 94.8% | 11.68 |
-| medium2 | Phi-3 mini | medium | 154 | 60 | 52 | 54 | 86.7% | 90.0% | 12.17 |
-| large1 | Qwen2.5 7B | large | 154 | 37 | 33 | 35 | 89.2% | 94.6% | 11.16 |
+| Agent A | Agent B slot | Model | Size | Active rows | Text rows | Audio rows | Task-success rows | Route-valid rows |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| UserLM | small1 | TinyLlama 1.1B | small | 154 | 77 | 77 | 54 | 57 |
+| UserLM | small2 | Qwen2.5 0.5B | small | 154 | 77 | 77 | 54 | 57 |
+| UserLM | medium1 | Qwen2.5 1.5B | medium | 154 | 77 | 77 | 88 | 91 |
+| UserLM | medium2 | Phi-3 mini | medium | 154 | 77 | 77 | 52 | 54 |
+| UserLM | large1 | Qwen2.5 7B | large | 154 | 77 | 77 | 33 | 35 |
+| TinyLlama | small1 | TinyLlama 1.1B | small | 62 | 31 | 31 | 43 | 43 |
+| TinyLlama | small2 | Qwen2.5 0.5B | small | 62 | 31 | 31 | 41 | 42 |
+| TinyLlama | medium1 | Qwen2.5 1.5B | medium | 62 | 31 | 31 | 43 | 43 |
+| TinyLlama | medium2 | Phi-3 mini | medium | 62 | 31 | 31 | 41 | 42 |
+| TinyLlama | large1 | Qwen2.5 7B | large | 56 | 28 | 28 | 39 | 39 |
 
-Current UserLM-Agent-A execution-attempt evidence:
+Active folder distribution by Agent B:
 
-| Agent B model | Attempts | Completed attempts | Failed attempts | Task-successful completed attempts | Approx. summed runtime |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| TinyLlama 1.1B | 244 | 94 | 110 | 84 | 748.3 min |
-| Qwen2.5 0.5B | 244 | 94 | 110 | 84 | 637.5 min |
-| Qwen2.5 1.5B | 359 | 137 | 168 | 126 | 891.6 min |
-| Phi-3 mini | 299 | 77 | 182 | 69 | 881.0 min |
-| Qwen2.5 7B | 272 | 50 | 168 | 46 | 731.5 min |
+| Agent B slot | Active folders |
+| --- | ---: |
+| small1 TinyLlama 1.1B | 216 |
+| small2 Qwen2.5 0.5B | 216 |
+| medium1 Qwen2.5 1.5B | 216 |
+| medium2 Phi-3 mini | 216 |
+| large1 Qwen2.5 7B | 210 |
 
 Immediate interpretation:
 
 - Completion and task success must be separated. Some models show high
   task-success rates among completed dialogues while also producing many
   failed execution attempts.
-- Qwen2.5 1.5B currently provides the strongest combination of completion
-  count and task success in the UserLM subset.
+- Qwen2.5 1.5B currently provides the strongest UserLM active-row task-success
+  count in the cleaned paired subset.
 - Qwen2.5 7B has strong route validity among completed runs but substantially
   fewer completed unique conditions, so its lower coverage is a backend/runtime
   limitation before it is a dialogue-quality claim.
@@ -173,21 +182,10 @@ Immediate interpretation:
   failure messages before interpreting failed attempts as conversational
   inability.
 
-TinyLlama-Agent-A software-control evidence currently available for the same
-five selected Agent B models:
-
-| Agent B model | Completed control runs | Successful | Semi-successful | Unsuccessful dialogue | Invalid/skipped |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| TinyLlama 1.1B | 70 | 65 | 0 | 5 | 14 |
-| Qwen2.5 0.5B | 70 | 63 | 1 | 6 | 14 |
-| Qwen2.5 1.5B | 70 | 65 | 0 | 5 | 14 |
-| Phi-3 mini | 70 | 63 | 1 | 6 | 14 |
-| Qwen2.5 7B | 53 | 48 | 0 | 5 | 12 |
-| **Total** | **333** | **304** | **2** | **27** | **68** |
-
-Use these rows as a software-control comparison only. They are useful for
+TinyLlama-Agent-A rows are software-control evidence. They are useful for
 checking whether observed behavior depends on Agent A implementation, but they
-should not be merged into the main UserLM-Agent-A thesis denominator.
+should be stratified rather than merged into the UserLM-Agent-A thesis
+denominator.
 
 ### Current result conclusions that are defensible
 
@@ -2081,21 +2079,23 @@ profile.
 Current strict matched coverage:
 
 - UserLM-Agent-A:
-  - 173 comparable conditions are covered by all five active Agent B models.
+  - 77 comparable paired conditions are covered by all five active Agent B
+    models after archive filtering and deduplication.
   - Successful matched cases per Agent B model range from 32 to 33.
 - TinyLlama-Agent-A:
-  - 56 comparable conditions are covered by all five active Agent B models.
+  - 56 comparable paired conditions are covered by all five active Agent B
+    models after archive filtering and deduplication.
   - Successful matched cases per Agent B model range from 37 to 39.
 
 Current matched successful-run diagnostic table:
 
 | Agent A | Agent B model | Matched cases | Successful matched cases | Mean turns | Repair turns | Runs with repair | Candidate routes | Duration regret | ASR WER | ASR station F1 | Goal progress |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| UserLM | TinyLlama 1.1B | 173 | 33 | 11.27 | 0.79 | 54.5% | 3.70 | 1.24 | 0.063 | 0.975 | 0.947 |
-| UserLM | Qwen2.5 0.5B | 173 | 32 | 11.12 | 0.78 | 56.2% | 3.66 | 1.00 | 0.057 | 0.979 | 0.955 |
-| UserLM | Qwen2.5 1.5B | 173 | 33 | 11.73 | 0.79 | 54.5% | 3.79 | 1.67 | 0.061 | 0.975 | 0.956 |
-| UserLM | Phi-3 mini | 173 | 32 | 11.09 | 0.66 | 53.1% | 3.84 | 1.38 | 0.058 | 0.978 | 0.945 |
-| UserLM | Qwen2.5 7B | 173 | 33 | 11.15 | 0.70 | 51.5% | 3.76 | 1.67 | 0.064 | 0.978 | 0.952 |
+| UserLM | TinyLlama 1.1B | 77 | 33 | 11.27 | 0.79 | 54.5% | 3.70 | 1.24 | 0.063 | 0.975 | 0.947 |
+| UserLM | Qwen2.5 0.5B | 77 | 32 | 11.12 | 0.78 | 56.2% | 3.66 | 1.00 | 0.057 | 0.979 | 0.955 |
+| UserLM | Qwen2.5 1.5B | 77 | 33 | 11.73 | 0.79 | 54.5% | 3.79 | 1.67 | 0.061 | 0.975 | 0.956 |
+| UserLM | Phi-3 mini | 77 | 32 | 11.09 | 0.66 | 53.1% | 3.84 | 1.38 | 0.058 | 0.978 | 0.945 |
+| UserLM | Qwen2.5 7B | 77 | 33 | 11.15 | 0.70 | 51.5% | 3.76 | 1.67 | 0.064 | 0.978 | 0.952 |
 | TinyLlama | TinyLlama 1.1B | 56 | 39 | 12.92 | 1.10 | 59.0% | 3.82 | 0.69 | 0.099 | 0.974 | 0.953 |
 | TinyLlama | Qwen2.5 0.5B | 56 | 37 | 12.73 | 1.03 | 56.8% | 3.81 | 0.73 | 0.087 | 0.979 | 0.953 |
 | TinyLlama | Qwen2.5 1.5B | 56 | 39 | 12.90 | 1.13 | 56.4% | 3.74 | 0.72 | 0.099 | 0.974 | 0.950 |

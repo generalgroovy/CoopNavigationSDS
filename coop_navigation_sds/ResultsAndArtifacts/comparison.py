@@ -122,6 +122,17 @@ MATCHED_AGENT_B_CONDITION_DIMENSIONS = (
     "matrix_family",
     "experiment_platform",
 )
+ARCHIVED_RESULT_DIRECTORY_PREFIXES = ("_archive",)
+ARCHIVED_RESULT_DIRECTORY_NAMES = {"_safety", "_transfer"}
+
+
+def _is_archived_result_path(path):
+    """Return whether ``path`` belongs to a non-active result archive."""
+    return any(
+        part in ARCHIVED_RESULT_DIRECTORY_NAMES
+        or any(part.startswith(prefix) for prefix in ARCHIVED_RESULT_DIRECTORY_PREFIXES)
+        for part in Path(path).parts
+    )
 
 
 def discover_run_directories(paths):
@@ -131,8 +142,14 @@ def discover_run_directories(paths):
         root = Path(value).expanduser().resolve()
         candidates = [root] if root.is_dir() else []
         if root.is_dir():
-            candidates.extend(path.parent for path in root.rglob("run_summary.json"))
+            candidates.extend(
+                path.parent
+                for path in root.rglob("run_summary.json")
+                if not _is_archived_result_path(path)
+            )
         for candidate in candidates:
+            if _is_archived_result_path(candidate):
+                continue
             if all((candidate / name).is_file() for name in REQUIRED_RUN_FILES):
                 discovered.add(candidate)
     return sorted(discovered, key=lambda path: str(path).casefold())
@@ -216,9 +233,13 @@ def discover_evidence_run_directories(paths):
         root = Path(value).expanduser().resolve()
         if not root.is_dir():
             continue
-        if (root / "experiment_job.json").is_file():
+        if not _is_archived_result_path(root) and (root / "experiment_job.json").is_file():
             discovered.add(root)
-        discovered.update(path.parent for path in root.rglob("experiment_job.json"))
+        discovered.update(
+            path.parent
+            for path in root.rglob("experiment_job.json")
+            if not _is_archived_result_path(path)
+        )
     return sorted(discovered, key=lambda path: str(path).casefold())
 
 
@@ -231,7 +252,11 @@ def _source_inventory(roots, excluded_directory):
         if not root.is_dir():
             continue
         for path in root.rglob("*"):
-            if not path.is_file() or excluded_directory in path.parents:
+            if (
+                not path.is_file()
+                or excluded_directory in path.parents
+                or _is_archived_result_path(path)
+            ):
                 continue
             digest = hashlib.sha256()
             with path.open("rb") as handle:

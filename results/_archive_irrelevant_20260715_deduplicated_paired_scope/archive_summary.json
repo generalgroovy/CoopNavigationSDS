@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-15T10:16:56",
+  "policy": "active results keep userlm/tinyllama Agent A, five active Agent B models, paired text/audio conditions, one canonical run per Agent A/Agent B/pair/run_type",
+  "active_agent_a_types": [
+    "userlm",
+    "tinyllama"
+  ],
+  "active_agent_b_slots": {
+    "TinyLlama-1.1B-Chat-v1.0": "small1",
+    "Qwen2.5-0.5B-Instruct": "small2",
+    "Qwen2.5-1.5B-Instruct": "medium1",
+    "Phi-3-mini-4k-instruct": "medium2",
+    "Qwen2.5-7B-Instruct": "large1"
+  },
+  "initial_run_folder_count": 1819,
+  "retained_run_folder_count": 1074,
+  "archived_run_folder_count": 745,
+  "archive_directory": "_archive_irrelevant_20260715_deduplicated_paired_scope"
+}
