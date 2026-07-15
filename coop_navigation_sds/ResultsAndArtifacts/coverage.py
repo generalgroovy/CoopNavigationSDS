@@ -76,7 +76,7 @@ AGENT_MODEL_SLOTS = (
     ("medium2", "medium"),
     ("large1", "large"),
 )
-THESIS_AGENT_A_TYPES = ("userlm",)
+PRIMARY_COVERAGE_AGENT_A_TYPES = ("userlm",)
 AGENT_MODEL_MATRIX_FAMILY = "agent_b_llm_comparison_v1"
 AGENT_MODEL_MATRIX_FAMILIES = {
     AGENT_MODEL_MATRIX_FAMILY,
@@ -486,7 +486,7 @@ def _agent_model_combination_rows(coverage_rows, active_runs):
         row for row in coverage_rows
         if row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
     ]
-    for agent_a_type in THESIS_AGENT_A_TYPES:
+    for agent_a_type in PRIMARY_COVERAGE_AGENT_A_TYPES:
         for slot, size in AGENT_MODEL_SLOTS:
             selected = [
                 row for row in canonical
@@ -620,7 +620,7 @@ def _agent_model_html(rows, controls):
     )
     headers = "".join(f"<th>{slot}</th>" for slot, _size in display_slots)
     body = []
-    for agent in THESIS_AGENT_A_TYPES:
+    for agent in PRIMARY_COVERAGE_AGENT_A_TYPES:
         cells = []
         for slot, _size in display_slots:
             row = lookup[(agent, slot)]
@@ -777,7 +777,7 @@ def update_experiment_coverage(results_root, job_roots=None):
         if row.get("planned")
         and row.get("matrix_family") in AGENT_MODEL_MATRIX_FAMILIES
         and row.get("agent_b_model_slot") in selected_slots
-        and row.get("agent_a_type") in THESIS_AGENT_A_TYPES
+        and row.get("agent_a_type") in PRIMARY_COVERAGE_AGENT_A_TYPES
     ]
     planned_count = len(thesis_scope_rows)
     completed_planned = sum(bool(row.get("completed_count")) for row in thesis_scope_rows)

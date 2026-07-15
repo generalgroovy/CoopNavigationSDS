@@ -119,7 +119,6 @@ stage_completed_analysis_outputs() {
     results/general/metric_success_correlations_completed.csv \
     results/general/completed_metric_success_summary.md \
     results/general/completed_metric_success_manifest.json \
-    docs/THESIS_WRITING_AID.md \
     scripts/analyze_completed_metric_success.py \
     scripts/cluster_clean_pull_analyze_push.sh \
     scripts/submit_completed_metric_analysis_push.sh \

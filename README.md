@@ -26,11 +26,6 @@ Its central contract is:
 9. [Results](#9-results)
 10. [Validation and limitations](#10-validation-and-limitations)
 
-For thesis writing, use the compact research scaffold in
-[`docs/THESIS_WRITING_AID.md`](docs/THESIS_WRITING_AID.md). It is intentionally
-shorter than this implementation README and focuses on validity, citations,
-chapter structure, experiment design, and metric selection.
-
 ## 1. Research Design
 
 One observation is one complete **condition**: scenario, personas, Agent A,
