@@ -64,9 +64,9 @@ experimental outcome or unavailable evidence with reason.
 Use this only as the current result basis, not as final thesis wording unless
 the result set is frozen.
 
-- Snapshot source: pulled result folders through commit `96384c09` on
+- Snapshot source: pulled result folders through commit `ed5f8cdb` on
   2026-07-15.
-- Finalized run folders found locally: 1789.
+- Finalized run folders found locally: 1819.
 - Thesis denominator used here: UserLM as Agent A and five selected Agent B
   models. TinyLlama-Agent-A runs and archived models are excluded from the
   main denominator but remain useful for software control analysis.
@@ -124,9 +124,9 @@ five selected Agent B models:
 | TinyLlama 1.1B | 70 | 65 | 0 | 5 | 14 |
 | Qwen2.5 0.5B | 70 | 63 | 1 | 6 | 14 |
 | Qwen2.5 1.5B | 70 | 65 | 0 | 5 | 14 |
-| Phi-3 mini | 56 | 49 | 1 | 6 | 12 |
-| Qwen2.5 7B | 39 | 34 | 0 | 5 | 12 |
-| **Total** | **305** | **276** | **2** | **27** | **66** |
+| Phi-3 mini | 70 | 63 | 1 | 6 | 14 |
+| Qwen2.5 7B | 53 | 48 | 0 | 5 | 12 |
+| **Total** | **333** | **304** | **2** | **27** | **68** |
 
 Use these rows as a software-control comparison only. They are useful for
 checking whether observed behavior depends on Agent A implementation, but they
