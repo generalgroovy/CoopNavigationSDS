@@ -1,6 +1,6 @@
 agent_a_type,model_slot,agent_b_llm_size,agent_b_model_role,agent_b_models,planned_configuration_count,completed_configuration_count,successful_configuration_count,coverage_percentage,active_observed_condition_count,active_planned_condition_count,active_run_ids,status,agent_a_model,agent_a_approximate_memory_gb,agent_b_approximate_memory_gb,combined_approximate_memory_gb,system_viability
-userlm,small2,small,size_floor,Qwen/Qwen2.5-0.5B-Instruct,62,62,64,100.0,0,0,,complete,microsoft/UserLM-8b,34.0,2.5,36.5,not_viable
-userlm,small1,small,contained_baseline,TinyLlama/TinyLlama-1.1B-Chat-v1.0,62,62,64,100.0,0,0,,complete,microsoft/UserLM-8b,34.0,4.5,38.5,not_viable
-userlm,medium1,medium,medium_lite_qwen,Qwen/Qwen2.5-1.5B-Instruct,62,62,62,100.0,0,1,20260713_142307_b-n0001,complete,microsoft/UserLM-8b,34.0,6.0,40.0,not_viable
-userlm,medium2,medium,reasoning_focused_phi,microsoft/Phi-3-mini-4k-instruct,62,62,57,100.0,0,0,,complete,microsoft/UserLM-8b,34.0,10.0,44.0,not_viable
-userlm,large1,large,large_qwen_multilingual,Qwen/Qwen2.5-7B-Instruct,62,62,34,100.0,0,2,20260713_133432_b-n0001;20260713_142936_b-n0001,complete,microsoft/UserLM-8b,34.0,22.0,56.0,not_viable
+userlm,small2,small,size_floor,Qwen/Qwen2.5-0.5B-Instruct,62,62,64,100.0,0,0,,complete,microsoft/UserLM-8b,34.0,2.5,36.5,viable
+userlm,small1,small,contained_baseline,TinyLlama/TinyLlama-1.1B-Chat-v1.0,62,62,64,100.0,0,0,,complete,microsoft/UserLM-8b,34.0,4.5,38.5,viable
+userlm,medium1,medium,medium_lite_qwen,Qwen/Qwen2.5-1.5B-Instruct,62,62,85,100.0,0,1,20260713_142307_b-n0001,complete,microsoft/UserLM-8b,34.0,6.0,40.0,viable
+userlm,medium2,medium,reasoning_focused_phi,microsoft/Phi-3-mini-4k-instruct,62,62,57,100.0,0,0,,complete,microsoft/UserLM-8b,34.0,10.0,44.0,viable
+userlm,large1,large,large_qwen_multilingual,Qwen/Qwen2.5-7B-Instruct,62,62,47,100.0,0,2,20260713_133432_b-n0001;20260713_142936_b-n0001,complete,microsoft/UserLM-8b,34.0,22.0,56.0,viable
