@@ -1,0 +1,37 @@
+start=2026-07-14T19:07:24+02:00
+project=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+python=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python
+results=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+refresh_analysis=0
+
+[2026-07-14T19:07:24+02:00] 1/8 Preflight
+Project: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+Python:  /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python
+Results: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+Remote:  origin/main
+Running jobs are not cancelled, modified, or inspected beyond optional status output.
+
+[2026-07-14T19:07:24+02:00] 2/8 Completed result inventory
++ /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python - /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+run_summary_count=1764
+newest_run_summary_mtime=1784048790
+coverage_updated_at=2026-07-14T16:06:23.119776+00:00
+completed_run_count=1758
+completed_selected=584/744
+
+[2026-07-14T19:07:28+02:00] 3/8 Refresh compact analysis if stale
+analysis_refresh=skipped (REFRESH_ANALYSIS=0; safe while Slurm jobs are running)
+
+[2026-07-14T19:07:28+02:00] 4/8 Commit and push completed run folders model-wise
+model_path 1/9: + /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python - /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+model_path 2/9: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b
+unstage excluded: results/comparison/metric_deltas.csv
+rm 'results/comparison/metric_deltas.csv'
+unstage excluded: results/comparison/metric_summary.csv
+rm 'results/comparison/metric_summary.csv'
+unstage oversized verification-pass: results/comparison/metric_deltas.csv (237048206)
+rm 'results/comparison/metric_deltas.csv'
+unstage oversized verification-pass: results/comparison/metric_summary.csv (108912806)
+rm 'results/comparison/metric_summary.csv'
+ERROR: staged file exceeds limit: results/comparison/metric_deltas.csv 237048206
+ERROR: staged file exceeds limit: results/comparison/metric_summary.csv 108912806

@@ -1,0 +1,172 @@
+start=2026-07-15T17:35:04+02:00
+host=node176
+project=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+python=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python
+results=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+
+[2026-07-15T17:35:04+02:00] 1/9 Preflight
+Project: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+Python:  /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python
+Results: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+Remote:  origin/main
+Relevant result dirs: 01-small-tinyllama-1.1b 01-small-qwen2.5-0.5b 02-medium-qwen2.5-1.5b 02-medium-phi3-mini 03-large-qwen2.5-7b
+Stability wait: 120s
+
+[2026-07-15T17:35:04+02:00] 2/9 Verify experiment writers are quiet
+slurm_queue=quiet_for_final_analysis
+
+[2026-07-15T17:35:04+02:00] 3/9 Verify relevant result evidence is stable
+before_relevant_run_summary_count=1777
+before_latest_run_summary_mtime_ns=1784129823000000000
+before_relevant_results_size_bytes=4243596436
+after_relevant_run_summary_count=1777
+after_latest_run_summary_mtime_ns=1784129823000000000
+after_relevant_results_size_bytes=4243596436
+
+[2026-07-15T17:37:50+02:00] 4/9 Refresh derived analysis from stable evidence
+conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_conditions.csv
+runs: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_runs.csv
+matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_matrix.csv
+summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage_summary.json
+report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_coverage.html
+agent_model_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_model_combination_coverage.csv
+agent_model_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_model_combination_coverage.html
+case_coverage: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/experiment_case_coverage.csv
+configuration_conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_conditions.csv
+configuration_model_overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_model_overview.csv
+configuration_factor_levels: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_factor_levels.csv
+configuration_groups_exact: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_groups_exact.csv
+configuration_condition_overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_condition_overview.html
+configuration_condition_manifest: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_condition_manifest.json
+comparison_conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_conditions.csv
+comparison_metrics: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_metrics_long.csv
+comparison_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_summary.csv
+comparison_deltas: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_deltas.csv
+comparison_outliers: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outliers.csv
+comparison_metric_indicators: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_indicator_summary.csv
+comparison_metric_correlations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.csv
+comparison_metric_correlation_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.html
+comparison_run_metric_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.csv
+comparison_run_metric_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.html
+comparison_condition_analysis: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/condition_analysis.csv
+comparison_current_condition_analysis: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/current_condition_analysis.csv
+comparison_program_execution_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/program_execution_summary.csv
+comparison_current_program_execution_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/current_program_execution_summary.csv
+comparison_model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.csv
+comparison_model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.html
+comparison_performance_band_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/performance_band_summary.csv
+comparison_outcome_band_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_outcome_band_summary.csv
+comparison_outcome_band_summary_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_outcome_band_summary.html
+comparison_metric_value_heatmap: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_value_heatmap.csv
+comparison_metric_value_heatmap_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_value_heatmap.html
+comparison_matched_success_diagnostics: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/matched_success_diagnostics.csv
+comparison_phase_metric_files: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/phase_metric_files.csv
+evidence_overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/comparison_overview.html
+evidence_guide: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_guide.md
+evidence_run_inventory: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/run_inventory.csv
+evidence_program_execution: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/program_execution_summary.csv
+evidence_current_program_execution: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_program_execution_summary.csv
+evidence_configurations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_groups.csv
+evidence_outcomes: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_outcome_comparison.csv
+evidence_current_outcomes: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_task_outcome_comparison.csv
+evidence_task_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_success_by_configuration.csv
+evidence_current_task_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_task_success_by_configuration.csv
+evidence_model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.csv
+evidence_current_model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_model_configuration_matrix.csv
+evidence_model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.html
+evidence_model_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/agent_b_model_summary.csv
+evidence_current_model_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_agent_b_model_summary.csv
+evidence_phases: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_metric_comparison.csv
+evidence_current_phases: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_phase_metric_comparison.csv
+evidence_phase_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_summary_by_model.csv
+evidence_current_phase_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_phase_summary_by_model.csv
+evidence_dialogue: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_comparison.csv
+evidence_current_dialogue: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_dialogue_state_comparison.csv
+evidence_dialogue_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_summary.csv
+evidence_current_dialogue_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_dialogue_state_summary.csv
+evidence_turns: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/conversation_turns.csv
+evidence_current_turns: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_conversation_turns.csv
+evidence_manifest: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_manifest.json
+conditions: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_conditions.csv
+metrics: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/combined_metrics_long.csv
+summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_summary.csv
+deltas: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_deltas.csv
+outliers: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outliers.csv
+metric_indicators: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_indicator_summary.csv
+metric_correlations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.csv
+metric_correlation_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_outcome_correlations.html
+run_metric_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.csv
+run_metric_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_phase_metric_matrix.html
+condition_analysis: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/condition_analysis.csv
+current_condition_analysis: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/current_condition_analysis.csv
+program_execution_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/program_execution_summary.csv
+current_program_execution_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/current_program_execution_summary.csv
+model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.csv
+model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/model_configuration_matrix.html
+performance_band_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/performance_band_summary.csv
+outcome_band_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_outcome_band_summary.csv
+outcome_band_summary_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/run_outcome_band_summary.html
+metric_value_heatmap: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_value_heatmap.csv
+metric_value_heatmap_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/metric_value_heatmap.html
+matched_success_diagnostics: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/matched_success_diagnostics.csv
+phase_metric_files: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/comparison/phase_metric_files.csv
+overview: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/comparison_overview.html
+guide: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_guide.md
+run_inventory: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/run_inventory.csv
+program_execution: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/program_execution_summary.csv
+current_program_execution: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_program_execution_summary.csv
+configurations: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/configuration_groups.csv
+outcomes: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_outcome_comparison.csv
+current_outcomes: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_task_outcome_comparison.csv
+task_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/task_success_by_configuration.csv
+current_task_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_task_success_by_configuration.csv
+model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.csv
+current_model_configuration_matrix: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_model_configuration_matrix.csv
+model_configuration_matrix_report: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/model_configuration_matrix.html
+model_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/agent_b_model_summary.csv
+current_model_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_agent_b_model_summary.csv
+phases: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_metric_comparison.csv
+current_phases: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_phase_metric_comparison.csv
+phase_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/phase_summary_by_model.csv
+current_phase_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_phase_summary_by_model.csv
+dialogue: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_comparison.csv
+current_dialogue: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_dialogue_state_comparison.csv
+dialogue_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/dialogue_state_summary.csv
+current_dialogue_summary: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_dialogue_state_summary.csv
+turns: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/conversation_turns.csv
+current_turns: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/current_conversation_turns.csv
+manifest: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/general/analysis_manifest.json
+
+[2026-07-15T17:55:34+02:00] 5/9 Stage selected result folders and compact analysis together
+stage result_dir=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b
+stage result_dir=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b
+stage result_dir=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b
+stage result_dir=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini
+stage result_dir=/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b
+
+[2026-07-15T17:56:19+02:00] 6/9 Exclude oversized/generated nonessential files
+unstage excluded: results/comparison/combined_metrics_long.csv
+unstage excluded: results/comparison/metric_deltas.csv
+unstage excluded: results/comparison/metric_summary.csv
+staged_oversized_check=passed
+
+[2026-07-15T17:56:26+02:00] 7/9 Commit coherent result snapshot
+[detached HEAD 010c4e5] Finalize relevant cluster results and analysis
+ 2030 files changed, 205347 insertions(+), 160326 deletions(-)
+
+[2026-07-15T17:57:00+02:00] 8/9 Rebase and push
+Created autostash: c610914
+HEAD is up to date.
+
+[2026-07-15T17:58:12+02:00] 9/9 Final state
+## HEAD (no branch)
+ M results/comparison/metric_deltas.csv
+ M results/comparison/metric_summary.csv
+ M results/experiment_coverage.html
+?? results/comparison/combined_metrics_long.csv
+010c4e5 (HEAD, origin/main, origin/HEAD) Finalize relevant cluster results and analysis
+19811af Preserve cluster results before finalization
+6f7d37d Preserve local cluster result snapshot before rebase
+97b8ed8 Finalize relevant results as one analysis snapshot
+85ecec0 Add guarded large1 result finalization workflow
+done=2026-07-15T17:58:17+02:00

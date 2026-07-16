@@ -1,0 +1,1019 @@
+
+[2026-07-15T00:41:40+02:00] 1/8 Preflight
+Resetting staged index before snapshot staging; working files are preserved.
+Project: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS
+Python:  /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/.venv-linux/bin/python
+Results: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results
+Remote:  origin/main
+Running jobs are not cancelled, modified, or inspected beyond optional status output.
+
+[2026-07-15T00:41:46+02:00] 2/8 Completed result inventory
+run_summary_count=1789
+newest_run_summary_mtime=1784068385
+coverage_updated_at=2026-07-14T16:06:23.119776+00:00
+completed_run_count=1758
+completed_selected=584/744
+
+[2026-07-15T00:41:56+02:00] 3/8 Refresh compact analysis if stale
+analysis_refresh=skipped (REFRESH_ANALYSIS=0; safe while Slurm jobs are running)
+
+[2026-07-15T00:41:56+02:00] 4/8 Commit and push completed run folders model-wise
+model_path 1/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b
+nothing staged for /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-qwen2.5-0.5b
+model_path 2/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b
+nothing staged for /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/01-small-tinyllama-1.1b
+model_path 3/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-phi3-mini
+[detached HEAD 74ecd6d] Push completed cluster results: results/02-medium-phi3-mini
+ 452 files changed, 385592 insertions(+), 75 deletions(-)
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0001-agent-a-f3e5007875-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0001-agent-a-f3e5007875.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0002-agent-b-cb6bd7879f-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0002-agent-b-cb6bd7879f.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0003-agent-a-47c08dc0d2-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0003-agent-a-47c08dc0d2.txt
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0003-agent-a-47c08dc0d2.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0004-agent-b-e8c11a4d01-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0004-agent-b-e8c11a4d01.txt
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0004-agent-b-e8c11a4d01.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0005-agent-a-871e0a4fb8-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0005-agent-a-871e0a4fb8.txt
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0005-agent-a-871e0a4fb8.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0006-agent-b-6c8c3e645b-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0006-agent-b-6c8c3e645b.txt
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0006-agent-b-6c8c3e645b.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0007-agent-a-fa94ff8350-channel.wav
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0007-agent-a-fa94ff8350.txt
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/.turn_audio/40795fad97f5/0007-agent-a-fa94ff8350.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/automatic_eval_metrics.xlsx
+ delete mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/batch-c-mpcc-ran-mc-pip-vos-mp3m4-defau-med-i0-228d1f9648-a-20260714-190521.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/c-mpcc-ran-mc-pip-vos-mp3m4-defau-med-i0-228d1f9648-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/run_summary.json
+ rename results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/{batch-c-mpcc-ran-mc-pip-vos-mp3m4-defau-med-i0-228d1f9648-a-20260714-190521.log => runtime.log} (97%)
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_190452_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/c-mpcc-ran-hesit-pip-vos-mp3m4-defau-med-i0-e64bae7a92-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_192822_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/c-mpcc-ran-hesit-pip-vos-mp3m4-defau-med-i0-e64bae7a92-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_194617_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_202403_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_204200_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_211406_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_213159_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_215117_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_220908_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_224041_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_225829_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_231728_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_233512_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260714_235421_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/analysis_overview.html
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/artifact_inventory.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-a_conversation.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/condition_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/conditions.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/experiment_job.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/experiment_manifest.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/failure_indicators.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/index.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/metric_inputs.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/metrics_long.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/metrics_wide.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/naming_scheme.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/network_graph.svg
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/network_overview.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/performance_band_summary.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/run_analysis.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/run_summary.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/runtime.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/runtime_events.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_001205_b-n0001/runtime_sessions.jsonl
+ rename results/02-medium-phi3-mini/tinyllama/{20260714_190452_b-n0001/.turn_audio/40795fad97f5/0001-agent-a-f3e5007875.txt => 20260715_003055_b-n0001/.turn_audio/6941b99de166/0001-agent-a-6f44d47c35.txt} (100%)
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0001-agent-a-6f44d47c35.wav
+ rename results/02-medium-phi3-mini/tinyllama/{20260714_190452_b-n0001/.turn_audio/40795fad97f5/0002-agent-b-cb6bd7879f.txt => 20260715_003055_b-n0001/.turn_audio/6941b99de166/0002-agent-b-5b72a0ec0e.txt} (100%)
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0002-agent-b-5b72a0ec0e.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0003-agent-a-9b5cb0538e.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0003-agent-a-9b5cb0538e.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0004-agent-b-b0c7f34694.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0004-agent-b-b0c7f34694.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0005-agent-a-55687d3b08.txt
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/.turn_audio/6941b99de166/0005-agent-a-55687d3b08.wav
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/batch-c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t-20260715-003140.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/batch-c-mpcc-fc-clean-pip-vos-mp3m4-defau-med-i0-d794cc44ac-t-20260715-003140.log
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/condition_failures.jsonl
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/coverage_plan.json
+ create mode 100644 results/02-medium-phi3-mini/tinyllama/20260715_003055_b-n0001/experiment_job.json
+model_path 4/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b
+nothing staged for /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/02-medium-qwen2.5-1.5b
+model_path 5/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/03-large-qwen2.5-7b
+[detached HEAD 794c9fe] Push completed cluster results: results/03-large-qwen2.5-7b
+ 333 files changed, 244318 insertions(+), 161 deletions(-)
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0001-agent-a-dd47144632-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0001-agent-a-dd47144632.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0001-agent-a-dd47144632.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0002-agent-b-cb6bd7879f-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0002-agent-b-cb6bd7879f.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0003-agent-a-6ee32e6eeb-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0003-agent-a-6ee32e6eeb.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0003-agent-a-6ee32e6eeb.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0004-agent-b-fd5ff99c04-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0004-agent-b-fd5ff99c04.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0004-agent-b-fd5ff99c04.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0005-agent-a-e884810fb8-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0005-agent-a-e884810fb8.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0005-agent-a-e884810fb8.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0006-agent-b-8c478310e5-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0006-agent-b-8c478310e5.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0006-agent-b-8c478310e5.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0007-agent-a-9988791e79-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0007-agent-a-9988791e79.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0007-agent-a-9988791e79.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0008-agent-b-b1dafab78f-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0008-agent-b-b1dafab78f.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0008-agent-b-b1dafab78f.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0009-agent-a-3587229902-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0009-agent-a-3587229902.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0009-agent-a-3587229902.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0010-agent-b-b87b04f8e0-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0010-agent-b-b87b04f8e0.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0010-agent-b-b87b04f8e0.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0011-agent-a-b2fb9b925f-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0011-agent-a-b2fb9b925f.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0011-agent-a-b2fb9b925f.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0012-agent-b-0c0d2ef74c-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0012-agent-b-0c0d2ef74c.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0012-agent-b-0c0d2ef74c.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0013-agent-a-a50757c937-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0013-agent-a-a50757c937.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0013-agent-a-a50757c937.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0014-agent-b-5f39db1f74-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0014-agent-b-5f39db1f74.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0014-agent-b-5f39db1f74.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0015-agent-a-4b112805e9-channel.wav
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0015-agent-a-4b112805e9.txt
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/.turn_audio/8837cb4a3680/0015-agent-a-4b112805e9.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/automatic_eval_metrics.xlsx
+ delete mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/batch-c-mpcc-car-hesit-pip-vos-qq57i-defau-lrg-i0-ca2aca49a7-a-20260714-183501.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/c-mpcc-car-hesit-pip-vos-qq57i-defau-lrg-i0-ca2aca49a7-a_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/run_summary.json
+ rename results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/{batch-c-mpcc-car-hesit-pip-vos-qq57i-defau-lrg-i0-ca2aca49a7-a-20260714-183501.log => runtime.log} (98%)
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_183416_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/c-mpcc-car-sc-pip-vos-qq57i-defau-lrg-i0-4d63ff525d-t_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_192751_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/c-mpcc-car-sc-pip-vos-qq57i-defau-lrg-i0-4d63ff525d-a_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204402_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/c-mpcc-dst-clean-pip-vos-qq57i-defau-lrg-i0-67be8053e1-t_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_204611_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/c-mpcc-dst-clean-pip-vos-qq57i-defau-lrg-i0-67be8053e1-a_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_212113_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/c-mpcc-dst-mc-pip-vos-qq57i-defau-lrg-i0-2b1943dc82-t_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_215714_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/c-mpcc-dst-mc-pip-vos-qq57i-defau-lrg-i0-2b1943dc82-a_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_223200_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/c-mpcc-dst-sc-pip-vos-qq57i-defau-lrg-i0-b7cb3c5850-t_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_231710_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/c-mpcc-dst-sc-pip-vos-qq57i-defau-lrg-i0-b7cb3c5850-a_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235338_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/analysis_overview.html
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/artifact_inventory.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/automatic_eval_metrics.xlsx
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/c-mpcc-ran-clean-pip-vos-qq57i-defau-lrg-i0-50c8ce7f70-t_conversation.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/condition_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/conditions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/conversation_protocols.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/conversation_transcripts.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/experiment_job.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/experiment_manifest.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/failure_indicators.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/index.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/metric_inputs.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/metrics_long.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/metrics_wide.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/naming_scheme.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/network_graph.svg
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/network_overview.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/performance_band_summary.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/run_analysis.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/run_phase_scorecard.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/run_summary.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/runtime.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/runtime_events.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260714_235551_b-n0001/runtime_sessions.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0001-agent-a-f3e5007875.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0001-agent-a-f3e5007875.wav
+ rename results/03-large-qwen2.5-7b/tinyllama/{20260714_183416_b-n0001/.turn_audio/8837cb4a3680 => 20260715_003104_b-n0001/.turn_audio/13208fd0e67d}/0002-agent-b-cb6bd7879f.txt (100%)
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0002-agent-b-cb6bd7879f.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0003-agent-a-47c08dc0d2.txt
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0003-agent-a-47c08dc0d2.wav
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/batch-c-mpcc-ran-clean-pip-vos-qq57i-defau-lrg-i0-50c8ce7f70-a-20260715-003237.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/batch-c-mpcc-ran-clean-pip-vos-qq57i-defau-lrg-i0-50c8ce7f70-a-20260715-003237.log
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/condition_configuration_breakdown.csv
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/condition_failures.jsonl
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/coverage_plan.json
+ create mode 100644 results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/experiment_job.json
+model_path 6/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b
+nothing staged for /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-qwen2.5-0.5b
+model_path 7/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b
+nothing staged for /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/01-small-tinyllama-1.1b
+model_path 8/8: /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/02-medium-phi3-mini
+nothing staged for /beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/results/agent_b/userlm_transformers/02-medium-phi3-mini
+
+[2026-07-15T00:42:30+02:00] 5/8 Commit and push compact analysis tables
+compact_analysis_push=skipped (REFRESH_ANALYSIS=0; run folders only while jobs are active)
+
+[2026-07-15T00:42:30+02:00] 6/8 Rebase and push committed result changes
+Unstaged changes remain after snapshot commits; they will be left for a later push.
+ M results/agent_model_combination_coverage.csv
+ M results/agent_model_combination_coverage.html
+ M results/comparison/combined_conditions.csv
+ M results/comparison/condition_analysis.csv
+ M results/comparison/current_condition_analysis.csv
+ M results/comparison/current_program_execution_summary.csv
+ M results/comparison/metric_deltas.csv
+ M results/comparison/metric_indicator_summary.csv
+ M results/comparison/metric_outcome_correlations.csv
+ M results/comparison/metric_outcome_correlations.html
+ M results/comparison/metric_outliers.csv
+ M results/comparison/metric_summary.csv
+ M results/comparison/metric_value_heatmap.csv
+ M results/comparison/metric_value_heatmap.html
+ M results/comparison/model_configuration_matrix.csv
+ M results/comparison/model_configuration_matrix.html
+ M results/comparison/performance_band_summary.csv
+ M results/comparison/phase_metric_files.csv
+ M results/comparison/phase_metrics/asr.csv
+ M results/comparison/phase_metrics/audio_input.csv
+ M results/comparison/phase_metrics/backend_task_execution.csv
+ M results/comparison/phase_metrics/dialogue_management.csv
+ M results/comparison/phase_metrics/dialogue_state_tracking.csv
+ M results/comparison/phase_metrics/nlg.csv
+ M results/comparison/phase_metrics/nlu.csv
+ M results/comparison/phase_metrics/task_outcome.csv
+ M results/comparison/phase_metrics/tts.csv
+ M results/comparison/phase_metrics/user_simulation.csv
+ M results/comparison/phase_metrics/whole_dialogue.csv
+ M results/comparison/program_execution_summary.csv
+ M results/comparison/run_outcome_band_summary.csv
+ M results/comparison/run_outcome_band_summary.html
+ M results/comparison/run_phase_metric_matrix.csv
+ M results/comparison/run_phase_metric_matrix.html
+ M results/experiment_case_coverage.csv
+ M results/experiment_coverage.html
+ M results/experiment_coverage_conditions.csv
+ M results/experiment_coverage_matrix.csv
+ M results/experiment_coverage_runs.csv
+ M results/experiment_coverage_summary.json
+ M results/general/agent_b_model_summary.csv
+ M results/general/comparison_overview.html
+ M results/general/configuration_groups.csv
+ M results/general/conversation_turns.csv
+ M results/general/current_agent_b_model_summary.csv
+ M results/general/current_conversation_turns.csv
+ M results/general/current_dialogue_state_comparison.csv
+ M results/general/current_dialogue_state_summary.csv
+ M results/general/current_model_configuration_matrix.csv
+ M results/general/current_phase_metric_comparison.csv
+ M results/general/current_phase_summary_by_model.csv
+ M results/general/current_program_execution_summary.csv
+ M results/general/current_task_outcome_comparison.csv
+ M results/general/current_task_success_by_configuration.csv
+ M results/general/dialogue_state_comparison.csv
+ M results/general/dialogue_state_summary.csv
+ M results/general/model_configuration_matrix.csv
+ M results/general/model_configuration_matrix.html
+ M results/general/phase_metric_comparison.csv
+ M results/general/phase_summary_by_model.csv
+ M results/general/program_execution_summary.csv
+ M results/general/run_inventory.csv
+ M results/general/task_outcome_comparison.csv
+ M results/general/task_success_by_configuration.csv
+?? abort_and_create_per_model_pushes.sh
+?? cancel_task_prepare_push.sh
+?? clear_testandbuild_submit_missing_standard.sh
+?? cluster_push_scripts/
+?? create_per_model_push_scripts_only.sh
+?? dedupe_slurm_logs_and_fix_helpers.sh
+?? fix_dirty_tree_commit_push.sh
+?? monitor_cluster_runs.sh
+?? monitor_prepare_push_1768161.sh
+?? monitor_push_results_clean.sh
+?? resubmit_standard_partition.sh
+?? resubmit_unblocked_remaining.sh
+?? results/_transfer/completed_result_push_snapshot.txt
+?? results/comparison/combined_metrics_long.csv
+?? slurm/previews/
+?? submit_fast_results_push.sh
+Created autostash: d9f8906
+
+[2026-07-15T00:43:40+02:00] 7/8 Final state
+## HEAD (no branch)
+ M results/agent_model_combination_coverage.csv
+ M results/agent_model_combination_coverage.html
+ M results/comparison/combined_conditions.csv
+ M results/comparison/condition_analysis.csv
+ M results/comparison/current_condition_analysis.csv
+ M results/comparison/current_program_execution_summary.csv
+ M results/comparison/metric_deltas.csv
+ M results/comparison/metric_indicator_summary.csv
+ M results/comparison/metric_outcome_correlations.csv
+ M results/comparison/metric_outcome_correlations.html
+ M results/comparison/metric_outliers.csv
+ M results/comparison/metric_summary.csv
+ M results/comparison/metric_value_heatmap.csv
+ M results/comparison/metric_value_heatmap.html
+ M results/comparison/model_configuration_matrix.csv
+ M results/comparison/model_configuration_matrix.html
+ M results/comparison/performance_band_summary.csv
+ M results/comparison/phase_metric_files.csv
+ M results/comparison/phase_metrics/asr.csv
+ M results/comparison/phase_metrics/audio_input.csv
+ M results/comparison/phase_metrics/backend_task_execution.csv
+ M results/comparison/phase_metrics/dialogue_management.csv
+ M results/comparison/phase_metrics/dialogue_state_tracking.csv
+ M results/comparison/phase_metrics/nlg.csv
+ M results/comparison/phase_metrics/nlu.csv
+ M results/comparison/phase_metrics/task_outcome.csv
+ M results/comparison/phase_metrics/tts.csv
+ M results/comparison/phase_metrics/user_simulation.csv
+ M results/comparison/phase_metrics/whole_dialogue.csv
+ M results/comparison/program_execution_summary.csv
+ M results/comparison/run_outcome_band_summary.csv
+ M results/comparison/run_outcome_band_summary.html
+ M results/comparison/run_phase_metric_matrix.csv
+ M results/comparison/run_phase_metric_matrix.html
+ M results/experiment_case_coverage.csv
+ M results/experiment_coverage.html
+ M results/experiment_coverage_conditions.csv
+ M results/experiment_coverage_matrix.csv
+ M results/experiment_coverage_runs.csv
+ M results/experiment_coverage_summary.json
+ M results/general/agent_b_model_summary.csv
+ M results/general/comparison_overview.html
+ M results/general/configuration_groups.csv
+ M results/general/conversation_turns.csv
+ M results/general/current_agent_b_model_summary.csv
+ M results/general/current_conversation_turns.csv
+ M results/general/current_dialogue_state_comparison.csv
+ M results/general/current_dialogue_state_summary.csv
+ M results/general/current_model_configuration_matrix.csv
+ M results/general/current_phase_metric_comparison.csv
+ M results/general/current_phase_summary_by_model.csv
+ M results/general/current_program_execution_summary.csv
+ M results/general/current_task_outcome_comparison.csv
+ M results/general/current_task_success_by_configuration.csv
+ M results/general/dialogue_state_comparison.csv
+ M results/general/dialogue_state_summary.csv
+ M results/general/model_configuration_matrix.csv
+ M results/general/model_configuration_matrix.html
+ M results/general/phase_metric_comparison.csv
+ M results/general/phase_summary_by_model.csv
+ M results/general/program_execution_summary.csv
+ M results/general/run_inventory.csv
+ M results/general/task_outcome_comparison.csv
+ M results/general/task_success_by_configuration.csv
+?? abort_and_create_per_model_pushes.sh
+?? cancel_task_prepare_push.sh
+?? clear_testandbuild_submit_missing_standard.sh
+?? cluster_push_scripts/
+?? create_per_model_push_scripts_only.sh
+?? dedupe_slurm_logs_and_fix_helpers.sh
+?? fix_dirty_tree_commit_push.sh
+?? monitor_cluster_runs.sh
+?? monitor_prepare_push_1768161.sh
+?? monitor_push_results_clean.sh
+?? resubmit_standard_partition.sh
+?? resubmit_unblocked_remaining.sh
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0004-agent-b-e8c11a4d01.txt
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0004-agent-b-e8c11a4d01.wav
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0005-agent-a-871e0a4fb8.txt
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0005-agent-a-871e0a4fb8.wav
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0006-agent-b-6c8c3e645b.txt
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0006-agent-b-6c8c3e645b.wav
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0007-agent-a-fa94ff8350.txt
+?? results/03-large-qwen2.5-7b/tinyllama/20260715_003104_b-n0001/.turn_audio/13208fd0e67d/0007-agent-a-fa94ff8350.wav
+?? results/_transfer/completed_result_push_snapshot.txt
+?? results/comparison/combined_metrics_long.csv
+?? slurm/previews/
+?? submit_fast_results_push.sh
+?? submit_minimal_results_push.sh
+?? submit_minimal_results_push_v2.sh
+?? submit_only_uncovered_after_fix.sh
+?? submit_push_results_clean.sh
+?? submit_remaining_coverage_after_fix.sh
+96384c0 (HEAD, origin/main, origin/HEAD) Push completed cluster results: results/03-large-qwen2.5-7b
+83301cf Push completed cluster results: results/02-medium-phi3-mini
+93153f4 Add completed dialogue metric analysis workflow
+d63d1b1 Clean thesis model scope and result summaries
+692b275 Push completed cluster results: results/03-large-qwen2.5-7b
+
+[2026-07-15T00:43:46+02:00] 8/8 Running Slurm jobs left untouched
+             JOBID    PARTITION                             NAME    STATE       TIME TIME_LIMIT   CPUS MIN_MEMO         NODELIST(REASON)
+ 1769262_[52-83%1]     standard                     tlA-l1-qwen7  PENDING       0:00    5:30:00      6      60G      (JobArrayTaskLimit)
+ 1769261_[69-83%1]     standard                      tlA-m2-phi3  PENDING       0:00    4:30:00      6      52G      (JobArrayTaskLimit)
+        1769262_51     standard                     tlA-l1-qwen7  RUNNING      12:53    5:30:00      6      60G                  node169
+        1769261_68     standard                      tlA-m2-phi3  RUNNING      12:53    4:30:00      6      52G                  node089
+           1771615     standard                push-results-only  RUNNING       2:06    1:30:00      2       8G                  node173

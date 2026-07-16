@@ -1,0 +1,19 @@
+From ssh://ssh.github.com:443/generalgroovy/CoopNavigationSDS
+ * branch            main       -> FETCH_HEAD
+Traceback (most recent call last):
+  File "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/scripts/update_experiment_coverage.py", line 58, in <module>
+    main()
+    ~~~~^^
+  File "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/scripts/update_experiment_coverage.py", line 50, in main
+    for name, path in write_evidence_comparison(
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        [args.results_dir],
+        ^^^^^^^^^^^^^^^^^^^
+        Path(args.results_dir).resolve() / "general",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).items():
+    ^
+  File "/beegfs/home/users/g/generalgroovy/experiments/CoopNavigationSDS/coop_navigation_sds/ResultsAndArtifacts/comparison.py", line 1328, in write_evidence_comparison
+    raise RuntimeError("Source result evidence changed while derived analysis was generated.")
+RuntimeError: Source result evidence changed while derived analysis was generated.
+slurmstepd-node176: error: pam_close_session: Cannot make/remove an entry for the specified session

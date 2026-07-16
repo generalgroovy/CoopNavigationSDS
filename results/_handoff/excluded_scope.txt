@@ -1,0 +1,11 @@
+Not included in GitHub handoff:
+- Local Python environments: .venv*, .runtime, Miniforge installers.
+- Model and speech assets: .speech-providers, .model-providers, Hugging Face caches, Ollama caches.
+- Python/build caches: __pycache__, .pytest_cache, .pytest_tmp.
+- Generated aggregate files larger than 95 MB, because GitHub rejects files over 100 MB.
+- Obsolete thesis-out-of-scope model results, especially large2 / Mistral-style configurations, unless already included in active comparison summaries.
+Included:
+- Source code, scripts, jobs, Slurm wrappers, documentation.
+- Thesis-relevant completed run folders for selected Agent B models.
+- Per-run evidence: run summaries, conditions, transcripts, metrics, logs, runtime state, and compact analysis files.
+- Slurm logs where available and below the size limit.
